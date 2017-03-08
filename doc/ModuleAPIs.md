@@ -1,4 +1,4 @@
-RequestHandler
+##RequestHandler
  ### Members
  * Master List
  * Key Partitions in each Replica
@@ -15,7 +15,7 @@ RequestHandler
  ### Internal Methods
  + List<Pair<Master_Node, Worker_Node>> ForwardWorkers(Key)
 
-Master(zookeeper)
+##Master(zookeeper)
  ### Members
  * Worker List
  * Worker Status
@@ -23,7 +23,7 @@ Master(zookeeper)
  ###
  + List<Worker_Node, Key_Range> GetWorkerPartitions()
 
-Worker
+##Worker
  ### Members
  * Worker ID
  * Managed Key Ranges
@@ -36,7 +36,7 @@ Worker
  + Move(Key, Old_Branch, New_Branch)
  + Abort Merge(Key, Value = null, Tgt_Branch, Ref_Branch, Ref_Version = head, Forward = false, Force = false)
 
-DataTypeManager
+##DataTypeManager
  ### Members
  * Chunk Storage
  ### UNode Management Methods
@@ -53,7 +53,7 @@ DataTypeManager
  + String NewString(String)
  + Commit(String)
 
-struct UNode
+##struct UNode
  * key
  * type
  * version
@@ -61,15 +61,15 @@ struct UNode
  * value/chunk_hash
  + SetValue(number/string/blob)
 
-struct Blob
+##struct Blob
  * size
  * byte array
 
-struct String
+##struct String
  * length
  * char array
 
-ChunkStorage
+##ChunkStorage
  ### Chunk Management Methods
  * byte[] GetChunk(hash_value)
  * PutChunk(hash_value, byte[])
