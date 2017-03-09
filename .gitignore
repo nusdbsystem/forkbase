@@ -30,3 +30,6 @@
 
 # Build folder
 build/
+
+#Project files
+*sublime*
