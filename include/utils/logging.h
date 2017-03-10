@@ -7,6 +7,8 @@
 #include <sstream>
 #include <string>
 
+#include "type_traits.h"
+
 namespace ustore {
 
 /// Global functions for both glog and built-in log
@@ -75,22 +77,12 @@ class LogMessageFatal : public LogMessage {
 // integrals declared in classes and not defined to be used as arguments to
 // CHECK* macros. It's not encouraged though.
 template <typename T>
-  inline const T& GetReferenceableValue(const T& t) {
-    return t;
-  }
-inline char GetReferenceableValue(char t) { return t; }
-inline unsigned char GetReferenceableValue(unsigned char t) { return t; }
-inline signed char GetReferenceableValue(signed char t) { return t; }
-inline short GetReferenceableValue(short t) { return t; }
-inline unsigned short GetReferenceableValue(unsigned short t) { return t; }
-inline int GetReferenceableValue(int t) { return t; }
-inline unsigned int GetReferenceableValue(unsigned int t) { return t; }
-inline long GetReferenceableValue(long t) { return t; }
-inline unsigned long GetReferenceableValue(unsigned long t) { return t; }
-inline long long GetReferenceableValue(long long t) { return t; }
-inline unsigned long long GetReferenceableValue(unsigned long long t) {
-  return t;
+inline T&& GetReferenceableValue(T&& t) {
+      return std::forward<T>(t);
 }
+
+template <typename T, typename = typename ustore::is_integral_t<T>>
+inline T GetReferenceableValue(T t) {return t;}
 
 // This formats a value for a failing CHECK_XX statement.  Ordinarily,
 // it uses the definition for operator<<, with a few special cases below.
