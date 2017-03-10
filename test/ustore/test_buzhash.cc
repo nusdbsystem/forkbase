@@ -69,7 +69,7 @@ TEST(BuzHash, ShortStrWindow16) {
 }
 
 TEST(BuzHash, ShortStrWindow64) {
-  auto bz = buzhash::BuzHash(16);
+  auto bz = buzhash::BuzHash(64);
   for (size_t i = 0; i < strlen(abcd_str); ++i) {
     bz.HashByte(uint8_t(abcd_str[i]));
   }
