@@ -1,9 +1,11 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_VALUE_H_
-#define USTORE_TYPES_VALUE_H_
+#ifndef USTORE_SPEC_VALUE_H_
+#define USTORE_SPEC_VALUE_H_
 
 #include "types/type.h"
+#include "spec/blob.h"
+#include "spec/slice.h"
 
 namespace ustore {
 
@@ -28,7 +30,7 @@ class Value {
  private:
   Type type_;
   void* data_ = nullptr;
-}
+};
 
 }  // namespace ustore
-#endif  // USTORE_TYPES_VALUE_H_
+#endif  // USTORE_SPEC_VALUE_H_

@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_SLICE_H_
-#define USTORE_TYPES_SLICE_H_
+#ifndef USTORE_SPEC_SLICE_H_
+#define USTORE_SPEC_SLICE_H_
 
 #include <string>
 
@@ -29,7 +29,7 @@ class Slice {
  private:
   size_t len_ = 0;
   char* data_ = nullptr;
-}
+};
 
 }  // namespace ustore
-#endif  // USTORE_TYPES_SLICE_H_
+#endif  // USTORE_SPEC_SLICE_H_

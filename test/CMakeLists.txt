@@ -19,10 +19,13 @@
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
-AUX_SOURCE_DIRECTORY(. test_source)
-ADD_EXECUTABLE(test_ustore ${test_source})
+ADD_LIBRARY(gtest STATIC EXCLUDE_FROM_ALL "gtest/gtest.h" "gtest/gtest-all.cc")
+AUX_SOURCE_DIRECTORY(ustore ustore_test_source)
+
+ADD_EXECUTABLE(test_ustore "gtest/gtest_main.cc" ${ustore_test_source})
 ADD_DEPENDENCIES(test_ustore ustore)
-TARGET_LINK_LIBRARIES(test_ustore ustore)
+TARGET_LINK_LIBRARIES(test_ustore gtest ustore)
+SET_TARGET_PROPERTIES(test_ustore PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 
 ADD_TEST(
 	NAME test
