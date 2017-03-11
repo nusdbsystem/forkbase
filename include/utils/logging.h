@@ -76,6 +76,8 @@ class LogMessageFatal : public LogMessage {
 // Function is overloaded for integral types to allow static const
 // integrals declared in classes and not defined to be used as arguments to
 // CHECK* macros. It's not encouraged though.
+
+// SFINAE to differentiate between integeral and non-integral parameters
 template <typename T, typename = ::ustore::not_integral_t<T>>
 inline T&& GetReferenceableValue(T&& t) {
       return std::forward<T>(t);
