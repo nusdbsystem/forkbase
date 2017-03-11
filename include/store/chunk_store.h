@@ -12,11 +12,12 @@ namespace ustore {
 class ChunkStore {
  public:
   /*
-   * store allocates the returned chunck and rely on caller to release memory
+   * store allocates the returned chunck,
+   * caller need to release memory after use.
    */
   Chunk* virtual Get(const Hash& key) = 0;
   bool virtual Put(const Hash& key, const Chunk& chunk) = 0;
 };
-
 }  // namespace ustore
-#endif  // USTORE_CHUNK_STORE_H_
+
+#endif  // USTORE_STORE_CHUNK_STORE_H_

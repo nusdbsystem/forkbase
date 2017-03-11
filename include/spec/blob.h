@@ -25,6 +25,6 @@ class Blob {
   size_t size_ = 0;
   byte_t* data_ = nullptr;
 };
-
 }  // namespace ustore
-#endif  // USTORE_SPEC_SLICE_H_
+
+#endif  // USTORE_SPEC_BLOB_H_

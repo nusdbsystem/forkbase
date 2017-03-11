@@ -30,6 +30,6 @@ class Slice {
   size_t len_ = 0;
   char* data_ = nullptr;
 };
-
 }  // namespace ustore
+
 #endif  // USTORE_SPEC_SLICE_H_

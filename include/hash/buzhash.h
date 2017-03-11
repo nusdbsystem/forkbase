@@ -3,8 +3,8 @@
 #ifndef USTORE_HASH_BUZHASH_H_
 #define USTORE_HASH_BUZHASH_H_
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 namespace buzhash {
 

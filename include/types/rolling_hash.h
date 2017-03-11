@@ -9,6 +9,7 @@
 #include "types/type.h"
 
 namespace ustore {
+
 class RollingHasher {
  public:
   static const uint32_t DEFAULT_CHUNK_PATTERN = (1 << 12) - 1;  // 4KB
@@ -31,6 +32,6 @@ class RollingHasher {
   size_t window_size_, byte_hashed_ = 0;
   bool crossed_boundary_ = false;
 };
-
 }  // namespace ustore
+
 #endif  // USTORE_TYPES_ROLLING_HASH_H_

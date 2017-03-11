@@ -133,4 +133,4 @@ string* CheckOpMessageBuilder::NewString() {
 }
 
 }  // namespace logging
-}  // namespace ustore 
+}  // namespace ustore

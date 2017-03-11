@@ -6,8 +6,8 @@
 #include "hash/sha2.h"
 
 const ustore::byte_t raw_str[] = "The quick brown fox jumps over the lazy dog";
-const std::string base32_encoded = "26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
-const std::string hash_hex_str = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e4";
+const char base32_encoded[] = "26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
+const char hash_hex_str[] = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e4";
 
 TEST(SHA2, FromString) {
   ustore::SHA256 h;

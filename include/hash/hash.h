@@ -14,7 +14,9 @@ const size_t HASH_STRING_LEN = 32;
 class Hash {
  public:
   // create empty hash
-  Hash() {};
+  Hash() {}
+  // use existing hash 
+  Hash(const Hash& hash);
   // use existing byte array
   explicit Hash(const byte_t* hash);
   ~Hash();

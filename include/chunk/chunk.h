@@ -12,9 +12,9 @@ namespace ustore {
 class Chunk {
  public:
   // allocate a new chunk with usable capacity (excluding meta data)
-  Chunk(size_t capacity);
+  explicit Chunk(Type type, size_t capacity);
   // share chunk from existing space
-  Chunk(byte_t* head);
+  explicit Chunk(byte_t* head);
   ~Chunk();
 
   // type of the chunk
@@ -27,6 +27,8 @@ class Chunk {
   inline const byte_t* head() { return head_; }
   // pointer to actual data
   inline const byte_t* data();
+  // pointer to mutable data
+  inline byte_t* m_data();
 
  private:
   bool own = false;

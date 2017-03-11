@@ -21,16 +21,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef PICOSHA2_H
-#define PICOSHA2_H
+#ifndef USTORE_HASH_SHA2_H_
+#define USTORE_HASH_SHA2_H_
 // picosha2:20140213
+
+#include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <iostream>
-#include <vector>
 #include <iterator>
-#include <cassert>
 #include <sstream>
-#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "hash/hash.h"
 
@@ -335,14 +337,16 @@ namespace ustore {
 
 class SHA256 : public Hash {
  public:
-  virtual void Compute(const byte_t* data, size_t len) {
-    own_ = true;
-    value_ = new byte_t[HASH_BYTE_LEN];
+  void Compute(const byte_t* data, size_t len) override {
+    if (own_ == false) {
+      own_ = true;
+      value_ = new byte_t[HASH_BYTE_LEN];
+    }
     byte_t fullhash[32];
     picosha2::hash256(data, data + len, fullhash, fullhash + 32);
     std::copy(fullhash, fullhash+HASH_BYTE_LEN, value_);
   }
 };
-} // namespace ustore
+}  // namespace ustore
 
-#endif  // PICOSHA2_H
+#endif  // USTORE_HASH_SHA2_H_

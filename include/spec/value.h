@@ -31,6 +31,6 @@ class Value {
   Type type_;
   void* data_ = nullptr;
 };
-
 }  // namespace ustore
+
 #endif  // USTORE_SPEC_VALUE_H_
