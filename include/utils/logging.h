@@ -76,29 +76,31 @@ class LogMessageFatal : public LogMessage {
 // Function is overloaded for integral types to allow static const
 // integrals declared in classes and not defined to be used as arguments to
 // CHECK* macros. It's not encouraged though.
-template <typename T>
+template <typename T, typename = ::ustore::not_integral_t<T>>
 inline T&& GetReferenceableValue(T&& t) {
       return std::forward<T>(t);
 }
 
-template <typename T, typename = typename ustore::is_integral_t<T>>
+template <typename T, typename = ::ustore::is_integral_t<T>>
 inline T GetReferenceableValue(T t) {return t;}
 
 // This formats a value for a failing CHECK_XX statement.  Ordinarily,
 // it uses the definition for operator<<, with a few special cases below.
-template <typename T>
+template <typename T, typename = ::ustore::not_char_t<T>>
 inline void MakeCheckOpValueString(std::ostream* os, const T& v) {
   (*os) << v;
 }
 
 // Overrides for char types provide readable values for unprintable
 // characters.
-template <>
-void MakeCheckOpValueString(std::ostream* os, const char& v);
-template <>
-void MakeCheckOpValueString(std::ostream* os, const signed char& v);
-template <>
-void MakeCheckOpValueString(std::ostream* os, const unsigned char& v);
+template <typename T, typename = ::ustore::is_char_t<T>>
+inline void MakeCheckOpValueString(std::ostream* os, T v) {
+  if (v >= 32 && v <= 126) {
+    (*os) << "'" << v << "'";
+  } else {
+    (*os) << "char value " << (short)v;
+  }
+}
 
 // We need an explicit specialization for std::nullptr_t.
 template <>

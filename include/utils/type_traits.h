@@ -31,16 +31,16 @@ template <bool B, typename T>
   using enable_if_t = typename std::enable_if<B, T>::type;
 
 template <typename T>
-  using is_integral_t = typename ustore::enable_if_t<std::is_integral<T>::value, T>;
+  using is_integral_t = typename ::ustore::enable_if_t<std::is_integral<T>::value, T>;
 
 template <typename T>
-  using not_integral_t = typename ustore::enable_if_t<!std::is_integral<T>::value, T>;
+  using not_integral_t = typename ::ustore::enable_if_t<!std::is_integral<T>::value, T>;
 
 template <typename T>
-  using is_char_t = typename ustore::enable_if_t<std::is_char<T>::value, T>;
+  using is_char_t = typename ::ustore::enable_if_t<::ustore::is_char<T>::value, T>;
 
 template <typename T>
-  using not_char_t = typename ustore::enable_if_t<!std::is_char<T>::value, T>;
+  using not_char_t = typename ::ustore::enable_if_t<!::ustore::is_char<T>::value, T>;
 
 }
 #endif
