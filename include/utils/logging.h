@@ -78,9 +78,11 @@ class LogMessageFatal : public LogMessage {
 // CHECK* macros. It's not encouraged though.
 
 // SFINAE to differentiate between integeral and non-integral parameters
-template <typename T, typename = ::ustore::not_integral_t<T>>
+template <typename T, 
+         typename = ::ustore::not_integral_t<
+            ::ustore::remove_cv_t<::ustore::remove_reference_t<T>>>>
 inline T&& GetReferenceableValue(T&& t) {
-      return std::forward<T>(t);
+    return std::forward<T>(t);
 }
 
 template <typename T, typename = ::ustore::is_integral_t<T>>

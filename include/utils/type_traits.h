@@ -31,6 +31,12 @@ template <bool B, typename T>
   using enable_if_t = typename std::enable_if<B, T>::type;
 
 template <typename T>
+  using remove_reference_t = typename ::std::remove_reference<T>::type;
+
+template <typename T>
+  using remove_cv_t = typename ::std::remove_cv<T>::type;
+
+template <typename T>
   using is_integral_t = typename ::ustore::enable_if_t<std::is_integral<T>::value, T>;
 
 template <typename T>
