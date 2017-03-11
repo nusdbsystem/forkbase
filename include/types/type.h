@@ -5,9 +5,9 @@
 
 namespace ustore {
 
-typedef unsigned char byte;
+typedef unsigned char byte_t;
 
-enum Type : byte {
+enum Type : byte_t {
   // Internal types
   kUNode = 0,
   // Primitive types

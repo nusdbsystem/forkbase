@@ -1,10 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_BLOB_H_
-#define USTORE_TYPES_BLOB_H_
+#ifndef USTORE_SPEC_BLOB_H_
+#define USTORE_SPEC_BLOB_H_
 
 #include <string>
-#include "types/type"
+#include "types/type.h"
 
 namespace ustore {
 
@@ -15,16 +15,16 @@ namespace ustore {
 class Blob {
  public:
   // share data from existing array
-  explicit Slice(const byte* data, size_t size);
+  Blob(const byte_t* data, size_t size);
   ~Blob();
 
   inline size_t size() { return size_; }
-  inline const byte* data() { return data_; }
+  inline const byte_t* data() { return data_; }
 
  private:
   size_t size_ = 0;
-  byte* data_ = nullptr;
-}
-
+  byte_t* data_ = nullptr;
+};
 }  // namespace ustore
-#endif  // USTORE_TYPES_SLICE_H_
+
+#endif  // USTORE_SPEC_BLOB_H_
