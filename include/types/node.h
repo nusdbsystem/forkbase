@@ -5,11 +5,12 @@
 
 #include <cstddef>
 
-#include "types/type.h"
-#include "types/orderedkey.h"
 #include "chunk/chunk.h"
+#include "types/orderedkey.h"
+#include "types/type.h"
 
 namespace ustore {
+
 class SeqNode {
 /* SeqNode represents a general node in Prolly Tree.
 
@@ -19,29 +20,23 @@ class SeqNode {
 
  public:
   explicit SeqNode(const Chunk* chunk);
-
   virtual ~SeqNode() = 0;  // delete the internal chunk
 
-  inline Type type() const {return chunk_->type();}
-
-  inline size_t capacity() const {return chunk_->capacity();}
-
-  inline const* Chunk chunk() const { return chunk_;}
+  inline Type type() const { return chunk_->type(); }
+  inline size_t capacity() const { return chunk_->capacity(); }
+  inline const Chunk* chunk() const { return chunk_; }
 
   // Whether this SeqNode is a leaf
-  virtual bool is_leaf() const = 0;
-
+  virtual bool isLeaf() const = 0;
   // Numbre of entreis in this SeqNode
   // If this is MetaNode, return the number of containing MetaEntries
   // If this is a leaf, return the number of containing elements
-  virtual size_t num_entries() const = 0;
-
+  virtual size_t numEntries() const = 0;
   // number of elements at leaves rooted at this MetaSeq
-  virtual uint64_t num_elements() const = 0;
-
+  virtual uint64_t numElements() const = 0;
   // Return the byte offset of the idx-th entry
   // relative to this chunk data pointer
-  virtual size_t entry_offset(size_t idx)  const = 0;
+  virtual size_t entryOffset(size_t idx)  const = 0;
 
  private:
   const Chunk* chunk_;
@@ -57,28 +52,20 @@ class MetaNode: public SeqNode {
   0------------ 4 ----------variable size
 */
  public:
-
   explicit MetaNode(const Chunk* chunk);
-
   ~MetaNode() override;
 
-  inline bool is_leaf() override const { return false;}
-
-  // number of MetaEntries in this MetaSeq
-  size_t num_entries() override const;
-
-  // number of elements rooted at this MetaNode
-  uint64_t num_elements() override const;
-
-  size_t entry_offset(size_t idx) override const;
+  inline bool isLeaf() const override { return false; }
+  inline size_t numEntries() const override;
+  inline uint64_t numElements() const override;
+  inline size_t entryOffset(size_t idx) const override;
 
   // Retreive the SeqNode pointed by idx-th MetaEntry in this MetaNode
   const SeqNode* GetSeqNodeByIndex(size_t idx) const;
-
   // Retreive the SeqNode pointed by the MetaEntry,
   // The Ordered Key of this MetaEntry
   // has the smallest OrderedKey that is no smaller than the compared key
-  const SeqNode* GetSeqNodeForKey(const OrderedKey& key) const;
+  const SeqNode* GetSeqNodeByKey(const OrderedKey& key) const;
 };
 
 class MetaEntry {
@@ -95,21 +82,33 @@ class MetaEntry {
   const OrderedKey* ordered_key() const;
 
   // num of leaves rooted at this MetaEntry
-  uint32_t num_leaves() const;
-
+  inline uint32_t numLeaves() const;
   // num of elements at all leaves rooted at this MetaEntry
-  uint64_t num_elements() const;
+  inline uint64_t numElements() const;
 
  private:
   const byte* data_;  // MetaEntry is NOT responsible to clear
-
-  size_t num_bytes;  // num of bytes of data array
-
+  size_t num_bytes_;  // num of bytes of data array
 };
 
-class BlobLeafNode: public SeqNode {
+class LeafNode: public SeqNode {
+/* LeafNode is a leaf node in prolly tree.
+ * It is a abstract leaf node for Blob/List/Set/etc...
+*/
+ public:
+  inline bool isLeaf() const override { return true; }
+  // Get #bytes for #size elements started from position idx
+  virtual size_t GetLength(size_t start, size_t end) const = 0;
+  // Copy the bytes from start position (inclusive)
+  //  and end position (exclusive) towards buffer
+  // Buffer capacity shall be larger then end - start
+  // return the number of bytes actually read
+  virtual size_t Copy(size_t start, size_t end, byte* buffer) const = 0;
+};
+
+class BlobLeafNode: public LeafNode {
 /*
-BlobLeafNode is a leaf node in Prolly tree that contains
+BlobNode is a leaf node in Prolly tree that contains
 actual blob data
 
 Encoding Scheme:
@@ -117,23 +116,16 @@ Encoding Scheme:
   | ------variable size
 */
  public:
-  explicit BlobLeafNode(const Chunk* chunk);
+  explicit BlobNode(const Chunk* chunk);
+  ~BlobNode() override;
 
-  ~BlobLeafNode() override;
+  inline bool isLeaf() const override { return true; }
+  inline size_t numEntries() const override { return this->capacity(); }
+  inline uint64_t numElements() override const { return this->capacity(); }
+  inline size_t entryOffset(size_t idx) override const { return idx; }
 
-  inline bool is_leaf() override const { return true;}
-
-  inline size_t num_entries() override const { return this->capacity();}
-
-  inline uint64_t num_elements() override const {return this->capacity();}
-
-  inline size_t entry_offset(size_t idx) override const { return idx;}
-
-  // Copy the bytes from start position (inclusive)
-  //  and end position (exclusive) towards buffer
-  // Buffer capacity shall be larger then end - start
-  // return the number of bytes actually read
-  size_t Copy(size_t start, size_t end, byte* buffer) const;
+  size_t GetLength(size_t start, size_t end) const override;
+  size_t Copy(size_t start, size_t end, byte* buffer) const override;
 };
 
 class StringNode {
@@ -146,10 +138,9 @@ class StringNode {
 */
  public:
   explicit StringNode(const Chunk* chunk);
-
   ~StringNode();
 
-  size_t len() const;  // the byte count of this string
+  inline size_t len() const;  // the byte count of this string
 
 // Copy all the string bytes to buffer
 // Buffer capacity shall be larger than this string len
@@ -169,17 +160,15 @@ class CellNode {
 */
  public:
   explicit CellNode(const Chunk* chunk);
-
   ~CellNode();
 
-  const byte* GetPrevHashValue() const;
-
-  const byte* GetDataHashValue() const;
-
-  Type type() const;
+  inline Type type() const;
+  inline const byte* prevHashValue() const;
+  inline const byte* dataHashValue() const;
 
  private:
   const Chunk* chunk_;
 };
 }  // namespace ustore
+
 #endif  // USTORE_TYPES_NODE_H_

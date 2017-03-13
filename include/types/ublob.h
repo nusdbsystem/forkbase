@@ -4,20 +4,16 @@
 #define USTORE_TYPES_UBLOB_H_
 
 #include <cstddef>
-
-#include "types/type.h"
-#include "types/node.h"
-#include "hash/hash.h"
 #include "chunk/chunk.h"
-
-#include "types/chunk_manager.h"
+#include "hash/hash.h"
+#include "types/chunk_loader.h"
+#include "types/node.h"
+#include "types/type.h"
 
 namespace ustore {
 class UBlob {
  public:
-  ~UBlob();  // remove ChunkManager
-
-  // Create Chunk Manager
+  // Create Chunk Loader
   // Get Chunk c
   // if c.type ==  MetaNode
   //    MetaNode(t)
@@ -26,15 +22,15 @@ class UBlob {
   // else
   //   Panic()
   static UBlob Load(const Hash& root_hash);
-
   // Create the new UBlob from initial data
   // Create the ChunkLoader
   static UBlob Create(const byte* data, size_t num_bytes);
 
-  inline const Hash hash() const { return root_hash_;}
+  ~UBlob();  // remove ChunkLoader
 
+  inline const Hash& hash() const { return root_hash_; }
   // Return the number of bytes in this Blob
-  inline size_t size() const { return root_node_->num_elements;}
+  inline size_t size() const { return root_node_->num_elements; }
 
   /** Delete some bytes from a position and insert new bytes
    *
@@ -49,27 +45,21 @@ class UBlob {
    */
   const UBlob Splice(size_t pos, size_t num_delete, byte* data,
                      size_t num_insert) const;
-
   /** Insert bytes given a position
    *
    *  Use Slice internally
    */
-  const UBlob Insert(size_t pos,
-                     const byte* data,
-                     size_t num_insert) const;
-
+  const UBlob Insert(size_t pos, const byte* data, size_t num_insert) const;
   /** Delete bytes from a given position
    *
    *  Use Slice internally
    */
   const UBlob Delete(size_t pos, size_t num_delete) const;
-
   /** Append bytes from the last position of Blob
    *
    *  Use Slice internally
    */
   const UBlob Append(byte* data, size_t num_insert) const;
-
   /** Read the blob data and copy into buffer
    *    Args:
    *      pos: the number of position to read
@@ -81,25 +71,22 @@ class UBlob {
    */
   size_t Read(size_t pos, size_t len, byte* buffer) const;
 
+  UBlob(const UBlob&) = delete  // disable copy-constructor
+  UBlob& operator=(const UBlob&) = delete;  // disable copy-assignment
 
  private:
-  // the hash of root SeqNode
-  // Make sure they are in sync
-  const Hash root_hash_;
-
-  // Root Node of this blob
-  // Can either be a leaf(BlobLeafNode) or a non-leaf (MetaNode)
-  // Responsible to remove
-  const SeqNode* root_node_;
-
-  ChunkManager* chunk_manager_;
-
   // Private contrucstor to create an instance based on the root chunk data
   // To be called by Load() and Init()
   explicit UBlob(const Chunk* chunk);
 
-  UBlob(const UBlob&) = delete  // disable copy-constructor
-  UBlob& operator=(const UBlob&) = delete;  // disable copy-assignment
+  // the hash of root SeqNode
+  // Make sure they are in sync
+  const Hash root_hash_;
+  // Root Node of this blob
+  // Can either be a leaf(BlobLeafNode) or a non-leaf (MetaNode)
+  // Responsible to remove
+  const SeqNode* root_node_;
+  ChunkLoader* chunk_loader_;
 };
 
 }  // namespace ustore
