@@ -1,12 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_CELL_NODE_H_
-#define USTORE_TYPES_CELL_NODE_H_
+#ifndef USTORE_TYPES_NODE_CELL_NODE_H_
+#define USTORE_TYPES_NODE_CELL_NODE_H_
 
 #include <cstddef>
 
 #include "chunk/chunk.h"
 #include "types/type.h"
+#include "hash/hash.h"
 
 namespace ustore {
 class CellNode {
@@ -20,9 +21,14 @@ class CellNode {
   explicit CellNode(const Chunk* chunk);
   ~CellNode();
 
-  Type type() const;
-  const byte_t* prevHashValue() const;
-  const byte_t* dataHashValue() const;
+  inline Type type() const { return Type(*(chunk_->data() + 40));}
+
+  inline const byte_t* prevHashValue() const {
+    return chunk_->data();
+  }
+  inline const byte_t* dataHashValue() const {
+    return chunk_->data() + HASH_BYTE_LEN;
+  }
 
  private:
   const Chunk* chunk_;

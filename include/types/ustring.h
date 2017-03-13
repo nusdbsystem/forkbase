@@ -4,6 +4,7 @@
 #define USTORE_TYPES_USTRING_H_
 
 #include <cstddef>
+
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "types/type.h"

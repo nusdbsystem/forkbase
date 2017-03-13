@@ -1,12 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_TREE_NODE_H_
-#define USTORE_TYPES_TREE_NODE_H_
+#ifndef USTORE_TYPES_NODE_TREE_NODE_H_
+#define USTORE_TYPES_NODE_TREE_NODE_H_
 
 #include <cstddef>
 
 #include "chunk/chunk.h"
 #include "node/orderedkey.h"
+#include "node/chunk_loader.h"
 #include "types/type.h"
 
 namespace ustore {
@@ -21,7 +22,7 @@ class SeqNode {
   explicit SeqNode(const Chunk* chunk);
   virtual ~SeqNode() = 0;  // NOT delete chunk!!
 
-  inline Type type() const { return chunk_->type(); }
+  inline ChunkType type() const { return chunk_->type(); }
   inline size_t capacity() const { return chunk_->capacity(); }
   inline const Chunk* chunk() const { return chunk_; }
 
@@ -60,20 +61,21 @@ class MetaNode: public SeqNode {
   size_t entryOffset(size_t idx) const override;
 
   // Retreive the SeqNode pointed by idx-th MetaEntry in this MetaNode
-  const SeqNode* GetSeqNodeByIndex(size_t idx) const;
+  const SeqNode* GetSeqNodeByIndex(size_t idx, ChunkLoader* chunk_loader) const;
 
   // Retreive the SeqNode pointed by the MetaEntry,
   // The Ordered Key of this MetaEntry
   // has the smallest OrderedKey that is no smaller than the compared key
-  const SeqNode* GetSeqNodeByKey(const OrderedKey& key) const;
+  const SeqNode* GetSeqNodeByKey(const OrderedKey& key,
+                                 ChunkLoader* chunk_loader) const;
 };
 
 class MetaEntry {
 /* MetaEntry points a hild MetaNode
 
   Encoding Scheme by MetaEntry (variable size)
-  |--num_bytes--|-num_leaves--|-----num_elements----|----- Ordered Key---|
-  0 ----------- 4 ----------- 8 ------------------- 16 ---variable size
+  |--num_bytes--|-num_leaves--|-----num_elements----|---data hash ---- | ----- Ordered Key---|
+  0 ----------- 4 ----------- 8 ------------------- 16 --------------- 36---variable size
 */
  public:
   MetaEntry(const byte_t* data, size_t num_bytes);
@@ -81,9 +83,11 @@ class MetaEntry {
   const OrderedKey* ordered_key() const;
 
   // num of leaves rooted at this MetaEntry
-  inline uint32_t numLeaves() const;
+  uint32_t numLeaves() const;
   // num of elements at all leaves rooted at this MetaEntry
-  inline uint64_t numElements() const;
+  uint64_t numElements() const;
+
+  const Hash target_hash() const;
 
  private:
   const byte_t* data_;  // MetaEntry is NOT responsible to clear

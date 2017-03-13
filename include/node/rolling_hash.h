@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_ROLLING_HASH_H_
-#define USTORE_TYPES_ROLLING_HASH_H_
+#ifndef USTORE_TYPES_NODE_ROLLING_HASH_H_
+#define USTORE_TYPES_NODE_ROLLING_HASH_H_
 
 #include <cstddef>
 #include <cstdint>

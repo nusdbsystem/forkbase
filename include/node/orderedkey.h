@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_ORDEREDKEY_H_
-#define USTORE_TYPES_ORDEREDKEY_H_
+#ifndef USTORE_TYPES_NODE_ORDEREDKEY_H_
+#define USTORE_TYPES_NODE_ORDEREDKEY_H_
 
 #include <cstddef>
 #include <cstdint>
