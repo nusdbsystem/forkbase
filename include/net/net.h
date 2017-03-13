@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include "types/type.h"
+#include "utils/noncopyable.h"
 
 namespace ustore {
 
@@ -17,13 +18,9 @@ typedef void CallBackProc(void *msg, int size, void* app_data);
  * Wrapper to all network connections. This should be created only once for each network
  * implementation (either TCP or RDMA).
  */
-class Net {
+class Net : private Noncopyable {
  public:
   virtual ~Net() = 0;
-
-  // non-copyable
-  Net(const Net&) = delete;
-  Net& operator=(const Net&) = delete;
 
   // create the NetContext of idth node
   virtual NetContext* CreateNetContext(const node_id_t& id) = 0;

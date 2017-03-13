@@ -9,9 +9,10 @@
 #include "types/chunk_loader.h"
 #include "types/node.h"
 #include "types/type.h"
+#include "utils/noncopyable.h"
 
 namespace ustore {
-class UBlob {
+class UBlob : private ustore::Noncopyable {
  public:
   // Create Chunk Loader
   // Get Chunk c
@@ -70,9 +71,6 @@ class UBlob {
    *      the number of bytes that actually read
    */
   size_t Read(size_t pos, size_t len, byte* buffer) const;
-
-  UBlob(const UBlob&) = delete  // disable copy-constructor
-  UBlob& operator=(const UBlob&) = delete;  // disable copy-assignment
 
  private:
   // Private contrucstor to create an instance based on the root chunk data

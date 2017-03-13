@@ -6,10 +6,11 @@
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "types/type.h"
+#include "utils/noncopyable.h"
 
 namespace ustore {
 
-class UCell {
+class UCell : private Noncopyable {
  public:
   static UCell Load(const Hash& unode_hash);
   // Create the chunk data and dump to storage
@@ -22,9 +23,6 @@ class UCell {
   inline Type type() const { return node_->type(); }
   const Hash preUNodeHash() const;
   const Hash dataHash() const;
-
-  UCell(const UCell&) = delete;  // disable copy-constructor
-  UCell& operator=(const UCell&) = delete;  // disable copy-assignment
 
  private:
   // Private contructor to be called by Load() or Create()
