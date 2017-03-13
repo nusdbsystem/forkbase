@@ -30,5 +30,13 @@ MESSAGE(STATUS "include: ${USTORE_INCLUDE_DIR}")
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
+OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
+
+if(USE_SHA256)
+  message(STATUS "Use SHA-256 hash")
+  add_definitions(-DUSE_SHA256=1)
+  set(USE_SHA256 ON)
+endif()
+
 ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(src)
