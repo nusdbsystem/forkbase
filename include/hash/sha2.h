@@ -333,20 +333,4 @@ std::string hash256_hex_string(const RaContainer& src) {
 
 }  // namespace picosha2
 
-namespace ustore {
-
-class SHA256 : public Hash {
- public:
-  void Compute(const byte_t* data, size_t len) override {
-    if (own_ == false) {
-      own_ = true;
-      value_ = new byte_t[HASH_BYTE_LEN];
-    }
-    byte_t fullhash[32];
-    picosha2::hash256(data, data + len, fullhash, fullhash + 32);
-    std::copy(fullhash, fullhash+HASH_BYTE_LEN, value_);
-  }
-};
-}  // namespace ustore
-
 #endif  // USTORE_HASH_SHA2_H_

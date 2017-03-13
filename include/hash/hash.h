@@ -38,7 +38,7 @@ class Hash {
   void FromString(const std::string& base32);
   // compute hash from data
   // if do so, must allocate own value
-  virtual void Compute(const byte_t* data, size_t len) = 0;
+  void Compute(const byte_t* data, size_t len);
   // encode to base32 format
   std::string ToString();
 
