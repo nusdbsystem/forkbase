@@ -18,9 +18,35 @@
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
+find_package(Protobuf REQUIRED)
 
 AUX_SOURCE_DIRECTORY(. sources)
 LIST(APPEND ustore_srcs ${sources})
+
+
+FILE(GLOB proto_files proto/*.proto)
+protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
+LIST(APPEND ustore_srcs ${proto_srcs} ${proto_hdrs})
+message(STATUS ${ustore_srcs})
+message(STATUS ${CMAKE_BINARY_DIR})
+
+ADD_CUSTOM_TARGET(
+  copy_protobuf ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/proto"
+  DEPENDS ${proto_hdrs}
+  COMMENT "Copying Protobuf headers"
+)
+FOREACH(fil ${proto_hdrs})
+  GET_FILENAME_COMPONENT(filename ${fil} NAME)
+    ADD_CUSTOM_COMMAND(
+        TARGET copy_protobuf POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
+                "${CMAKE_BINARY_DIR}/include/proto/${filename}"
+                    DEPENDS ${proto_files}
+                     )
+ENDFOREACH()
+
+
 
 AUX_SOURCE_DIRECTORY(chunk chunk_source)
 LIST(APPEND ustore_srcs ${chunk_source})
@@ -34,8 +60,12 @@ LIST(APPEND ustore_srcs ${types_source})
 AUX_SOURCE_DIRECTORY(utils utils_source)
 LIST(APPEND ustore_srcs ${utils_source})
 
+AUX_SOURCE_DIRECTORY(net net_source)
+LIST(APPEND ustore_srcs ${net_source})
+
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 
+
 ADD_LIBRARY(ustore SHARED $<TARGET_OBJECTS:ustore_objs>)
-TARGET_LINK_LIBRARIES(ustore ${USTORE_LINKER_LIBS})
+TARGET_LINK_LIBRARIES(ustore protobuf ${USTORE_LINKER_LIBS})
 SET_TARGET_PROPERTIES(ustore PROPERTIES LINK_FLAGS "")

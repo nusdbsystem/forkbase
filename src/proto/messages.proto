@@ -1,0 +1,107 @@
+/// Copyright (c) 2017 The Ustore Authors.
+
+package ustore;
+
+/**
+ * A message exchanged between the system components. 
+ * It contains 2 parts: a header and a payload
+ *  + Header: key, version, branch, and type
+ *  + Payload: each message type has its own payload message
+ *
+ * The message contains many optional fields, each corresponding to a payload type. 
+ * Note that when ommited, these fields consume no space. 
+ *
+ * To extend the message: define a new type, and define a new payload inside this object.
+ */
+message UStoreMessage {
+  enum Type {
+    PUT_REQUEST = 1;
+    PUT_RESPONSE = 2;
+    GET_REQUEST = 3;
+    GET_RESPONSE = 4; 
+    BRANCH_REQUEST = 5; 
+    BRANCH_RESPONSE = 6;
+    MOVE_REQUEST = 7;
+    MOVE_RESPONSE = 8;
+    MERGE_REQUEST = 9; 
+    MERGE_RESPONSE = 10;
+  }
+
+  /**
+   * HEADER
+   */
+  required Type type = 1;
+  // key
+  required bytes key = 2;
+  // version
+  optional bytes version = 3;
+  // branch
+  optional bytes branch = 4; 
+
+
+  /**
+   * PAYLOAD
+   */
+
+  // PUT_REQUEST payload
+  message PutRequestPayload {
+    optional bool forward = 1; 
+    optional bool force = 2; 
+    required bytes value = 3; 
+  }
+
+  // PUT_RESPONSE payload
+  message PutResponsePayload {
+    required bytes new_version = 1;
+  }
+
+  // GET_REQUEST payload - Nothing to do
+
+  // GET_RESPONSE payload
+  message GetResponsePayload {
+    required bytes value = 1;
+  }
+
+  // BRANCH_REQUEST 
+  message BranchRequestPayload {
+    required bytes new_branch = 1; 
+  }
+
+  // BRANCH_RESPONSE
+  message BranchResponsePayload {
+    required bool status = 1; 
+  }
+
+  // MOVE_REQUEST
+  message MoveRequestPayload {
+    required bytes new_branch = 1;  
+  }
+
+  // MOVE_RESPONSE
+  message MoveResponsePayload {
+    required bool status = 1; 
+  }
+
+  // MERGE_REQUEST
+  message MergeRequestPayload {
+    required bytes target_branch = 1;
+    required bytes ref_branch = 2; 
+    required bytes value = 3; 
+  }
+
+  // MERGE_RESPONSE
+  message MergeResponsePayload {
+    required bool status = 1; 
+  }
+
+  optional PutRequestPayload put_request_payload = 6; 
+  optional PutResponsePayload put_response_payload = 7; 
+  optional GetResponsePayload get_response_payload = 8; 
+  optional BranchRequestPayload branch_request_payload = 9; 
+  optional BranchResponsePayload branch_response_payload = 10; 
+  optional MoveRequestPayload move_request_payload = 11; 
+  optional MoveResponsePayload move_response_payload = 12; 
+  optional MergeRequestPayload merge_request_payload = 13; 
+  optional MergeResponsePayload merge_response_payload = 14; 
+
+}
