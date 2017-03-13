@@ -1,58 +1,52 @@
 // Copyright (c) 2017 The Ustore Authors.
-/*
- * rdma_net.h
- *
- *  Created on: Mar 10, 2017
- *      Author: zhanghao
- */
 
-#ifndef INCLUDE_NET_RDMA_NET_H_
-#define INCLUDE_NET_RDMA_NET_H_
+#ifndef USTORE_NET_RDMA_NET_H_
+#define USTORE_NET_RDMA_NET_H_
 
-#include <unordered_map>
-#include <vector>
+#include <infiniband/verbs.h>
+#include <atomic>
 #include <mutex>
 #include <queue>
-#include <atomic>
-#include <infiniband/verbs.h>
+#include <string>
 #include <thread>
+#include <unordered_map>
+#include <vector>
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread/thread.hpp>
-#include "net.h"
+#include "net/net.h"
 
 namespace ustore {
 
-typedef void* raddr;  //raddr means memory addr that is registered with RDMA device
+// raddr means memory addr that is registered with RDMA device
+typedef void* raddr;
 class aeEventLoop;
 class HashTable;
 class RdmaNetResource;
 
 class RdmaNet : public Net {
  public:
-  RdmaNet(const node_id_t id);
+  explicit RdmaNet(const node_id_t& id);
   ~RdmaNet();
 
-  NetContext* CreateNetContext(node_id_t id);
-
-  void Start() {
-  }
-  void Stop() {
-  }
+  NetContext* CreateNetContext(const node_id_t& id) override;
+  void Start() override {}
+  void Stop() override {}
 
  private:
-  void StartService(const node_id_t id, RdmaNetResource* res);
-  RdmaNetResource* resource = nullptr;
-  aeEventLoop* el = nullptr;
-  int sockfd = 0;
-  HashTable<uint32_t, RdmaNetContext*> qpCliMap;
-  HashTable<std::string, RdmaNetContext*> idCliMap;
-  std::thread* st = nullptr;
+  void StartService(const node_id_t& id, RdmaNetResource* res);
+
+  RdmaNetResource* resource_ = nullptr;
+  aeEventLoop* el_ = nullptr;
+  int sockfd_ = 0;
+  HashTable<uint32_t, RdmaNetContext*> qpCliMap_;
+  HashTable<std::string, RdmaNetContext*> idCliMap_;
+  std::thread* st_ = nullptr;
   std::mutex net_lock_;
 
-  boost::asio::io_service ioService;
-  boost::thread_group threadpool;
-  boost::asio::io_service::work work;
+  boost::asio::io_service ioService_;
+  boost::thread_group threadpool_;
+  boost::asio::io_service::work work_;
 
   /*
   //below are for internal use
@@ -86,16 +80,15 @@ class RdmaNet : public Net {
   static void CbHandler(RdmaNetContext* ctx, void* msg, size_t size,
                         RdmaNetResource* resource, uint64_t wr_id);
                         */
-
 };
 
 // RDMA implementation of network context
 class RdmaNetContext : public NetContext {
  public:
-  RdmaNetContext(node_id_t id, RdmaNetResource* res);
+  RdmaNetContext(const node_id_t& id, RdmaNetResource* res);
   ~RdmaNetContext();
 
-  //implementation of the methods inherited from NetContext
+  // implementation of the methods inherited from NetContext
   ssize_t Send(void* ptr, size_t len, CallBackProc* func = nullptr,
                void* app_data = nullptr);
   void RegisterRecv(CallBackProc* func, void* data);
@@ -116,64 +109,30 @@ class RdmaNetContext : public NetContext {
   ssize_t ReadBlocking(raddr dest, raddr src, size_t len);
 
  private:
-  RdmaNetResource *resource;
-  ibv_qp *qp;
-  node_id_t id;
-  ibv_mr* send_buf;  //send buf
-  int slot_head;
-  int slot_tail;
-  bool full;  //to differentiate between all free and all occupied slot_head == slot_tail
-
-  uint64_t vaddr = 0; /* for remote rdma read/write */
-  uint32_t rkey = 0;
-
-  int max_pending_msg;
-  int max_unsignaled_msg;
-  std::atomic<int> pending_msg;  //including both RDMA send and write/read that don't use the send buf
-  std::atomic<int> pending_send_msg;  //including only send msg
-  std::atomic<int> to_signaled_send_msg;  //in order to proceed the slot_tail
-  std::atomic<int> to_signaled_w_r_msg;
-  std::queue<RdmaRequest> pending_requests;
-  char *msg = nullptr;
-  std::mutex global_lock_;
-
-  //below are for internal use
-  const char* GetRdmaConnString();
+  // below are for internal use
+  inline const char* GetRdmaConnString() const;
   int SetRemoteConnParam(const char *remConn);
   int ExchConnParam(node_id_t cur_node, const char* ip, int port);
 
-  inline uint32_t GetQP() {
-    return qp->qp_num;
-  }
-
-  inline node_id_t GetID() {
-    return id;
-  }
+  inline uint32_t GetQP() { return qp->qp_num_; }
+  inline const node_id_t& GetID() { return id_; }
 
   unsigned int SendComp(ibv_wc& wc);
   unsigned int WriteComp(ibv_wc& wc);
   char* RecvComp(ibv_wc& wc);
   char* GetFreeSlot();
 
-  inline int PostRecv(int n) {
-    return resource->PostRecv(n);
-  }
+  inline int PostRecv(int n) { return resource_->PostRecv(n);}
+  inline void lock() { global_lock_.lock(); }
+  inline void unlock() { global_lock_.unlock(); }
 
-  inline void lock() {
-    global_lock_.lock();
-  }
-  inline void unlock() {
-    global_lock_.unlock();
-  }
   char* GetFreeSlot_();
   void ProcessPendingRequests(int n);
-
   bool IsRegistered(const void* addr);
 
-  ssize_t Rdma(ibv_wr_opcode op, const void* src, size_t len, unsigned int id =
-                   0,
-               bool signaled = false, void* dest = nullptr, uint32_t imm = 0,
-               uint64_t oldval = 0, uint64_t newval = 0);
+  ssize_t Rdma(ibv_wr_opcode op, const void* src, size_t len,
+               unsigned int id = 0, bool signaled = false, void* dest = nullptr,
+               uint32_t imm = 0, uint64_t oldval = 0, uint64_t newval = 0);
   ssize_t Rdma(RdmaRequest& r);
   ssize_t Send_(const void* ptr, size_t len, unsigned int id = 0,
                 bool signaled = false);
@@ -193,93 +152,102 @@ class RdmaNetContext : public NetContext {
                 bool signaled = false);
   ssize_t Cas_(raddr src, uint64_t oldval, uint64_t newval, unsigned int id = 0,
                bool signaled = false);
-};
 
+  RdmaNetResource *resource_;
+  ibv_qp *qp_;
+  node_id_t id_;
+  ibv_mr* send_buf_;  // send buf
+  int slot_head_;
+  int slot_tail_;
+  // to differentiate between all free and all occupied slot_head == slot_tail
+  bool full_;
+
+  uint64_t vaddr_ = 0;  // for remote rdma read/write
+  uint32_t rkey_ = 0;
+
+  int max_pending_msg_;
+  int max_unsignaled_msg_;
+  // including both RDMA send and write/read that don't use the send buf
+  std::atomic<int> pending_msg_;
+  // including only send msg
+  std::atomic<int> pending_send_msg_;
+  // in order to proceed the slot_tail
+  std::atomic<int> to_signaled_send_msg_;
+  std::atomic<int> to_signaled_w_r_msg_;
+  std::queue<RdmaRequest> pending_requests_;
+  char *msg_ = nullptr;
+  std::mutex global_lock_;
+};
 
 struct RdmaRequest {
   ibv_wr_opcode op;
   const void* src;
   size_t len;
-  unsigned int id;bool signaled;
+  unsigned int id;
+  bool signaled;
   void* dest;
   uint32_t imm;
   uint64_t oldval;
   uint64_t newval;
 };
 
-
 class RdmaNetResource {
   friend class RdmaNetContext;
  public:
-  RdmaNetResource(ibv_device *device);
+  explicit RdmaNetResource(ibv_device *device);
   ~RdmaNetResource();
 
-  inline const char *GetDevname() const {
-    return this->devName;
-  }
-
-  inline ibv_cq* GetCompQueue() const {
-    return cq;
-  }
-
-  inline int GetChannelFd() const {
-    return channel->fd;
-  }
+  inline const char* GetDevname() const { return this->devName; }
+  inline ibv_cq* GetCompQueue() const { return cq; }
+  inline int GetChannelFd() const { return channel->fd; }
 
   bool GetCompEvent() const;
   int RegLocalMemory(void *base, size_t sz);
-
   int RegCommSlot(int);
-  char* GetSlot(int s);  //get the starting addr of the slot
-  int PostRecv(int n);  //post n RR to the srq
-  int PostRecvSlot(int slot);  //post slot to the srq
-  //int ClearRecv(int low, int high);
-
-  inline void ClearSlot(int s) {
-    slots.at(s) = false;
-  }
+  char* GetSlot(int s);  // get the starting addr of the slot
+  int PostRecv(int n);  // post n RR to the srq
+  int PostRecvSlot(int slot);  // post slot to the srq
+  // int ClearRecv(int low, int high);
 
   RdmaNetContext* NewRdmaNetContext(node_id_t id);
   void DeleteRdmaNetContext(RdmaNetContext* ctx);
 
-  inline int GetCounter() {
-    return rdma_context_counter;
-  }
+  inline void ClearSlot(int s) { slots.at(s) = false; }
+  inline int GetCounter() const { return rdma_context_counter; }
 
  private:
-  ibv_device *device;
-  const char *devName = NULL;
-  ibv_context *context;
-  ibv_comp_channel *channel;
-  ibv_pd *pd;
-  ibv_cq *cq; /* global comp queue */
-  ibv_srq *srq; /* share receive queue */
+  ibv_device *device_;
+  const char *devName_ = NULL;
+  ibv_context *context_;
+  ibv_comp_channel *channel_;
+  ibv_pd *pd_;
+  ibv_cq *cq_;  // global comp queue
+  ibv_srq *srq_;  // share receive queue
 
-  ibv_port_attr portAttribute;
-  int ibport = 1; /* TODO: dual-port support */
-  uint32_t psn;
+  ibv_port_attr portAttribute_;
+  int ibport_ = 1;  // TODO(zhanghao): dual-port support
+  uint32_t psn_;
 
-  //the follow three variables are only used for comm among workers
-  void* base = nullptr;  //the base addr for the local memory
-  size_t size = 0;
-  struct ibv_mr *bmr = nullptr;
+  // the follow three variables are only used for comm among workers
+  void* base_ = nullptr;  // the base addr for the local memory
+  size_t size_ = 0;
+  struct ibv_mr *bmr_ = nullptr;
 
-  //node-wide communication buf used for receive request
-  std::vector<struct ibv_mr*> comm_buf;
-  //size_t buf_size; buf_size = slots.size() * MAX_REQUEST_SIZE
-  int slot_head;  //current slot head
-  int slot_inuse;  //number of slots in use
-  /*
-   * TODO: check whether head + tail is enough
-   */
-  std::vector<bool> slots;  //the states of all the allocated slots (true: occupied, false: free)
-  //current created RdmaNetContext
-  int rdma_context_counter;
+  // node-wide communication buf used for receive request
+  std::vector<struct ibv_mr*> comm_buf_;
+  // size_t buf_size; buf_size = slots.size() * MAX_REQUEST_SIZE
+  int slot_head_;  // current slot head
+  int slot_inuse_;  // number of slots in use
+  // TODO(zhanghao): check whether head + tail is enough
+  // the states of all the allocated slots (true: occupied, false: free)
+  std::vector<bool> slots_;
+  // current created RdmaNetContext
+  int rdma_context_counter_;
 
-  std::atomic<int> recv_posted;
-  int rx_depth = 0;
+  std::atomic<int> recv_posted_;
+  int rx_depth_ = 0;
 };
 
 }  // namespace ustore
 
-#endif /* INCLUDE_NET_RDMA_NET_H_ */
+#endif  // USTORE_NET_RDMA_NET_H_

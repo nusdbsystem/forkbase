@@ -1,14 +1,9 @@
 // Copyright (c) 2017 The Ustore Authors.
-/*
- * net.h
- *
- *  Created on: Mar 10, 2017
- *      Author: zhanghao
- */
 
-#ifndef INCLUDE_NET_NET_H_
-#define INCLUDE_NET_NET_H_
+#ifndef USTORE_NET_NET_H_
+#define USTORE_NET_NET_H_
 
+#include <string>
 #include <unordered_map>
 #include <vector>
 #include "types/type.h"
@@ -24,29 +19,28 @@ typedef void CallBackProc(void *msg, int size, void* app_data);
  */
 class Net {
  public:
-  Net() {
-  }
-  Net(const node_id_t id)
-      : cur_node_(id) {
-  }
   virtual ~Net() = 0;
 
-  //create the NetContext of idth node
-  virtual NetContext* CreateNetContext(node_id_t id) = 0;
-  //create the NetContexts of all the nodes
-  void Init(const std::vector<node_id_t>& nodes);
+  // non-copyable
+  Net(const Net&) = delete;
+  void operator=(const Net&) = delete;
 
-  //get the NetContext of the idth node
-  NetContext* GetNetContext(node_id_t id) {
+  // create the NetContext of idth node
+  virtual NetContext* CreateNetContext(const node_id_t& id) = 0;
+  // create the NetContexts of all the nodes
+  void CreateNetContexts(const std::vector<node_id_t>& nodes);
+  virtual void Start() = 0;  // start the listening service
+  virtual void Stop() = 0;  // stop the listening service
+
+  // get the NetContext of the idth node
+  inline const node_id_t& GetNodeID() const { return cur_node_; }
+  inline const NetContext* GetNetContext(const node_id_t& id) const {
     return netmap_[id];
   }
 
-  virtual void Start() = 0;  //start the listening service
-  virtual void Stop() = 0;  //stop the listening service
-
-  node_id_t GetNodeID() {
-    return cur_node_;
-  }
+ protected:
+  Net() {}
+  explicit Net(const& node_id_t id) : cur_node_(id) {}
 
  private:
   node_id_t cur_node_;
@@ -58,13 +52,10 @@ class Net {
  */
 class NetContext {
  public:
-  NetContext() {
-  }
-  //Initialize connection to another node
-  NetContext(node_id_t src, node_id_t dest)
-      : src_id_(src),
-        dest_id_(dest) {
-  }
+  NetContext() {}
+  // Initialize connection to another node
+  NetContext(const node_id_t& src, const node_id_t& dest)
+      : src_id_(src), dest_id_(dest) {}
   virtual ~NetContext() = 0;
 
   // Non-blocking APIs
@@ -73,30 +64,29 @@ class NetContext {
    * ptr: the starting pointer to send
    * len: size of the buffer
    * func: callback function after send completion (not supported)
-   * app_data: the application-provided data that will be used in the callback function (not supported)
+   * app_data: the application-provided data that will be used in the callback
+   *           function (not supported)
    */
   virtual ssize_t Send(void* ptr, size_t len, CallBackProc* func = nullptr,
                        void* app_data = nullptr) = 0;
 
   // Register a callback function
   /*
-   * register the callback function that will be called whenever there is new data received
+   * register the callback function that will be called whenever there is new
+   * data received
    * func: the callback function
-   * app_data: the application-provided data that will be used in the callback function
+   * app_data: the application-provided data that will be used in the callback
+   *           function
    */
   virtual void RegisterRecv(CallBackProc* func, void* app_data) = 0;
 
   // Blocking APIs (not supported)
   virtual ssize_t SyncSend(void* ptr, size_t len);
-  virtual ssize_t SyncRecv(void* ptr, size_t& len);
+  virtual ssize_t SyncRecv(void* ptr, size_t len);
 
-  //methods to access private variables
-  node_id_t GetSrcID() {
-    return src_id_;
-  }
-  node_id_t GetDestID() {
-    return dest_id_;
-  }
+  // methods to access private variables
+  inline const node_id_t& srcID() const { return src_id_; }
+  inline const node_id_t& destID() const { return dest_id_; }
 
  private:
   node_id_t src_id_, dest_id_;
@@ -106,4 +96,4 @@ class NetContext {
 
 }  // namespace ustore
 
-#endif /* INCLUDE_NET_NET_H_ */
+#endif  // USTORE_NET_NET_H_
