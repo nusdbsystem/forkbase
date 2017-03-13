@@ -20,8 +20,19 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
 AUX_SOURCE_DIRECTORY(. sources)
-
 LIST(APPEND ustore_srcs ${sources})
+
+AUX_SOURCE_DIRECTORY(chunk chunk_source)
+LIST(APPEND ustore_srcs ${chunk_source})
+
+AUX_SOURCE_DIRECTORY(hash hash_source)
+LIST(APPEND ustore_srcs ${hash_source})
+
+AUX_SOURCE_DIRECTORY(types types_source)
+LIST(APPEND ustore_srcs ${types_source})
+
+AUX_SOURCE_DIRECTORY(utils utils_source)
+LIST(APPEND ustore_srcs ${utils_source})
 
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 
