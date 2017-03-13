@@ -7,7 +7,7 @@
 #include "hash/hash.h"
 #include "utils/logging.h"
 
-#ifdef USE_SHA256 
+#ifdef USE_SHA256
 #include "hash/sha2.h"
 #endif  // USE_SHA256
 
