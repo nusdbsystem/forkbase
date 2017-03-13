@@ -18,22 +18,22 @@ class Chunk {
   ~Chunk();
 
   // type of the chunk
-  inline Type type();
+  inline Type type() const;
   // total number of bytes
-  inline size_t num_bytes();
+  inline size_t num_bytes() const;
   // number of bytes used to store actual data
-  inline size_t capacity();
+  inline size_t capacity() const;
   // pointer to the chunk
-  inline const byte_t* head() { return head_; }
+  inline const byte_t* head() const { return head_; }
   // pointer to actual data
-  inline const byte_t* data();
+  inline const byte_t* data() const;
   // pointer to mutable data
-  inline byte_t* m_data();
+  inline byte_t* m_data() const;
 
  private:
   bool own = false;
   byte_t* head_ = nullptr;
-  Hash hash_;
+  // Hash hash_;
 }
 
 }  // namespace ustore
