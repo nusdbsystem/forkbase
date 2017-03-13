@@ -23,7 +23,7 @@ class Net {
 
   // non-copyable
   Net(const Net&) = delete;
-  void operator=(const Net&) = delete;
+  Net& operator=(const Net&) = delete;
 
   // create the NetContext of idth node
   virtual NetContext* CreateNetContext(const node_id_t& id) = 0;

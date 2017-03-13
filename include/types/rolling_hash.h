@@ -3,8 +3,8 @@
 #ifndef USTORE_TYPES_ROLLING_HASH_H_
 #define USTORE_TYPES_ROLLING_HASH_H_
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include "hash/buzhash.h"
 #include "types/type.h"
 
@@ -14,8 +14,10 @@ class RollingHasher {
  public:
   static const uint32_t DEFAULT_CHUNK_PATTERN = (1 << 12) - 1;  // 4KB
   static const size_t DEFAULT_CHUNK_WINDOW = 64;
+
   RollingHasher();
   RollingHasher(uint32_t chunk_pattern, size_t window_size);
+
   void HashByte(byte_t b);
   inline void ClearLastBoundary() {
     crossed_boundary_ = false;
