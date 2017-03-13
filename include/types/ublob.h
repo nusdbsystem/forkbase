@@ -12,7 +12,7 @@
 #include "utils/noncopyable.h"
 
 namespace ustore {
-class UBlob : private ustore::Noncopyable {
+class UBlob : private Noncopyable {
  public:
   // Create Chunk Loader
   // Get Chunk c
