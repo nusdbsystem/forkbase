@@ -1,16 +1,15 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_NODE_H_
-#define USTORE_TYPES_NODE_H_
+#ifndef USTORE_TYPES_TREE_NODE_H_
+#define USTORE_TYPES_TREE_NODE_H_
 
 #include <cstddef>
 
 #include "chunk/chunk.h"
-#include "types/orderedkey.h"
+#include "node/orderedkey.h"
 #include "types/type.h"
 
 namespace ustore {
-
 class SeqNode {
 /* SeqNode represents a general node in Prolly Tree.
 
@@ -20,7 +19,7 @@ class SeqNode {
 
  public:
   explicit SeqNode(const Chunk* chunk);
-  virtual ~SeqNode() = 0;  // delete the internal chunk
+  virtual ~SeqNode() = 0;  // NOT delete chunk!!
 
   inline Type type() const { return chunk_->type(); }
   inline size_t capacity() const { return chunk_->capacity(); }
@@ -56,12 +55,13 @@ class MetaNode: public SeqNode {
   ~MetaNode() override;
 
   inline bool isLeaf() const override { return false; }
-  inline size_t numEntries() const override;
-  inline uint64_t numElements() const override;
-  inline size_t entryOffset(size_t idx) const override;
+  size_t numEntries() const override;
+  uint64_t numElements() const override;
+  size_t entryOffset(size_t idx) const override;
 
   // Retreive the SeqNode pointed by idx-th MetaEntry in this MetaNode
   const SeqNode* GetSeqNodeByIndex(size_t idx) const;
+
   // Retreive the SeqNode pointed by the MetaEntry,
   // The Ordered Key of this MetaEntry
   // has the smallest OrderedKey that is no smaller than the compared key
@@ -74,10 +74,9 @@ class MetaEntry {
   Encoding Scheme by MetaEntry (variable size)
   |--num_bytes--|-num_leaves--|-----num_elements----|----- Ordered Key---|
   0 ----------- 4 ----------- 8 ------------------- 16 ---variable size
-
 */
  public:
-  MetaEntry(const byte* data, size_t num_bytes);
+  MetaEntry(const byte_t* data, size_t num_bytes);
 
   const OrderedKey* ordered_key() const;
 
@@ -87,7 +86,7 @@ class MetaEntry {
   inline uint64_t numElements() const;
 
  private:
-  const byte* data_;  // MetaEntry is NOT responsible to clear
+  const byte_t* data_;  // MetaEntry is NOT responsible to clear
   size_t num_bytes_;  // num of bytes of data array
 };
 
@@ -97,78 +96,14 @@ class LeafNode: public SeqNode {
 */
  public:
   inline bool isLeaf() const override { return true; }
-  // Get #bytes for #size elements started from position idx
+
+  // Get #bytes from start-th element (inclusive) to end-th element (exclusive)
   virtual size_t GetLength(size_t start, size_t end) const = 0;
-  // Copy the bytes from start position (inclusive)
-  //  and end position (exclusive) towards buffer
-  // Buffer capacity shall be larger then end - start
+
+  // Copy num_bytes bytes from start-th element (inclusive)
+  // Buffer capacity shall be large enough.
   // return the number of bytes actually read
-  virtual size_t Copy(size_t start, size_t end, byte* buffer) const = 0;
-};
-
-class BlobLeafNode: public LeafNode {
-/*
-BlobNode is a leaf node in Prolly tree that contains
-actual blob data
-
-Encoding Scheme:
-  | ------blob bytes ------|
-  | ------variable size
-*/
- public:
-  explicit BlobNode(const Chunk* chunk);
-  ~BlobNode() override;
-
-  inline bool isLeaf() const override { return true; }
-  inline size_t numEntries() const override { return this->capacity(); }
-  inline uint64_t numElements() override const { return this->capacity(); }
-  inline size_t entryOffset(size_t idx) override const { return idx; }
-
-  size_t GetLength(size_t start, size_t end) const override;
-  size_t Copy(size_t start, size_t end, byte* buffer) const override;
-};
-
-class StringNode {
-/* StringNode contains a single string.
-
-  Encoding Scheme:
-  | -str_len- | ------string bytes ------|
-  | --------- 4 ------variable size
-
-*/
- public:
-  explicit StringNode(const Chunk* chunk);
-  ~StringNode();
-
-  inline size_t len() const;  // the byte count of this string
-
-// Copy all the string bytes to buffer
-// Buffer capacity shall be larger than this string len
-// return the number of bytes copied.
-  size_t Copy(byte* buffer) const;
-
- private:
-  const Chunk* chunk_;
-};
-
-class CellNode {
-/* CellNode contains a UCell
-
-  Encoding Scheme:
-  | -pre_ucell_hash_value- | -data-root-hash_value-- | --type--|
-  | --------- -- --------- 20 -----------------------40 ------ 41
-*/
- public:
-  explicit CellNode(const Chunk* chunk);
-  ~CellNode();
-
-  inline Type type() const;
-  inline const byte* prevHashValue() const;
-  inline const byte* dataHashValue() const;
-
- private:
-  const Chunk* chunk_;
+  virtual size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const = 0;
 };
 }  // namespace ustore
-
-#endif  // USTORE_TYPES_NODE_H_
+#endif  // USTORE_TYPES_TREE_NODE_H_

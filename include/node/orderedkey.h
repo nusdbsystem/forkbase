@@ -21,7 +21,7 @@ class OrderedKey {
   // own set to false
   explicit OrderedKey(uint64_t value);
   // Set the hash data for key
-  OrderedKey(const byte* data, size_t num_bytes);
+  OrderedKey(const byte_t* data, size_t num_bytes);
   // Delete the data if own is true
   ~OrderedKey();
 
@@ -41,7 +41,7 @@ class OrderedKey {
   // Otherwise as hash value
   const bool by_value_;
   const uint64_t value_;
-  const byte* data_;  // data bytes
+  const byte_t* data_;  // data bytes
 };
 
 }  // namespace ustore

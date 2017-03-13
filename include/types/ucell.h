@@ -7,6 +7,7 @@
 #include "hash/hash.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
+#include "node/cell_node.h"
 
 namespace ustore {
 
@@ -28,9 +29,6 @@ class UCell : private Noncopyable {
   // Private contructor to be called by Load() or Create()
   explicit UCell(const Chunk* chunk);
 
-  // Hash of node_
-  // Make sure they are in sync
-  const Hash node_hash_;
   const CellNode* node_;
 };
 
