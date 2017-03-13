@@ -7,7 +7,7 @@
 #include "hash/hash.h"
 #include "utils/logging.h"
 
-#if USE_SHA256 == 1
+#ifdef USE_SHA256 
 #include "hash/sha2.h"
 #endif  // USE_SHA256
 
@@ -114,7 +114,7 @@ std::string Hash::ToString() {
   return ret;
 }
 
-#if USE_SHA256 == 1
+#ifdef USE_SHA256
 void Hash::Compute(const byte_t* data, size_t len) {
   if (own_ == false) {
     own_ = true;

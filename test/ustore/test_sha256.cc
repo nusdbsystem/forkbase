@@ -1,5 +1,5 @@
 // Copyright (c) 2017 The Ustore Authors.
-#if USE_SHA256 == 1
+#ifdef USE_SHA256
 #include <cstring>
 #include <string>
 #include <sstream>

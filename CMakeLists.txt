@@ -34,7 +34,7 @@ OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
 
 if(USE_SHA256)
   message(STATUS "Use SHA-256 hash")
-  add_definitions(-DUSE_SHA256=1)
+  add_definitions(-DUSE_SHA256)
   set(USE_SHA256 ON)
 endif()
 
