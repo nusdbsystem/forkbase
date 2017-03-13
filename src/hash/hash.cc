@@ -52,10 +52,11 @@ Hash::Hash(const Hash& hash) { value_ = hash.value_; }
 Hash::~Hash() {
   if (own_) delete[] value_;
 }
-void Hash::operator=(const Hash& hash) {
+Hash& Hash::operator=(const Hash& hash) {
   if (own_) delete[] value_;
   own_ = false;
   value_ = hash.value_;
+  return *this;
 }
 
 bool Hash::operator<(const Hash& hash) const {
@@ -100,7 +101,7 @@ void Hash::FromString(const std::string& base32) {
   }
 }
 
-std::string Hash::ToString() {
+std::string Hash::ToString() const {
   std::string ret;
   uint64_t tmp;
   for (size_t i = 0; i < HASH_BYTE_LEN; i += 5) {
