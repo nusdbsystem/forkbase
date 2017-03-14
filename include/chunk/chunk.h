@@ -30,9 +30,7 @@ class Chunk : private Noncopyable {
         META_SIZE + capacity;
     *reinterpret_cast<ChunkType*>(head_ + CHUNK_TYPE_OFFSET) = type;
   }
-  // share chunk from existing space
-  explicit Chunk(byte_t* head) { head_ = head; }
-  Chunk(byte_t* head, bool own) {
+  explicit Chunk(byte_t* head, bool own = false) {
     head_ = head;
     own_ = own;
   }

@@ -25,9 +25,6 @@ LIST(APPEND ustore_srcs ${sources})
 AUX_SOURCE_DIRECTORY(chunk chunk_source)
 LIST(APPEND ustore_srcs ${chunk_source})
 
-AUX_SOURCE_DIRECTORY(node node_source)
-LIST(APPEND ustore_srcs ${node_source})
-
 AUX_SOURCE_DIRECTORY(hash hash_source)
 LIST(APPEND ustore_srcs ${hash_source})
 
