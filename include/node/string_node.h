@@ -1,10 +1,9 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_NODE_STRING_NODE_H_
-#define USTORE_TYPES_NODE_STRING_NODE_H_
+#ifndef USTORE_NODE_STRING_NODE_H_
+#define USTORE_NODE_STRING_NODE_H_
 
 #include <cstddef>
-
 #include "chunk/chunk.h"
 #include "types/type.h"
 
@@ -33,4 +32,4 @@ class StringNode {
 };
 }  // namespace ustore
 
-#endif  // USTORE_TYPES_STRING_NODE_H_
+#endif  // USTORE_NODE_STRING_NODE_H_

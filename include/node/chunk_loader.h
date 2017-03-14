@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_NODE_CHUNK_LOADER_H_
-#define USTORE_TYPES_NODE_CHUNK_LOADER_H_
+#ifndef USTORE_NODE_CHUNK_LOADER_H_
+#define USTORE_NODE_CHUNK_LOADER_H_
 
 #include "hash/hash.h"
 #include "chunk/chunk.h"
@@ -20,4 +20,4 @@ class ChunkLoader {
 };
 }  // namespace ustore
 
-#endif  // USTORE_TYPES_NODE_CHUNK_LOADER_H_
+#endif  // USTORE_NODE_CHUNK_LOADER_H_

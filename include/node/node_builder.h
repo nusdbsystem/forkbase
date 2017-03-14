@@ -1,14 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_NODE_BUILDER_H_
-#define USTORE_TYPES_NODE_BUILDER_H_
+#ifndef USTORE_NODE_NODE_BUILDER_H_
+#define USTORE_NODE_NODE_BUILDER_H_
 
 #include <cstddef>
 #include <vector>
-
 #include "chunk/chunk.h"
-#include "node/cursor.h"
 #include "node/chunk_loader.h"
+#include "node/cursor.h"
 #include "node/rolling_hash.h"
 #include "types/type.h"
 
@@ -21,7 +20,7 @@ class NodeBuilder {
 
   // Perform operation at idx-th element at leaf rooted at root_hash
   static NodeBuilder* NewNodeBuilderAtIndex(const Hash& root_hash, size_t idx,
-                                           ChunkLoader* chunk_loader);
+                                            ChunkLoader* chunk_loader);
   // Remove elements from cursor
   // Return the number of elements actually removed
   size_t SkipElements(size_t num_elements);
@@ -54,7 +53,7 @@ class NodeBuilder {
   // Create the parent node builder
   NodeBuilder* CreateParentNodeBuilder();
 
-// Private Members
+  // Private Members
   NodeCursor* cursor_;  // shall be deleted during destruction
   NodeBuilder* parent_builder_;  // shall be deleted during destruction
   bool is_leaf_;  // whether this NodeBuilder works on leaf node
@@ -71,9 +70,8 @@ class NodeBuilder {
   const size_t num_append_bytes_;
   // Number of elements to append
   const size_t num_elements_;
-
   RollingHasher rhasher_;
 };
 }  // namespace ustore
 
-#endif  // USTORE_TYPES_NODE_BUILDER_H
+#endif  // USTORE_NODE_NODE_BUILDER_H

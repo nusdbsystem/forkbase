@@ -1,12 +1,12 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_NODE_CURSOR_H_
-#define USTORE_TYPES_NODE_CURSOR_H_
+#ifndef USTORE_NODE_CURSOR_H_
+#define USTORE_NODE_CURSOR_H_
 
 #include <cstddef>
 #include "node/chunk_loader.h"
 #include "node/orderedkey.h"
-#include "node/tree_node.h"
+#include "node/node.h"
 #include "types/type.h"
 
 namespace ustore {
@@ -15,15 +15,13 @@ class NodeCursor {
  public:
   // Init Cursor to point at idx element at leaf in a tree
   // rooted at SeqNode with Hash
-  static NodeCursor* GetCursorByIndex(const Hash& hash,
-                                     size_t idx,
-                                     ChunkLoader* ch_loader_);
+  static NodeCursor* GetCursorByIndex(const Hash& hash, size_t idx,
+                                      ChunkLoader* ch_loader);
 
   // Init Cursor to point a element at leaf in a tree
   // The element has the smallest key larger than the parameter key
-  static NodeCursor* GetCursorByKey(const Hash& hash,
-                                   const OrderedKey& key,
-                                   ChunkLoader* ch_loader_);
+  static NodeCursor* GetCursorByKey(const Hash& hash, const OrderedKey& key,
+                                    ChunkLoader* ch_loader);
 
   // Copy constructor used to clone a NodeCursor
   // Need to recursively copy the parent NodeCursor
@@ -51,15 +49,13 @@ class NodeCursor {
  private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively
-  NodeCursor(const Hash& hash, size_t idx,
-             ChunkLoader chunk_loader_,
+  NodeCursor(const Hash& hash, size_t idx, ChunkLoader chunk_loader,
              NodeCursor* parent_cr);
 
   // responsible to delete during destruction
   NodeCursor* parent_cr_ = nullptr;
   // the pointed sequence
   SeqNode* seq_node_;
-
   ChunkLoader* chunk_loader_;
   // the index of pointed elements
   size_t idx_;
@@ -70,4 +66,4 @@ class NodeCursor {
 
 }  // namespace ustore
 
-#endif  // USTORE_TYPES_NODE_CURSOR_H_
+#endif  // USTORE_NODE_CURSOR_H_

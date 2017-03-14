@@ -19,7 +19,7 @@ class Chunk : private Noncopyable {
    * | num_bytes | type      | data  |
    */
   static const size_t NUM_BYTES_OFFSET = 0;
-  static const size_t CHUNK_TYPE_OFFSET = sizeof(uint32_t);
+  static const size_t CHUNK_TYPE_OFFSET = NUM_BYTES_OFFSET + sizeof(uint32_t);
   static const size_t META_SIZE = CHUNK_TYPE_OFFSET + sizeof(ChunkType);
 
   // allocate a new chunk with usable capacity (excluding meta data)

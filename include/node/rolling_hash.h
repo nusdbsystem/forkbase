@@ -1,16 +1,17 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_NODE_ROLLING_HASH_H_
-#define USTORE_TYPES_NODE_ROLLING_HASH_H_
+#ifndef USTORE_NODE_ROLLING_HASH_H_
+#define USTORE_NODE_ROLLING_HASH_H_
 
 #include <cstddef>
 #include <cstdint>
 #include "hash/buzhash.h"
 #include "types/type.h"
+#include "utils/noncopyable.h"
 
 namespace ustore {
 
-class RollingHasher {
+class RollingHasher : private Noncopyable {
  public:
   static const uint32_t DEFAULT_CHUNK_PATTERN = (1 << 12) - 1;  // 4KB
   static const size_t DEFAULT_CHUNK_WINDOW = 64;
@@ -25,9 +26,6 @@ class RollingHasher {
   }
   inline bool CrossedBoundary() { return crossed_boundary_; }
 
-  RollingHasher(const RollingHasher&) = delete;
-  RollingHasher& operator=(const RollingHasher&) = delete;
-
  private:
   buzhash::BuzHash buz_;
   uint32_t chunk_pattern_;
@@ -36,4 +34,4 @@ class RollingHasher {
 };
 }  // namespace ustore
 
-#endif  // USTORE_TYPES_ROLLING_HASH_H_
+#endif  // USTORE_NODE_ROLLING_HASH_H_
