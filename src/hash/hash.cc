@@ -59,14 +59,20 @@ Hash& Hash::operator=(const Hash& hash) {
 }
 
 bool Hash::operator<(const Hash& hash) const {
+  CHECK(value_);
+  CHECK(hash.value_);
   return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) < 0;
 }
 
 bool Hash::operator==(const Hash& hash) const {
+  CHECK(value_);
+  CHECK(hash.value_);
   return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) == 0;
 }
 
 bool Hash::operator>(const Hash& hash) const {
+  CHECK(value_);
+  CHECK(hash.value_);
   return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) > 0;
 }
 

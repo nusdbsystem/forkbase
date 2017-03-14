@@ -23,7 +23,7 @@ class LDBStore : public ChunkStore, private Noncopyable {
    * store allocates the returned chunck,
    * caller need to release memory after use.
    */
-  Chunk* Get(const Hash& key) override;
+  const Chunk* Get(const Hash& key) override;
   bool Put(const Hash& key, const Chunk& chunk) override;
 
  private:

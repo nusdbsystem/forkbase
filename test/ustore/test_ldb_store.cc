@@ -19,7 +19,7 @@ TEST(LDBStore, PutChunk) {
 TEST(LDBStore, GetChunk) {
   ustore::Chunk chunk(ustore::kBlobChunk, sizeof(raw_data));
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
-  ustore::Chunk* c = ldb.Instance()->Get(chunk.hash());
+  const ustore::Chunk* c = ldb.Instance()->Get(chunk.hash());
   EXPECT_EQ(c->forceHash(), chunk.hash());
   EXPECT_EQ(c->type(), ustore::kBlobChunk);
   EXPECT_EQ(c->numBytes(), chunk.numBytes());
