@@ -18,7 +18,7 @@ class UString : private Noncopyable {
   static UString Load(const Hash& hash);
   static UString Create(byte_t* data, size_t num_bytes);
 
-  inline size_t len() const {node_->len();}
+  inline size_t len() const { return node_->len();}
 
  private:
   // Private construcstor to create an instance based on the root chunk data

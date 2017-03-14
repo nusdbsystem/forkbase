@@ -21,7 +21,7 @@ class CellNode {
   explicit CellNode(const Chunk* chunk);
   ~CellNode();
 
-  inline Type type() const { return Type(*(chunk_->data() + 40));}
+  inline UType type() const { return UType(*(chunk_->data() + 40));}
 
   inline const byte_t* prevHashValue() const {
     return chunk_->data();
