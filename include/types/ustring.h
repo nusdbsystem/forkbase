@@ -15,10 +15,19 @@ namespace ustore {
 
 class UString : private Noncopyable {
  public:
-  static UString Load(const Hash& hash);
-  static UString Create(byte_t* data, size_t num_bytes);
+  static const UString* Load(const Hash& hash);
+
+  // create the UString based on the data
+  //   dump the created chunk into storage
+  static const UString* Create(const byte_t* data, size_t num_bytes);
+  ~UString();
 
   inline size_t len() const { return node_->len();}
+  // copy string contents to buffer
+  //   return string length
+  inline const size_t data(byte_t* buffer) const {
+    return node_->Copy(buffer);
+  }
 
  private:
   // Private construcstor to create an instance based on the root chunk data

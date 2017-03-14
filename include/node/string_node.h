@@ -17,10 +17,12 @@ class StringNode {
 
 */
  public:
+  static const Chunk* NewChunk(const byte_t* data, size_t num_bytes);
+
   explicit StringNode(const Chunk* chunk);
   ~StringNode();
 
-  inline size_t len() const;  // the byte count of this string
+  size_t len() const;  // the byte count of this string
 
 // Copy all the string bytes to buffer
 // Buffer capacity shall be larger than this string len

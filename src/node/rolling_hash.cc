@@ -12,7 +12,7 @@ RollingHasher::RollingHasher()
 RollingHasher::RollingHasher(uint32_t chunk_pattern, size_t window_size)
     : chunk_pattern_{chunk_pattern},
       window_size_{window_size},
-      buz_{unsigned(window_size_)} {}
+      buz_{unsigned(window_size)} {}
 
 void RollingHasher::HashByte(byte_t b) {
   ++byte_hashed_;
@@ -21,4 +21,9 @@ void RollingHasher::HashByte(byte_t b) {
       crossed_boundary_ || ((buz_.Sum32() & chunk_pattern_) == chunk_pattern_);
 }
 
+void RollingHasher::HashBytes(const byte_t* data, size_t numBytes) {
+  for (size_t i = 0; i < numBytes; i++) {
+    HashByte(*(data + i));
+  }
+}
 }  // namespace ustore

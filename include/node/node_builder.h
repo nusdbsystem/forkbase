@@ -4,7 +4,9 @@
 #define USTORE_NODE_NODE_BUILDER_H_
 
 #include <cstddef>
+#include <deque>
 #include <vector>
+
 #include "chunk/chunk.h"
 #include "node/chunk_loader.h"
 #include "node/cursor.h"
@@ -18,59 +20,90 @@ class NodeBuilder {
   // Construct a node builder to construct a fresh new Prolly Tree
   NodeBuilder();
 
+  ~NodeBuilder();
   // Perform operation at idx-th element at leaf rooted at root_hash
   static NodeBuilder* NewNodeBuilderAtIndex(const Hash& root_hash, size_t idx,
                                             ChunkLoader* chunk_loader);
-  // Remove elements from cursor
-  // Return the number of elements actually removed
-  size_t SkipElements(size_t num_elements);
-  // Append the bytes of a single element to NodeBuilder
-  //   Return whether the appending succeeds
-  // NOTE: data will be deleted after this call
-  bool AppendElement(const byte_t* data, size_t num_bytes);
-  // Return the number of bytes actually appended
-  //   This method will treat each byte as a single element
-  // NOTE: data will be deleted after this call
-  bool AppendBytes(const byte_t* data, size_t num_bytes);
+
+  // Perform operation at idx-th element at leaf rooted at root_hash
+  static NodeBuilder* NewNodeBuilderAtKey(const Hash& root_hash,
+                                          const OrderedKey& key,
+                                          ChunkLoader* chunk_loader);
+
+  // First delete num_delete elements from cursor and then
+  // Append elements in byte array
+  // NOTE: Byte arrays in element_data will be deleted after use.
+  void SpliceEntries(size_t num_delete,
+                      const std::vector<const byte_t*>& element_data,
+                      const std::vector<size_t>& num_bytes);
+
+
   // Commit the uncommited operation
   // Create and dump the chunk into storage
   //  nullptr returned if fail to dump
-  const Chunk* Commit();
+  const Chunk* Commit(MakeChunkFunc make_chunk);
+
 
  private:
   // Internal constructor used to recursively construct Parent NodeBuilder
   // is_leaf shall set to FALSE
-  NodeBuilder(const Hash& root_hash, size_t idx, NodeBuilder* parent_builder);
+  explicit NodeBuilder(NodeCursor* cursor, size_t level);
+
+  explicit NodeBuilder(size_t level);
+  // Remove elements from cursor
+  // Return the number of elements actually removed
+  size_t SkipEntries(size_t num_elements);
+
+  // Append the bytes of a single entry to NodeBuilder
+  void AppendEntry(const byte_t* data, size_t num_bytes);
+
+  // Make chunks based on given entries data
+  // Pass the created metaentry to upper builders to append
+  // reset the rolling hasher
+  // clear the parameter array (NOTE: Byte arrays in element_data will be
+  // deleted after use).
+  // return the created chunk
+  const Chunk* HandleBoundary(std::vector<const byte_t*>* chunk_entries_data,
+                              std::vector<size_t>* chunk_entries_num_bytes,
+                              MakeChunkFunc make_chunk);
   // Two things to do:
   //  * Populate the rolling hash with preceding elements before cursor point
   //      until its window size filled up
   //  * Populate the buffer with data from SeqNode head until cursor point
   //  NOTE: Be sure NOT to rolling hash num_entries bytes at MetaNode head
   void Resume();
-  // Skip one element at Parent Chunker
-  // return the operation succeeds or not
-  bool SkipParentIfExists();
-  // Create the parent node builder
-  NodeBuilder* CreateParentNodeBuilder();
 
+  inline bool isCommited() const { return commited_;}
+
+  // Whether a node builder will build a single-entry MetaNode
+  //   This node is invalid and shall be excluded from final tree
+  inline bool isInvalidNode() const {
+    return cursor_ == nullptr && num_appended_entries_ <= 1;
+  }
+
+  size_t numAppend() const { return num_appended_entries_; }
+  // Access the parent builder.
+  // Construct a new one, if not exists.
+  NodeBuilder* parent_builder();
   // Private Members
   NodeCursor* cursor_;  // shall be deleted during destruction
   NodeBuilder* parent_builder_;  // shall be deleted during destruction
-  bool is_leaf_;  // whether this NodeBuilder works on leaf node
-  // raw byte of a list of elements to append
-  std::vector<const byte_t*> append_data_list_;
-  // a list of element raw byte size
-  std::vector<const size_t> append_data_size_;
-  // The pointer to SeqNode data, SHALL NOT DELETE during destruction
-  //    It points to the data to be appended in the new chunk
-  //    Therefore, for MetaNode,
-  //    it points the starting bytes of the first MetaEntry
-  const byte_t* node_head_;
-  // Number of bytes pointed by node_head_ to append
-  const size_t num_append_bytes_;
-  // Number of elements to append
-  const size_t num_elements_;
-  RollingHasher rhasher_;
+
+  // raw byte of a list of entries to append
+  // use deque because we both need to push front and push end
+  std::deque<const byte_t*> entries_data_;
+  // a list of entry raw byte size
+  std::deque<size_t> entries_num_bytes_;
+
+  RollingHasher* rhasher_;  // shall be deleted
+  bool commited_ = true;  // false if exists operation to commit
+
+  // number of entries appended from lower level
+  size_t num_appended_entries_;
+
+  size_t num_skip_entries_ = 0;
+
+  size_t level_ = 0;
 };
 }  // namespace ustore
 

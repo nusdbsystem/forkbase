@@ -13,17 +13,29 @@ namespace ustore {
 
 class UCell : private Noncopyable {
  public:
-  static UCell Load(const Hash& unode_hash);
+  static const UCell* Load(const Hash& unode_hash);
+
   // Create the chunk data and dump to storage
   // Return the UCell instance
-  static UCell Create(const Hash& pre_hash, UType data_type,
-                      const Hash& data_root_hash);
-
+  static const UCell* Create(UType data_type,
+                             const Hash& data_root_hash,
+                             const Hash& preHash1,
+                             const Hash& preHash2);
   ~UCell();  // remove node_;
 
   inline UType type() const { return node_->type(); }
-  const Hash preUNodeHash() const;
-  const Hash dataHash() const;
+
+  inline const bool merged() const { return node_->merged(); }
+
+  // return empty hash (Hash()) if
+  // the request second prehash does not exist
+  inline const Hash preUNodeHash(bool second = false) const {
+    return node_->preHash(second);
+  }
+
+  inline const Hash dataHash() const {
+    return node_->dataHash();
+  }
 
  private:
   // Private contructor to be called by Load() or Create()

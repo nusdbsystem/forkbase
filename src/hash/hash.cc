@@ -12,6 +12,9 @@
 
 namespace ustore {
 
+const byte_t Hash::EMPTY_HASH_DATA[] = {0};
+const Hash Hash::NULL_HASH(EMPTY_HASH_DATA);
+
 const char base32alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const std::map<char, byte_t> base32dict = {{'A', 0},
                                            {'B', 1},

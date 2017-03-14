@@ -13,6 +13,7 @@ const size_t HASH_STRING_LEN = 32;
 
 class Hash {
  public:
+  static const Hash NULL_HASH;
   // create empty hash
   Hash() {}
   // use existing hash
@@ -30,7 +31,7 @@ class Hash {
   bool operator!=(const Hash& hash) const;
 
   // check if the hash is empty
-  inline bool empty() { return value_ == nullptr; }
+  inline bool empty() const { return value_ == nullptr; }
   // expose byte array to others
   inline const byte_t* value() const { return value_; }
   // copy content from another
@@ -51,6 +52,8 @@ class Hash {
   bool own_ = false;
   // big-endian
   byte_t* value_ = nullptr;
+
+  static const byte_t EMPTY_HASH_DATA[HASH_BYTE_LEN];
 };
 
 }  // namespace ustore
