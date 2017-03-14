@@ -1,6 +1,5 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-
 #include <cstring>
 #include <iostream>
 #include <map>

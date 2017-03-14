@@ -26,13 +26,19 @@ class Chunk : private Noncopyable {
   explicit Chunk(ChunkType type, uint32_t capacity) {
     own_ = true;
     head_ = new byte_t[META_SIZE + capacity];
-    *reinterpret_cast<uint32_t*>(head_ + NUM_BYTES_OFFSET) = META_SIZE
-                                                             + capacity;
+    *reinterpret_cast<uint32_t*>(head_ + NUM_BYTES_OFFSET) =
+        META_SIZE + capacity;
     *reinterpret_cast<ChunkType*>(head_ + CHUNK_TYPE_OFFSET) = type;
   }
   // share chunk from existing space
   explicit Chunk(byte_t* head) { head_ = head; }
-  ~Chunk() { if (own_) delete[] head_; }
+  Chunk(byte_t* head, bool own) {
+    head_ = head;
+    own_ = own;
+  }
+  ~Chunk() {
+    if (own_) delete[] head_;
+  }
 
   // total number of bytes
   inline uint32_t numBytes() const {

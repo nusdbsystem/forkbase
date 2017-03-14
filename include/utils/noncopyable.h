@@ -6,11 +6,11 @@
 namespace ustore {
 
 struct Noncopyable {
-    Noncopyable() {}
-    ~Noncopyable() {}
-    Noncopyable(const Noncopyable&) = delete;
-    Noncopyable& operator=(const Noncopyable&) = delete;
+  Noncopyable() {}
+  ~Noncopyable() {}
+  Noncopyable(const Noncopyable&) = delete;
+  Noncopyable& operator=(const Noncopyable&) = delete;
 };
 
-}
+}  // namespace ustore
 #endif  // USTORE_UTILS_NONCOPYABLE_H_

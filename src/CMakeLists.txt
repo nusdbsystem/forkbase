@@ -31,6 +31,12 @@ LIST(APPEND ustore_srcs ${node_source})
 AUX_SOURCE_DIRECTORY(hash hash_source)
 LIST(APPEND ustore_srcs ${hash_source})
 
+AUX_SOURCE_DIRECTORY(node node_source)
+LIST(APPEND ustore_srcs ${node_source})
+
+AUX_SOURCE_DIRECTORY(store store_source)
+LIST(APPEND ustore_srcs ${store_source})
+
 AUX_SOURCE_DIRECTORY(types types_source)
 LIST(APPEND ustore_srcs ${types_source})
 

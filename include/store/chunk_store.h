@@ -15,8 +15,8 @@ class ChunkStore {
    * store allocates the returned chunck,
    * caller need to release memory after use.
    */
-  Chunk* virtual Get(const Hash& key) = 0;
-  bool virtual Put(const Hash& key, const Chunk& chunk) = 0;
+  virtual Chunk* Get(const Hash& key) = 0;
+  virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
 };
 }  // namespace ustore
 
