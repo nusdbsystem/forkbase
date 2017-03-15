@@ -7,7 +7,7 @@
 #include "utils/singleton.h"
 #include "store/ldb_store.h"
 
-ustore::Singleton<ustore::LDBStore> ldb;
+static ustore::Singleton<ustore::LDBStore> ldb;
 const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 
 TEST(LDBStore, PutChunk) {

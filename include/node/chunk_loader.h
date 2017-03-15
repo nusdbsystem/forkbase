@@ -3,20 +3,28 @@
 #ifndef USTORE_NODE_CHUNK_LOADER_H_
 #define USTORE_NODE_CHUNK_LOADER_H_
 
-#include "hash/hash.h"
+#include <map>
+#include <string>
 #include "chunk/chunk.h"
+#include "hash/hash.h"
+#include "store/chunk_store.h"
 
 namespace ustore {
-class ChunkLoader {
-/* ChunkLoader is responsible to load chunks and cache them.
+/** ChunkLoader is responsible to load chunks and cache them.
 */
+class ChunkLoader {
  public:
-  ChunkLoader();
+  ChunkLoader() = delete;
+  explicit ChunkLoader(ChunkStore* cs);
 
   //  Delete all chunks
   ~ChunkLoader();
 
   const Chunk* Load(const Hash& key);
+
+ private:
+  std::map<Hash, const Chunk*> cache_;
+  ChunkStore* cs_;
 };
 }  // namespace ustore
 
