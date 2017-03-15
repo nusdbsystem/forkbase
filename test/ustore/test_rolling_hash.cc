@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 #include <cstring>
 #include "gtest/gtest.h"
-#include "types/rolling_hash.h"
+#include "node/rolling_hash.h"
 
 const char julius_caeser_str[] = {
     "SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "

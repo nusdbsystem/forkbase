@@ -18,7 +18,6 @@
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
-find_package(Protobuf REQUIRED)
 
 AUX_SOURCE_DIRECTORY(. sources)
 LIST(APPEND ustore_srcs ${sources})
@@ -27,8 +26,8 @@ LIST(APPEND ustore_srcs ${sources})
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
 LIST(APPEND ustore_srcs ${proto_srcs} ${proto_hdrs})
-message(STATUS ${ustore_srcs})
-message(STATUS ${CMAKE_BINARY_DIR})
+MESSAGE(STATUS ${ustore_srcs})
+MESSAGE(STATUS ${CMAKE_BINARY_DIR})
 
 ADD_CUSTOM_TARGET(
   copy_protobuf ALL
@@ -54,18 +53,24 @@ LIST(APPEND ustore_srcs ${chunk_source})
 AUX_SOURCE_DIRECTORY(hash hash_source)
 LIST(APPEND ustore_srcs ${hash_source})
 
+AUX_SOURCE_DIRECTORY(net net_source)
+LIST(APPEND ustore_srcs ${net_source})
+
+AUX_SOURCE_DIRECTORY(node node_source)
+LIST(APPEND ustore_srcs ${node_source})
+
+AUX_SOURCE_DIRECTORY(store store_source)
+LIST(APPEND ustore_srcs ${store_source})
+
 AUX_SOURCE_DIRECTORY(types types_source)
 LIST(APPEND ustore_srcs ${types_source})
 
 AUX_SOURCE_DIRECTORY(utils utils_source)
 LIST(APPEND ustore_srcs ${utils_source})
 
-AUX_SOURCE_DIRECTORY(net net_source)
-LIST(APPEND ustore_srcs ${net_source})
-
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 
-
 ADD_LIBRARY(ustore SHARED $<TARGET_OBJECTS:ustore_objs>)
-TARGET_LINK_LIBRARIES(ustore protobuf ${USTORE_LINKER_LIBS})
+LIST(APPEND USTORE_LINKER_LIBS ${PROTOBUF_LIBRARY})
+TARGET_LINK_LIBRARIES(ustore ${USTORE_LINKER_LIBS})
 SET_TARGET_PROPERTIES(ustore PROPERTIES LINK_FLAGS "")

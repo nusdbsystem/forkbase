@@ -15,13 +15,13 @@ class Hash {
  public:
   // create empty hash
   Hash() {}
-  // use existing hash 
+  // use existing hash
   Hash(const Hash& hash);
   // use existing byte array
   explicit Hash(const byte_t* hash);
   ~Hash();
 
-  void operator=(const Hash& hash);
+  Hash& operator=(const Hash& hash);
   bool operator<(const Hash& hash) const;
   bool operator<=(const Hash& hash) const;
   bool operator>(const Hash& hash) const;
@@ -38,9 +38,9 @@ class Hash {
   void FromString(const std::string& base32);
   // compute hash from data
   // if do so, must allocate own value
-  virtual void Compute(const byte_t* data, size_t len) = 0;
+  void Compute(const byte_t* data, size_t len);
   // encode to base32 format
-  std::string ToString();
+  std::string ToString() const;
 
  protected:
   bool own_ = false;
