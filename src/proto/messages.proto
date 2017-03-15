@@ -38,11 +38,9 @@ message UStoreMessage {
   // branch
   optional bytes branch = 4; 
 
-
   /**
    * PAYLOAD
    */
-
   // PUT_REQUEST payload
   message PutRequestPayload {
     optional bool forward = 1; 
