@@ -25,13 +25,13 @@ TEST(ChunkLoader, GetChunk) {
   ustore::ChunkLoader cl(cs);
   // load from stroage
   const ustore::Chunk* c = cl.Load(chunk.hash());
-  EXPECT_EQ(c->forceHash(), chunk.hash());
+  EXPECT_EQ(c->hash(), chunk.hash());
   EXPECT_EQ(c->type(), ustore::kBlobChunk);
   EXPECT_EQ(c->numBytes(), chunk.numBytes());
   EXPECT_EQ(c->capacity(), chunk.capacity());
   // load from cache
   c = cl.Load(chunk.hash());
-  EXPECT_EQ(c->forceHash(), chunk.hash());
+  EXPECT_EQ(c->hash(), chunk.hash());
   EXPECT_EQ(c->type(), ustore::kBlobChunk);
   EXPECT_EQ(c->numBytes(), chunk.numBytes());
   EXPECT_EQ(c->capacity(), chunk.capacity());

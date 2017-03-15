@@ -14,9 +14,7 @@ namespace ustore {
 */
 class ChunkLoader {
  public:
-  ChunkLoader() = delete;
   explicit ChunkLoader(ChunkStore* cs);
-
   //  Delete all chunks
   ~ChunkLoader();
 
