@@ -5,9 +5,10 @@
 
 namespace ustore {
 
-    namespace logging_recovery {
+    namespace recovery {
     
-      enum LogCommand {
+      enum LogCommand : uint32_t  
+      {
         USTORE_LOG_CHECKPOINT = 101;        //write checkpoints
         /*
          *@TODO Should add log command when all the logics are done!!!
@@ -23,35 +24,36 @@ namespace ustore {
       * */
            
        struct UStoreLogEntry {
-            UStoreRecordHeader  header_;
-            uint64_t            seq_id_;
-            int32_t             cmd_id_;
+            UStoreRecordHeader     header_;
+            uint64_t               seq_id_;
+            uint32_t               cmd_id_;
 
-            static const int16_t LOG_VERSION = 1;
+            static const uint16_t LOG_VERSION = 1;
 
             UStoreLogEntry()
             {
                 memset(this, 0x00, sizeof(UStoreLogEntry));
             }
 
-            int64_t to_string(char* destbuf, const int64_t destbuf_len) const;
+            char*   toString() const;
+            int64_t toString(char* destbuf, const uint64_t destbuf_len) const;
 
             /* 
              * @brief Set log sequence id
              * */
-            void set_log_seq_id(const uint64_t seq_id);
+            void setLogSeqId(const uint64_t seq_id);
 
             /*
              * @brief Set log cmd id
              * */
-            void set_log_cmd_id(const int32_t  cmd_id);
+            void setLogCmdId(const uint32_t  cmd_id);
 
             /*
              * @brief Set record header in the Log Entry
              * @param log buffer address
              * @param content length
              * */
-            int fill_record_header(const char* log_data, const int64_t data_len);
+            int fillRecordHeader(const char* log_data, const uint64_t data_len);
 
 
             /*
@@ -59,27 +61,27 @@ namespace ustore {
              * @param log buffer address
              * @param content length
              * */
-            int64_t compute_checksum(const char* log_data, const int64_t data_len) const;
+            int64_t computeChecksum(const char* log_data, const uint64_t data_len) const;
 
             /*
              * @brief Return the length of the log data 
              * */
-            int32_t get_logdata_length() const;
+            uint32_t getLogdataLength() const;
 
             /*
              * @brief Check the structure correctnesss of the record header
              * */
-            int check_record_header() const;
+            int checkRecordHeader() const;
 
             /*
              * @brief Check the correctness of the log data
              * */
-            int check_logdata() const;
+            int checkLogdata() const;
 
             /*
              * @brief Return the record header size
              * */
-            static int get_record_header_size();
+            static uint64_t getRecordHeaderSize();
 
        }; //end of UStoreLogEntry definition
 

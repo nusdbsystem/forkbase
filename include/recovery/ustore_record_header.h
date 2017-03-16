@@ -3,7 +3,7 @@
 
 namespace ustore {
 
-    namespace logging_recovery {
+    namespace recovery {
     
         /*
          * TODO: should replace the magic number
@@ -14,62 +14,56 @@ namespace ustore {
          * @brief Introduction to UStoreRecordHeader
          * */
         struct UStoreRecordHeader {
-            int16_t     magic_;               
-            int16_t     header_length_;
-            int16_t     version_;
-            int16_t     header_checksum_;
-            int32_t     data_length_;
-            int32_t     data_length_compressed_;
-            int64_t     data_checksum_;
-
             /*
              * @brief Constructor of UStoreRecordHeader
              * */
             UStoreRecordHeader();
 
-            int64_t     to_string(char* destbuf, const int64_t destbuf_len) const;
+            char*        toString() const;
+            uint64_t     toString(char* destbuf, const uint64_t destbuf_len) const;
 
             /*
              * Set the magic number
              * */
-            inline void set_magic_number(const int16_t magic = MAGIC_NUMBER) {
+            inline void setMagicNumber(const int16_t magic = MAGIC_NUMBER) 
+            {
                 magic_ = magic;
             }
 
             /*
              * set checksum of the header
              * */
-            void set_header_checksum();
+            void setHeaderChecksum();
 
             /*
              * check the checksum of the header
              * */
-            int check_header_checksum() const;
+            int checkHeaderChecksum() const;
 
             /*
              * check the magic number of the header
              * */
-            int check_magic_number(const int16_t magic = MAGIC_NUMBER) const;
+            int checkMagicNumber(const int16_t magic = MAGIC_NUMBER) const;
 
             /*
              * check the compressed data length is correct or not
              * */
-            int check_data_length_compressed(const int32_t compressed_length) const;
+            int checkDataLengthCompressed(const uint32_t compressed_length) const;
 
             /*
              * check the data length is correct or not
              * */
-            int check_data_length(const int32_t data_length) const;
+            int checkDataLength(const uint32_t data_length) const;
 
             /*
              * check whether the header is compressed or not
              * */
-            bool is_compressed() const;
+            bool isCompressed() const;
 
             /*
              * check the checksum of the header
              * */
-            int check_header_checksum(const char* buf, const int64_t length) const;
+            int checkHeaderChecksum(const char* buf, const uint64_t length) const;
 
             /*
              * check record after being read
@@ -77,7 +71,7 @@ namespace ustore {
              * @param total length of record and record header
              * @param magic number
              * */
-            static int check_record(const char* buf, const int64_t length, const int16_t magic);
+            static int checkRecord(const char* buf, const uint64_t length, const int16_t magic);
 
 
             /*
@@ -87,9 +81,9 @@ namespace ustore {
              * @param length the of buffer
              * @param magic number that is used to check the correctness
              * */
-            static int check_record(const UStoreRecordHeader& record_header,
+            static int checkRecord(const UStoreRecordHeader& record_header,
                                     const char*     payload_buf,
-                                    const int64_t   payload_length,
+                                    const uint64_t   payload_length,
                                     const int16_t   magic);
 
             /*
@@ -101,12 +95,12 @@ namespace ustore {
              * @param [out] content address
              * @param [out] content size
              * */
-            static int check_record(const char*     rawdata,
-                                    const int64_t   rawdata_size,
-                                    const int16_t   magic,
+            static int checkRecord(const char*          rawdata,
+                                    const uint64_t      rawdata_size,
+                                    const int16_t       magic,
                                     UStoreRecordHeader& header,
-                                    const char*&    payload_ptr,
-                                    int64_t&        payload_size);
+                                    const char*&        payload_ptr,
+                                    uint64_t&           payload_size);
 
             /*
              * do not check and directly extract header and payload address
@@ -116,11 +110,19 @@ namespace ustore {
              * @param [out] content address
              * @param [out] content size
              * */
-            static int get_record_header(const char*    rawdata,
-                                        const int64_t rawdata_size,
+            static int getRecordHeader(const char*          rawdata,
+                                        const uint64_t      rawdata_size,
                                         UStoreRecordHeader& header,
-                                        const char*&    payload_ptr,
-                                        int64_t&        payload_size);
+                                        const char*&        payload_ptr,
+                                        uint64_t&            payload_size);
+
+            int16_t         magic_;               
+            uint16_t        header_length_;
+            uint16_t        version_;
+            int16_t         header_checksum_;
+            uint32_t        data_length_;
+            uint32_t        data_length_compressed_;
+            int64_t         data_checksum_;
         }; //end of UStoreRecordHeader
 
         static const int USTORE_RECORD_HEADER_LENGTH = sizeof(UStoreRecordHeader);
