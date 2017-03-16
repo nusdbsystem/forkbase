@@ -24,6 +24,8 @@ typedef std::string node_id_t;
 typedef void CallBackProc(const void *msg, int size, void* handler,
                                             const node_id_t& source);
 
+class NetContext;
+
 /**
  * Wrapper to all network connections. This should be created only once for each network
  * implementation (either TCP or RDMA).
@@ -41,8 +43,8 @@ class Net : private Noncopyable {
 
   // get the NetContext of the idth node
   inline const node_id_t& GetNodeID() const { return cur_node_; }
-  inline const NetContext* GetNetContext(const node_id_t& id) const {
-    return netmap_[id];
+  inline NetContext* GetNetContext(const node_id_t& id) const {
+    return netmap_.at(id);
   }
 
   /**
@@ -60,12 +62,11 @@ class Net : private Noncopyable {
 
  protected:
   Net() {}
-  explicit Net(const& node_id_t id) : cur_node_(id) {}
-
- private:
+  explicit Net(const node_id_t& id) : cur_node_(id) {}
   node_id_t cur_node_;
   std::unordered_map<node_id_t, NetContext*> netmap_;
   void *upstream_handle_ = nullptr;  // to be passed to callback
+  CallBackProc* cb_ = nullptr;
 };
 
 /**
@@ -77,7 +78,7 @@ class NetContext {
   // Initialize connection to another node
   NetContext(const node_id_t& src, const node_id_t& dest)
       : src_id_(src), dest_id_(dest) {}
-  virtual ~NetContext() = 0;
+  virtual ~NetContext() {};
 
   // Non-blocking APIs
   /*
@@ -85,11 +86,11 @@ class NetContext {
    * ptr: the starting pointer to send
    * len: size of the buffer
    * func: callback function after send completion (not supported)
-   * app_data: the application-provided data that will be used in the callback
+   * handler: the application-provided handler that will be used in the callback
    *           function (not supported)
    */
   virtual ssize_t Send(const void* ptr, size_t len, CallBackProc* func = nullptr,
-                       void* app_data = nullptr) = 0;
+                       void* handler = nullptr) = 0;
 
 
   // Blocking APIs (not supported)
@@ -100,9 +101,8 @@ class NetContext {
   inline const node_id_t& srcID() const noexcept { return src_id_; }
   inline const node_id_t& destID() const noexcept { return dest_id_; }
 
- private:
+ protected:
   node_id_t src_id_, dest_id_;
-  CallBackProc* cb_ = nullptr;
 };
 
 }  // namespace ustore

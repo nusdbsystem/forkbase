@@ -14,183 +14,20 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread/thread.hpp>
+#include <vector>
+#include <sstream>
+#include <syscall.h>
+#include "net/hashtable.h"
 #include "net/net.h"
+#include "net/ae.h"
+#include "utils/logging.h"
+#include "net/rdma_config.h"
 
 namespace ustore {
 
-// raddr means memory addr that is registered with RDMA device
-typedef void* raddr;
-class aeEventLoop;
-class HashTable;
-class RdmaNetResource;
-
-class RdmaNet : public Net {
- public:
-  explicit RdmaNet(const node_id_t& id, int nthreads);
-  ~RdmaNet();
-
-  NetContext* CreateNetContext(const node_id_t& id) override;
-  void Start() override {}
-  void Stop() override {}
-
- private:
-  void StartService(const node_id_t& id, RdmaNetResource* res);
-
-  RdmaNetResource* resource_ = nullptr;
-  aeEventLoop* el_ = nullptr;
-  int sockfd_ = 0;
-  HashTable<uint32_t, RdmaNetContext*> qpCliMap_;
-  HashTable<std::string, RdmaNetContext*> idCliMap_;
-  std::thread* st_ = nullptr;
-  std::mutex net_lock_;
-
-  boost::asio::io_service ioService_;
-  boost::thread_group threadpool_;
-  boost::asio::io_service::work work_;
-
-  int nthreads_;  // number of processing threads
-  /*
-  //below are for internal use
-  RdmaNetContext* CreateRdmaNetContext(node_id_t id, bool& exist);
-  inline void RemoveContext(RdmaNetContext* ctx) {
-    qpCliMap.erase(ctx->GetQP());
-    idCliMap.erase(ctx->GetID());
-  }
-
-  inline RdmaNetContext* FindContext(uint32_t qpn) {
-    RdmaNetContext* ctx = nullptr;
-    try {
-      ctx = qpCliMap.at(qpn);
-    } catch (const std::out_of_range& oor) {
-      LOG(LOG_WARNING, "cannot find the client for qpn %d (%s)", qpn,
-          oor.what());
-    }
-    return ctx;
-  }
-
-  inline RdmaNetContext* FindContextID(node_id_t id) {
-    RdmaNetContext* ctx = nullptr;
-    if (idCliMap.count(id)) {
-      ctx = idCliMap.at(id);
-    }
-    return ctx;
-  }
-
-  void ProcessRdmaRequest();
-
-  static void CbHandler(RdmaNetContext* ctx, void* msg, size_t size,
-                        RdmaNetResource* resource, uint64_t wr_id);
-                        */
-};
-
-// RDMA implementation of network context
-class RdmaNetContext : public NetContext {
- public:
-  RdmaNetContext(const node_id_t& id, RdmaNetResource* res);
-  ~RdmaNetContext();
-
-  // implementation of the methods inherited from NetContext
-  ssize_t Send(void* ptr, size_t len, CallBackProc* func = nullptr,
-               void* app_data = nullptr);
-  void RegisterRecv(CallBackProc* func, void* data);
-
-  /**
-   * Memory API
-   * @dest: dest addr at remote node
-   * @src: src addr at local node
-   */
-  ssize_t Write(raddr dest, raddr src, size_t len, CallBackProc* func = nullptr,
-                void* app_data = nullptr);
-  ssize_t WriteWithImm(raddr dest, raddr src, size_t len, uint32_t imm,
-                       CallBackProc* func = nullptr, void* app_data = nullptr);
-  ssize_t Read(raddr dest, raddr src, size_t len, CallBackProc* func = nullptr,
-               void* app_data = nullptr);
-  ssize_t WriteBlocking(raddr dest, raddr src, size_t len);
-  ssize_t WriteWithImmBlocking(raddr dest, raddr src, size_t len, uint32_t imm);
-  ssize_t ReadBlocking(raddr dest, raddr src, size_t len);
-
- private:
-  // below are for internal use
-  inline const char* GetRdmaConnString() const;
-  int SetRemoteConnParam(const char *remConn);
-  int ExchConnParam(node_id_t cur_node, const char* ip, int port);
-
-  inline uint32_t GetQP() { return qp->qp_num_; }
-  inline const node_id_t& GetID() { return id_; }
-
-  unsigned int SendComp(ibv_wc& wc);
-  unsigned int WriteComp(ibv_wc& wc);
-  char* RecvComp(ibv_wc& wc);
-  char* GetFreeSlot();
-
-  inline int PostRecv(int n) { return resource_->PostRecv(n);}
-  inline void lock() { global_lock_.lock(); }
-  inline void unlock() { global_lock_.unlock(); }
-
-  char* GetFreeSlot_();
-  void ProcessPendingRequests(int n);
-  bool IsRegistered(const void* addr);
-
-  ssize_t Rdma(ibv_wr_opcode op, const void* src, size_t len,
-               unsigned int id = 0, bool signaled = false, void* dest = nullptr,
-               uint32_t imm = 0, uint64_t oldval = 0, uint64_t newval = 0);
-  ssize_t Rdma(RdmaRequest& r);
-  ssize_t Send_(const void* ptr, size_t len, unsigned int id = 0,
-                bool signaled = false);
-  /*
-   * @dest: dest addr at remote node
-   * @src: src addr at local node
-   */
-  ssize_t Write_(raddr dest, raddr src, size_t len, unsigned int id = 0,
-                 bool signaled = false);
-  ssize_t WriteWithImm_(raddr dest, raddr src, size_t len, uint32_t imm,
-                        unsigned int id = 0, bool signaled = false);
-  /*
-   * @dest: dest addr at local node
-   * @src: src addr at remote node
-   */
-  ssize_t Read_(raddr dest, raddr src, size_t len, unsigned int id = 0,
-                bool signaled = false);
-  ssize_t Cas_(raddr src, uint64_t oldval, uint64_t newval, unsigned int id = 0,
-               bool signaled = false);
-
-  RdmaNetResource *resource_;
-  ibv_qp *qp_;
-  node_id_t id_;
-  ibv_mr* send_buf_;  // send buf
-  int slot_head_;
-  int slot_tail_;
-  // to differentiate between all free and all occupied slot_head == slot_tail
-  bool full_;
-
-  uint64_t vaddr_ = 0;  // for remote rdma read/write
-  uint32_t rkey_ = 0;
-
-  int max_pending_msg_;
-  int max_unsignaled_msg_;
-  // including both RDMA send and write/read that don't use the send buf
-  std::atomic<int> pending_msg_;
-  // including only send msg
-  std::atomic<int> pending_send_msg_;
-  // in order to proceed the slot_tail
-  std::atomic<int> to_signaled_send_msg_;
-  std::atomic<int> to_signaled_w_r_msg_;
-  std::queue<RdmaRequest> pending_requests_;
-  char *msg_ = nullptr;
-  std::mutex global_lock_;
-};
-
-struct RdmaRequest {
-  ibv_wr_opcode op;
-  const void* src;
-  size_t len;
-  unsigned int id;
-  bool signaled;
-  void* dest;
-  uint32_t imm;
-  uint64_t oldval;
-  uint64_t newval;
-};
+aeFileProc TcpHandle;
+aeFileProc RdmaHandle;
+class RdmaNetContext;
 
 class RdmaNetResource {
   friend class RdmaNetContext;
@@ -198,14 +35,14 @@ class RdmaNetResource {
   explicit RdmaNetResource(ibv_device *device);
   ~RdmaNetResource();
 
-  inline const char* GetDevname() const { return this->devName; }
-  inline ibv_cq* GetCompQueue() const { return cq; }
-  inline int GetChannelFd() const { return channel->fd; }
+  inline const char* GetDevname() const { return this->devName_; }
+  inline ibv_cq* GetCompQueue() const noexcept { return cq_; }
+  inline int GetChannelFd() const { return channel_->fd; }
 
   bool GetCompEvent() const;
   int RegLocalMemory(void *base, size_t sz);
   int RegCommSlot(int);
-  char* GetSlot(int s);  // get the starting addr of the slot
+  char* GetSlot(int s) const;  // get the starting addr of the slot
   int PostRecv(int n);  // post n RR to the srq
   int PostRecvSlot(int slot);  // post slot to the srq
   // int ClearRecv(int low, int high);
@@ -213,8 +50,8 @@ class RdmaNetResource {
   RdmaNetContext* NewRdmaNetContext(node_id_t id);
   void DeleteRdmaNetContext(RdmaNetContext* ctx);
 
-  inline void ClearSlot(int s) { slots.at(s) = false; }
-  inline int GetCounter() const { return rdma_context_counter; }
+  inline void ClearSlot(int s) { slots_.at(s) = false; }
+  inline int GetCounter() const noexcept { return rdma_context_counter_; }
 
  private:
   ibv_device *device_;
@@ -247,6 +84,189 @@ class RdmaNetResource {
 
   std::atomic<int> recv_posted_;
   int rx_depth_ = 0;
+};
+
+// RDMA implementation of network context
+class RdmaNetContext : public NetContext {
+  friend class RdmaNet;
+ public:
+  RdmaNetContext(const node_id_t& id, RdmaNetResource* res);
+  ~RdmaNetContext();
+
+  // implementation of the methods inherited from NetContext
+  ssize_t Send(const void* ptr, size_t len, CallBackProc* func = nullptr,
+               void* handler = nullptr) override;
+
+  /**
+   * Memory API
+   * @dest: dest addr at remote node
+   * @src: src addr at local node
+   */
+  ssize_t Write(raddr dest, raddr src, size_t len, CallBackProc* func = nullptr,
+                void* handler = nullptr);
+  ssize_t WriteWithImm(raddr dest, raddr src, size_t len, uint32_t imm,
+                       CallBackProc* func = nullptr, void* handler = nullptr);
+  ssize_t Read(raddr dest, raddr src, size_t len, CallBackProc* func = nullptr,
+               void* handler = nullptr);
+  ssize_t WriteBlocking(raddr dest, raddr src, size_t len);
+  ssize_t WriteWithImmBlocking(raddr dest, raddr src, size_t len, uint32_t imm);
+  ssize_t ReadBlocking(raddr dest, raddr src, size_t len);
+
+  //for internel use
+  int SetRemoteConnParam(const char *remConn);
+  const char* GetRdmaConnString();
+
+ private:
+  // below are for internal use
+  int ExchConnParam(node_id_t cur_node, const char* ip, int port);
+  inline uint32_t GetQP() const { return qp_->qp_num; }
+  inline const node_id_t& GetID() const { return id_; }
+
+  unsigned int SendComp(ibv_wc& wc);
+  unsigned int WriteComp(ibv_wc& wc);
+  char* RecvComp(ibv_wc& wc);
+  char* GetFreeSlot();
+
+  inline int PostRecv(int n) { return resource_->PostRecv(n);}
+  inline void lock() { global_lock_.lock(); }
+  inline void unlock() { global_lock_.unlock(); }
+
+  char* GetFreeSlot_();
+  void ProcessPendingRequests(int n);
+  bool IsRegistered(const void* addr);
+
+  ssize_t Rdma(ibv_wr_opcode op, const void* src, size_t len,
+               unsigned int id = 0, bool signaled = false, void* dest = nullptr,
+               uint32_t imm = 0, uint64_t oldval = 0, uint64_t newval = 0);
+  ssize_t Rdma(RdmaRequest& r);
+  ssize_t SendGeneric(const void* ptr, size_t len, unsigned int id = 0,
+                bool signaled = false);
+  /*
+   * @dest: dest addr at remote node
+   * @src: src addr at local node
+   */
+  ssize_t WriteGeneric(raddr dest, raddr src, size_t len, unsigned int id = 0,
+                 bool signaled = false);
+  ssize_t WriteWithImmGeneric(raddr dest, raddr src, size_t len, uint32_t imm,
+                        unsigned int id = 0, bool signaled = false);
+  /*
+   * @dest: dest addr at local node
+   * @src: src addr at remote node
+   */
+  ssize_t ReadGeneric(raddr dest, raddr src, size_t len, unsigned int id = 0,
+                bool signaled = false);
+  ssize_t CasGeneric(raddr src, uint64_t oldval, uint64_t newval, unsigned int id = 0,
+               bool signaled = false);
+
+  RdmaNetResource *resource_;
+  ibv_qp *qp_;
+  node_id_t id_;
+  ibv_mr* send_buf_;  // send buf
+  int slot_head_;
+  int slot_tail_;
+  // to differentiate between all free and all occupied slot_head == slot_tail
+  bool full_;
+
+  uint64_t vaddr_ = 0;  // for remote rdma read/write
+  uint32_t rkey_ = 0;
+
+  int max_pending_msg_;
+  int max_unsignaled_msg_;
+  // including both RDMA send and write/read that don't use the send buf
+  std::atomic<int> pending_msg_;
+  // including only send msg
+  std::atomic<int> pending_send_msg_;
+  // in order to proceed the slot_tail
+  std::atomic<int> to_signaled_send_msg_;
+  std::atomic<int> to_signaled_w_r_msg_;
+  std::queue<RdmaRequest> pending_requests_;
+  char *msg_ = nullptr;
+  std::mutex global_lock_;
+};
+
+
+class RdmaNet : public Net {
+ public:
+  explicit RdmaNet(const node_id_t& id, int nthreads = 1);
+  ~RdmaNet();
+
+  NetContext* CreateNetContext(const node_id_t& id) override;
+  void Start() override {}
+  void Stop() override {}
+
+  void RegisterRecv(CallBackProc* func, void* handler) override;
+
+  //below are for internal use
+  RdmaNetContext* CreateRdmaNetContext(const node_id_t& id, bool& exist);
+  inline void RemoveContext(RdmaNetContext* ctx) {
+    qpCliMap_.erase(ctx->GetQP());
+    //idCliMap_.erase(ctx->GetID());
+    netmap_.erase(ctx->GetID());
+  }
+  void ProcessRdmaRequest();
+
+ private:
+  void StartService(const node_id_t& id, RdmaNetResource* res);
+
+  inline RdmaNetContext* FindContext(uint32_t qpn) const {
+    RdmaNetContext* ctx = nullptr;
+    try {
+      ctx = qpCliMap_.at(qpn);
+    } catch (const std::out_of_range& oor) {
+      LOG(WARNING) << "cannot find the client for qpn " << qpn << "(" << oor.what() << ")" << std::endl;
+    }
+    return ctx;
+  }
+
+  inline RdmaNetContext* FindContextID(const node_id_t& id) const {
+    RdmaNetContext* ctx = nullptr;
+    if (netmap_.count(id)) {
+      ctx = (RdmaNetContext*)netmap_.at(id);
+    }
+    return ctx;
+  }
+
+  static void CbHandler(RdmaNet* ctx, const node_id_t& source, const void* msg, size_t size,
+                        RdmaNetResource* resource, uint64_t wr_id);
+
+  RdmaNetResource* resource_ = nullptr;
+  aeEventLoop* el_ = nullptr;
+  int sockfd_ = 0;
+  HashTable<uint32_t, RdmaNetContext*> qpCliMap_;
+  //HashTable<std::string, RdmaNetContext*> idCliMap_;
+  std::thread* st_ = nullptr;
+  std::mutex net_lock_;
+  int nthreads_;
+
+  boost::asio::io_service ioService_;
+  boost::thread_group threadpool_;
+  boost::asio::io_service::work work_;
+
+};
+
+class RdmaNetResourceFactory: private Noncopyable {
+public:
+  RdmaNetResourceFactory(RdmaNetResourceFactory const&) = delete;
+  void operator=(RdmaNetResourceFactory const&) = delete;
+  ~RdmaNetResourceFactory();
+
+  static RdmaNetResourceFactory* Instance() {
+    if (!instance) {
+      instance = new RdmaNetResourceFactory();
+    }
+
+    return instance;
+  }
+
+  RdmaNetResource* getRdmaNetResource(const char* devName = nullptr);
+  RdmaNetResource* newRdmaNetResource(const char* devName = nullptr);
+
+private:
+  RdmaNetResourceFactory() {};
+
+  static RdmaNetResourceFactory* instance;
+  std::vector<RdmaNetResource *> resources;
+  const char *defaultDevname = nullptr;
 };
 
 }  // namespace ustore

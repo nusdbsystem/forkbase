@@ -69,7 +69,18 @@ LIST(APPEND ustore_srcs ${utils_source})
 AUX_SOURCE_DIRECTORY(worker worker_source)
 LIST(APPEND ustore_srcs ${worker_source})
 
+AUX_SOURCE_DIRECTORY(net net_source)
+LIST(APPEND ustore_srcs ${net_source})
+
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
+
+set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} ibverbs)
+set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} boost_thread)
+set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} boost_system)
+set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} czmq)
+set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} zmq)
+set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} rt)
+set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} gflags)
 
 ADD_LIBRARY(ustore SHARED $<TARGET_OBJECTS:ustore_objs>)
 LIST(APPEND USTORE_LINKER_LIBS ${PROTOBUF_LIBRARY})
