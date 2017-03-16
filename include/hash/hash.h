@@ -33,6 +33,8 @@ class Hash {
   inline bool empty() { return value_ == nullptr; }
   // expose byte array to others
   inline const byte_t* value() const { return value_; }
+  // copy content from another
+  void CopyFrom(const Hash& hash);
   // decode hash from base32 format
   // if do so, must allocate own value
   void FromString(const std::string& base32);
@@ -42,7 +44,10 @@ class Hash {
   // encode to base32 format
   std::string ToString() const;
 
- protected:
+ private:
+  // allocate space if previously not have
+  void Alloc();
+
   bool own_ = false;
   // big-endian
   byte_t* value_ = nullptr;

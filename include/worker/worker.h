@@ -1,120 +1,79 @@
-/**
- * @file worker.h
- *
- * @brief Header of worker node management.
- */
+// Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_WORKER_H_
-#define USTORE_WORKER_H_
+#ifndef USTORE_WORKER_WORKER_H_
+#define USTORE_WORKER_WORKER_H_
 
+#include "hash/hash.h"
+#include "spec/slice.h"
 #include "spec/value.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
 
 /* Management related type alias */
-using WorkerID = uint32_t;
 using ErrorCode = int;
-
-/* Data related type alias */
-using DataValue = Value;
-using DataKey = uint64_t;
-using DataVersion = uint64_t;
-
-using Branch = std::string;
-using ChunkHash = uint64_t;
 
 /**
  * @brief Worker node management.
  */
-class Worker : public Noncopyable {
-  public:
-	const WorkerID id;
+class Worker : private Noncopyable {
+ public:
+  explicit Worker(int id);
+  ~Worker();
 
-	Worker();
-	~Worker();
+  inline int id() const { return id_; }
 
-	/**
-	 * @brief Read data.
-	 *
-	 * @return Value of data.
-	 */
-	DataValue Get() const;
+  /**
+   * @brief Read data.
+   *
+   * @return Value of data.
+   */
+  ErrorCode Get(const Slice& key, Value* val) const;
 
-	/**
-	 * @brief Write data with its specified version and branch.
-	 *
-	 * @param ver Data version.
-	 * @param branch The operating branch.
-	 * @return Error code. (0 for success)
-	 */
-	ErrorCode Put(const DataVersion& ver, const Branch& branch);
+  /**
+   * @brief Write data with its specified version and branch.
+   *
+   * @param ver Data version.
+   * @param branch The operating branch.
+   * @return Error code. (0 for success)
+   */
+  ErrorCode Put(const Slice& key, const Slice& branch, const Hash& version);
 
-	/**
-	 * @brief Create a new branch for the data.
-	 *
-	 * @param bash_branch The base branch.
-	 * @param new_branch The new branch.
-	 * @return Error code. (0 for success)
-	 */
-	ErrorCode Fork(const Branch& base_branch, const Branch& new_branch);
+  /**
+   * @brief Create a new branch for the data.
+   *
+   * @param bash_branch The base branch.
+   * @param new_branch The new branch.
+   * @return Error code. (0 for success)
+   */
+  ErrorCode Fork(const Slice& key, const Slice& base_branch,
+                 const Slice& new_branch);
 
-	/**
-	 * @brief Move data to another branch.
-	 *
-	 * @param from_branch The original branch.
-	 * @param to_branch The target branch.
-	 * @return Error code. (0 for success)
-	 */
-	ErrorCode Move(const Branch& from_branch, const Branch& to_branch);
+  /**
+   * @brief Move data to another branch.
+   *
+   * @param from_branch The original branch.
+   * @param to_branch The target branch.
+   * @return Error code. (0 for success)
+   */
+  ErrorCode Move(const Slice& key, const Sliceh& from_branch,
+                 const Slice& to_branch);
 
-	/**
-	 * @brief Merge two branches of the data.
-	 *
-	 * @param op_branch The operating branch.
-	 * @param ref_branch The referring branch.
-	 * @return Error code. (0 for success)
-	 */
-	ErrorCode Merge(const Branch& op_branch, const Branch& ref_branch);
+  /**
+   * @brief Merge two branches of the data.
+   *
+   * @param op_branch The operating branch.
+   * @param ref_branch The referring branch.
+   * @return Error code. (0 for success)
+   */
+  ErrorCode Merge(const Slice& key, const Slice& op_branch,
+                  const Slice& ref_branch, const Hash& ref_hash);
 
-  private:
-	const HeadVersion head_ver;
+ private:
+  const int id_;
+  const HeadVersion head_ver_;
 };
 
-/**
- * @brief Table of head versions of data.
- *
- * This class should only be instantiated by Worker.
- */
-class HeadVersion {
-  public:
-	HeadVersion();
-	~HeadVersion();
+}  // namespace ustore
 
-	/**
-	 * @brief Retrieve the head version of data according to the specified
-	 *        branch.
-	 *
-	 * @param key Data key.
-	 * @param branch Branch to look for.
-	 * @return Head version of data as per request.
-	 */
-	const DataVersion Get(const DataKey& key, const Branch& branch);
-
-	/**
-	 * @brief Update the head version of data according to the specified
-	 *        branch.
-	 *
-	 * @param ver The updating version.
-	 * @param key Data key.
-	 * @param branch Branch to update.
-	 * @return Error code. (0 for success)
-	 */
-	ErrorCode Put(const DataVersion& ver, const DataKey& key, const Branch& branch);
-
-  private:
-};
-
-} // namespace ustore
-
-#endif /* USTORE_WORKER_H_ */
+#endif  // USTORE_WORKER_WORKER_H

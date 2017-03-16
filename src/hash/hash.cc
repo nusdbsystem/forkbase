@@ -80,16 +80,18 @@ bool Hash::operator<=(const Hash& hash) const { return !operator>(hash); }
 bool Hash::operator>=(const Hash& hash) const { return !operator<(hash); }
 bool Hash::operator!=(const Hash& hash) const { return !operator==(hash); }
 
+void Hash::CopyFrom(const Hash& hash) {
+  Alloc();
+  memcpy(value_, hash.value_, HASH_BYTE_LEN);
+}
+
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
 // which is a multiplier of 5 bits, so no need of padding.
 void Hash::FromString(const std::string& base32) {
   CHECK_EQ(HASH_STRING_LEN, base32.length())
       << "length of input string is not 32 bytes";
-  if (own_ == false) {
-    own_ = true;
-    value_ = new byte_t[HASH_BYTE_LEN];
-  }
+  Alloc();
   uint64_t tmp;
   size_t dest = 0;
   for (size_t i = 0; i < HASH_STRING_LEN; i += 8) {
@@ -120,14 +122,18 @@ std::string Hash::ToString() const {
   return ret;
 }
 
-#ifdef USE_SHA256
-void Hash::Compute(const byte_t* data, size_t len) {
+void Hash::Alloc() {
   if (own_ == false) {
     own_ = true;
     value_ = new byte_t[HASH_BYTE_LEN];
   }
-  byte_t fullhash[32];
-  picosha2::hash256(data, data + len, fullhash, fullhash + 32);
+}
+
+#ifdef USE_SHA256
+void Hash::Compute(const byte_t* data, size_t len) {
+  Alloc();
+  byte_t fullhash[HASH_STRING_LEN];
+  picosha2::hash256(data, data + len, fullhash, fullhash + HASH_STRING_LEN);
   std::copy(fullhash, fullhash + HASH_BYTE_LEN, value_);
 }
 #endif  // USE_SHA256
