@@ -24,12 +24,6 @@ namespace ustore {
       * */
            
        struct UStoreLogEntry {
-            UStoreRecordHeader     header_;
-            uint64_t               seq_id_;
-            uint32_t               cmd_id_;
-
-            static const uint16_t LOG_VERSION = 1;
-
             UStoreLogEntry()
             {
                 memset(this, 0x00, sizeof(UStoreLogEntry));
@@ -82,6 +76,14 @@ namespace ustore {
              * @brief Return the record header size
              * */
             static uint64_t getRecordHeaderSize();
+
+            
+            
+            UStoreRecordHeader     header_;
+            uint64_t               seq_id_;
+            uint32_t               cmd_id_;
+
+            static const uint16_t LOG_VERSION = 1;
 
        }; //end of UStoreLogEntry definition
 

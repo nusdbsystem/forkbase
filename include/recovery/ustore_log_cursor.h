@@ -8,10 +8,6 @@ namespace ustore {
     namespace recovery {
         
         struct UStoreLogCursor {
-            uint64_t     file_id_;
-            uint64_t     log_id_;
-            uint64_t     offset_;
-    
             UStoreLogCursor();
             ~UStoreLogCursor();
             
@@ -54,6 +50,10 @@ namespace ustore {
             bool        operator>(const UStoreLogCursor& that) const;
             bool        operator==(const UStoreLogCursor& that) const;
 
+
+            uint64_t     file_id_;
+            uint64_t     log_id_;
+            uint64_t     offset_;
         };//end of UStoreLogCursor
 
         UStoreLogCursor&    setLogCursor(UStoreLogCursor& cursor, const uint64_t file_id, const uint64_t log_id, const uint64_t offset);
