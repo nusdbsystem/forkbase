@@ -9,10 +9,10 @@
 #  Snappy_LIBRARIES
 
 find_path(Snappy_INCLUDE_DIR NAMES snappy.h
-                             PATHS ${SNAPPY_ROOT_DIR} ${SNAPPY_ROOT_DIR}/include)
+                             PATHS $ENV{SNAPPY_ROOT_DIR}/include)
 
 find_library(Snappy_LIBRARIES NAMES snappy
-                              PATHS ${SNAPPY_ROOT_DIR} ${SNAPPY_ROOT_DIR}/lib)
+                              PATHS $ENV{SNAPPY_ROOT_DIR}/lib)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Snappy DEFAULT_MSG Snappy_INCLUDE_DIR Snappy_LIBRARIES)

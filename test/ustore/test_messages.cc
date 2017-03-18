@@ -33,6 +33,9 @@ void populateHeader(UStoreMessage *msg, UStoreMessage::Type type) {
   msg->set_key(key, TEST_KEY_SIZE);
   msg->set_version(version, TEST_VERSION_SIZE);
   msg->set_branch(branch, TEST_BRANCH_SIZE);
+
+  // source: 1 (first client thread)
+  msg->set_source(1); 
 }
 
 bool checkPayload(const byte_t* original, int size_original,
@@ -78,6 +81,8 @@ TEST(TestMessage, TestPutResponse) {
   UStoreMessage msg;
   populateHeader(&msg, UStoreMessage::PUT_RESPONSE);
 
+  // add status
+  msg.set_status(UStoreMessage::SUCCESS);
   // add payload
   UStoreMessage::PutResponsePayload *payload
     = msg.mutable_put_response_payload();
@@ -94,6 +99,8 @@ TEST(TestMessage, TestPutResponse) {
   UStoreMessage recovered_msg;
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::PUT_RESPONSE);
+  EXPECT_EQ(recovered_msg.has_status(), true); 
+  EXPECT_EQ(recovered_msg.status(), UStoreMessage::SUCCESS);
   EXPECT_EQ(recovered_msg.has_put_response_payload(), true);
   EXPECT_EQ(checkPayload(version, TEST_VERSION_SIZE,
      (const byte_t*)recovered_msg.put_response_payload().new_version().data(),
@@ -127,6 +134,8 @@ TEST(TestMessage, TestGetResponse) {
   UStoreMessage msg;
   populateHeader(&msg, UStoreMessage::GET_RESPONSE);
 
+  // add status
+  msg.set_status(UStoreMessage::SUCCESS);
   // add payload
   UStoreMessage::GetResponsePayload *payload
     = msg.mutable_get_response_payload();
@@ -144,6 +153,8 @@ TEST(TestMessage, TestGetResponse) {
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::GET_RESPONSE);
   EXPECT_EQ(recovered_msg.has_get_response_payload(), true);
+  EXPECT_EQ(recovered_msg.has_status(), true);
+  EXPECT_EQ(recovered_msg.status(), UStoreMessage::SUCCESS);
   EXPECT_EQ(checkPayload(value, TEST_VALUE_SIZE,
         (const byte_t*)recovered_msg.get_response_payload().value().data(),
         recovered_msg.get_response_payload().value().length()), true);
@@ -179,14 +190,14 @@ TEST(TestMessage, TestBranchRequest) {
   delete[] serialized;
 }
 
+// BRANCH_RESPONSE, MOVE_RESPONSE, MERGE_RESPONSE are the same
 TEST(TestMessage, TestBranchResponse) {
   UStoreMessage msg;
   populateHeader(&msg, UStoreMessage::BRANCH_RESPONSE);
-
-  // add payload
-  UStoreMessage::BranchResponsePayload *payload
-    = msg.mutable_branch_response_payload();
-  payload->set_status(false);
+  
+  // test another status other than SUCESS
+  msg.set_status(UStoreMessage::INVALID_RANGE);
+  // no payload
 
   // serialized
   int msg_size = msg.ByteSize();
@@ -197,15 +208,13 @@ TEST(TestMessage, TestBranchResponse) {
   UStoreMessage recovered_msg;
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::BRANCH_RESPONSE);
-  EXPECT_EQ(recovered_msg.has_branch_response_payload(), true);
-  EXPECT_EQ(recovered_msg.branch_response_payload().status(), false);
+  EXPECT_EQ(recovered_msg.has_status(), true);
+  EXPECT_EQ(recovered_msg.status(), UStoreMessage::INVALID_RANGE);
 
   delete[] serialized;
 }
 
 // MOVE_REQUEST and MOVE_RESPONSE are the same as BRANCH_REQUEST and RESPONSE
-
-
 TEST(TestMessage, TestMergeRequest) {
   UStoreMessage msg;
   populateHeader(&msg, UStoreMessage::MERGE_REQUEST);
@@ -245,28 +254,3 @@ TEST(TestMessage, TestMergeRequest) {
 
   delete[] serialized;
 }
-
-TEST(TestMessage, TestMergeResponse) {
-  UStoreMessage msg;
-  populateHeader(&msg, UStoreMessage::MERGE_RESPONSE);
-
-  // add payload
-  UStoreMessage::MergeResponsePayload *payload
-    = msg.mutable_merge_response_payload();
-  payload->set_status(true);
-
-  // serialized
-  int msg_size = msg.ByteSize();
-  byte_t* serialized = new byte_t[msg_size];
-  EXPECT_EQ(msg.SerializeToArray(serialized, msg_size), true);
-
-  // deserialized
-  UStoreMessage recovered_msg;
-  EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
-  EXPECT_EQ(recovered_msg.type(), UStoreMessage::MERGE_RESPONSE);
-  EXPECT_EQ(recovered_msg.has_merge_response_payload(), true);
-  EXPECT_EQ(recovered_msg.merge_response_payload().status(), true);
-
-  delete[] serialized;
-}
-
