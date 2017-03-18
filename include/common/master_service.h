@@ -17,7 +17,7 @@ class Master;
  */
 class MasterService: public WorkerService{
  public:
-    explicit MasterService(node_id_t id, string config_path) :
+    explicit MasterService(const node_id_t& id, const string& config_path) :
             WorkerService(id), config_path_(config_path) {}
     ~MasterService();
 
@@ -26,8 +26,8 @@ class MasterService: public WorkerService{
 
     // Dispatch requests (RangeInfo, etc.) from the network.
     // Basically call this->HandleRequest that invoke Master methods.
-    static void ResponseDispatch(void *msg, int size,
-        void *handler, node_id_t source);
+    static void ResponseDispatch(const void *msg, int size,
+        void *handler, const node_id_t& source);
 
     /**
      * Handle requests:
@@ -35,7 +35,7 @@ class MasterService: public WorkerService{
      * 2. Invoke the processing logic from Master.
      * 3. Construct a response (RangeResponse, e.g.) and send back.
      */
-    void HandleRequest(void *msg, int size, node_id_t source);
+    void HandleRequest(const void *msg, int size, const node_id_t& source);
 
  private:
     string config_path_;  // the master may read from a global

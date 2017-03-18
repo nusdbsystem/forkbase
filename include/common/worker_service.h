@@ -23,7 +23,7 @@ class WorkerService{
 
     // Dispatching requests from the network.
     // Basically call this->HandleRequest that invoke Worker methods.
-    static void RequestDispatch(void *msg, int size,
+    static void RequestDispatch(const void *msg, int size,
         void *handler, const node_id_t& source);
 
     /**
@@ -32,7 +32,7 @@ class WorkerService{
      * 2. Invoke the processing logic from Worker.
      * 3. Construct a response and send back to source.
      */
-    virtual void HandleRequest(void *msg, int size, const node_id_t& source);
+    virtual void HandleRequest(const void *msg, int size, const node_id_t& source);
 
  private:
     node_id_t master_;  // master node

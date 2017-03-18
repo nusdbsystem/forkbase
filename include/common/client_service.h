@@ -33,7 +33,7 @@ class ClientService {
 
     // Dispatching responses from the network.
     // Basically call this->HandleResponse() that wakes up client threads.
-    static void ResponseDispatch(void *msg, int size,
+    static void ResponseDispatch(const void *msg, int size,
         void *handler, const node_id_t& source);
 
     /**
@@ -45,7 +45,7 @@ class ClientService {
      *    client.
      * 3. Hand-off the message to whatever thread is waiting for it.
      */
-    virtual void HandleResponse(void *msg, int size, const node_id_t& source);
+    virtual void HandleResponse(const void *msg, int size, const node_id_t& source);
 
     /**
      * Inside this thread a RequestHandle is initialized, using the following

@@ -21,7 +21,7 @@ typedef std::string node_id_t;
  *          it is "registered" via the Net object (RegisterRecv)
  * source:  extracted from the received socket
  */ 
-typedef void CallBackProc(void *msg, int size, void* handler,
+typedef void CallBackProc(const void *msg, int size, void* handler,
                                             const node_id_t& source);
 
 /**
@@ -88,17 +88,17 @@ class NetContext {
    * app_data: the application-provided data that will be used in the callback
    *           function (not supported)
    */
-  virtual ssize_t Send(void* ptr, size_t len, CallBackProc* func = nullptr,
+  virtual ssize_t Send(const void* ptr, size_t len, CallBackProc* func = nullptr,
                        void* app_data = nullptr) = 0;
 
 
   // Blocking APIs (not supported)
-  virtual ssize_t SyncSend(void* ptr, size_t len);
-  virtual ssize_t SyncRecv(void* ptr, size_t len);
+  virtual ssize_t SyncSend(const void* ptr, size_t len);
+  virtual ssize_t SyncRecv(const void* ptr, size_t len);
 
   // methods to access private variables
-  inline const node_id_t& srcID() const { return src_id_; }
-  inline const node_id_t& destID() const { return dest_id_; }
+  inline const node_id_t& srcID() const noexcept { return src_id_; }
+  inline const node_id_t& destID() const noexcept { return dest_id_; }
 
  private:
   node_id_t src_id_, dest_id_;
