@@ -15,13 +15,13 @@ class Hash {
  public:
   // create empty hash
   Hash() {}
-  // use existing hash 
+  // use existing hash
   Hash(const Hash& hash);
   // use existing byte array
   explicit Hash(const byte_t* hash);
   ~Hash();
 
-  void operator=(const Hash& hash);
+  Hash& operator=(const Hash& hash);
   bool operator<(const Hash& hash) const;
   bool operator<=(const Hash& hash) const;
   bool operator>(const Hash& hash) const;
@@ -33,6 +33,8 @@ class Hash {
   inline bool empty() { return value_ == nullptr; }
   // expose byte array to others
   inline const byte_t* value() const { return value_; }
+  // copy content from another
+  void CopyFrom(const Hash& hash);
   // decode hash from base32 format
   // if do so, must allocate own value
   void FromString(const std::string& base32);
@@ -40,9 +42,12 @@ class Hash {
   // if do so, must allocate own value
   void Compute(const byte_t* data, size_t len);
   // encode to base32 format
-  std::string ToString();
+  std::string ToString() const;
 
- protected:
+ private:
+  // allocate space if previously not have
+  void Alloc();
+
   bool own_ = false;
   // big-endian
   byte_t* value_ = nullptr;

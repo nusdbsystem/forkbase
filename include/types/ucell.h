@@ -7,6 +7,7 @@
 #include "hash/hash.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
+#include "node/cell_node.h"
 
 namespace ustore {
 
@@ -15,12 +16,12 @@ class UCell : private Noncopyable {
   static UCell Load(const Hash& unode_hash);
   // Create the chunk data and dump to storage
   // Return the UCell instance
-  static UCell Create(const Hash& pre_hash, Type data_type,
+  static UCell Create(const Hash& pre_hash, UType data_type,
                       const Hash& data_root_hash);
 
   ~UCell();  // remove node_;
 
-  inline Type type() const { return node_->type(); }
+  inline UType type() const { return node_->type(); }
   const Hash preUNodeHash() const;
   const Hash dataHash() const;
 
@@ -28,9 +29,6 @@ class UCell : private Noncopyable {
   // Private contructor to be called by Load() or Create()
   explicit UCell(const Chunk* chunk);
 
-  // Hash of node_
-  // Make sure they are in sync
-  const Hash node_hash_;
   const CellNode* node_;
 };
 

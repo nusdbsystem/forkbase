@@ -1,6 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include "types/rolling_hash.h"
+#include "node/rolling_hash.h"
 
 namespace ustore {
 

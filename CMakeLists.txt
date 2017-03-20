@@ -20,23 +20,32 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 PROJECT(ustore)
 
+LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+include(cmake/Utils.cmake)
+
+# --- [ Options
+OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
+OPTION(USE_LEVELDB "Use LevelDB as chunk storage" ON)
+
+if(USE_SHA256)
+  message(STATUS "Use SHA-256 hash")
+  add_definitions(-DUSE_SHA256)
+endif()
+
+# ---[ Dependencies
+include(cmake/Dependencies.cmake)
+
 enable_testing()
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -pthread")
+# SET(PROTOBUF_PROTOC_EXECUTABLE "protoc")
 
-SET(USTORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
+MESSAGE(STATUS "${PROTOBUF_PROTOC_EXECUTABLE}")
+LIST(APPEND USTORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
 INCLUDE_DIRECTORIES(${USTORE_INCLUDE_DIR})
 MESSAGE(STATUS "include: ${USTORE_INCLUDE_DIR}")
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-
-OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
-
-if(USE_SHA256)
-  message(STATUS "Use SHA-256 hash")
-  add_definitions(-DUSE_SHA256)
-  set(USE_SHA256 ON)
-endif()
 
 ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(src)

@@ -1,14 +1,16 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NONCOPYABLE_H_
-#define USTORE_NONCOPYABLE_H_
+#ifndef USTORE_UTILS_NONCOPYABLE_H_
+#define USTORE_UTILS_NONCOPYABLE_H_
 
 namespace ustore {
+
 struct Noncopyable {
-    Noncopyable() {}
-    ~Noncopyable() {}
-    Noncopyable(const Noncopyable&) = delete;
-    Noncopyable& operator=(const Noncopyable&) = delete;
+  Noncopyable() {}
+  ~Noncopyable() {}
+  Noncopyable(const Noncopyable&) = delete;
+  Noncopyable& operator=(const Noncopyable&) = delete;
 };
-}
-#endif
+
+}  // namespace ustore
+#endif  // USTORE_UTILS_NONCOPYABLE_H_

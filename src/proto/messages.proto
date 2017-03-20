@@ -1,0 +1,128 @@
+/// Copyright (c) 2017 The Ustore Authors.
+
+package ustore;
+
+/**
+ * A message exchanged between the system components. 
+ * It contains 2 parts: a header and a payload
+ *  + Header: key, version, branch, type (and response status, if applicable)
+ *  + Payload: each message type has its own payload message
+ *
+ * The message contains many optional fields, each corresponding to a payload type. 
+ * Note that when ommited, these fields consume no space. 
+ *
+ * To extend the message: define a new type, and define a new payload inside this object.
+ */
+message UStoreMessage {
+  enum Type {
+    PUT_REQUEST = 1;
+    PUT_RESPONSE = 2;
+    GET_REQUEST = 3;
+    GET_RESPONSE = 4; 
+    BRANCH_REQUEST = 5; 
+    BRANCH_RESPONSE = 6;
+    MOVE_REQUEST = 7;
+    MOVE_RESPONSE = 8;
+    MERGE_REQUEST = 9; 
+    MERGE_RESPONSE = 10;
+  }
+
+  enum Status {
+    SUCCESS = 1;
+    FAILED = 2; // because of logical errors (e.g. out of memory)
+    INVALID_RANGE = 3; // because of changes in key ranges
+  }
+
+  /**
+   * HEADER
+   */
+  optional Type type = 1;
+  // key
+  optional bytes key = 2;
+  // version
+  optional bytes version = 3;
+  // branch
+  optional bytes branch = 4; 
+  // status (only for RESPONSE messages)
+  optional Status status = 5; 
+  // to identify the sending thread
+  required int32 source = 15;
+
+  /**
+   * PAYLOAD
+   */
+  // PUT_REQUEST payload
+  message PutRequestPayload {
+    optional bool forward = 1; 
+    optional bool force = 2; 
+    required bytes value = 3; 
+  }
+
+  // PUT_RESPONSE payload
+  message PutResponsePayload {
+    required bytes new_version = 1;
+  }
+
+  // GET_REQUEST payload - Nothing to do
+
+  // GET_RESPONSE payload
+  message GetResponsePayload {
+    required bytes value = 1;
+  }
+
+  // BRANCH_REQUEST 
+  message BranchRequestPayload {
+    required bytes new_branch = 1; 
+  }
+
+  // BRANCH_RESPONSE, MOVE_RESPONSE, MERGE_RESPONSE
+  // Status field indicates success or failure
+
+  // MOVE_REQUEST
+  message MoveRequestPayload {
+    required bytes new_branch = 1;  
+  }
+
+  // MERGE_REQUEST
+  message MergeRequestPayload {
+    required bytes target_branch = 1;
+    required bytes ref_branch = 2; 
+    required bytes value = 3; 
+  }
+
+  optional PutRequestPayload put_request_payload = 6; 
+  optional PutResponsePayload put_response_payload = 7; 
+  optional GetResponsePayload get_response_payload = 8; 
+  optional BranchRequestPayload branch_request_payload = 9; 
+  optional MoveRequestPayload move_request_payload = 10; 
+  optional MergeRequestPayload merge_request_payload = 11; 
+}
+
+/**
+ * Request for RangeInfo messages, sent by the RequestHandler to the Master
+ * If the message is empty, Master is expected to send the entire RangeInfo mapping.
+ * Else, the request specifies the key for which the Master responses with the RangeInfo
+ * of this range
+ */
+message RangeRequest {
+  optional bytes key = 1;
+}
+
+// Response to RangeRequest, contains multiples RangeInfo messages
+message RangeResponse {
+  repeated RangeInfo range_map = 1;
+}
+
+/**
+ * RangeInfo: contains the mapping between a key range [start,end) and a
+ * workerInfo
+ */
+message RangeInfo {
+  // Range
+  required bytes start = 1;
+  required bytes end = 2;
+
+  // Worker information
+  required bytes id = 3;
+  required string address = 4;
+}

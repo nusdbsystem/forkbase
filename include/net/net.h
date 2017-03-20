@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NET_NET_H_
-#define USTORE_NET_NET_H_
+#ifndef INCLUDE_NET_NET_H_
+#define INCLUDE_NET_NET_H_
 
 #include <string>
 #include <unordered_map>
@@ -12,7 +12,17 @@
 namespace ustore {
 
 typedef std::string node_id_t;
-typedef void CallBackProc(void *msg, int size, void* app_data);
+
+/**
+ * Callback function that is invoked on receiving of a message.
+ * The network thread will free the message after calling this, so if
+ * the message is to be processed asynchronously, a copy must be made.
+ * handler: is the pointer to the object that processes the message
+ *          it is "registered" via the Net object (RegisterRecv)
+ * source:  extracted from the received socket
+ */ 
+typedef void CallBackProc(const void *msg, int size, void* handler,
+                                            const node_id_t& source);
 
 /**
  * Wrapper to all network connections. This should be created only once for each network
@@ -35,6 +45,19 @@ class Net : private Noncopyable {
     return netmap_[id];
   }
 
+  /**
+   * Register the callback function that will be called whenever there is new
+   * data is received
+   * func: the callback function
+   * handler: pointer to a object that handle this request
+   *
+   * anh: originally this is a member of NetContext. But moved here to make 
+   * it cleaner. First, it needs to registered only once, instead of for as many as 
+   * the number of connections. Second, there is no concurrency problem, because the
+   * received socket is read by only one (the main) thread. 
+   */
+  virtual void RegisterRecv(CallBackProc* func, void* handler) = 0;
+
  protected:
   Net() {}
   explicit Net(const& node_id_t id) : cur_node_(id) {}
@@ -42,6 +65,7 @@ class Net : private Noncopyable {
  private:
   node_id_t cur_node_;
   std::unordered_map<node_id_t, NetContext*> netmap_;
+  void *upstream_handle_ = nullptr;  // to be passed to callback
 };
 
 /**
@@ -64,33 +88,23 @@ class NetContext {
    * app_data: the application-provided data that will be used in the callback
    *           function (not supported)
    */
-  virtual ssize_t Send(void* ptr, size_t len, CallBackProc* func = nullptr,
+  virtual ssize_t Send(const void* ptr, size_t len, CallBackProc* func = nullptr,
                        void* app_data = nullptr) = 0;
 
-  // Register a callback function
-  /*
-   * register the callback function that will be called whenever there is new
-   * data received
-   * func: the callback function
-   * app_data: the application-provided data that will be used in the callback
-   *           function
-   */
-  virtual void RegisterRecv(CallBackProc* func, void* app_data) = 0;
 
   // Blocking APIs (not supported)
-  virtual ssize_t SyncSend(void* ptr, size_t len);
-  virtual ssize_t SyncRecv(void* ptr, size_t len);
+  virtual ssize_t SyncSend(const void* ptr, size_t len);
+  virtual ssize_t SyncRecv(const void* ptr, size_t len);
 
   // methods to access private variables
-  inline const node_id_t& srcID() const { return src_id_; }
-  inline const node_id_t& destID() const { return dest_id_; }
+  inline const node_id_t& srcID() const noexcept { return src_id_; }
+  inline const node_id_t& destID() const noexcept { return dest_id_; }
 
  private:
   node_id_t src_id_, dest_id_;
   CallBackProc* cb_ = nullptr;
-  void *upstream_handle_ = nullptr;  // to be passed to callback
 };
 
 }  // namespace ustore
 
-#endif  // USTORE_NET_NET_H_
+#endif  // INCLUDE_NET_NET_H_
