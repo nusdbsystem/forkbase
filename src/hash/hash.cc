@@ -1,11 +1,14 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include "hash/hash.h"
-
 #include <cstring>
 #include <iostream>
 #include <map>
+#include "hash/hash.h"
 #include "utils/logging.h"
+
+#ifdef USE_SHA256
+#include "hash/sha2.h"
+#endif  // USE_SHA256
 
 namespace ustore {
 
@@ -44,27 +47,32 @@ const std::map<char, byte_t> base32dict = {{'A', 0},
                                            {'7', 31}};
 
 Hash::Hash(const byte_t* hash) { value_ = const_cast<byte_t*>(hash); }
-Hash::Hash(const Hash& hash) {
-  value_ = hash.value_;
-}
+Hash::Hash(const Hash& hash) { value_ = hash.value_; }
 Hash::~Hash() {
   if (own_) delete[] value_;
 }
-void Hash::operator=(const Hash& hash) {
+Hash& Hash::operator=(const Hash& hash) {
   if (own_) delete[] value_;
   own_ = false;
   value_ = hash.value_;
+  return *this;
 }
 
 bool Hash::operator<(const Hash& hash) const {
+  CHECK(value_);
+  CHECK(hash.value_);
   return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) < 0;
 }
 
 bool Hash::operator==(const Hash& hash) const {
+  CHECK(value_);
+  CHECK(hash.value_);
   return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) == 0;
 }
 
 bool Hash::operator>(const Hash& hash) const {
+  CHECK(value_);
+  CHECK(hash.value_);
   return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) > 0;
 }
 
@@ -72,16 +80,18 @@ bool Hash::operator<=(const Hash& hash) const { return !operator>(hash); }
 bool Hash::operator>=(const Hash& hash) const { return !operator<(hash); }
 bool Hash::operator!=(const Hash& hash) const { return !operator==(hash); }
 
+void Hash::CopyFrom(const Hash& hash) {
+  Alloc();
+  memcpy(value_, hash.value_, HASH_BYTE_LEN);
+}
+
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
 // which is a multiplier of 5 bits, so no need of padding.
 void Hash::FromString(const std::string& base32) {
   CHECK_EQ(HASH_STRING_LEN, base32.length())
       << "length of input string is not 32 bytes";
-  if (own_ == false) {
-    own_ = true;
-    value_ = new byte_t[HASH_BYTE_LEN];
-  }
+  Alloc();
   uint64_t tmp;
   size_t dest = 0;
   for (size_t i = 0; i < HASH_STRING_LEN; i += 8) {
@@ -98,7 +108,7 @@ void Hash::FromString(const std::string& base32) {
   }
 }
 
-std::string Hash::ToString() {
+std::string Hash::ToString() const {
   std::string ret;
   uint64_t tmp;
   for (size_t i = 0; i < HASH_BYTE_LEN; i += 5) {
@@ -111,5 +121,21 @@ std::string Hash::ToString() {
   }
   return ret;
 }
+
+void Hash::Alloc() {
+  if (own_ == false) {
+    own_ = true;
+    value_ = new byte_t[HASH_BYTE_LEN];
+  }
+}
+
+#ifdef USE_SHA256
+void Hash::Compute(const byte_t* data, size_t len) {
+  Alloc();
+  byte_t fullhash[HASH_STRING_LEN];
+  picosha2::hash256(data, data + len, fullhash, fullhash + HASH_STRING_LEN);
+  std::copy(fullhash, fullhash + HASH_BYTE_LEN, value_);
+}
+#endif  // USE_SHA256
 
 }  // namespace ustore

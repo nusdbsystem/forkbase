@@ -3,20 +3,20 @@
 #include <string>
 #include <sstream>
 #include "gtest/gtest.h"
-#include "hash/sha2.h"
+#include "hash/hash.h"
 
 const ustore::byte_t raw_str[] = "The quick brown fox jumps over the lazy dog";
 const char base32_encoded[] = "26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
 const char hash_hex_str[] = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e4";
 
-TEST(SHA2, FromString) {
-  ustore::SHA256 h;
+TEST(Hash, FromString) {
+  ustore::Hash h;
   h.FromString(base32_encoded);
   EXPECT_EQ(base32_encoded, h.ToString());
 }
 
-TEST(SHA2, HashTest) {
-  ustore::SHA256 h;
+TEST(Hash, HashTest) {
+  ustore::Hash h;
   h.Compute(raw_str, 43);
   EXPECT_EQ(h.ToString(), base32_encoded);
   std::ostringstream stm;

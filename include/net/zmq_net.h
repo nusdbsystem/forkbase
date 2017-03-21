@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NET_ZMQ_NET_H_
-#define USTORE_NET_ZMQ_NET_H_
+#ifndef INCLUDE_NET_ZMQ_NET_H_
+#define INCLUDE_NET_ZMQ_NET_H_
 
 #include <mutex>
 #include "net/net.h"
@@ -11,7 +11,7 @@ namespace ustore {
 // Network wrapper based on zeromq
 class ZmqNet : public Net {
  public:
-  explicit ZmqNet(const node_id_t& id);
+  explicit ZmqNet(const node_id_t& id, int nthreads);
   NetContext* CreateNetContext(const node_id_t& id) override;
 
   /**
@@ -28,6 +28,7 @@ class ZmqNet : public Net {
   void *recv_sock_, *backend_sock_;  // router and backend socket
   void *socket_ctx_;
   bool is_running_;
+  int nthreads_;  // number of processing threads
 };
 
 class ZmqNetContext : public NetContext {
@@ -50,4 +51,4 @@ class ZmqNetContext : public NetContext {
 
 }  // namespace ustore
 
-#endif  // USTORE_NET_ZMQ_NET_H_
+#endif  // INCLUDE_NET_ZMQ_NET_H_

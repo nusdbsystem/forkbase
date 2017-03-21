@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NET_RDMA_NET_H_
-#define USTORE_NET_RDMA_NET_H_
+#ifndef INCLUDE_NET_RDMA_NET_H_
+#define INCLUDE_NET_RDMA_NET_H_
 
 #include <infiniband/verbs.h>
 #include <atomic>
@@ -26,7 +26,7 @@ class RdmaNetResource;
 
 class RdmaNet : public Net {
  public:
-  explicit RdmaNet(const node_id_t& id);
+  explicit RdmaNet(const node_id_t& id, int nthreads);
   ~RdmaNet();
 
   NetContext* CreateNetContext(const node_id_t& id) override;
@@ -48,6 +48,7 @@ class RdmaNet : public Net {
   boost::thread_group threadpool_;
   boost::asio::io_service::work work_;
 
+  int nthreads_;  // number of processing threads
   /*
   //below are for internal use
   RdmaNetContext* CreateRdmaNetContext(node_id_t id, bool& exist);
@@ -250,4 +251,4 @@ class RdmaNetResource {
 
 }  // namespace ustore
 
-#endif  // USTORE_NET_RDMA_NET_H_
+#endif  // INCLUDE_NET_RDMA_NET_H_
