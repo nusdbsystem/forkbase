@@ -1,15 +1,18 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef INCLUDE_COMMON_CLIENT_SERVICE_H_
-#define INCLUDE_COMMON_CLIENT_SERVICE_H_
+#ifndef USTORE_CLUSTER_CLIENT_SERVICE_H_
+#define USTORE_CLUSTER_CLIENT_SERVICE_H_
+
+#include <condition_variable>
+#include <mutex>
 #include <vector>
-#include "proto/messages.pb.h"
+#include "cluster/request_handler.h"
 #include "net/net.h"
-#include "utils/logging.h"
-#include "common/request_handler.h"
+
+namespace ustore {
+
 using std::condition_variable;
 using std::mutex;
-namespace ustore {
 
 /**
  * The client sends requests to this ClientService, which then forwards 
@@ -25,17 +28,16 @@ namespace ustore {
  */
 class ClientService {
  public:
+    // Dispatching responses from the network.
+    // Basically call this->HandleResponse() that wakes up client threads.
+    static void ResponseDispatch(const void *msg, int size, void *handler,
+                                 const node_id_t& source);
+
     explicit ClientService(const node_id_t& master): master_(master) {}
     ~ClientService();
 
     // initialize the network, register callback, spawn ClientThreads
     virtual void Init();
-
-    // Dispatching responses from the network.
-    // Basically call this->HandleResponse() that wakes up client threads.
-    static void ResponseDispatch(const void *msg, int size,
-        void *handler, const node_id_t& source);
-
     /**
      * Handle a response from workers:
      * 1. It parse msg into a UStoreMessage
@@ -45,8 +47,8 @@ class ClientService {
      *    client.
      * 3. Hand-off the message to whatever thread is waiting for it.
      */
-    virtual void HandleResponse(const void *msg, int size, const node_id_t& source);
-
+    virtual void HandleResponse(const void *msg, int size,
+                                const node_id_t& source);
     /**
      * Inside this thread a RequestHandle is initialized, using the following
      * information:
@@ -56,7 +58,6 @@ class ClientService {
      *  + ResponseBlob, which is responses_[id]
      */
     void ClienThread(const node_id_t& master, int id);
-
     /**
      * Called from ClientThread (in a loop) to process next request.
      * When the client is decoupled from ClientService, this method should
@@ -71,4 +72,5 @@ class ClientService {
     vector<ResponseBlob*> responses_;  // the response queue
 };
 }  // namespace ustore
-#endif  // INCLUDE_COMMON_CLIENT_SERVICE_H_
+
+#endif  // USTORE_CLUSTER_CLIENT_SERVICE_H_

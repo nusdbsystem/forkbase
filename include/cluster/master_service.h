@@ -1,12 +1,15 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef INCLUDE_COMMON_MASTER_SERVICE_H_
-#define INCLUDE_COMMON_MASTER_SERVICE_H_
+#ifndef USTORE_CLUSTER_MASTER_SERVICE_H_
+#define USTORE_CLUSTER_MASTER_SERVICE_H_
+
 #include <string>
+#include "cluster/worker_service.h"
 #include "net/net.h"
-using std::string;
+
 namespace ustore {
 
+using std::string;
 class Master;
 
 /**
@@ -15,20 +18,19 @@ class Master;
  * the ranges.
  * Basically a simplified version of WorkerService. 
  */
-class MasterService: public WorkerService{
+class MasterService: public WorkerService {
  public:
-    explicit MasterService(const node_id_t& id, const string& config_path) :
-            WorkerService(id), config_path_(config_path) {}
+    // Dispatch requests (RangeInfo, etc.) from the network.
+    // Basically call this->HandleRequest that invoke Master methods.
+    static void ResponseDispatch(const void *msg, int size, void *handler,
+                                 const node_id_t& source);
+
+    explicit MasterService(const node_id_t& id, const string& config_path)
+        : WorkerService(id), config_path_(config_path) {}
     ~MasterService();
 
     // initialize the network, the worker and register callback
     void Init();
-
-    // Dispatch requests (RangeInfo, etc.) from the network.
-    // Basically call this->HandleRequest that invoke Master methods.
-    static void ResponseDispatch(const void *msg, int size,
-        void *handler, const node_id_t& source);
-
     /**
      * Handle requests:
      * 1. It parse msg into a message (RangeRequest, e.g)
@@ -38,9 +40,9 @@ class MasterService: public WorkerService{
     void HandleRequest(const void *msg, int size, const node_id_t& source);
 
  private:
-    string config_path_;  // the master may read from a global
-                          // config file
+    string config_path_;  // the master may read from a global config file
     Master* master_;  // where the logic happens
 };
 }  // namespace ustore
-#endif  // INCLUDE_COMMON_MASTER_SERVICE_H_
+
+#endif  // USTORE_CLUSTER_MASTER_SERVICE_H_

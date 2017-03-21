@@ -1,18 +1,21 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef INCLUDE_COMMON_REQUEST_HANDLER_H_
-#define INCLUDE_COMMON_REQUEST_HANDLER_H_
-#include <mutex>
+#ifndef USTORE_CLUSTER_REQUEST_HANDLER_H_
+#define USTORE_CLUSTER_REQUEST_HANDLER_H_
+
 #include <condition_variable>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
-#include "proto/messages.pb.h"
 #include "net/net.h"
+#include "proto/messages.pb.h"
 #include "spec/slice.h"
+
+namespace ustore {
+
 using std::unordered_map;
 using std::condition_variable;
 using std::mutex;
-namespace ustore {
 
 /**
  * A unit on the response queue. Each client request thread (RequestHandler)
@@ -24,13 +27,12 @@ namespace ustore {
  * a synchronous manner. As a result, the msg must be cleared before another
  * response is set.
  */
-typedef struct {
+struct ResponseBlob {
   mutex lock;
   condition_variable condition;
   bool has_msg;
   Message *message = nullptr;
-} ResponseBlob;
-
+};
 
 /**
  * Main entrance to the storage. It interfaces with the client (same process),
@@ -66,57 +68,52 @@ typedef struct {
  *    }
  */
 
-
 class RequestHandler {
  public:
-    explicit RequestHandler(const node_id_t& master, int id, Net *net,
-        ResponseBlob *blob)
+  explicit RequestHandler(const node_id_t& master, int id, Net *net,
+                          ResponseBlob *blob)
       : master_(master), id_(id), net_(net), res_blob_(blob) {}
-    ~RequestHandler();
+  ~RequestHandler();
 
-    /**
-     * Initialization. Must perform at least the following:
-     * 1. Connect to the master.
-     * 2. Connect to all other workers.
-     * 3. Initialize the worker list.
-     */
-    virtual void Init();
+  /**
+   * Initialization. Must perform at least the following:
+   * 1. Connect to the master.
+   * 2. Connect to all other workers.
+   * 3. Initialize the worker list.
+   */
+  void Init();
+  /**
+   * Storage APIs. The returned Message contains the Status field indicate
+   * if it is successful or not. 
+   */
+  Message* Put(const Slice &key, const Slice &branch, const Slice &version,
+               const Slice &value, bool forward = false, bool force = false);
+  Message* Get(const Slice &key, const Slice &branch, const Slice &version);
+  Message* Branch(const Slice &key, const Slice &old_branch,
+                  const Slice &version, const Slice &new_branch);
+  Message* Move(const Slice &key, const Slice &old_branch,
+                const Slice &new_branch);
+  Message* Merge(const Slice &key, const Slice &value,
+                 const Slice &target_branch, const Slice &ref_branch,
+                 const Slice &ref_version, bool forward = false,
+                 bool force = false);
 
-    /**
-     * Storage APIs. The returned Message contains the Status field indicate
-     * if it is successful or not. 
-     */
-    virtual Message* Put(const Slice &key, const Slice &branch,
-        const Slice &version, const Slice &value, bool forward = false,
-        bool force = false);
-    virtual Message* Get(const Slice &key, const Slice &branch,
-        const Slice &version);
-    virtual Message* Branch(const Slice &key, const Slice &old_branch,
-        const Slice &version, const Slice &new_branch);
-    virtual Message* Move(const Slice &key, const Slice &old_branch,
-        const Slice &new_branch);
-    virtual Message* Merge(const Slice &key, const Slice &value,
-        const Slice &target_branch, const Slice &ref_branch,
-        const Slice &ref_version, forward = false, force = false);
-
-    inline int id() const noexcept { return id_; }
+  inline int id() const noexcept { return id_; }
 
  private:
-    // send request to a node. Return false if there are
-    // errors with network communication.
-    bool Send(const Message *msg, const node_id_t& node_id);
+  // send request to a node. Return false if there are
+  // errors with network communication.
+  bool Send(const Message *msg, const node_id_t& node_id);
+  // wait for response, and take ownership of the message.
+  Message* WaitForResponse();
+  // sync the worker list, whenever the storage APIs return error
+  bool SyncWithMaster();
 
-    // wait for response, and take ownership of the message.
-    Message* WaitForResponse();
-
-    // sync the worker list, whenever the storage APIs return error
-    virtual bool SyncWithMaster();
-
-    int id_ = 0;  // thread identity, in order to identify the waiting thread
-    node_id_t master_;  // address of the master node
-    Net *net_ = nullptr;  // for network communication
-    WorkerList *workers_;  // lists of workers to which requests are dispatched
-    ResponseBlob *blob_;  // response blob
+  int id_ = 0;  // thread identity, in order to identify the waiting thread
+  node_id_t master_;  // address of the master node
+  Net *net_ = nullptr;  // for network communication
+  WorkerList *workers_;  // lists of workers to which requests are dispatched
+  ResponseBlob *blob_;  // response blob
 };
 
 /**
@@ -130,19 +127,19 @@ class RequestHandler {
 class WorkerList {
  public:
     explicit WorkerList(const vector<RangeInfo> &workers);
+    ~WorkerList() {}
 
     /**
      * Invoked whenever the list is out of date.
      */
-    virtual bool Update(const vector<RangeInfor> &workers);
-
+    bool Update(const vector<RangeInfor> &workers);
     /**
      * Return the ID (address string) of the worker node whose key range
      * contains the given key.
      * It always returns a valid ID, but the node may have gone offline. The calling
      * function is responsible for updating the list.
      */
-    virtual node_id_t get_worker(const Slice& key);
+    node_id_t get_worker(const Slice& key);
 
  private:
     // should be sorted by the range
@@ -150,4 +147,4 @@ class WorkerList {
 };
 }  // namespace ustore
 
-#endif  // INCLUDE_COMMON_REQUEST_HANDLER_H_
+#endif  // USTORE_CLUSTER_REQUEST_HANDLER_H_
