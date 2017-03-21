@@ -1,4 +1,6 @@
-![architecture figure](Architecture.jpg)
+# System Architecture
+
+![architecture figure](architecture.jpg)
 ### Request Handler
 All user requests will be collected/queued by Request Handler.
 In other to send request to worker nodes, it need first fetch worker list and key-range assignment from Master.
