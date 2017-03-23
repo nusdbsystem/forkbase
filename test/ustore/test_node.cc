@@ -77,13 +77,8 @@ TEST(MetaNode, Basic) {
   std::vector<const ustore::byte_t*> entry_data = {me_bytes1, me_bytes2};
   std::vector<size_t> entry_num_bytes = {encode_len1, encode_len2};
 
-<<<<<<< HEAD
-  const ustore::Chunk* chunk =
-      ustore::MetaNode::MakeChunk(entry_data, entry_num_bytes);
-=======
   ustore::ChunkInfo chunk_info = ustore::MetaNode::MakeChunk(entry_data,
                                                              entry_num_bytes);
->>>>>>> 3293192... add a customized makechunk function
 
   // test on the created chunk
   const ustore::Chunk* chunk = chunk_info.first;

@@ -15,7 +15,6 @@
 
 #include "utils/logging.h"
 #include "utils/singleton.h"
-#include "utils/debug.h"
 
 #ifdef USE_LEVELDB
 #include "store/ldb_store.h"
@@ -170,9 +169,8 @@ class NodeBuilderSimple:public NodeBuilderEnv {
     const ustore::byte_t raw_data[] = "abcdefghijklmn";
 
     size_t num_bytes = sizeof(raw_data) - 1;
-    num_origin_bytes_ = num_bytes;
-    original_content = new ustore::byte_t[num_bytes];
-    std::memcpy(original_content, raw_data, num_bytes);
+    expected_content = new ustore::byte_t[num_bytes];
+    std::memcpy(expected_content, raw_data, num_bytes);
 
     std::vector<const ustore::byte_t*> elements_data;
     std::vector<size_t> elements_num_bytes;
@@ -193,63 +191,24 @@ class NodeBuilderSimple:public NodeBuilderEnv {
     // root_hash = chunk->hash();
   }
 
-  void Test_Splice(size_t splice_idx, ustore::byte_t* insert_bytes,
-                   size_t num_insert_bytes, size_t num_delete_bytes,
-                   bool isVerbose = false) {
-    verbose = isVerbose;
-    ustore::InitLogging("");
-    ustore::NodeBuilder* b = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-        root_chunk->hash(), splice_idx, loader_);
-    // Splice at seq beginning
-    std::vector<const ustore::byte_t*> elements_data;
-    std::vector<size_t> elements_num_bytes;
-
-    for (size_t i = 0; i < num_insert_bytes; ++i) {
-      elements_data.push_back(new ustore::byte_t[1]{insert_bytes[i]});
-      elements_num_bytes.push_back(1);
-    }
-
-    b->SpliceEntries(num_delete_bytes, elements_data, elements_num_bytes);
-    const ustore::Chunk* c = b->Commit(ustore::BlobNode::MakeChunk);
-
-    Test_Tree_Integrity(c->hash(), loader_);
-    const ustore::byte_t* expected_data =
-        ustore::SpliceBytes(original_content, num_origin_bytes_, splice_idx,
-                            num_delete_bytes, insert_bytes, num_insert_bytes);
-    Test_Same_Content(c->hash(), loader_, expected_data);
-
-    delete[] expected_data;
-    delete b;
-    delete c;
-    verbose = false;
-  }
-
   virtual void TearDown() {
     NodeBuilderEnv::TearDown();
-    delete[] original_content;
+    delete[] expected_content;
     delete root_chunk;
   }
 
   const ustore::Chunk* root_chunk;
-  size_t num_origin_bytes_;
-  ustore::byte_t* original_content;
+  ustore::byte_t* expected_content;
 };
 
 TEST_F(NodeBuilderSimple, InitTree) {
-<<<<<<< HEAD
     verbose = false;
     Test_Tree_Integrity(root_chunk->hash(), loader_);
     Test_Same_Content(root_chunk->hash(), loader_, expected_content);
-=======
-  verbose = false;
-  Test_Tree_Integrity(root_chunk->hash(), loader_);
-  Test_Same_Content(root_chunk->hash(), loader_, original_content);
->>>>>>> 7c2ab59... clean up node_builder test
 }
 
 TEST_F(NodeBuilderSimple, SpliceStart) {
   // Test on insertion at start point
-<<<<<<< HEAD
   ustore::NodeBuilder* b1 = ustore::NodeBuilder
                                   ::NewNodeBuilderAtIndex(
                                                          root_chunk->hash(),
@@ -538,61 +497,13 @@ TEST_F(NodeBuilderSimple, SpliceToEnd) {
 
   delete b3;
   delete c3;
-=======
-  ustore::byte_t insert_slice[] = "xyz";
-  // insert only
-  // "abcdefghijklmn" ==> "xyzabcdefghijklmn";
-  Test_Splice(0, insert_slice, 3, 0);
-  // delete 1 byte and insert
-  // "abcdefghijklmn" ==> "xyzbcdefghijklmn";
-  Test_Splice(0, insert_slice, 3, 1);
-  // delete 3 bytes
-  // "abcdefghijklmn" ==> "defghijklmn";
-  Test_Splice(0, nullptr, 0, 3);
-}
-
-TEST_F(NodeBuilderSimple, SpliceMiddle) {
-  ustore::byte_t insert_slice[] = "mn";
-  // insert only
-  // "abcdefghijklmn" ==> "abcdemnfghijklmn";
-  Test_Splice(5, insert_slice, 3, 0);
-  // delete 1 byte and insert
-  // "abcdefghijklmn" ==> "abcdemnghijklmn";
-  Test_Splice(5, insert_slice, 3, 1);
-  // delete 3 bytes
-  // "abcdefghijklmn" ==> "abcdeijklmn";
-  Test_Splice(5, nullptr, 0, 3);
-}
-
-TEST_F(NodeBuilderSimple, SpliceFromEnd) {
-  ustore::byte_t insert_slice[] = "xy";
-  // insert only
-  // "abcdefghijklmn" ==> "abcdefghijklmnxy";
-  Test_Splice(20, insert_slice, 3, 0);
-  // delete 1 byte and insert
-  // "abcdefghijklmn" ==> "abcdefghijklmnxy";
-  Test_Splice(20, insert_slice, 3, 1);
-  // delete 3 bytes
-  // "abcdefghijklmn" ==> "abcdefghijklmn";
-  Test_Splice(20, nullptr, 0, 3);
-}
-
-TEST_F(NodeBuilderSimple, SpliceToEnd) {
-  ustore::byte_t insert_slice[] = "xyz";
-  // delete 3 byte and insert
-  // "abcdefghijklmn" ==> "abcdefghijklxyz";
-  Test_Splice(12, insert_slice, 3, 3);
-  // delete 3 bytes
-  // "abcdefghijklmn" ==> "abcdefghijkl";
-  Test_Splice(12, nullptr, 0, 3);
->>>>>>> 7c2ab59... clean up node_builder test
 }
 
 class NodeBuilderComplex:public NodeBuilderEnv {
  protected:
   virtual void SetUp() {
     NodeBuilderEnv::SetUp();
-    verbose = true;
+    verbose = false;
     const ustore::byte_t raw_data[] = {
       "SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
       "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is this "
@@ -621,6 +532,7 @@ class NodeBuilderComplex:public NodeBuilderEnv {
       "pitch, Who else would soar above the view of men And keep us all in "
       "servile fearfulness. Exeunt"};
 
+// Construct normal tree
     original_num_bytes = sizeof(raw_data) - 1;
     original_content = new ustore::byte_t[original_num_bytes];
     std::memcpy(original_content, raw_data, original_num_bytes);
@@ -641,10 +553,29 @@ class NodeBuilderComplex:public NodeBuilderEnv {
     builder.SpliceEntries(0, elements_data, elements_num_bytes);
     root_chunk = builder.Commit(ustore::BlobNode::MakeChunk);
 
-    // root_hash = chunk->hash();
+// Construct special tree with both implicit and explicit boundary in the end
+    // length of first three leaf chunks of above tree
+    special_num_bytes = 67 + 38 + 193;
+    special_content = new ustore::byte_t[special_num_bytes];
+    std::memcpy(special_content, raw_data, special_num_bytes);
+
+    elements_data.clear();
+    elements_num_bytes.clear();
+
+    for (size_t i = 0; i < special_num_bytes; i++) {
+      ustore::byte_t* element_data = new ustore::byte_t[1];
+      std::memcpy(element_data, raw_data + i, 1);
+
+      elements_data.push_back(element_data);
+      elements_num_bytes.push_back(1);
+    }
+
+    ustore::NodeBuilder abuilder = ustore::NodeBuilder();
+
+    abuilder.SpliceEntries(0, elements_data, elements_num_bytes);
+    special_root = abuilder.Commit(ustore::BlobNode::MakeChunk);
   }
 
-<<<<<<< HEAD
   // a utility method to splice chars for testing node building result
   const ustore::byte_t* SpliceChars(const ustore::byte_t* src,
                                     size_t src_size,
@@ -652,24 +583,12 @@ class NodeBuilderComplex:public NodeBuilderEnv {
                                     const ustore::byte_t* append,
                                     size_t append_size) {
     if (start > src_size) start = src_size;
-=======
-  void test_splice_case(size_t splice_idx, const ustore::byte_t* append_data,
-                        size_t append_num_bytes, size_t num_delete) {
-    std::vector<const ustore::byte_t*> elements_data;
-    std::vector<size_t> elements_num_bytes;
 
-    ustore::NodeBuilder* b = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-        root_chunk->hash(), splice_idx, loader_);
->>>>>>> 7c2ab59... clean up node_builder test
-
-    for (size_t i = 0; i < append_num_bytes; i++) {
-      ustore::byte_t* d = new ustore::byte_t[1];
-      *d = *(append_data + i);
-      elements_data.push_back(d);
-      elements_num_bytes.push_back(1);
+    size_t real_delete = num_delete;
+    if (src_size - start < num_delete) {
+      real_delete = src_size - start;
     }
 
-<<<<<<< HEAD
     ustore::byte_t* result = new ustore::byte_t
                                 [src_size - real_delete + append_size];
 
@@ -678,21 +597,8 @@ class NodeBuilderComplex:public NodeBuilderEnv {
     std::memcpy(result + start + append_size,
                 src + start + real_delete,
                 src_size - start - real_delete);
-=======
-    b->SpliceEntries(num_delete, elements_data, elements_num_bytes);
-    const ustore::Chunk* c = b->Commit(ustore::BlobNode::MakeChunk);
 
-    Test_Tree_Integrity(c->hash(), loader_);
-    const ustore::byte_t* d =
-        ustore::SpliceBytes(original_content, original_num_bytes, splice_idx,
-                            num_delete, append_data, append_num_bytes);
-
-    Test_Same_Content(c->hash(), loader_, d);
->>>>>>> 7c2ab59... clean up node_builder test
-
-    delete b;
-    delete c;
-    delete[] d;
+    return result;
   }
 
   // test on three cases of splice from splice_idx element
@@ -712,11 +618,9 @@ class NodeBuilderComplex:public NodeBuilderEnv {
 
     size_t append_num_bytes = sizeof(append_data) - 1;
 
-    ustore::InitLogging("");
     // LOG(INFO) << " Append Bytes: " << append_num_bytes;
     // LOG(INFO) << " Original Bytes: " << original_num_bytes;
 
-<<<<<<< HEAD
     size_t num_delete = 500;
     std::vector<const ustore::byte_t*> elements_data;
     std::vector<size_t> elements_num_bytes;
@@ -807,14 +711,6 @@ class NodeBuilderComplex:public NodeBuilderEnv {
     delete b3;
     delete c3;
     delete[] d3;
-=======
-    // Delete and Insert
-    test_splice_case(splice_idx, append_data, append_num_bytes, 500);
-    // Insert Only
-    test_splice_case(splice_idx, append_data, append_num_bytes, 0);
-    // Delete Only
-    test_splice_case(splice_idx, append_data, 0, 500);
->>>>>>> 7c2ab59... clean up node_builder test
   }
 
   virtual void TearDown() {
@@ -826,7 +722,113 @@ class NodeBuilderComplex:public NodeBuilderEnv {
   const ustore::Chunk* root_chunk;
   ustore::byte_t* original_content;
   size_t original_num_bytes;
+
+  // info about a special prolly tree
+  //   with both implicit/explicit boundary in the end
+  const ustore::Chunk* special_root;
+  ustore::byte_t* special_content;
+  size_t special_num_bytes;
 };
+
+// Test on Insert at the end of special ptree
+TEST_F(NodeBuilderComplex, Special) {
+    // Insert Only
+    ustore::NodeBuilder* b = ustore::NodeBuilder
+                                    ::NewNodeBuilderAtIndex(
+                                                           special_root->hash(),
+                                                           special_num_bytes,
+                                                           loader_);
+    const ustore::byte_t append_data[] = {
+      "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is this "
+      "a holiday? what! know you not, Being mechanical, you ought not walk "
+      "Upon a labouring day without the sign Of your profession? Speak, what "
+      "trade art thou?  First Commoner Why, sir, a carpenter.  MARULLUS Where "
+      "is thy leather apron and thy rule?  What dost thou with thy best "
+      "apparel on?  You, sir, what trade are you?  Second Commoner Truly, sir, "
+      "in respect of a fine workman, I am but, as you would say, a cobbler."};
+
+
+    size_t append_num_bytes = sizeof(append_data) - 1;
+
+    std::vector<const ustore::byte_t*> elements_data;
+    std::vector<size_t> elements_num_bytes;
+
+    for (size_t i = 0; i < append_num_bytes; i++) {
+      ustore::byte_t* d = new ustore::byte_t[1];
+      *d = *(append_data + i);
+      elements_data.push_back(d);
+      elements_num_bytes.push_back(1);
+    }
+
+    b->SpliceEntries(0, elements_data, elements_num_bytes);
+    const ustore::Chunk* c = b->Commit(ustore::BlobNode::MakeChunk);
+
+    Test_Tree_Integrity(c->hash(), loader_);
+    const ustore::byte_t* d = SpliceChars(special_content,
+                                          special_num_bytes,
+                                          special_num_bytes, 0,
+                                          append_data,
+                                          append_num_bytes);
+    Test_Same_Content(c->hash(), loader_, d);
+
+    delete b;
+    delete c;
+    delete[] d;
+}
+
+TEST_F(NodeBuilderComplex, SpliceChar) {
+  const ustore::byte_t data[] = "abcde";
+  const ustore::byte_t append[] = "xyz";
+
+  const ustore::byte_t* result1 = SpliceChars(data, 5, 0, 1, append, 3);
+  const ustore::byte_t expected1[] = "xyzbcde";
+
+  for (size_t i = 0; i < 7; i++) {
+    ASSERT_EQ(*(result1 + i), *(expected1 + i));
+  }
+
+  const ustore::byte_t* result2 = SpliceChars(data, 5, 2, 0, append, 3);
+  const ustore::byte_t expected2[] = "abxyzcde";
+
+  for (size_t i = 0; i < 8; i++) {
+    ASSERT_EQ(*(result2 + i), *(expected2 + i));
+  }
+
+  const ustore::byte_t* result3 = SpliceChars(data, 5, 3, 3, append, 3);
+  const ustore::byte_t expected3[] = "abcxyz";
+
+  for (size_t i = 0; i < 6; i++) {
+    ASSERT_EQ(*(result3 + i), *(expected3 + i));
+  }
+
+  const ustore::byte_t* result4 = SpliceChars(data, 5, 3, 1, append, 3);
+  const ustore::byte_t expected4[] = "abcxyze";
+
+  for (size_t i = 0; i < 7; i++) {
+    ASSERT_EQ(*(result4 + i), *(expected4 + i));
+  }
+
+  const ustore::byte_t* result5 = SpliceChars(data, 5, 3, 1, append, 0);
+  const ustore::byte_t expected5[] = "abce";
+
+  for (size_t i = 0; i < 4; i++) {
+    ASSERT_EQ(*(result5 + i), *(expected5 + i));
+  }
+
+  const ustore::byte_t* result6 = SpliceChars(data, 5, 10, 1, append, 3);
+  const ustore::byte_t expected6[] = "abcdexyz";
+
+  for (size_t i = 0; i < 7; i++) {
+    ASSERT_EQ(*(result6 + i), *(expected6 + i));
+  }
+
+  const ustore::byte_t* result7 = SpliceChars(data, 5, 10, 0, append, 3);
+  const ustore::byte_t expected7[] = "abcdexyz";
+
+  for (size_t i = 0; i < 7; i++) {
+    ASSERT_EQ(*(result7 + i), *(expected7 + i));
+  }
+}
 
 TEST_F(NodeBuilderComplex, InitTree) {
   verbose = false;
