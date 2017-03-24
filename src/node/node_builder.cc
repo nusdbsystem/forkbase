@@ -19,73 +19,65 @@ static ustore::Singleton<ustore::LDBStore> ldb;
 #endif  // USE_LEVELDB
 
 namespace ustore {
-NodeBuilder* NodeBuilder::NewNodeBuilderAtIndex(
-                                            const Hash& root_hash,
-                                            size_t idx,
-                                            ChunkLoader* chunk_loader) {
-  NodeCursor* cursor = NodeCursor::GetCursorByIndex(root_hash, idx,
-                                                    chunk_loader);
+NodeBuilder* NodeBuilder::NewNodeBuilderAtIndex(const Hash& root_hash,
+                                                size_t idx,
+                                                ChunkLoader* chunk_loader) {
+  NodeCursor* cursor =
+      NodeCursor::GetCursorByIndex(root_hash, idx, chunk_loader);
   // LOG(INFO) << "\n\n\n";
   NodeBuilder* builder = new NodeBuilder(cursor, 0);
   return builder;
 }
 
-NodeBuilder* NodeBuilder::NewNodeBuilderAtKey(
-                                            const Hash& root_hash,
-                                            const OrderedKey& key,
-                                            ChunkLoader* chunk_loader) {
-  NodeCursor* cursor = NodeCursor::GetCursorByKey(root_hash, key,
-                                                  chunk_loader);
+NodeBuilder* NodeBuilder::NewNodeBuilderAtKey(const Hash& root_hash,
+                                              const OrderedKey& key,
+                                              ChunkLoader* chunk_loader) {
+  NodeCursor* cursor = NodeCursor::GetCursorByKey(root_hash, key, chunk_loader);
 
   // cursor now points to the leaf node
   NodeBuilder* builder = new NodeBuilder(cursor, 0);
   return builder;
 }
 
-
-NodeBuilder::NodeBuilder(size_t level):
-                          cursor_(nullptr),
-                          parent_builder_(nullptr),
-                          entries_data_(),
-                          entries_num_bytes_(),
-                          #ifdef TEST_NODEBUILDER
-                          rhasher_(RollingHasher::TestHasher()),
-                          #else
-                          rhasher_(new RollingHasher()),
-                          #endif
-                          commited_(true),
-                          num_appended_entries_(0),
-                          level_(level) {
+NodeBuilder::NodeBuilder(size_t level)
+    : cursor_(nullptr),
+      parent_builder_(nullptr),
+      entries_data_(),
+      entries_num_bytes_(),
+#ifdef TEST_NODEBUILDER
+      rhasher_(RollingHasher::TestHasher()),
+#else
+      rhasher_(new RollingHasher()),
+#endif
+      commited_(true),
+      num_appended_entries_(0),
+      level_(level) {
   // do nothing
 }
 
 NodeBuilder::NodeBuilder() : NodeBuilder(0) {}
 
-NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level):
-                                  cursor_(new NodeCursor(*cursor)),
-                                  parent_builder_(nullptr),
-                                  entries_data_(),
-                                  entries_num_bytes_(),
-                                  #ifdef TEST_NODEBUILDER
-                                  rhasher_(RollingHasher::TestHasher()),
-                                  #else
-                                  rhasher_(new RollingHasher()),
-                                  #endif
-                                  commited_(true),
-                                  num_appended_entries_(0),
-                                  level_(level) {
+NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level)
+    : cursor_(new NodeCursor(*cursor)),
+      parent_builder_(nullptr),
+      entries_data_(),
+      entries_num_bytes_(),
+#ifdef TEST_NODEBUILDER
+      rhasher_(RollingHasher::TestHasher()),
+#else
+      rhasher_(new RollingHasher()),
+#endif
+      commited_(true),
+      num_appended_entries_(0),
+      level_(level) {
   if (cursor_->parent() != nullptr) {
-    parent_builder_  = new NodeBuilder(cursor_->parent(), level + 1);
+    parent_builder_ = new NodeBuilder(cursor_->parent(), level + 1);
   }
   Resume();
 }
 
 void NodeBuilder::Resume() {
   int32_t original_idx = cursor_->idx();
-  size_t window_size = rhasher_->window_size();
-
-  size_t num_bytes_sum = 0;
-
   // num of cursor's retreat
   size_t num_retreat = 0;
 
@@ -98,56 +90,26 @@ void NodeBuilder::Resume() {
     entries_data_.push_front(entry_data);
     entries_num_bytes_.push_front(entry_num_bytes);
 
-    num_bytes_sum += entry_num_bytes;
     ++num_retreat;
   }
-  // LOG(INFO) << "Num Pre Chunk: " << num_retreat;
-  // We may need to go back to entries in previous chunk
-  // in order to populate the rolling hash window size
-
-  // num of entries in previous chunk
-  //   that need to be hashed into rolling hasher window
-  size_t num_pre_entries = 0;
-  while (num_bytes_sum <= window_size && !cursor_->Retreat(true)) {
-    size_t entry_num_bytes = cursor_->numCurrentBytes();
-    num_bytes_sum += entry_num_bytes;
-    ++num_retreat;
-    ++num_pre_entries;
-  }
+  // LOG(INFO) << "Resume: # entries in current Chunk before the original
+  // cursor: "
+  //           << num_retreat;
 
   // this is possible if cursor points at seq begin
-  if (cursor_->isBegin()) { cursor_->Advance(true); }
+  if (cursor_->isBegin()) {
+    cursor_->Advance(true);
+  }
 
   // from then on, advance the cursor back to the original place
-  // while filling entries in previous chunk into window
-  for (size_t i = 0; i < num_retreat; i++) {
-    if ( i < num_pre_entries ) {
-      rhasher_->HashBytes(cursor_->current(), cursor_->numCurrentBytes());
-      bool atChunkEnd = cursor_->Advance(false);
-
-      if (atChunkEnd) {
-        CHECK_EQ(i, num_pre_entries - 1);
-      // place the cursor at start of next chunk
-      // next chunk should contains the entry that
-      //   the cursor originally points to
-        cursor_->Advance(true);
-      }
-    } else {
-      // previous entries in the same chunk will be
-      //   hashed during commit phase
-      cursor_->Advance(true);
-    }  // end if
-  }  // end of for
+  // previous entries in the same chunk will be hashed during commit phase
+  for (size_t i = 0; i < num_retreat; i++) cursor_->Advance(true);
 
   CHECK_EQ(original_idx, cursor_->idx());
   // LOG(INFO) << "Level " << level_
-  //           << "\nPre Entry in Chunk: " << entries_data_.size()
-  //           << "\n# Retreat: " << num_retreat
-  //           << "\nEntry in Prev Chunk: " << num_pre_entries
-  //           << "\n";
-
-  // Keep the number of bytes hashed
-  rhasher_->ResetBoundary();
+  //           << "\n# Entry in the current Chunk before the cursor: "
+  //           << entries_data_.size() << "\n# Retreat: " << num_retreat <<
+  //           "\n";
 }
 
 void NodeBuilder::AppendEntry(const byte_t* data, size_t num_bytes) {
@@ -163,7 +125,7 @@ size_t NodeBuilder::SkipEntries(size_t num_elements) {
   // possible if this node builder is created during build process
   if (cursor_ == nullptr) return 0;
 
-  // LOG(INFO) << "Before Skip Idx: " << cursor_->idx()
+  // LOG(INFO) << "Level: " << level_ << " Before Skip Idx: " << cursor_->idx()
   //           << " Skip # Entry: " << num_elements;
 
   for (size_t i = 0; i < num_elements; i++) {
@@ -172,8 +134,7 @@ size_t NodeBuilder::SkipEntries(size_t num_elements) {
     // Here, cursor has already reached this chunk end
     //   we need to skip and remove the parent metaentry
     //     which points to current chunk
-    if (parent_builder_ == nullptr ||
-        parent_builder()->SkipEntries(1) == 0) {
+    if (parent_builder_ == nullptr || parent_builder()->SkipEntries(1) == 0) {
       // parent builder's cursor has also reached the seq end
       // therefore, current builder's cursor has also reached the seq end
       //   we can only skip i elements
@@ -185,26 +146,24 @@ size_t NodeBuilder::SkipEntries(size_t num_elements) {
       num_skip_entries_ += i;
       return i;
     } else {
-      // LOG(INFO) << "Level: " << level_
-      //           << " Recursive Skipping Parents. ";
+      // LOG(INFO) << "Level: " << level_ << " Recursive Skipping Parents. ";
       bool AtEnd = cursor_->Advance(true);
       CHECK(!AtEnd);
     }  // end if parent_chunker
-  }  // end for
+  }    // end for
   num_skip_entries_ += num_elements;
   return num_elements;
 }
 
-NodeBuilder:: ~NodeBuilder() {
+NodeBuilder::~NodeBuilder() {
   delete rhasher_;
   delete cursor_;
   delete parent_builder_;
 }
 
-
 void NodeBuilder::SpliceEntries(size_t num_delete,
-                    const std::vector<const byte_t*>& element_data,
-                    const std::vector<size_t>& element_num_bytes) {
+                                const std::vector<const byte_t*>& element_data,
+                                const std::vector<size_t>& element_num_bytes) {
   if (!commited_) {
     LOG(FATAL) << "There exists some uncommited_ operations. "
                << " Commit them first before doing any operation. ";
@@ -215,8 +174,8 @@ void NodeBuilder::SpliceEntries(size_t num_delete,
   size_t actual_delete = SkipEntries(num_delete);
 
   if (actual_delete < num_delete) {
-    LOG(WARNING) << "Actual Remove " << actual_delete
-                 << " elements instead of " << num_delete;
+    LOG(WARNING) << "Actual Remove " << actual_delete << " elements instead of "
+                 << num_delete;
   }
 
   CHECK_EQ(element_data.size(), element_num_bytes.size());
@@ -229,7 +188,6 @@ void NodeBuilder::SpliceEntries(size_t num_delete,
   }
 }
 
-
 NodeBuilder* NodeBuilder::parent_builder() {
   if (parent_builder_ == nullptr) {
     parent_builder_ = new NodeBuilder();
@@ -238,31 +196,30 @@ NodeBuilder* NodeBuilder::parent_builder() {
 }
 
 const Chunk* NodeBuilder::HandleBoundary(
-                    std::vector<const byte_t*>* chunk_entries_data,
-                    std::vector<size_t>* chunk_entries_num_bytes,
-                    MakeChunkFunc make_chunk) {
+    std::vector<const byte_t*>* chunk_entries_data,
+    std::vector<size_t>* chunk_entries_num_bytes, MakeChunkFunc make_chunk) {
   // LOG(INFO) << "Start Handing Boundary. ";
   // LOG(INFO) << " Entry Count: " << chunk_entries_num_bytes->size();
-  ChunkInfo chunk_info = make_chunk(*chunk_entries_data,
-                                    *chunk_entries_num_bytes);
+  ChunkInfo chunk_info =
+      make_chunk(*chunk_entries_data, *chunk_entries_num_bytes);
 
   const Chunk* chunk = chunk_info.first;
   const byte_t* metaentry_data = chunk_info.second.first;
   size_t metaentry_num_bytes = chunk_info.second.second;
-  // LOG(INFO) << "me_num_bytes : " << metaentry_num_bytes;
+// LOG(INFO) << "me_num_bytes : " << metaentry_num_bytes;
 
-  // Dump chunk into storage here
-  #ifdef USE_LEVELDB
+// Dump chunk into storage here
+#ifdef USE_LEVELDB
   ldb.Instance()->Put(chunk->hash(), *chunk);
-  // LOG(INFO) << "Finish Dumping Chunk.";
-  #endif  // USE_LEVELDB
+// LOG(INFO) << "Finish Dumping Chunk.";
+#endif  // USE_LEVELDB
 
   parent_builder()->AppendEntry(metaentry_data, metaentry_num_bytes);
   // LOG(INFO) << "Finish Appending Entry for parent builder.";
   // CHECK(rhasher_->CrossedBoundary());
   rhasher_->ClearLastBoundary();
 
-  for ( const byte_t* chunk_entry_data : *chunk_entries_data ) {
+  for (const byte_t* chunk_entry_data : *chunk_entries_data) {
     // LOG(INFO) << "Delete Data.";
     delete[] chunk_entry_data;
   }
@@ -284,8 +241,7 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
   parent_builder()->SkipEntries(1);
   // size_t skip_p = parent_builder()->SkipEntries(1);
   // if (skip_p > 0) {
-  //         LOG(INFO) << "Level: " << level_
-  //                   << " Skipping Parents At Start. ";
+  //   LOG(INFO) << "Level: " << level_ << " Skipping Parents At Start. ";
   // }
 
   // First thing to do:
@@ -327,38 +283,20 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
     if (rhasher_->CrossedBoundary()) {
       // LOG(INFO) << "Handle Boundary Here";
       last_created_chunk = HandleBoundary(&chunk_entries_data,
-                                          &chunk_entries_num_bytes,
-                                          make_chunk);
+                                          &chunk_entries_num_bytes, make_chunk);
     }  // end if
-  }  // end for
+  }    // end for
   // LOG(INFO) << "Append " << num_entries << " entries. ";
   // Second, combining original entries pointed by current cursor
   //   to make chunk
 
-  // number of bytes hashed into rhaser since the last appended entry
-
   if (cursor_ != nullptr && !cursor_->isEnd()) {
-    size_t num_hashed_bytes = 0;
-    size_t num_advance = 0;
+    bool advanced = 0;
     do {
-      if (num_hashed_bytes < window_size - 1) {
-        // the rolling hash of current entry
-        //   may also still be affected by appended entries
-
-        if (num_advance > 0 && cursor_->idx() == 0) {
-          // cursor has advanced to the next chunk
-          //  skip to replace the parent builder's metaentry
-          // LOG(INFO) << "Level: " << level_
-          //           << " Commit Skipping Parents. ";
-          parent_builder()->SkipEntries(1);
-          // CHECK_EQ(actual, 1);
-        }
-      } else {
-        // cursor has reached the start of next chunk outside
-        //   the influence window of last appended entries
-        // Hence this is the common boundary between the new and old sequence
-        //   break the do-while loop
-        if (num_advance > 0 && cursor_->idx() == 0)  break;
+      if (cursor_->idx() == 0 && advanced) {
+        if (rhasher_->byte_hashed() == 0) break;
+        parent_builder()->SkipEntries(1);
+        // LOG(INFO) << "Level: " << level_ << "Commit Skipping Parents. ";
       }
 
       size_t entry_num_bytes = cursor_->numCurrentBytes();
@@ -370,19 +308,14 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
       chunk_entries_data.push_back(entry_data);
       chunk_entries_num_bytes.push_back(entry_num_bytes);
 
-      rhasher_->HashBytes(cursor_->current(),
-                          entry_num_bytes);
-
-      num_hashed_bytes += entry_num_bytes;
-
+      rhasher_->HashBytes(cursor_->current(), entry_num_bytes);
       // Create Chunk and append metaentries to upper builders
       //   if detecing boundary
       if (rhasher_->CrossedBoundary()) {
-        last_created_chunk = HandleBoundary(&chunk_entries_data,
-                                            &chunk_entries_num_bytes,
-                                            make_chunk);
+        last_created_chunk = HandleBoundary(
+            &chunk_entries_data, &chunk_entries_num_bytes, make_chunk);
       }  // end if
-      ++num_advance;
+      advanced = true;
     } while (!cursor_->Advance(true));
   }  // end if
   // LOG(INFO) << "Finish detecting boundary. ";
@@ -391,13 +324,11 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
     // this could happen if the last entry of sequence
     // cannot form a boundary, we still need to make a explicit chunk
     // and append a metaentry to upper builder
-    CHECK(cursor_ == nullptr || (cursor_ != nullptr &&
-                                 cursor_->isEnd() &&
-                                 cursor_->Advance(true)));
+    CHECK(cursor_ == nullptr ||
+          (cursor_ != nullptr && cursor_->isEnd() && cursor_->Advance(true)));
 
     last_created_chunk = HandleBoundary(&chunk_entries_data,
-                                        &chunk_entries_num_bytes,
-                                        make_chunk);
+                                        &chunk_entries_num_bytes, make_chunk);
   }  // end if
 
   // Comment the following line out
@@ -419,5 +350,3 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
   }
 }
 }  // namespace ustore
-
-

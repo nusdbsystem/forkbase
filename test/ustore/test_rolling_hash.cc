@@ -57,11 +57,20 @@ const char julius_caeser_str[] = {
     "servile fearfulness. Exeunt"};
 
 TEST(RollingHasher, RollingHasherTest) {
-  ustore::RollingHasher rh{uint32_t((1 << 8) - 1), 64};
+  ustore::RollingHasher rh{uint32_t((1 << 8) - 1), 64, 1 << 12};
   for (size_t i = 0; i < strlen(julius_caeser_str); ++i) {
     rh.HashByte(uint8_t(julius_caeser_str[i]));
   }
+  EXPECT_EQ(strlen(julius_caeser_str), rh.byte_hashed());
   EXPECT_TRUE(rh.CrossedBoundary());
   rh.ClearLastBoundary();
   EXPECT_FALSE(rh.CrossedBoundary());
+  EXPECT_EQ(0, rh.byte_hashed());
+
+  ustore::RollingHasher rh2{uint32_t((1 << 8) - 1), 64, 1 << 4};
+  for (size_t i = 0; i < strlen(julius_caeser_str); ++i) {
+    rh2.HashByte(uint8_t(julius_caeser_str[i]));
+  }
+  EXPECT_TRUE(rh2.CrossedBoundary());
+  rh2.ClearLastBoundary();
 }
