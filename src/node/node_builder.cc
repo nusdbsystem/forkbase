@@ -51,6 +51,7 @@ NodeBuilder::NodeBuilder(size_t level)
 #endif
       commited_(true),
       num_appended_entries_(0),
+      num_skip_entries_(0),
       level_(level) {
   // do nothing
 }
@@ -69,6 +70,7 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level)
 #endif
       commited_(true),
       num_appended_entries_(0),
+      num_skip_entries_(0),
       level_(level) {
   if (cursor_->parent() != nullptr) {
     parent_builder_ = new NodeBuilder(cursor_->parent(), level + 1);
@@ -262,7 +264,6 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
   //           << " # Append: " << num_appended_entries_
   //           << " # Skip: " << num_skip_entries_;
 
-  size_t window_size = rhasher_->window_size();
   for (size_t i = 0; i < num_entries; i++) {
     const byte_t* entry_data = entries_data_.front();
     size_t entry_num_bytes = entries_num_bytes_.front();
@@ -274,11 +275,6 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
     chunk_entries_num_bytes.push_back(entry_num_bytes);
 
     rhasher_->HashBytes(entry_data, entry_num_bytes);
-    // if we are hashing previous entries in the same chunk
-    //   we don't bother detecting boundary pattern
-    if (rhasher_->byte_hashed() < window_size) {
-      rhasher_->ResetBoundary();
-    }
 
     if (rhasher_->CrossedBoundary()) {
       // LOG(INFO) << "Handle Boundary Here";
