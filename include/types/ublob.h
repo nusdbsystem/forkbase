@@ -21,11 +21,10 @@ class UBlob : private Noncopyable {
   // Create the ChunkLoader
   static const UBlob* Create(const byte_t* data, size_t num_bytes);
 
-  ~UBlob();
+  ~UBlob() {}
 
   // Return the number of bytes in this Blob
-  size_t size() const { return root_node_->numElements();}
-
+  inline size_t size() const { return root_node_->numElements(); }
   /** Delete some bytes from a position and insert new bytes
    *
    *  Args:
@@ -37,8 +36,7 @@ class UBlob : private Noncopyable {
    *  Return:
    *    the new Blob reflecting the operation
    */
-  const UBlob* Splice(size_t pos, size_t num_delete,
-                      const byte_t* data,
+  const UBlob* Splice(size_t pos, size_t num_delete, const byte_t* data,
                       size_t num_insert) const;
   /** Insert bytes given a position
    *
@@ -71,12 +69,12 @@ class UBlob : private Noncopyable {
  private:
   // Private contrucstor to create an instance based on the root chunk data
   // To be called by Load() and Init()
-  explicit UBlob(const Chunk* chunk, std::shared_ptr<ChunkLoader> loader);
+  UBlob(const Chunk* chunk, std::shared_ptr<ChunkLoader> loader);
 
   // Can either be a leaf(BlobLeafNode) or a non-leaf (MetaNode)
   // Responsible to remove
   const SeqNode* root_node_;
-
+  // chunk loader is shared among evolved objects
   std::shared_ptr<ChunkLoader> chunk_loader_;  // responsible to delete
 };
 

@@ -5,9 +5,8 @@
 
 #include <cstring>
 #include <iomanip>  // std::setfill, std::setw
-#include <string>
 #include <sstream>
-
+#include <string>
 #include "types/type.h"
 
 namespace ustore {
@@ -27,26 +26,18 @@ static inline std::string byte2str(const byte_t* data, size_t num_bytes) {
 // @arg src but copy the content of it. Caller of this method is responsible
 // for delete of the created buffer.
 static inline const ustore::byte_t* SpliceBytes(const ustore::byte_t* src,
-                                                size_t src_size, size_t start,
-                                                size_t num_delete,
-                                                const ustore::byte_t* append,
-                                                size_t append_size) {
+    size_t src_size, size_t start, size_t num_delete,
+    const ustore::byte_t* append, size_t append_size) {
   if (start > src_size) start = src_size;
-
   size_t real_delete = num_delete;
-  if (src_size - start < num_delete) {
-    real_delete = src_size - start;
-  }
-
-  ustore::byte_t* result =
-      new ustore::byte_t[src_size - real_delete + append_size];
-
+  if (src_size - start < num_delete) real_delete = src_size - start;
+  byte_t* result = new byte_t[src_size - real_delete + append_size];
   std::memcpy(result, src, start);
   std::memcpy(result + start, append, append_size);
   std::memcpy(result + start + append_size, src + start + real_delete,
               src_size - start - real_delete);
-
   return result;
 }
+
 }  // namespace ustore
-#endif  // USTORE_UTILS_DEBUG_H
+#endif  // USTORE_UTILS_DEBUG_H_

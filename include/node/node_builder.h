@@ -17,18 +17,17 @@ namespace ustore {
 
 class NodeBuilder {
  public:
-  // Construct a node builder to construct a fresh new Prolly Tree
-  NodeBuilder();
-
-  ~NodeBuilder();
   // Perform operation at idx-th element at leaf rooted at root_hash
   static NodeBuilder* NewNodeBuilderAtIndex(const Hash& root_hash, size_t idx,
                                             ChunkLoader* chunk_loader);
-
   // Perform operation at idx-th element at leaf rooted at root_hash
   static NodeBuilder* NewNodeBuilderAtKey(const Hash& root_hash,
                                           const OrderedKey& key,
                                           ChunkLoader* chunk_loader);
+
+  // Construct a node builder to construct a fresh new Prolly Tree
+  NodeBuilder();
+  ~NodeBuilder();
 
   // First delete num_delete elements from cursor and then
   // Append elements in byte array
@@ -107,4 +106,4 @@ class NodeBuilder {
 };
 }  // namespace ustore
 
-#endif  // USTORE_NODE_NODE_BUILDER_H
+#endif  // USTORE_NODE_NODE_BUILDER_H_

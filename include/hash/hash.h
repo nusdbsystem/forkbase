@@ -8,11 +8,13 @@
 
 namespace ustore {
 
-const size_t HASH_BYTE_LEN = 20;
-const size_t HASH_STRING_LEN = 32;
+// TODO(wangsh): move class-related const into classes
+constexpr size_t HASH_BYTE_LEN = 20;
+constexpr size_t HASH_STRING_LEN = 32;
 
 class Hash {
  public:
+  // the hash used to represent null value
   static const Hash NULL_HASH;
   // create empty hash
   Hash() {}

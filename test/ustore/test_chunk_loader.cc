@@ -5,22 +5,13 @@
 #include "gtest/gtest.h"
 #include "node/chunk_loader.h"
 #include "utils/singleton.h"
-#ifdef USE_LEVELDB
-#include "store/ldb_store.h"
-#endif  // USE_LEVELDB
 
 const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
-
-#ifdef USE_LEVELDB
-static ustore::Singleton<ustore::LDBStore> ldb;
-#endif  // USE_LEVELDB
 
 TEST(ChunkLoader, GetChunk) {
   ustore::Chunk chunk(ustore::kBlobChunk, sizeof(raw_data));
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
-  #ifdef USE_LEVELDB
-  ustore::ChunkStore* cs = ldb.Instance();
-  #endif  // USE_LEVELDB
+  ustore::ChunkStore* cs = ustore::GetChunkStore();
   EXPECT_TRUE(cs->Put(chunk.hash(), chunk));
   ustore::ChunkLoader cl(cs);
   // load from stroage

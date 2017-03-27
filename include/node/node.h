@@ -16,13 +16,15 @@ namespace ustore {
 // a customized MakeChunkFunc shall return a pair struct
 //   the first points to the created chunk
 //   the second is also a pair struct
-//      the first points to metanetry byte array
+//      the first points to metaentnry byte array
 //      the second is the number of bytes in this byte array
-typedef std::pair<const Chunk*, std::pair<const byte_t*, size_t> > ChunkInfo;
 
-typedef const ChunkInfo (*MakeChunkFunc)(
-                     const std::vector<const byte_t*>& entries_data,
-                     const std::vector<size_t>& entries_num_bytes);
+// TODO(pingcheng): may replace pair with tuple
+using ChunkInfo = std::pair<const Chunk*, std::pair<const byte_t*, size_t>>;
+// TODO(wangji): change function to a policy-object
+using MakeChunkFunc = const ChunkInfo(*)(
+                          const std::vector<const byte_t*>& entries_data,
+                          const std::vector<size_t>& entries_num_bytes);
 
 class SeqNode {
   /* SeqNode represents a general node in Prolly Tree.
@@ -32,8 +34,8 @@ class SeqNode {
   */
 
  public:
-  explicit SeqNode(const Chunk* chunk);
-  virtual ~SeqNode();  // NOT delete chunk!!
+  explicit SeqNode(const Chunk* chunk) : chunk_(chunk) {}
+  virtual ~SeqNode() {}  // NOT delete chunk!!
 
   // Whether this SeqNode is a leaf
   virtual bool isLeaf() const = 0;
@@ -46,11 +48,10 @@ class SeqNode {
 
   // return the byte pointer for the idx-th element in leaf
   virtual const byte_t* data(size_t idx) const = 0;
-
   // return the byte len of the idx-th entry
   virtual size_t len(size_t idx) const = 0;
 
-  inline const Hash hash() const { return chunk_->hash();}
+  inline const Hash hash() const { return chunk_->hash(); }
 
  protected:
   const Chunk* chunk_;
@@ -66,13 +67,13 @@ class MetaNode : public SeqNode {
     0------------ 4 ----------variable size
   */
  public:
-  //  Create junk from encoded MetaEntry bytes and their byte number
-  static const ChunkInfo MakeChunk
-                          (const std::vector<const byte_t*>& entries_data,
-                           const std::vector<size_t>& entries_num_bytes);
+  //  Create chunk from encoded MetaEntry bytes and their byte number
+  static const ChunkInfo MakeChunk(
+      const std::vector<const byte_t*>& entries_data,
+      const std::vector<size_t>& entries_num_bytes);
 
-  explicit MetaNode(const Chunk* chunk);
-  ~MetaNode() override;
+  explicit MetaNode(const Chunk* chunk) : SeqNode(chunk) {}
+  ~MetaNode() override {}
 
   inline bool isLeaf() const override { return false; }
   size_t numEntries() const override;
@@ -122,8 +123,8 @@ class MetaEntry {
                               const Hash& data_hash, const OrderedKey& key,
                               size_t* encode_num_bytes);
 
-  explicit MetaEntry(const byte_t* data);
-  ~MetaEntry();  // do nothing
+  explicit MetaEntry(const byte_t* data) : data_(data) {}
+  ~MetaEntry() {}  // do nothing
 
   const OrderedKey orderedKey() const;
 
@@ -136,13 +137,13 @@ class MetaEntry {
   const Hash targetHash() const;
 
  private:
-  const byte_t* data_;  // MetaEntry is NOT responsible to clear
-
   static const size_t NUM_BYTE_OFFSET = 0;
   static const size_t NUM_LEAF_OFFSET = NUM_BYTE_OFFSET + sizeof(uint32_t);
   static const size_t NUM_ELEMENT_OFFSET = NUM_LEAF_OFFSET + sizeof(uint32_t);
   static const size_t HASH_OFFSET = NUM_ELEMENT_OFFSET + sizeof(uint64_t);
   static const size_t KEY_OFFSET = HASH_OFFSET + HASH_BYTE_LEN;
+
+  const byte_t* data_;  // MetaEntry is NOT responsible to clear
 };
 
 class LeafNode : public SeqNode {
@@ -150,9 +151,8 @@ class LeafNode : public SeqNode {
    * It is a abstract leaf node for Blob/List/Set/etc...
   */
  public:
-  explicit LeafNode(const Chunk* chunk);
-
-  virtual ~LeafNode();
+  explicit LeafNode(const Chunk* chunk) : SeqNode(chunk) {}
+  ~LeafNode() override {}
 
   inline uint64_t numElements() const { return numEntries();}
 

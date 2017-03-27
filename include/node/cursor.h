@@ -28,7 +28,6 @@ class NodeCursor {
   // Copy constructor used to clone a NodeCursor
   // Need to recursively copy the parent NodeCursor
   NodeCursor(const NodeCursor& cursor);
-
   ~NodeCursor();
 
   // Advance the pointer by one element,

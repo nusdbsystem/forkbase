@@ -3,15 +3,10 @@
 #include <string>
 
 #include "chunk/chunk.h"
+#include "store/chunk_store.h"
 #include "node/cell_node.h"
 #include "gtest/gtest.h"
 #include "types/ucell.h"
-
-#ifdef USE_LEVELDB
-#include "store/ldb_store.h"
-#include "utils/singleton.h"
-#endif  // USE_LEVELDB
-
 #include "utils/logging.h"
 
 TEST(UCell, Load) {
@@ -20,11 +15,7 @@ TEST(UCell, Load) {
   ustore::UType type = ustore::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
 
-  #ifdef USE_LEVELDB
-  ustore::ChunkStore* cs = ustore::Singleton<ustore::LDBStore>::Instance();
-  #else
-  // other storage
-  #endif  // USE_LEVELDB
+  ustore::ChunkStore* cs = ustore::GetChunkStore();
   // Put the chunk into storage
   cs->Put(chunk->hash(), *chunk);
 

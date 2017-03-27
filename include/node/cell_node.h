@@ -27,21 +27,19 @@ class CellNode {
   static const Chunk* NewChunk(const UType type, const Hash& dataHash,
                                const Hash& preHash1, const Hash& preHash2);
 
-  explicit CellNode(const Chunk* chunk);
-  ~CellNode();
+  explicit CellNode(const Chunk* chunk) : chunk_(chunk) {}
+  // cell node does not have chunkloader, need to delete chunk
+  ~CellNode() { delete chunk_; }
 
   inline UType type() const {
     return *reinterpret_cast<const UType*>(chunk_->data() + UTYPE_OFFSET);
   }
-
   inline bool merged() const {
     return *reinterpret_cast<const bool*>(chunk_->data() + MERGED_OFFSET);
   }
-
   inline const Hash dataHash() const {
     return Hash(chunk_->data() + DATA_HASH_OFFSET);
   }
-
   // return empty hash (Hash()) if
   // the request second prehash does not exist
   const Hash preHash(bool second = false) const;

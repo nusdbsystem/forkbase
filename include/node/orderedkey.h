@@ -22,13 +22,12 @@ class OrderedKey {
   explicit OrderedKey(uint64_t value);
   // Set the hash data for key
   OrderedKey(const byte_t* data, size_t num_bytes);
-
-  ~OrderedKey();
+  ~OrderedKey() {}
 
   inline const byte_t* data() const { return data_; }
-
-  size_t numBytes() const;
-
+  inline size_t numBytes() const {
+    return by_value_ ? sizeof(bool) + sizeof(uint64_t) : num_bytes_;
+  }
   // encode OrderedKey into buffer
   // given buffer capacity > numBytes
   size_t encode(byte_t* buffer) const;

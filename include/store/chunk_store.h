@@ -18,6 +18,9 @@ class ChunkStore {
   virtual const Chunk* Get(const Hash& key) = 0;
   virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
 };
+
+ChunkStore* GetChunkStore();
+
 }  // namespace ustore
 
 #endif  // USTORE_STORE_CHUNK_STORE_H_

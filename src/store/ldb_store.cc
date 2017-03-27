@@ -1,9 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
 #ifdef USE_LEVELDB
 
+#include "store/ldb_store.h"
+
 #include <algorithm>
 #include "leveldb/slice.h"
-#include "store/ldb_store.h"
 #include "utils/logging.h"
 
 namespace ustore {

@@ -6,12 +6,7 @@
 #include "node/cell_node.h"
 #include "gtest/gtest.h"
 #include "types/ustring.h"
-
-#ifdef USE_LEVELDB
-#include "store/ldb_store.h"
-#include "utils/singleton.h"
-#endif  // USE_LEVELDB
-
+#include "store/chunk_store.h"
 #include "utils/debug.h"
 #include "utils/logging.h"
 
@@ -24,11 +19,7 @@ TEST(UString, Load) {
   const ustore::Chunk* chunk =
       ustore::StringNode::NewChunk(raw_data, sizeof(raw_data));
 
-  #ifdef USE_LEVELDB
-  ustore::ChunkStore* cs = ustore::Singleton<ustore::LDBStore>::Instance();
-  #else
-  // other storage
-  #endif  // USE_LEVELDB
+  ustore::ChunkStore* cs = ustore::GetChunkStore();
   // Put the chunk into storage
   cs->Put(chunk->hash(), *chunk);
   //////////////////////////////////////////////////////

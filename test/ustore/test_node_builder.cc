@@ -17,18 +17,10 @@
 #include "utils/singleton.h"
 #include "utils/debug.h"
 
-#ifdef USE_LEVELDB
-#include "store/ldb_store.h"
-
-static ustore::Singleton<ustore::LDBStore> ldb;
-#endif  // USE_LEVELDB
-
 class NodeBuilderEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-#ifdef USE_LEVELDB
-    ustore::ChunkStore* cs = ldb.Instance();
-#endif  // USE_LEVELDB
+    ustore::ChunkStore* cs = ustore::GetChunkStore();
     loader_ = new ustore::ChunkLoader(cs);
   }
 

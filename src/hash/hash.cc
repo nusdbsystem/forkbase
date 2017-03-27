@@ -1,9 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include "hash/hash.h"
+
 #include <cstring>
 #include <iostream>
 #include <map>
-#include "hash/hash.h"
 #include "utils/logging.h"
 
 #ifdef USE_SHA256
@@ -12,10 +13,10 @@
 
 namespace ustore {
 
-const byte_t Hash::EMPTY_HASH_DATA[] = {0};
+const byte_t Hash::EMPTY_HASH_DATA[] = {};
 const Hash Hash::NULL_HASH(EMPTY_HASH_DATA);
 
-const char base32alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+constexpr char base32alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const std::map<char, byte_t> base32dict = {{'A', 0},
                                            {'B', 1},
                                            {'C', 2},
@@ -55,6 +56,7 @@ Hash::~Hash() {
   if (own_) delete[] value_;
 }
 Hash& Hash::operator=(const Hash& hash) {
+  if (this == &hash) return *this;
   if (own_) delete[] value_;
   own_ = false;
   value_ = hash.value_;

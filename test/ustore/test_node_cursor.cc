@@ -8,12 +8,6 @@
 #include "node/cursor.h"
 #include "utils/singleton.h"
 
-#ifdef USE_LEVELDB
-#include "store/ldb_store.h"
-
-static ustore::Singleton<ustore::LDBStore> ldb;
-#endif  // USE_LEVELDB
-
 // NOTE: Haven't test GetCursorByKey
 TEST(NodeCursor, SingleNode) {
   // Construct a tree with only a root blob node
@@ -23,9 +17,7 @@ TEST(NodeCursor, SingleNode) {
   ustore::Chunk ca(ustore::kBlobChunk, ra_num_bytes);
   std::copy(ra, ra + ra_num_bytes, ca.m_data());
 
-  #ifdef USE_LEVELDB
-  ustore::ChunkStore* chunk_store = ldb.Instance();
-  #endif  // USE_LEVELDB
+  ustore::ChunkStore* chunk_store = ustore::GetChunkStore();
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
 
@@ -101,9 +93,7 @@ TEST(NodeCursor, Tree) {
 
   const ustore::Chunk* cm = cm_info.first;
 
-  #ifdef USE_LEVELDB
-  ustore::ChunkStore* chunk_store = ldb.Instance();
-  #endif  // USE_LEVELDB
+  ustore::ChunkStore* chunk_store = ustore::GetChunkStore();
 
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
