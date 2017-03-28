@@ -9,15 +9,13 @@
 
 namespace ustore {
 const UBlob* UBlob::Load(const Hash& root_hash) {
-  ChunkStore* cs = GetChunkStore();
-  std::shared_ptr<ChunkLoader> loader(new ChunkLoader(cs));
+  std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
   const Chunk* root_chunk = loader->Load(root_hash);
   return new UBlob(root_chunk, loader);
 }
 
 const UBlob* UBlob::Create(const byte_t* data, size_t num_bytes) {
-  ChunkStore* cs = GetChunkStore();
-  std::shared_ptr<ChunkLoader> loader(new ChunkLoader(cs));
+  std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
   NodeBuilder nb = NodeBuilder();
   std::vector<const byte_t*> elements_data;
   // treat each byte as a single elemnet of size 1

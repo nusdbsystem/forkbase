@@ -4,9 +4,9 @@
 #define USTORE_NODE_CURSOR_H_
 
 #include <cstddef>
-#include "node/chunk_loader.h"
 #include "node/orderedkey.h"
 #include "node/node.h"
+#include "store/chunk_loader.h"
 #include "types/type.h"
 
 namespace ustore {

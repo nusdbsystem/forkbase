@@ -9,6 +9,7 @@
 #endif  // USE_LEVELDB
 
 namespace ustore {
+namespace store {
 
 ChunkStore* GetChunkStore() {
 #ifdef USE_LEVELDB
@@ -18,4 +19,5 @@ ChunkStore* GetChunkStore() {
   return nullptr;
 }
 
+}  // namespace store
 }  // namespace ustore

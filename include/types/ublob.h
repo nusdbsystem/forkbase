@@ -8,8 +8,8 @@
 
 #include "chunk/chunk.h"
 #include "hash/hash.h"
-#include "node/chunk_loader.h"
 #include "node/node.h"
+#include "store/chunk_loader.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
 

@@ -8,9 +8,9 @@
 #include <vector>
 
 #include "chunk/chunk.h"
-#include "node/chunk_loader.h"
 #include "node/cursor.h"
 #include "node/rolling_hash.h"
+#include "store/chunk_loader.h"
 #include "types/type.h"
 
 namespace ustore {

@@ -4,8 +4,8 @@
 #include <string>
 #include "gtest/gtest.h"
 
-#include "node/chunk_loader.h"
 #include "node/cursor.h"
+#include "store/chunk_loader.h"
 #include "utils/singleton.h"
 
 // NOTE: Haven't test GetCursorByKey
@@ -17,11 +17,11 @@ TEST(NodeCursor, SingleNode) {
   ustore::Chunk ca(ustore::ChunkType::kBlob, ra_num_bytes);
   std::copy(ra, ra + ra_num_bytes, ca.m_data());
 
-  ustore::ChunkStore* chunk_store = ustore::GetChunkStore();
+  ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
 
-  ustore::ChunkLoader loader(chunk_store);
+  ustore::ChunkLoader loader;
   ustore::NodeCursor* cr =
           ustore::NodeCursor::GetCursorByIndex(ca.hash(), 1, &loader);
 
@@ -93,7 +93,7 @@ TEST(NodeCursor, Tree) {
 
   const ustore::Chunk* cm = cm_info.first;
 
-  ustore::ChunkStore* chunk_store = ustore::GetChunkStore();
+  ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
 
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
@@ -101,7 +101,7 @@ TEST(NodeCursor, Tree) {
   EXPECT_TRUE(chunk_store->Put(cm->hash(), *cm));
 
 ///////////////////////////////////////////////////////////////
-  ustore::ChunkLoader loader(chunk_store);
+  ustore::ChunkLoader loader;
 
   ustore::NodeCursor* leaf_cursor =
           ustore::NodeCursor::GetCursorByIndex(cm->hash(), 1, &loader);

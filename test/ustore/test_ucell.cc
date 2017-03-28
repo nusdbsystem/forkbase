@@ -3,9 +3,9 @@
 #include <string>
 
 #include "chunk/chunk.h"
-#include "store/chunk_store.h"
-#include "node/cell_node.h"
 #include "gtest/gtest.h"
+#include "node/cell_node.h"
+#include "store/chunk_store.h"
 #include "types/ucell.h"
 #include "utils/logging.h"
 
@@ -15,7 +15,7 @@ TEST(UCell, Load) {
   ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
 
-  ustore::ChunkStore* cs = ustore::GetChunkStore();
+  ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
   cs->Put(chunk->hash(), *chunk);
 
