@@ -24,7 +24,7 @@ TEST(UCell, Load) {
   EXPECT_EQ(ucell->type(), type);
   EXPECT_EQ(ucell->merged(), false);
   EXPECT_EQ(ucell->dataHash(), h1);
-  EXPECT_EQ(ucell->preUNodeHash(), ustore::Hash::NULL_HASH);
+  EXPECT_EQ(ucell->preUNodeHash(), ustore::Hash::kNull);
   EXPECT_TRUE(ucell->preUNodeHash(true).empty());
 }
 

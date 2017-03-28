@@ -22,17 +22,18 @@ TEST(MetaEntry, EncodeDecode) {
 
   // construct order key from above hash
   // padding a false bool in front of hash value to indicate not by value
-  size_t key_num_bytes = sizeof(bool) + ustore::HASH_BYTE_LEN;
+  size_t key_num_bytes = sizeof(bool) + ustore::Hash::kByteLength;
   ustore::byte_t* key_value = new ustore::byte_t[key_num_bytes];
   *(reinterpret_cast<bool*>(key_value)) = false;
-  memcpy(key_value + sizeof(bool), data_hash.value(), ustore::HASH_BYTE_LEN);
+  std::memcpy(key_value + sizeof(bool), data_hash.value(),
+              ustore::Hash::kByteLength);
   ustore::OrderedKey key(key_value, key_num_bytes);
 
   size_t encode_len = 0;
   const ustore::byte_t* me_bytes = ustore::MetaEntry::Encode(
       num_leaves, num_elements, data_hash, key, &encode_len);
   EXPECT_EQ(encode_len, 2 * sizeof(uint32_t) + sizeof(uint64_t) +
-                            ustore::HASH_BYTE_LEN + key_num_bytes);
+                            ustore::Hash::kByteLength + key_num_bytes);
 
   const ustore::MetaEntry me(me_bytes);
 
@@ -89,9 +90,9 @@ TEST(MetaNode, Basic) {
   EXPECT_EQ(mnode.numElements(), 30);
   EXPECT_EQ(mnode.numElementsUntilEntry(1), 10);
   EXPECT_EQ(mnode.len(0), encode_len1);
-  EXPECT_EQ(0, memcmp(mnode.data(0), me_bytes1, encode_len1));
+  EXPECT_EQ(0, std::memcmp(mnode.data(0), me_bytes1, encode_len1));
   EXPECT_EQ(mnode.len(1), encode_len2);
-  EXPECT_EQ(0, memcmp(mnode.data(1), me_bytes2, encode_len2));
+  EXPECT_EQ(0, std::memcmp(mnode.data(1), me_bytes2, encode_len2));
 
   ustore::OrderedKey key3(9);
   size_t idx;

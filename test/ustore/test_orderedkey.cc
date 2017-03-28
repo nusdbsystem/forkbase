@@ -62,7 +62,7 @@ TEST(OrderedKey, Encode) {
 
   EXPECT_EQ(len, 4);
   EXPECT_FALSE(*(reinterpret_cast<bool*>(buffer)));
-  EXPECT_EQ(0, memcmp(buffer + sizeof(bool), d + 1, 3));
+  EXPECT_EQ(0, std::memcmp(buffer + sizeof(bool), d + 1, 3));
 
   ustore::OrderedKey kk2(buffer, 4);
   EXPECT_EQ(k2.numBytes(), kk2.numBytes());

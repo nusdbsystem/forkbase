@@ -2,7 +2,6 @@
 
 #include "node/cursor.h"
 
-#include <cstring>  // for memcpy
 #include "hash/hash.h"
 #include "node/blob_node.h"
 #include "node/node.h"

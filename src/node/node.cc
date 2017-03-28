@@ -25,7 +25,7 @@ const ChunkInfo MetaNode::MakeChunk(
 
   Chunk* chunk = new Chunk(ChunkType::kMeta, chunk_num_bytes);
   // encode num_entries
-  memcpy(chunk->m_data(), &num_entries, sizeof(uint32_t));
+  std::memcpy(chunk->m_data(), &num_entries, sizeof(uint32_t));
 
   size_t entry_offset = sizeof(uint32_t);
   // repeatedly copy bytes from metaentry one by one
@@ -33,8 +33,8 @@ const ChunkInfo MetaNode::MakeChunk(
   uint32_t total_num_elements = 0;
   const MetaEntry* pre_me = nullptr;
   for (size_t idx = 0; idx < num_entries; idx++) {
-    memcpy(chunk->m_data() + entry_offset, entries_data[idx],
-           entries_num_bytes[idx]);
+    std::memcpy(chunk->m_data() + entry_offset, entries_data[idx],
+                entries_num_bytes[idx]);
     entry_offset += entries_num_bytes[idx];
     const MetaEntry* me = new MetaEntry(entries_data[idx]);
     if (idx > 0) {
@@ -161,35 +161,35 @@ const Hash MetaNode::GetChildHashByKey(const OrderedKey& key,
 const byte_t* MetaEntry::Encode(uint32_t num_leaves, uint64_t num_elements,
                                 const Hash& data_hash, const OrderedKey& key,
                                 size_t* encode_len) {
-  uint32_t num_bytes =  KEY_OFFSET + key.numBytes();
+  uint32_t num_bytes =  kKeyOffset + key.numBytes();
   byte_t* data = new byte_t[num_bytes];
-  memcpy(data + NUM_BYTE_OFFSET, &num_bytes, sizeof(uint32_t));
-  memcpy(data + NUM_LEAF_OFFSET, &num_leaves, sizeof(uint32_t));
-  memcpy(data + NUM_ELEMENT_OFFSET, &num_elements, sizeof(uint64_t));
-  memcpy(data + HASH_OFFSET, data_hash.value(), HASH_BYTE_LEN);
-  key.encode(data + KEY_OFFSET);
+  std::memcpy(data + kNumBytesOffset, &num_bytes, sizeof(uint32_t));
+  std::memcpy(data + kNumLeavesOffset, &num_leaves, sizeof(uint32_t));
+  std::memcpy(data + kNumElementsOffset, &num_elements, sizeof(uint64_t));
+  std::memcpy(data + kHashOffset, data_hash.value(), Hash::kByteLength);
+  key.encode(data + kKeyOffset);
   *encode_len = num_bytes;
   return data;
 }
 
 const OrderedKey MetaEntry::orderedKey() const {
   // remaining bytes of MetaEntry are for ordered key
-  size_t key_num_bytes = numBytes() - KEY_OFFSET;
-  return OrderedKey(data_ + KEY_OFFSET, key_num_bytes);
+  size_t key_num_bytes = numBytes() - kKeyOffset;
+  return OrderedKey(data_ + kKeyOffset, key_num_bytes);
 }
 
 size_t MetaEntry::numBytes() const {
-  return *(reinterpret_cast<const uint32_t*>(data_ + NUM_BYTE_OFFSET));
+  return *(reinterpret_cast<const uint32_t*>(data_ + kNumBytesOffset));
 }
 
 uint32_t MetaEntry::numLeaves() const {
-  return *(reinterpret_cast<const uint32_t*>(data_ + NUM_LEAF_OFFSET));
+  return *(reinterpret_cast<const uint32_t*>(data_ + kNumLeavesOffset));
 }
 
 uint64_t MetaEntry::numElements() const {
-  return *(reinterpret_cast<const uint64_t*>(data_ + NUM_ELEMENT_OFFSET));
+  return *(reinterpret_cast<const uint64_t*>(data_ + kNumElementsOffset));
 }
 
-const Hash MetaEntry::targetHash() const { return Hash(data_ + HASH_OFFSET); }
+const Hash MetaEntry::targetHash() const { return Hash(data_ + kHashOffset); }
 
 }  // namespace ustore

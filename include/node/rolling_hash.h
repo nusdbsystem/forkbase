@@ -14,10 +14,10 @@ namespace ustore {
 class RollingHasher : private Noncopyable {
  public:
   // 4KB -- expect boundary pattern
-  static constexpr uint32_t DEFAULT_CHUNK_PATTERN = (1 << 12) - 1;
-  static constexpr size_t DEFAULT_CHUNK_WINDOW = 64;
+  static constexpr uint32_t kDefaultChunkPattern = (1 << 12) - 1;
+  static constexpr size_t kDefaultChunkWindow = 64;
   // 16KB -- hard upper bound of the size of chunks
-  static constexpr size_t DEFAULT_MAXIMUM_CHUNK_SIZE = 1 << 14;
+  static constexpr size_t kDefaultMaxChunkSize = 1 << 14;
 
 #ifdef TEST_NODEBUILDER
   // a specific rolling hasher for testing purpose

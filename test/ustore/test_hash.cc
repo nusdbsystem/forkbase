@@ -20,7 +20,7 @@ TEST(Hash, HashTest) {
   h.Compute(raw_str, 43);
   EXPECT_EQ(h.ToString(), base32_encoded);
   std::ostringstream stm;
-  for (size_t i = 0; i < ustore::HASH_BYTE_LEN; ++i) {
+  for (size_t i = 0; i < ustore::Hash::kByteLength; ++i) {
     stm << std::hex << std::setfill('0') << std::setw(2)
         << uint32_t(*(h.value() + i));
   }

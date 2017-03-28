@@ -13,8 +13,8 @@
 
 namespace ustore {
 
-const byte_t Hash::EMPTY_HASH_DATA[] = {};
-const Hash Hash::NULL_HASH(EMPTY_HASH_DATA);
+const byte_t Hash::kEmptyBytes[] = {};
+const Hash Hash::kNull(kEmptyBytes);
 
 constexpr char base32alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const std::map<char, byte_t> base32dict = {{'A', 0},
@@ -66,19 +66,19 @@ Hash& Hash::operator=(const Hash& hash) {
 bool Hash::operator<(const Hash& hash) const {
   CHECK(value_);
   CHECK(hash.value_);
-  return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) < 0;
+  return std::memcmp(value_, hash.value(), kByteLength) < 0;
 }
 
 bool Hash::operator==(const Hash& hash) const {
   CHECK(value_);
   CHECK(hash.value_);
-  return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) == 0;
+  return std::memcmp(value_, hash.value(), kByteLength) == 0;
 }
 
 bool Hash::operator>(const Hash& hash) const {
   CHECK(value_);
   CHECK(hash.value_);
-  return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) > 0;
+  return std::memcmp(value_, hash.value(), kByteLength) > 0;
 }
 
 bool Hash::operator<=(const Hash& hash) const { return !operator>(hash); }
@@ -87,19 +87,19 @@ bool Hash::operator!=(const Hash& hash) const { return !operator==(hash); }
 
 void Hash::CopyFrom(const Hash& hash) {
   Alloc();
-  memcpy(value_, hash.value_, HASH_BYTE_LEN);
+  std::memcpy(value_, hash.value_, kByteLength);
 }
 
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
 // which is a multiplier of 5 bits, so no need of padding.
 void Hash::FromString(const std::string& base32) {
-  CHECK_EQ(HASH_STRING_LEN, base32.length())
+  CHECK_EQ(kStringLength, base32.length())
       << "length of input string is not 32 bytes";
   Alloc();
   uint64_t tmp;
   size_t dest = 0;
-  for (size_t i = 0; i < HASH_STRING_LEN; i += 8) {
+  for (size_t i = 0; i < kStringLength; i += 8) {
     tmp = 0;
     for (size_t j = 0; j < 8; ++j) {
       tmp <<= 5;
@@ -116,7 +116,7 @@ void Hash::FromString(const std::string& base32) {
 std::string Hash::ToString() const {
   std::string ret;
   uint64_t tmp;
-  for (size_t i = 0; i < HASH_BYTE_LEN; i += 5) {
+  for (size_t i = 0; i < kByteLength; i += 5) {
     tmp = 0;
     for (size_t j = 0; j < 5; ++j) tmp = (tmp << 8) + uint64_t(value_[i + j]);
     for (size_t j = 0; j < 8; ++j) {
@@ -130,16 +130,16 @@ std::string Hash::ToString() const {
 void Hash::Alloc() {
   if (own_ == false) {
     own_ = true;
-    value_ = new byte_t[HASH_BYTE_LEN];
+    value_ = new byte_t[kByteLength];
   }
 }
 
 #ifdef USE_SHA256
 void Hash::Compute(const byte_t* data, size_t len) {
   Alloc();
-  byte_t fullhash[HASH_STRING_LEN];
-  picosha2::hash256(data, data + len, fullhash, fullhash + HASH_STRING_LEN);
-  std::copy(fullhash, fullhash + HASH_BYTE_LEN, value_);
+  byte_t fullhash[kStringLength];
+  picosha2::hash256(data, data + len, fullhash, fullhash + kStringLength);
+  std::copy(fullhash, fullhash + kByteLength, value_);
 }
 #endif  // USE_SHA256
 

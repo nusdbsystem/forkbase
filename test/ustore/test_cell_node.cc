@@ -16,7 +16,7 @@ TEST(CellNode, NewCellNode) {
   EXPECT_EQ(cnode.type(), type);
   EXPECT_EQ(cnode.merged(), false);
   EXPECT_EQ(cnode.dataHash(), h1);
-  EXPECT_EQ(cnode.preHash(), ustore::Hash::NULL_HASH);
+  EXPECT_EQ(cnode.preHash(), ustore::Hash::kNull);
   EXPECT_TRUE(cnode.preHash(true).empty());
 }
 

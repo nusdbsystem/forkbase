@@ -14,9 +14,10 @@ class CellNode {
   /* CellNode contains a UCell
 
     Encoding Scheme:
-    | type  | Merged |     Data Hash |  Previous Hash 1 | Previous Hash 2 |
-    | Utype | bool   | HASH_BYTE_LEN | HASH_BYTE_LEN    |
-    HASH_BYTE_LEN(optional)   |
+    | type  | Merged | Data Hash         |  Previous Hash 1  |
+    | Utype | bool   | Hash::kByteLength | Hash::kByteLength |
+    |Previous Hash 2             |
+    |Hash::kByteLength(optional) |
   */
  public:
   // Create new chunk contains a new cell, preHash1 is Hash::NULL_HASH,
@@ -32,27 +33,27 @@ class CellNode {
   ~CellNode() { delete chunk_; }
 
   inline UType type() const {
-    return *reinterpret_cast<const UType*>(chunk_->data() + UTYPE_OFFSET);
+    return *reinterpret_cast<const UType*>(chunk_->data() + kUTypeOffset);
   }
   inline bool merged() const {
-    return *reinterpret_cast<const bool*>(chunk_->data() + MERGED_OFFSET);
+    return *reinterpret_cast<const bool*>(chunk_->data() + kMergedOffset);
   }
   inline const Hash dataHash() const {
-    return Hash(chunk_->data() + DATA_HASH_OFFSET);
+    return Hash(chunk_->data() + kDataHashOffset);
   }
   // return empty hash (Hash()) if
   // the request second prehash does not exist
   const Hash preHash(bool second = false) const;
 
  private:
-  static const size_t UTYPE_OFFSET = 0;
-  static const size_t MERGED_OFFSET = UTYPE_OFFSET + sizeof(UType);
-  static const size_t DATA_HASH_OFFSET = MERGED_OFFSET + sizeof(bool);
-  static const size_t PRE_HASH_1_OFFSET = DATA_HASH_OFFSET + HASH_BYTE_LEN;
-  static const size_t PRE_HASH_2_OFFSET = PRE_HASH_1_OFFSET + HASH_BYTE_LEN;
-  static const size_t CELL_CHUNK_LENGTH_1_PRE_HASH = PRE_HASH_2_OFFSET;
-  static const size_t CELL_CHUNK_LENGTH_2_PRE_HASHS =
-      PRE_HASH_2_OFFSET + HASH_BYTE_LEN;
+  static constexpr size_t kUTypeOffset = 0;
+  static constexpr size_t kMergedOffset = kUTypeOffset + sizeof(UType);
+  static constexpr size_t kDataHashOffset = kMergedOffset + sizeof(bool);
+  static constexpr size_t kPreHash1Offset = kDataHashOffset + Hash::kByteLength;
+  static constexpr size_t kPreHash2Offset = kPreHash1Offset + Hash::kByteLength;
+  static constexpr size_t kChunkLength1PreHash = kPreHash2Offset;
+  static constexpr size_t kChunkLength2PreHash = kPreHash2Offset
+                                                 + Hash::kByteLength;
 
   const Chunk* chunk_;
 };

@@ -84,9 +84,8 @@ void NodeBuilder::Resume() {
   while (!cursor_->Retreat(false)) {
     size_t entry_num_bytes = cursor_->numCurrentBytes();
     byte_t* entry_data = new byte_t[entry_num_bytes];
-    /*XXX(wangji): really need to copy?*/
     // TODO(pingcheng): avoid memcpy
-    memcpy(entry_data, cursor_->current(), entry_num_bytes);
+    std::memcpy(entry_data, cursor_->current(), entry_num_bytes);
     entries_data_.push_front(entry_data);
     entries_num_bytes_.push_front(entry_num_bytes);
     ++num_retreat;
@@ -257,7 +256,7 @@ const Chunk* NodeBuilder::Commit(MakeChunkFunc make_chunk) {
       size_t entry_num_bytes = cursor_->numCurrentBytes();
       // XXX(wangji): again really need to copy?
       byte_t* entry_data = new byte_t[entry_num_bytes];
-      memcpy(entry_data, cursor_->current(), entry_num_bytes);
+      std::memcpy(entry_data, cursor_->current(), entry_num_bytes);
       chunk_entries_data.push_back(entry_data);
       chunk_entries_num_bytes.push_back(entry_num_bytes);
       rhasher_->HashBytes(cursor_->current(), entry_num_bytes);

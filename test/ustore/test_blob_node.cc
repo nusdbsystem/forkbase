@@ -10,7 +10,7 @@ const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 
 TEST(BlobNode, Basic) {
   ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
-  memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
+  std::memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
 
   ustore::BlobNode bnode(&chunk);
 

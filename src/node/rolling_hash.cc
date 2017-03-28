@@ -5,10 +5,8 @@
 namespace ustore {
 
 RollingHasher::RollingHasher()
-    : chunk_pattern_{DEFAULT_CHUNK_PATTERN},
-      window_size_{DEFAULT_CHUNK_WINDOW},
-      max_size_{DEFAULT_MAXIMUM_CHUNK_SIZE},
-      buz_{unsigned(DEFAULT_CHUNK_WINDOW)} {}
+    : RollingHasher(kDefaultChunkPattern, kDefaultChunkWindow,
+                    kDefaultMaxChunkSize) {}
 
 RollingHasher::RollingHasher(uint32_t chunk_pattern, size_t window_size,
                              size_t max_size)

@@ -18,17 +18,17 @@ class Chunk : private Noncopyable {
    * | uint32_t  | ChunkType | Bytes |
    * | num_bytes | type      | data  |
    */
-  static const size_t NUM_BYTES_OFFSET = 0;
-  static const size_t CHUNK_TYPE_OFFSET = NUM_BYTES_OFFSET + sizeof(uint32_t);
-  static const size_t META_SIZE = CHUNK_TYPE_OFFSET + sizeof(ChunkType);
+  static constexpr size_t kNumBytesOffset = 0;
+  static constexpr size_t kChunkTypeOffset = kNumBytesOffset + sizeof(uint32_t);
+  static constexpr size_t kMetaLength = kChunkTypeOffset + sizeof(ChunkType);
 
   // allocate a new chunk with usable capacity (excluding meta data)
   explicit Chunk(ChunkType type, uint32_t capacity) {
     own_ = true;
-    head_ = new byte_t[META_SIZE + capacity];
-    *reinterpret_cast<uint32_t*>(head_ + NUM_BYTES_OFFSET) =
-        META_SIZE + capacity;
-    *reinterpret_cast<ChunkType*>(head_ + CHUNK_TYPE_OFFSET) = type;
+    head_ = new byte_t[kMetaLength + capacity];
+    *reinterpret_cast<uint32_t*>(head_ + kNumBytesOffset) =
+        kMetaLength + capacity;
+    *reinterpret_cast<ChunkType*>(head_ + kChunkTypeOffset) = type;
   }
   explicit Chunk(byte_t* head, bool own = false) {
     head_ = head;
@@ -40,20 +40,20 @@ class Chunk : private Noncopyable {
 
   // total number of bytes
   inline uint32_t numBytes() const {
-    return *reinterpret_cast<uint32_t*>(head_ + NUM_BYTES_OFFSET);
+    return *reinterpret_cast<uint32_t*>(head_ + kNumBytesOffset);
   }
   // type of the chunk
   inline ChunkType type() const {
-    return *reinterpret_cast<ChunkType*>(head_ + CHUNK_TYPE_OFFSET);
+    return *reinterpret_cast<ChunkType*>(head_ + kChunkTypeOffset);
   }
   // number of bytes used to store actual data
-  inline uint32_t capacity() const { return numBytes() - META_SIZE; }
+  inline uint32_t capacity() const { return numBytes() - kMetaLength; }
   // pointer to the chunk
   inline const byte_t* head() const { return head_; }
   // pointer to actual data
   inline const byte_t* data() const { return m_data(); }
   // pointer to mutable data
-  inline byte_t* m_data() const { return head_ + META_SIZE; }
+  inline byte_t* m_data() const { return head_ + kMetaLength; }
   // chunk hash
   inline const Hash& hash() const {
     return hash_.empty() ? forceHash() : hash_;

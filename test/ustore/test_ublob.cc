@@ -321,7 +321,7 @@ TEST(SimpleUBlob, Load) {
 ///////////////////////////////////////
 // Create a junk to load
   ustore::Chunk chunk(ustore::ChunkType::kBlob, len);
-  memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
+  std::memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
   #ifdef USE_LEVELDB
   ustore::ChunkStore* cs = ustore::Singleton<ustore::LDBStore>::Instance();
   #else

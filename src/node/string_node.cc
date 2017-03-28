@@ -23,7 +23,7 @@ size_t StringNode::len() const {
 size_t StringNode::Copy(byte_t* buffer) const {
   size_t byte_offset = sizeof(uint32_t);  // across str_len field (4 Bytes)
   size_t str_len = len();
-  memcpy(buffer, chunk_->data() + byte_offset, str_len);
+  std::memcpy(buffer, chunk_->data() + byte_offset, str_len);
   return str_len;
 }
 

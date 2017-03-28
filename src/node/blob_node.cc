@@ -16,12 +16,11 @@ const ChunkInfo BlobNode::MakeChunk(
   for (const size_t num_bytes : element_num_bytes) {
     total_num_bytes += num_bytes;
   }
-  ustore::Chunk* chunk = new Chunk(ChunkType::kBlob, total_num_bytes);
+  Chunk* chunk = new Chunk(ChunkType::kBlob, total_num_bytes);
   size_t byte_offset = 0;
   for (size_t idx = 0; idx < num_entries; idx++) {
-    memcpy(chunk->m_data() + byte_offset,
-           element_data[idx],
-           element_num_bytes[idx]);
+    std::memcpy(chunk->m_data() + byte_offset, element_data[idx],
+                element_num_bytes[idx]);
     byte_offset += element_num_bytes[idx];
   }
   size_t me_num_bytes;
@@ -44,7 +43,7 @@ size_t BlobNode::Copy(size_t start, size_t num_bytes, byte_t* buffer) const {
       << "start + len > BlobNode capacity. Will copy until chunk end. ";
     len = this->numElements() - start;
   }
-  memcpy(buffer, chunk_->data() + start, len);
+  std::memcpy(buffer, chunk_->data() + start, len);
   return len;
 }
 

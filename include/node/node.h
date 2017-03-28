@@ -137,11 +137,12 @@ class MetaEntry {
   const Hash targetHash() const;
 
  private:
-  static const size_t NUM_BYTE_OFFSET = 0;
-  static const size_t NUM_LEAF_OFFSET = NUM_BYTE_OFFSET + sizeof(uint32_t);
-  static const size_t NUM_ELEMENT_OFFSET = NUM_LEAF_OFFSET + sizeof(uint32_t);
-  static const size_t HASH_OFFSET = NUM_ELEMENT_OFFSET + sizeof(uint64_t);
-  static const size_t KEY_OFFSET = HASH_OFFSET + HASH_BYTE_LEN;
+  static constexpr size_t kNumBytesOffset = 0;
+  static constexpr size_t kNumLeavesOffset = kNumBytesOffset + sizeof(uint32_t);
+  static constexpr size_t kNumElementsOffset = kNumLeavesOffset
+                                               + sizeof(uint32_t);
+  static constexpr size_t kHashOffset = kNumElementsOffset + sizeof(uint64_t);
+  static constexpr size_t kKeyOffset = kHashOffset + Hash::kByteLength;
 
   const byte_t* data_;  // MetaEntry is NOT responsible to clear
 };

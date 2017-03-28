@@ -8,16 +8,16 @@
 
 namespace ustore {
 
-// TODO(wangsh): move class-related const into classes
-constexpr size_t HASH_BYTE_LEN = 20;
-constexpr size_t HASH_STRING_LEN = 32;
-
 class Hash {
  public:
+  static constexpr size_t kByteLength = 20;
+  static constexpr size_t kStringLength = 32;
   // the hash used to represent null value
-  static const Hash NULL_HASH;
-  // create empty hash
-  Hash() {}
+  static const Hash kNull;
+
+  // Hash() : Hash(kNull) {} 
+  // TODO(wangsh): create null hash (point to Hash::kNull)
+  Hash() {} 
   // use existing hash
   Hash(const Hash& hash);
   // use existing byte array
@@ -48,14 +48,14 @@ class Hash {
   std::string ToString() const;
 
  private:
+  static const byte_t kEmptyBytes[kByteLength];
+
   // allocate space if previously not have
   void Alloc();
 
   bool own_ = false;
   // big-endian
   byte_t* value_ = nullptr;
-
-  static const byte_t EMPTY_HASH_DATA[HASH_BYTE_LEN];
 };
 
 }  // namespace ustore
