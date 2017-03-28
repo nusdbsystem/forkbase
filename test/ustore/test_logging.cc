@@ -45,6 +45,7 @@ TEST(Logging, StderrLoggingLevel) {
   LOG(ERROR) << "test error logging to stderr and file";
 }
 
+#ifdef DEBUG
 TEST(Logging, DebugInfoLogging) {
   ustore::InitLogging("");
   int a = 3;
@@ -63,3 +64,4 @@ TEST(Logging, DebugErrorLogging) {
   DCHECK_EQ(a, 5);
   DLOG(ERROR) << "test debug error logging";
 }
+#endif  // ifdef DEBUG

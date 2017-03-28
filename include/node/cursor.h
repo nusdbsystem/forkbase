@@ -8,6 +8,7 @@
 #include "node/node.h"
 #include "store/chunk_loader.h"
 #include "types/type.h"
+#include "utils/logging.h"
 
 namespace ustore {
 
@@ -34,17 +35,18 @@ class NodeCursor {
   // Allow to cross the boundary and advance to the start of next node
   // @return Return whether the cursor has already reached the end after the
   // operation
-  //   1. True if cross_boundary = true and idx = numElements()
+  //   1. False if cross_boundary = true and idx = numElements()
   //     of the last leaf node of the entire tree
-  //   2. True if cross_boundary = false and idx = numElements()
+  //   2. False if cross_boundary = false and idx = numElements()
   //     of the pointed leaf node
   bool Advance(bool cross_boundary);
 
   // Retreate the pointer by one element,
   // Allow to cross the boundary and point to the last element of preceding node
   // @return Return whether the cursor has already reached the first element
-  //   1. True if cross_boundary = true and cursor points the very first element
-  //   2. True if cross_boundary = false and cursor points the node's first
+  //   1. False if cross_boundary = true and cursor points the very first
+  //   element
+  //   2. False if cross_boundary = false and cursor points the node's first
   //   element
   bool Retreat(bool cross_boundary);
 
@@ -61,6 +63,13 @@ class NodeCursor {
   inline NodeCursor* parent() const { return parent_cr_; }
 
   inline int32_t idx() const { return idx_; }
+
+  // move the pointer to point to idx entry
+  inline void seek(int32_t idx) {
+    CHECK_LE(0, idx);
+    CHECK_GE(seq_node_->numEntries(), idx);
+    idx_ = idx;
+  }
 
  private:
   // Init cursor given parent cursor

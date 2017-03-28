@@ -22,10 +22,11 @@ TEST(UCell, Load) {
 
   const ustore::UCell* ucell = ustore::UCell::Load(chunk->hash());
 
-  EXPECT_EQ(ucell->type(), type);
-  EXPECT_EQ(ucell->merged(), false);
-  EXPECT_EQ(ucell->dataHash(), h1);
-  EXPECT_EQ(ucell->preUNodeHash(), ustore::Hash::kNull);
+  EXPECT_EQ(type, ucell->type());
+  EXPECT_FALSE(ucell->merged());
+  EXPECT_EQ(h1, ucell->dataHash());
+  EXPECT_EQ(ustore::Hash::kNull, ucell->preUNodeHash());
+
   EXPECT_TRUE(ucell->preUNodeHash(true).empty());
 }
 
@@ -38,9 +39,9 @@ TEST(UCell, Create) {
 
   const ustore::UCell* ucell = ustore::UCell::Create(type, h1, h2, h3);
 
-  EXPECT_EQ(ucell->type(), type);
-  EXPECT_EQ(ucell->merged(), true);
-  EXPECT_EQ(ucell->dataHash(), h1);
-  EXPECT_EQ(ucell->preUNodeHash(), h2);
-  EXPECT_EQ(ucell->preUNodeHash(true), h3);
+  EXPECT_EQ(type, ucell->type());
+  EXPECT_TRUE(ucell->merged());
+  EXPECT_EQ(h1, ucell->dataHash());
+  EXPECT_EQ(h2, ucell->preUNodeHash());
+  EXPECT_EQ(h3, ucell->preUNodeHash(true));
 }

@@ -9,23 +9,10 @@
 
 #include "chunk/chunk.h"
 #include "node/orderedkey.h"
+#include "node/chunker.h"
 #include "types/type.h"
 
 namespace ustore {
-
-// a customized MakeChunkFunc shall return a pair struct
-//   the first points to the created chunk
-//   the second is also a pair struct
-//      the first points to metaentnry byte array
-//      the second is the number of bytes in this byte array
-
-// TODO(pingcheng): may replace pair with tuple
-using ChunkInfo = std::pair<const Chunk*, std::pair<const byte_t*, size_t>>;
-// TODO(wangji): change function to a policy-object
-using MakeChunkFunc =
-    const ChunkInfo (*)(const std::vector<const byte_t*>& entries_data,
-                        const std::vector<size_t>& entries_num_bytes);
-
 class SeqNode {
   /* SeqNode represents a general node in Prolly Tree.
 
@@ -67,12 +54,7 @@ class MetaNode : public SeqNode {
     0------------ 4 ----------variable size
   */
  public:
-  //  Create chunk from encoded MetaEntry bytes and their byte number
-  static const ChunkInfo MakeChunk(
-      const std::vector<const byte_t*>& entries_data,
-      const std::vector<size_t>& entries_num_bytes);
-
-  explicit MetaNode(const Chunk* chunk) : SeqNode(chunk) {}
+  explicit MetaNode(const Chunk* chunk) : SeqNode(chunk) { PrecomputeOffset(); }
   ~MetaNode() override {}
 
   inline bool isLeaf() const override { return false; }
@@ -106,6 +88,18 @@ class MetaNode : public SeqNode {
 
  private:
   size_t entryOffset(size_t idx) const;
+
+  // compute the offset for all entries and store the offsets
+  //   in a class member vector
+  void PrecomputeOffset();
+
+  std::vector<size_t> offsets_;
+};
+
+class MetaChunker : public Chunker {
+ public:
+  const ChunkInfo make(
+      const std::vector<const Segment*>& segments) const override;
 };
 
 class MetaEntry {

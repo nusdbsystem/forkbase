@@ -16,13 +16,13 @@ TEST(StringNode, Basic) {
 
   ustore::StringNode snode(chunk);
 
-  EXPECT_EQ(snode.len(), sizeof(raw_data));
+  EXPECT_EQ(sizeof(raw_data), snode.len());
   ustore::byte_t* buffer = new ustore::byte_t[sizeof(raw_data)];
-  ASSERT_EQ(snode.Copy(buffer), sizeof(raw_data));
+  ASSERT_EQ(sizeof(raw_data), snode.Copy(buffer));
 
   std::string buf_str = ustore::byte2str(buffer, sizeof(raw_data));
   std::string chunk_str = ustore::byte2str(
       chunk->data() + sizeof(uint32_t), chunk->capacity() - sizeof(uint32_t));
 
-  ASSERT_EQ(buf_str, chunk_str);
+  ASSERT_EQ(chunk_str, buf_str);
 }

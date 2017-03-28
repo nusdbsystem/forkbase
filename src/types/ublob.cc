@@ -1,11 +1,13 @@
-// Copyright (c) 2017 The Ustore Authors.
+
 
 #include "types/ublob.h"
 
 #include <cstring>
 #include "node/node_builder.h"
 #include "node/blob_node.h"
+#include "node/chunker.h"
 #include "utils/logging.h"
+#include "utils/singleton.h"
 
 namespace ustore {
 const UBlob* UBlob::Load(const Hash& root_hash) {
@@ -16,19 +18,11 @@ const UBlob* UBlob::Load(const Hash& root_hash) {
 
 const UBlob* UBlob::Create(const byte_t* data, size_t num_bytes) {
   std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
-  NodeBuilder nb = NodeBuilder();
-  std::vector<const byte_t*> elements_data;
-  // treat each byte as a single elemnet of size 1
-  // TODO(pingcheng): take ownership of allocated array, do not let splice
-  //   functions to delete after use
-  for (size_t i = 0; i < num_bytes; i++) {
-    byte_t* d = new byte_t[1];
-    *d = *(data + i);
-    elements_data.push_back(d);
-  }
-  std::vector<size_t> elements_num_bytes(elements_data.size(), 1);
-  nb.SpliceEntries(0, elements_data, elements_num_bytes);
-  const Chunk* root_chunk = nb.Commit(BlobNode::MakeChunk);
+  NodeBuilder nb = NodeBuilder(Singleton<BlobChunker>::Instance(), true);
+
+  FixedSegment seg(data, num_bytes, 1);
+  nb.SpliceElements(0, &seg);
+  const Chunk* root_chunk = nb.Commit();
   return new UBlob(root_chunk, loader);
 }
 
@@ -45,24 +39,19 @@ UBlob::UBlob(const Chunk* chunk, std::shared_ptr<ChunkLoader> loader)
 
 const UBlob* UBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
                            size_t num_append) const {
-  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(root_node_->hash(),
-                      pos, chunk_loader_.get());
-  std::vector<const byte_t*> elements_data;
-  // TODO(pingcheng): take ownership of allocated array, do not let splice
-  //   functions to delete after use
-  for (size_t i = 0; i < num_append; i++) {
-    ustore::byte_t* d = new ustore::byte_t[1];
-    *d = *(data + i);
-    elements_data.push_back(d);
-  }
-  std::vector<size_t> elements_num_bytes(elements_data.size(), 1);
-  nb->SpliceEntries(num_delete, elements_data, elements_num_bytes);
-  const Chunk* result_chunk = nb->Commit(BlobNode::MakeChunk);
+  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(
+      root_node_->hash(), pos, chunk_loader_.get(),
+      Singleton<BlobChunker>::Instance(), true);
+
+  FixedSegment seg(data, num_append, 1);
+  nb->SpliceElements(num_delete, &seg);
+
+  const Chunk* result_chunk = nb->Commit();
   return new UBlob(result_chunk, chunk_loader_);
 }
 
-const UBlob* UBlob::Insert(size_t pos, const byte_t* data, size_t num_insert)
-    const {
+const UBlob* UBlob::Insert(size_t pos, const byte_t* data,
+                           size_t num_insert) const {
   return Splice(pos, 0, data, num_insert);
 }
 
@@ -79,8 +68,8 @@ size_t UBlob::Read(size_t pos, size_t len, byte_t* buffer) const {
     LOG(WARNING) << "Read Pos exceeds Blob Size. ";
     return 0;
   }
-  NodeCursor* cursor = NodeCursor::GetCursorByIndex(root_node_->hash(),
-                                                    pos, chunk_loader_.get());
+  NodeCursor* cursor = NodeCursor::GetCursorByIndex(root_node_->hash(), pos,
+                                                    chunk_loader_.get());
   size_t total_copy_byte = 0;
   do {
     size_t pre_copy_byte = total_copy_byte;
@@ -89,11 +78,11 @@ size_t UBlob::Read(size_t pos, size_t len, byte_t* buffer) const {
     do {
       chunk_copy_byte += cursor->numCurrentBytes();
       total_copy_byte += cursor->numCurrentBytes();
-      if ( total_copy_byte == len ) break;
-    } while (!cursor->Advance(false));
+      if (total_copy_byte == len) break;
+    } while (cursor->Advance(false));
     std::memcpy(buffer + pre_copy_byte, chunk_copy_start, chunk_copy_byte);
-    if ( total_copy_byte == len ) break;
-  } while (!cursor->Advance(true));
+    if (total_copy_byte == len) break;
+  } while (cursor->Advance(true));
 
   delete cursor;
   return total_copy_byte;

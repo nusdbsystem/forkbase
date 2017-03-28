@@ -13,24 +13,25 @@ class OrderedKey {
   /* OrderedKey can either be a hash value (byte array) or an uint64_t integer
 
    Encoding Scheme by OrderedKey (variable size)
-   |--by_value--|-----hash value/uint64 |
-   0 -----------1  -- variable size
+   |-----hash value/uint64 |
+   0  -- variable size
  */
  public:
   // Set an integer value for key
   // own set to false
   explicit OrderedKey(uint64_t value);
   // Set the hash data for key
-  OrderedKey(const byte_t* data, size_t num_bytes);
+  OrderedKey(bool by_value, const byte_t* data, size_t num_bytes);
   ~OrderedKey() {}
 
   inline const byte_t* data() const { return data_; }
   inline size_t numBytes() const {
-    return by_value_ ? sizeof(bool) + sizeof(uint64_t) : num_bytes_;
+    return by_value_ ? sizeof(uint64_t) : num_bytes_;
   }
   // encode OrderedKey into buffer
   // given buffer capacity > numBytes
   size_t encode(byte_t* buffer) const;
+  bool isByValue() const {return by_value_; }
 
   bool operator>(const OrderedKey& otherKey) const;
   bool operator<(const OrderedKey& otherKey) const;

@@ -8,27 +8,30 @@
 
 namespace ustore {
 
-const ChunkInfo BlobNode::MakeChunk(
-    const std::vector<const byte_t*>& element_data,
-    const std::vector<size_t>& element_num_bytes) {
-  size_t num_entries = element_num_bytes.size();
-  uint64_t total_num_bytes = 0;
-  for (const size_t num_bytes : element_num_bytes) {
-    total_num_bytes += num_bytes;
+const ChunkInfo BlobChunker::make(
+    const std::vector<const Segment*>& segments) const {
+  size_t chunk_num_bytes = 0;
+  size_t num_entries = 0;
+  for (size_t i = 0; i < segments.size(); i++) {
+    chunk_num_bytes += segments.at(i)->numBytes();
+    num_entries += segments.at(i)->numEntries();
   }
-  Chunk* chunk = new Chunk(ChunkType::kBlob, total_num_bytes);
-  size_t byte_offset = 0;
-  for (size_t idx = 0; idx < num_entries; idx++) {
-    std::memcpy(chunk->m_data() + byte_offset, element_data[idx],
-                element_num_bytes[idx]);
-    byte_offset += element_num_bytes[idx];
+
+  ustore::Chunk* chunk = new Chunk(ChunkType::kBlob, chunk_num_bytes);
+
+  size_t seg_offset = 0;
+  for (const Segment* seg : segments) {
+    seg->AppendForChunk(chunk->m_data() + seg_offset);
+    seg_offset += seg->numBytes();
   }
+
   size_t me_num_bytes;
-  // key is useless for blob
-  // Any fake key to occupies this field
-  const byte_t* me_data = MetaEntry::Encode(1, total_num_bytes, chunk->hash(),
+  const byte_t* me_data = MetaEntry::Encode(1, num_entries, chunk->hash(),
                                             OrderedKey(0), &me_num_bytes);
-  return {chunk, {me_data, me_num_bytes}};
+
+  const VarSegment* meta_seg = new VarSegment(me_data, me_num_bytes, {0});
+
+  return {chunk, meta_seg};
 }
 
 size_t BlobNode::GetIdxForKey(const OrderedKey& key, bool* found) const {
@@ -40,7 +43,7 @@ size_t BlobNode::Copy(size_t start, size_t num_bytes, byte_t* buffer) const {
   size_t len = num_bytes;
   if (start + len > this->numElements()) {
     LOG(WARNING)
-      << "start + len > BlobNode capacity. Will copy until chunk end. ";
+        << "start + len > BlobNode capacity. Will copy until chunk end. ";
     len = this->numElements() - start;
   }
   std::memcpy(buffer, chunk_->data() + start, len);

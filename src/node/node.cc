@@ -10,50 +10,49 @@
 
 namespace ustore {
 
-const ChunkInfo MetaNode::MakeChunk(
-    const std::vector<const byte_t*>& entries_data,
-    const std::vector<size_t>& entries_num_bytes) {
-  // both vectors have the number of elements
-  CHECK_EQ(entries_data.size(), entries_num_bytes.size());
-  uint32_t num_entries = entries_data.size();
-  // compute number of bytes for this new chunk
-  // the first four bytes to encode num_entry
+const ChunkInfo MetaChunker::make(
+    const std::vector<const Segment*>& segments) const {
   size_t chunk_num_bytes = sizeof(uint32_t);
-  for (const size_t entry_num_byte : entries_num_bytes) {
-    chunk_num_bytes += entry_num_byte;
+  size_t num_entries = 0;
+  for (size_t i = 0; i < segments.size(); i++) {
+    chunk_num_bytes += segments.at(i)->numBytes();
+    num_entries += segments.at(i)->numEntries();
   }
 
   Chunk* chunk = new Chunk(ChunkType::kMeta, chunk_num_bytes);
   // encode num_entries
   std::memcpy(chunk->m_data(), &num_entries, sizeof(uint32_t));
 
-  size_t entry_offset = sizeof(uint32_t);
-  // repeatedly copy bytes from metaentry one by one
   uint32_t total_num_leaves = 0;
   uint32_t total_num_elements = 0;
+
   const MetaEntry* pre_me = nullptr;
-  for (size_t idx = 0; idx < num_entries; idx++) {
-    std::memcpy(chunk->m_data() + entry_offset, entries_data[idx],
-                entries_num_bytes[idx]);
-    entry_offset += entries_num_bytes[idx];
-    const MetaEntry* me = new MetaEntry(entries_data[idx]);
-    if (idx > 0) {
-      CHECK(pre_me->orderedKey() <= me->orderedKey())
-        << "MetaEntry shall be in non-descending order.";
+  size_t seg_offset = sizeof(uint32_t);
+  for (const Segment* seg : segments) {
+    for (size_t idx = 0; idx < seg->numEntries(); idx++) {
+      const MetaEntry* me = new MetaEntry(seg->entry(idx));
+      if (pre_me != nullptr) {
+        CHECK(pre_me->orderedKey() <= me->orderedKey())
+            << "MetaEntry shall be in non-descending order.";
+      }
+      total_num_elements += me->numElements();
+      total_num_leaves += me->numLeaves();
+      delete pre_me;
+      pre_me = me;
     }
-    total_num_elements += me->numElements();
-    total_num_leaves += me->numLeaves();
-    delete pre_me;
-    pre_me = me;
+    seg->AppendForChunk(chunk->m_data() + seg_offset);
+    seg_offset += seg->numBytes();
   }
 
   const OrderedKey key = pre_me->orderedKey();
   delete pre_me;
   size_t me_num_bytes;
-  const byte_t* me_data =
-    MetaEntry::Encode(total_num_leaves, total_num_elements, chunk->hash(), key,
-                      &me_num_bytes);
-  return {chunk, {me_data, me_num_bytes}};
+  const byte_t* me_data = MetaEntry::Encode(
+      total_num_leaves, total_num_elements, chunk->hash(), key, &me_num_bytes);
+
+  const VarSegment* meta_seg = new VarSegment(me_data, me_num_bytes, {0});
+
+  return {chunk, meta_seg};
 }
 
 size_t MetaNode::numEntries() const {
@@ -101,16 +100,20 @@ uint64_t MetaNode::entryOffset(size_t idx) const {
   // make sure 0 <= idx < numElements()
   CHECK_GE(idx, 0);
   CHECK_LT(idx, numEntries());
+
+  return offsets_.at(idx);
+}
+
+void MetaNode::PrecomputeOffset() {
+  CHECK(offsets_.empty());
   // iterate all MetaEntries in MetaNode and accumulate offset
   // Skip num_entries field (4 bytes) at MetaNode head
   size_t byte_offset = sizeof(uint32_t);
-  // TODO(pingcheng): scan might affect performance, consider later
-  for (size_t i = 0; i < idx; i++) {
+  for (size_t i = 0; i < numEntries(); i++) {
+    offsets_.push_back(byte_offset);
     MetaEntry entry(chunk_->data() + byte_offset);
-    size_t entry_len = entry.numBytes();
-    byte_offset += entry_len;
+    byte_offset += entry.numBytes();
   }
-  return byte_offset;
 }
 
 const Hash MetaNode::GetChildHashByIndex(size_t element_idx,
@@ -161,21 +164,25 @@ const Hash MetaNode::GetChildHashByKey(const OrderedKey& key,
 const byte_t* MetaEntry::Encode(uint32_t num_leaves, uint64_t num_elements,
                                 const Hash& data_hash, const OrderedKey& key,
                                 size_t* encode_len) {
-  uint32_t num_bytes =  kKeyOffset + key.numBytes();
+  uint32_t num_bytes = kKeyOffset + sizeof(bool) + key.numBytes();
   byte_t* data = new byte_t[num_bytes];
   std::memcpy(data + kNumBytesOffset, &num_bytes, sizeof(uint32_t));
   std::memcpy(data + kNumLeavesOffset, &num_leaves, sizeof(uint32_t));
   std::memcpy(data + kNumElementsOffset, &num_elements, sizeof(uint64_t));
   std::memcpy(data + kHashOffset, data_hash.value(), Hash::kByteLength);
-  key.encode(data + kKeyOffset);
+  *(data + kKeyOffset) = static_cast<byte_t>(key.isByValue());
+  key.encode(data + kKeyOffset + sizeof(bool));
+
   *encode_len = num_bytes;
   return data;
 }
 
 const OrderedKey MetaEntry::orderedKey() const {
   // remaining bytes of MetaEntry are for ordered key
-  size_t key_num_bytes = numBytes() - kKeyOffset;
-  return OrderedKey(data_ + kKeyOffset, key_num_bytes);
+  //   skip the by_value field
+  size_t key_num_bytes = numBytes() - kKeyOffset - sizeof(bool);
+  bool by_value = *(reinterpret_cast<const bool*>(data_ + kKeyOffset));
+  return OrderedKey(by_value, data_ + kKeyOffset + sizeof(bool), key_num_bytes);
 }
 
 size_t MetaEntry::numBytes() const {

@@ -25,29 +25,29 @@ TEST(UString, Load) {
   //////////////////////////////////////////////////////
 
   const ustore::UString* ustring = ustore::UString::Load(chunk->hash());
-  ASSERT_EQ(ustring->len(), sizeof(raw_data));
+  ASSERT_EQ(sizeof(raw_data), ustring->len());
 
 
   ustore::byte_t* buffer = new ustore::byte_t[sizeof(raw_data)];
-  ASSERT_EQ(ustring->data(buffer), sizeof(raw_data));
+  ASSERT_EQ(sizeof(raw_data), ustring->data(buffer));
 
   std::string buf_str = ustore::byte2str(buffer, sizeof(raw_data));
   std::string expected_str = ustore::byte2str(raw_data, sizeof(raw_data));
 
-  ASSERT_EQ(buf_str, expected_str);
+  ASSERT_EQ(expected_str, buf_str);
 }
 
 TEST(UString, Create) {
   const ustore::UString* ustring = ustore::UString::Create(raw_data,
                                                            sizeof(raw_data));
 
-  ASSERT_EQ(ustring->len(), sizeof(raw_data));
+  ASSERT_EQ(sizeof(raw_data), ustring->len());
 
   ustore::byte_t* buffer = new ustore::byte_t[sizeof(raw_data)];
-  ASSERT_EQ(ustring->data(buffer), sizeof(raw_data));
+  ASSERT_EQ(sizeof(raw_data), ustring->data(buffer));
 
   std::string buf_str = ustore::byte2str(buffer, sizeof(raw_data));
   std::string expected_str = ustore::byte2str(raw_data, sizeof(raw_data));
 
-  ASSERT_EQ(buf_str, expected_str);
+  ASSERT_EQ(expected_str, buf_str);
 }

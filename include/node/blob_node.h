@@ -10,21 +10,22 @@
 #include "node/node.h"
 
 namespace ustore {
+class BlobChunker : public Chunker {
+ public:
+  const ChunkInfo make(
+      const std::vector<const Segment*>& segments) const override;
+};
 
 class BlobNode : public LeafNode {
-/*
-BlobNode is a leaf node in Prolly tree that contains
-actual blob data
+  /*
+  BlobNode is a leaf node in Prolly tree that contains
+  actual blob data
 
-Encoding Scheme:
-  | ------blob bytes ------|
-  | ------variable size
-*/
+  Encoding Scheme:
+    | ------blob bytes ------|
+    | ------variable size
+  */
  public:
-  static const ChunkInfo MakeChunk(
-      const std::vector<const byte_t*>& element_data,
-      const std::vector<size_t>& element_num_bytes);
-
   explicit BlobNode(const Chunk* chunk) : LeafNode(chunk) {}
   ~BlobNode() override {}
 

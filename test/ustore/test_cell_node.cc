@@ -13,10 +13,10 @@ TEST(CellNode, NewCellNode) {
   const ustore::Chunk* chunk =
       ustore::CellNode::NewChunk(type, h1, ustore::Hash::kNull);
   ustore::CellNode cnode(chunk);
-  EXPECT_EQ(cnode.type(), type);
-  EXPECT_EQ(cnode.merged(), false);
-  EXPECT_EQ(cnode.dataHash(), h1);
-  EXPECT_EQ(cnode.preHash(), ustore::Hash::kNull);
+  EXPECT_EQ(type, cnode.type());
+  EXPECT_FALSE(cnode.merged());
+  EXPECT_EQ(h1, cnode.dataHash());
+  EXPECT_EQ(ustore::Hash::kNull, cnode.preHash());
   EXPECT_TRUE(cnode.preHash(true).empty());
 }
 
@@ -30,10 +30,10 @@ TEST(CellNode, SinglePreHash) {
 
   ustore::CellNode cnode(chunk);
 
-  EXPECT_EQ(cnode.type(), type);
-  EXPECT_EQ(cnode.merged(), false);
-  EXPECT_EQ(cnode.dataHash(), h1);
-  EXPECT_EQ(cnode.preHash(), h2);
+  EXPECT_EQ(type, cnode.type());
+  EXPECT_FALSE(cnode.merged());
+  EXPECT_EQ(h1, cnode.dataHash());
+  EXPECT_EQ(h2, cnode.preHash());
   EXPECT_TRUE(cnode.preHash(true).empty());
 }
 
@@ -48,9 +48,9 @@ TEST(CellNode, DoublePreHash) {
 
   ustore::CellNode cnode(chunk);
 
-  EXPECT_EQ(cnode.type(), type);
-  EXPECT_EQ(cnode.merged(), true);
-  EXPECT_EQ(cnode.dataHash(), h1);
-  EXPECT_EQ(cnode.preHash(), h2);
-  EXPECT_EQ(cnode.preHash(true), h3);
+  EXPECT_EQ(type, cnode.type());
+  EXPECT_TRUE(cnode.merged());
+  EXPECT_EQ(h1, cnode.dataHash());
+  EXPECT_EQ(h2, cnode.preHash());
+  EXPECT_EQ(h3, cnode.preHash(true));
 }

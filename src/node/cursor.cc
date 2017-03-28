@@ -120,57 +120,56 @@ NodeCursor::NodeCursor(const SeqNode* seq_node, size_t idx,
 }
 
 bool NodeCursor::Advance(bool cross_boundary) {
-  // InitLogging("");
-  // LOG(INFO) << "Before Advance: idx = " << idx_;
-  // LOG(INFO) << "  numEntries = " << seq_node_->numEntries();
-  // LOG(INFO) << "  isLeaf = " << seq_node_->isLeaf();
+  // DLOG(INFO) << "Before Advance: idx = " << idx_;
+  // DLOG(INFO) << "  numEntries = " << seq_node_->numEntries();
+  // DLOG(INFO) << "  isLeaf = " << seq_node_->isLeaf();
   // when idx == -1, idx_ < seq_node->numEntries is false.
   //  This is because lhs is signed and rhs is not signed.
   //  Hence, add extra test on idx_ == -1
   if (idx_ == -1 || idx_ < seq_node_->numEntries()) ++idx_;
-  if (idx_ < seq_node_->numEntries()) return false;
+  if (idx_ < seq_node_->numEntries()) return true;
   CHECK_EQ(idx_, seq_node_->numEntries());
   // not allow to cross boundary,
   //   remain idx = numEntries()
-  if (!cross_boundary) return true;
+  if (!cross_boundary) return false;
   // current cursor points to the seq end (idx = numEntries())
   //   will be retreated by child cursor
-  if (parent_cr_ == nullptr) return true;
+  if (parent_cr_ == nullptr) return false;
   if (parent_cr_->Advance(true)) {
-    // curent parent cursor now points the seq end, (idx = numEntries())
-    //   must retreat to point to the last element (idx = numEntries() - 1)
-    parent_cr_->Retreat(false);
-    return true;
-  } else {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
     seq_node_ = CreateSeqNodeFromChunk(chunk);
     CHECK_GT(seq_node_->numEntries(), 0);
     idx_ = 0;  // point the first element
+    return true;
+  } else {
+    // curent parent cursor now points the seq end, (idx = numEntries())
+    //   must retreat to point to the last element (idx = numEntries() - 1)
+    parent_cr_->Retreat(false);
     return false;
   }
 }
 
 bool NodeCursor::Retreat(bool cross_boundary) {
   if (idx_ >= 0) --idx_;
-  if (idx_ >= 0) return false;
+  if (idx_ >= 0) return true;
   CHECK_EQ(idx_, -1);
   // not allow to cross boundary,
   //   remain idx = -1
-  if (!cross_boundary) return true;
+  if (!cross_boundary) return false;
   // remain idx = -1, to be advanced by child cursor.
-  if (parent_cr_ == nullptr) return true;
+  if (parent_cr_ == nullptr) return false;
   if (parent_cr_->Retreat(true)) {
-    // parent cursor now points the seq start, (idx = -1)
-    //   must advance to point to the frist element (idx = 0)
-    parent_cr_->Advance(false);
-    return true;
-  } else {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
     seq_node_ = CreateSeqNodeFromChunk(chunk);
     CHECK_GT(seq_node_->numEntries(), 0);
     idx_ = seq_node_->numEntries() - 1;  // point to the last element
+    return true;
+  } else {
+    // parent cursor now points the seq start, (idx = -1)
+    //   must advance to point to the frist element (idx = 0)
+    parent_cr_->Advance(false);
     return false;
   }
 }
@@ -181,8 +180,9 @@ const byte_t* NodeCursor::current() const {
     return nullptr;
   }
   if (idx_ == seq_node_->numEntries()) {
-    LOG(WARNING) << "Cursor points to Seq End. Return nullptr.";
-    return nullptr;
+    LOG(WARNING) << "Cursor points to Seq End. Return pointer points to byte "
+                    "after the last entry.";
+    return seq_node_->data(idx_ - 1) + seq_node_->len(idx_ - 1);
   }
   return seq_node_->data(idx_);
 }
