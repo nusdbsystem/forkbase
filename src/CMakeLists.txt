@@ -68,6 +68,9 @@ LIST(APPEND ustore_srcs ${types_source})
 AUX_SOURCE_DIRECTORY(utils utils_source)
 LIST(APPEND ustore_srcs ${utils_source})
 
+AUX_SOURCE_DIRECTORY(worker worker_source)
+LIST(APPEND ustore_srcs ${worker_source})
+
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 
 ADD_LIBRARY(ustore SHARED $<TARGET_OBJECTS:ustore_objs>)

@@ -29,5 +29,12 @@ enum ChunkType : byte_t {
   kStringChunk = 3
 };
 
+enum ErrorCode : int8_t {
+  kOK = 0,
+  kUnknownOp = 1,
+  kReadFailed = 2,
+  kWriteFailed = 3
+};
+
 }  // namespace ustore
 #endif  // USTORE_TYPES_TYPE_H_
