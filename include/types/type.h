@@ -7,7 +7,10 @@ namespace ustore {
 
 typedef unsigned char byte_t;
 
-enum UType : byte_t {
+/*
+ * Supported data types 
+ */
+enum class UType : byte_t {
   // Primitive types
   kBool = 0,
   kNum = 1,
@@ -19,15 +22,20 @@ enum UType : byte_t {
   kMap = 6
 };
 
-enum ChunkType : byte_t {
+/*
+ * For internal usage
+ * Chunk types in chunk store
+ */
+enum class ChunkType : byte_t {
   // UCell Chunk
-  kCellChunk = 0,
+  kCell = 0,
   // Meta SeqNode Chunk
-  kMetaChunk = 1,
-  // List of Leaf SeqNode Chunk
-  kBlobChunk = 2,
-  kStringChunk = 3
+  kMeta = 1,
+  // Instances of Leaf SeqNode Chunk
+  kBlob = 2,
+  kString = 3
 };
 
 }  // namespace ustore
+
 #endif  // USTORE_TYPES_TYPE_H_

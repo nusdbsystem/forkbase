@@ -14,7 +14,7 @@ TEST(NodeCursor, SingleNode) {
   const ustore::byte_t ra[] = "abc";
 
   size_t ra_num_bytes = sizeof(ra) - 1;  // excluding trailing \0
-  ustore::Chunk ca(ustore::kBlobChunk, ra_num_bytes);
+  ustore::Chunk ca(ustore::ChunkType::kBlob, ra_num_bytes);
   std::copy(ra, ra + ra_num_bytes, ca.m_data());
 
   ustore::ChunkStore* chunk_store = ustore::GetChunkStore();
@@ -60,7 +60,7 @@ TEST(NodeCursor, Tree) {
   const ustore::byte_t ra[] = "ab";
 
   size_t ra_num_bytes = sizeof(ra) - 1;  // excluding trailing \0
-  ustore::Chunk ca(ustore::kBlobChunk, ra_num_bytes);
+  ustore::Chunk ca(ustore::ChunkType::kBlob, ra_num_bytes);
   std::copy(ra, ra + ra_num_bytes, ca.m_data());
   ustore::OrderedKey ka(1);
 
@@ -73,7 +73,7 @@ TEST(NodeCursor, Tree) {
 
   const ustore::byte_t rb[] = "cde";
   size_t rb_num_bytes = sizeof(rb) - 1;  // excluding trailing \0
-  ustore::Chunk cb(ustore::kBlobChunk, rb_num_bytes);
+  ustore::Chunk cb(ustore::ChunkType::kBlob, rb_num_bytes);
   std::copy(rb, rb + rb_num_bytes, cb.m_data());
   ustore::OrderedKey kb(2);
 

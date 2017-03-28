@@ -36,9 +36,9 @@ const UBlob* UBlob::Create(const byte_t* data, size_t num_bytes) {
 
 UBlob::UBlob(const Chunk* chunk, std::shared_ptr<ChunkLoader> loader)
     : chunk_loader_(loader) {
-  if (chunk->type() == kMetaChunk) {
+  if (chunk->type() == ChunkType::kMeta) {
     root_node_ = new MetaNode(chunk);
-  } else if (chunk->type() == kBlobChunk) {
+  } else if (chunk->type() == ChunkType::kBlob) {
     root_node_ = new BlobNode(chunk);
   } else {
     LOG(FATAL) << "Cannot be other chunk type for Ublob.";

@@ -22,7 +22,7 @@ const UString* UString::Load(const Hash& hash) {
 }
 
 UString::UString(const Chunk* chunk) {
-  if (chunk->type() == kStringChunk) {
+  if (chunk->type() == ChunkType::kString) {
     node_ = new StringNode(chunk);
   } else {
     LOG(FATAL) << "Cannot be other chunk type for UString";

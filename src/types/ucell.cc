@@ -24,7 +24,7 @@ const UCell* UCell::Load(const Hash& hash) {
 }
 
 UCell::UCell(const Chunk* chunk) {
-  if (chunk->type() == kCellChunk) {
+  if (chunk->type() == ChunkType::kCell) {
     node_ = new CellNode(chunk);
   } else {
     LOG(FATAL) << "Cannot be other chunk type for UCell";

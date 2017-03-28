@@ -9,7 +9,7 @@
 TEST(CellNode, NewCellNode) {
   ustore::Hash h1;
   h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  ustore::UType type = ustore::kBlob;
+  ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
 
   ustore::CellNode cnode(chunk);
@@ -25,7 +25,7 @@ TEST(CellNode, SinglePreHash) {
   h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   h2.FromString("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
 
-  ustore::UType type = ustore::kBlob;
+  ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1, h2, h3);
 
   ustore::CellNode cnode(chunk);
@@ -43,7 +43,7 @@ TEST(CellNode, DoublePreHash) {
   h2.FromString("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   h3.FromString("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
 
-  ustore::UType type = ustore::kBlob;
+  ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1, h2, h3);
 
   ustore::CellNode cnode(chunk);
