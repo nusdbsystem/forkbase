@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NODE_CHUNK_LOADER_H_
-#define USTORE_NODE_CHUNK_LOADER_H_
+#ifndef USTORE_STORE_CHUNK_LOADER_H_
+#define USTORE_STORE_CHUNK_LOADER_H_
 
 #include <map>
 #include <string>
@@ -14,7 +14,9 @@ namespace ustore {
 */
 class ChunkLoader {
  public:
-  explicit ChunkLoader(ChunkStore* cs);
+  ChunkLoader();
+  // let ChunkLoader call chunkStore internally
+  // explicit ChunkLoader(ChunkStore* cs);
   //  Delete all chunks
   ~ChunkLoader();
 
@@ -26,4 +28,4 @@ class ChunkLoader {
 };
 }  // namespace ustore
 
-#endif  // USTORE_NODE_CHUNK_LOADER_H_
+#endif  // USTORE_STORE_CHUNK_LOADER_H_

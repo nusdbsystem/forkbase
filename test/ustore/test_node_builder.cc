@@ -10,18 +10,15 @@
 
 #include "node/blob_node.h"
 #include "node/node_builder.h"
-#include "node/chunk_loader.h"
 #include "node/cursor.h"
-
+#include "store/chunk_loader.h"
 #include "utils/logging.h"
-#include "utils/singleton.h"
 #include "utils/debug.h"
 
 class NodeBuilderEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    ustore::ChunkStore* cs = ustore::GetChunkStore();
-    loader_ = new ustore::ChunkLoader(cs);
+    loader_ = new ustore::ChunkLoader();
   }
 
   virtual void TearDown() { delete loader_; }

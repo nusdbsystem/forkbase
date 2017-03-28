@@ -7,6 +7,7 @@
 #include "node/cursor.h"
 #include "node/node.h"
 #include "node/orderedkey.h"
+#include "store/chunk_store.h"
 #include "utils/logging.h"
 
 namespace ustore {
@@ -187,7 +188,7 @@ const Chunk* NodeBuilder::HandleBoundary(
   size_t metaentry_num_bytes = chunk_info.second.second;
   // LOG(INFO) << "me_num_bytes : " << metaentry_num_bytes;
   // Dump chunk into storage here
-  GetChunkStore()->Put(chunk->hash(), *chunk);
+  store::GetChunkStore()->Put(chunk->hash(), *chunk);
   parent_builder()->AppendEntry(metaentry_data, metaentry_num_bytes);
   // LOG(INFO) << "Finish Appending Entry for parent builder.";
   // CHECK(rhasher_->CrossedBoundary());

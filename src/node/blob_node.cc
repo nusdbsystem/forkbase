@@ -16,7 +16,7 @@ const ChunkInfo BlobNode::MakeChunk(
   for (const size_t num_bytes : element_num_bytes) {
     total_num_bytes += num_bytes;
   }
-  ustore::Chunk* chunk = new Chunk(kBlobChunk, total_num_bytes);
+  ustore::Chunk* chunk = new Chunk(ChunkType::kBlob, total_num_bytes);
   size_t byte_offset = 0;
   for (size_t idx = 0; idx < num_entries; idx++) {
     memcpy(chunk->m_data() + byte_offset,

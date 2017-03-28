@@ -19,8 +19,12 @@ class ChunkStore {
   virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
 };
 
+// wrap global functions inside a namespace
+namespace store {
+
 ChunkStore* GetChunkStore();
 
+}  // namespace store
 }  // namespace ustore
 
 #endif  // USTORE_STORE_CHUNK_STORE_H_

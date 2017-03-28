@@ -19,7 +19,7 @@ TEST(UString, Load) {
   const ustore::Chunk* chunk =
       ustore::StringNode::NewChunk(raw_data, sizeof(raw_data));
 
-  ustore::ChunkStore* cs = ustore::GetChunkStore();
+  ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
   cs->Put(chunk->hash(), *chunk);
   //////////////////////////////////////////////////////

@@ -4,25 +4,25 @@
 
 #include <cstring>
 #include "node/node_builder.h"
+#include "store/chunk_store.h"
 #include "utils/logging.h"
 
 namespace ustore {
 
 const UString* UString::Create(const byte_t* data, size_t num_bytes) {
-  ustore::ChunkStore* cs = ustore::GetChunkStore();
   const Chunk* chunk = StringNode::NewChunk(data, num_bytes);
-  cs->Put(chunk->hash(), *chunk);
+  store::GetChunkStore()->Put(chunk->hash(), *chunk);
   return new UString(chunk);
 }
 
 const UString* UString::Load(const Hash& hash) {
-  ustore::ChunkStore* cs = ustore::GetChunkStore();
-  const Chunk* chunk = cs->Get(hash);
+  // ustring do not need chunk loader, as it has only one chunk
+  const Chunk* chunk = store::GetChunkStore()->Get(hash);
   return new UString(chunk);
 }
 
 UString::UString(const Chunk* chunk) {
-  if (chunk->type() == kStringChunk) {
+  if (chunk->type() == ChunkType::kString) {
     node_ = new StringNode(chunk);
   } else {
     LOG(FATAL) << "Cannot be other chunk type for UString";

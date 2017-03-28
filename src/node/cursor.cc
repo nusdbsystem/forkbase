@@ -15,9 +15,9 @@ namespace ustore {
 const SeqNode* CreateSeqNodeFromChunk(const Chunk* chunk) {
   CHECK_NE(chunk, nullptr);
   switch (chunk->type()) {
-    case kMetaChunk:
+    case ChunkType::kMeta:
       return new MetaNode(chunk);
-    case kBlobChunk:
+    case ChunkType::kBlob:
       return new BlobNode(chunk);
     default:
       LOG(FATAL) << "Other Non-chunkable Node Not Supported!";
