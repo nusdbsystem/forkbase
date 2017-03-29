@@ -16,9 +16,11 @@ namespace ustore {
  */
 class HeadVersion : private Noncopyable {
  public:
-  static HeadVersion* Instance();
-  HeadVersion();
-  ~HeadVersion();
+  // TODO(linqian): support applications that do not need branch notion, but
+  //  need to retrieve all latest version
+  //  maybe create another LatestHeadVersion class (v.s. BranchHeadVersion)
+  HeadVersion() {}
+  ~HeadVersion() {}
 
   /**
    * @brief Retrieve the head version of data according to the specified
@@ -44,4 +46,4 @@ class HeadVersion : private Noncopyable {
 
 }  // namespace ustore
 
-#endif  // USTORE_WORKER_HEAD_VERSION_H
+#endif  // USTORE_WORKER_HEAD_VERSION_H_

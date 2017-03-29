@@ -3,26 +3,24 @@
 #ifndef USTORE_WORKER_WORKER_H_
 #define USTORE_WORKER_WORKER_H_
 
-#include "head_version.h"
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
+#include "worker/head_version.h"
 
 namespace ustore {
-
-using WorkerID = uint32_t;
 
 /**
  * @brief Worker node management.
  */
 class Worker : private Noncopyable {
  public:
-  static Worker* Instance();
+  using WorkerID = uint32_t;
 
-  explicit Worker(const WorkerID& id);
-  ~Worker();
+  explicit Worker(const WorkerID& id) : id_(id) {}
+  ~Worker() {}
 
   inline WorkerID id() const { return id_; }
 
@@ -36,7 +34,7 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Get(const Slice& key, const Slice& branch, const Hash& version,
-                Value* val) const;
+            Value* value) const;
 
   /**
    * @brief Write data with its specified version and branch.
@@ -48,7 +46,7 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-                const Hash& version);
+           const Hash& previous, Hash* version);
 
   /**
    * @brief Create a new branch for the data.
@@ -70,8 +68,7 @@ class Worker : private Noncopyable {
    * @param new_branch The target branch.
    * @return Error code. (0 for success)
    */
-  ErrorCode Move(const Slice& key,
-                 const Slice& old_branch,
+  ErrorCode Move(const Slice& key, const Slice& old_branch,
                  const Slice& new_branch);
 
   /**
@@ -85,13 +82,14 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Slice& ref_branch, const Hash& ref_version);
+                  const Slice& ref_branch, const Hash& ref_version,
+                  Hash* version);
 
  private:
   const WorkerID id_;
-  const HeadVersion* head_ver_;
+  HeadVersion head_ver_;
 };
 
 }  // namespace ustore
 
-#endif  // USTORE_WORKER_WORKER_H
+#endif  // USTORE_WORKER_WORKER_H_

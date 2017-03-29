@@ -4,27 +4,13 @@
 
 namespace ustore {
 
-HeadVersion*
-HeadVersion::Instance() {
-  static auto ins(new HeadVersion());
-
-  return ins;
+const Hash& HeadVersion::Get(const Slice& key, const Slice& branch) const {
+  static Hash hash;
+  return hash;
 }
 
-HeadVersion::HeadVersion() {}
-
-HeadVersion::~HeadVersion() {}
-
-const Hash&
-HeadVersion::Get(const Slice& key,
-                 const Slice& branch) const {
-  return NULL;
+void HeadVersion::Put(const Slice& key, const Slice& branch,
+                      const Hash& version) {
 }
 
-void
-HeadVersion::Put(const Slice& key,
-                 const Slice& branch,
-                 const Hash& version) {
-}
-
-} // namespace ustore
+}  // namespace ustore

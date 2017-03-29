@@ -36,11 +36,15 @@ enum class ChunkType : byte_t {
   kString = 3
 };
 
-enum ErrorCode : int8_t {
+/*
+ * Worker error code returned to user
+ */
+enum class ErrorCode : byte_t {
   kOK = 0,
   kUnknownOp = 1,
-  kReadFailed = 2,
-  kWriteFailed = 3
+  kInvalidRange = 2,
+  kReadFailed = 3,
+  kWriteFailed = 4
 };
 
 }  // namespace ustore

@@ -23,12 +23,12 @@ class Value {
   explicit Value(const Blob& v);
   ~Value();
 
-  inline Type type() const { return type_; }
+  inline UType type() const { return type_; }
   const Slice* slice() const { return static_cast<Slice*>(data_); }
   const Blob* blob() const { return static_cast<Blob*>(data_); }
 
  private:
-  Type type_;
+  UType type_;
   void* data_ = nullptr;
 };
 }  // namespace ustore
