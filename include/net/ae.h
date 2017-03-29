@@ -30,8 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __AE_H__
-#define __AE_H__
+#ifndef USTORE_USTORE_NET_AE_H_
+#define USTORE_USTORE_NET_AE_H_
 
 #include <time.h>
 
@@ -62,7 +62,7 @@ struct aeEventLoop;
 /* Types and data structures */
 typedef void aeFileProc(struct aeEventLoop *eventLoop, int fd, void *clientData,
                         int mask);
-typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id,
+typedef int aeTimeProc(struct aeEventLoop *eventLoop, int64_t id,
                        void *clientData);
 typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop,
                                   void *clientData);
@@ -78,9 +78,9 @@ typedef struct aeFileEvent {
 
 /* Time event structure */
 typedef struct aeTimeEvent {
-  long long id; /* time event identifier. */
-  long when_sec; /* seconds */
-  long when_ms; /* milliseconds */
+  int64_t id; /* time event identifier. */
+  int64_t when_sec; /* seconds */
+  int64_t when_ms; /* milliseconds */
   aeTimeProc *timeProc;
   aeEventFinalizerProc *finalizerProc;
   void *clientData;
@@ -97,7 +97,7 @@ typedef struct aeFiredEvent {
 typedef struct aeEventLoop {
   int maxfd; /* highest file descriptor currently registered */
   int setsize; /* max number of file descriptors tracked */
-  long long timeEventNextId;
+  int64_t timeEventNextId;
   time_t lastTime; /* Used to detect system clock skew */
   aeFileEvent *events; /* Registered events */
   aeFiredEvent *fired; /* Fired events */
@@ -115,12 +115,12 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
                       aeFileProc *proc, void *clientData);
 void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask);
 int aeGetFileEvents(aeEventLoop *eventLoop, int fd);
-long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
+int64_t aeCreateTimeEvent(aeEventLoop *eventLoop, int64_t milliseconds,
                             aeTimeProc *proc, void *clientData,
                             aeEventFinalizerProc *finalizerProc);
-int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id);
+int aeDeleteTimeEvent(aeEventLoop *eventLoop, int64_t id);
 int aeProcessEvents(aeEventLoop *eventLoop, int flags);
-int aeWait(int fd, int mask, long long milliseconds);
+int aeWait(int fd, int mask, int64_t milliseconds);
 void aeMain(aeEventLoop *eventLoop);
 char *aeGetApiName(void);
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop,
@@ -129,4 +129,4 @@ int aeGetSetSize(aeEventLoop *eventLoop);
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize);
 void startEventLoop(aeEventLoop *el);
 
-#endif
+#endif  // USTORE_USTORE_NET_AE_H_

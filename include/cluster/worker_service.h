@@ -2,9 +2,11 @@
 
 #ifndef USTORE_CLUSTER_WORKER_SERVICE_H_
 #define USTORE_CLUSTER_WORKER_SERVICE_H_
-
+#include <vector>
 #include "net/net.h"
+#include "proto/messages.pb.h"
 
+using std::vector;
 namespace ustore {
 
 class Worker;
@@ -22,11 +24,17 @@ class WorkerService {
     static void RequestDispatch(const void *msg, int size, void *handler,
                                 const node_id_t& source);
 
-    explicit WorkerService(const node_id_t& master): master_(master) {}
+    static int range_cmp(RangeInfo a, RangeInfo b);
+
+    explicit WorkerService(const node_id_t& addr, const node_id_t& master):
+                                  node_addr_(addr), master_(master) {}
     ~WorkerService();
 
     // initialize the network, the worker and register callback
     virtual void Init();
+    virtual void Start();
+    virtual void Stop();
+
     /**
      * Handle requests:
      * 1. It parse msg into a UStoreMessage
@@ -38,8 +46,12 @@ class WorkerService {
 
  private:
     node_id_t master_;  // master node
+    node_id_t node_addr_;  // this node's address
     Net *net_;
+    vector<RangeInfo> ranges_;  // global knowledge about key ranges
     Worker* worker_;  // where the logic happens
+    vector<node_id_t> addresses_;  // worker addresses
+    CallBack* cb_ = nullptr;
 };
 }  // namespace ustore
 

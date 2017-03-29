@@ -1,17 +1,12 @@
-/*
- * zmq_net.cc
- *
- *  Created on: Mar 13, 2017
- *      Author: zhanghao
- */
+// Copyright (c) 2017 The Ustore Authors.
 
-#include <string>
-#include <set>
+#include "net/zmq_net.h"
 #include <czmq.h>
 #include <gflags/gflags.h>
-//#include <glog/logging.h>
+#include <string>
+#include <set>
+// #include <glog/logging.h>
 #include "utils/logging.h"
-#include "net/zmq_net.h"
 
 using std::string;
 using std::vector;
@@ -51,15 +46,15 @@ ZmqNet::ZmqNet(const node_id_t& id, int nthreads)
     : Net(id), nthreads_(nthreads) {
   // start router socket
   socket_ctx_ = zctx_new();
-  recv_sock_ = zsocket_new((zctx_t*) socket_ctx_, ZMQ_ROUTER);
+  recv_sock_ = zsocket_new(static_cast<zctx_t*>(socket_ctx_), ZMQ_ROUTER);
   string host = "tcp://" + id;
   CHECK(zsocket_bind(recv_sock_, "%s", host.c_str()));
-  backend_sock_ = zsocket_new((zctx_t*) socket_ctx_, ZMQ_DEALER);
-  CHECK(zsocket_bind(backend_sock_, "%s", FLAGS_inproc.c_str()) == 0);
+  backend_sock_ = zsocket_new(static_cast<zctx_t*>(socket_ctx_), ZMQ_DEALER);
+  CHECK_EQ(zsocket_bind(backend_sock_, "%s", FLAGS_inproc.c_str()), 0);
 
   // start backend thread
   for (int i = 0; i < nthreads_; i++)
-    zthread_fork((zctx_t*) socket_ctx_, ServerThread, this);
+    zthread_fork(static_cast<zctx_t*>(socket_ctx_), ServerThread, this);
 
   is_running_ = true;
 }
@@ -70,12 +65,8 @@ NetContext* ZmqNet::CreateNetContext(const node_id_t& id) {
     ctx = new ZmqNetContext(cur_node_, id);
     netmap_[id] = ctx;
   }
+  CHECK(netmap_[id]) << "Creating netcontext failed";
   return netmap_[id];
-}
-
-void ZmqNet::RegisterRecv(CallBackProc* func, void* handler) {
-  cb_ = func;
-  upstream_handle_ = handler;
 }
 
 // forwarding messages from router to dealer socket
@@ -92,14 +83,14 @@ void ZmqNet::Start() {
       zmsg_t *msg = zmsg_recv(recv_sock_);
       if (!msg)
         break;
-      //send to backend
+      // send to backend
       zmsg_send(&msg, backend_sock_);
     }
   }
-  //Stop when ^C
-  zsocket_destroy((zctx_t*) socket_ctx_, recv_sock_);
-  zsocket_destroy((zctx_t*) socket_ctx_, backend_sock_);
-  zctx_destroy((zctx_t**) (&socket_ctx_));
+  // Stop when ^C
+  zsocket_destroy(static_cast<zctx_t*>(socket_ctx_), recv_sock_);
+  zsocket_destroy(static_cast<zctx_t*>(socket_ctx_), backend_sock_);
+  zctx_destroy(reinterpret_cast<zctx_t**>(&socket_ctx_));
 }
 
 void ZmqNet::Stop() {
@@ -109,9 +100,9 @@ void ZmqNet::Stop() {
 void ServerThread(void *args, zctx_t *ctx, void *pipe) {
   ZmqNet *net = static_cast<ZmqNet*>(args);
 
-  //create and connect to the frontend's dealer socket
+  // create and connect to the frontend's dealer socket
   void *frontend = zsocket_new(ctx, ZMQ_DEALER);
-  CHECK(zsocket_connect(frontend, "%s", FLAGS_inproc.c_str()) == 0);
+  CHECK_EQ(zsocket_connect(frontend, "%s", FLAGS_inproc.c_str()), 0);
 
   while (net->IsRunning()) {
     zmsg_t *msg = zmsg_recv(frontend);
@@ -126,7 +117,8 @@ void ServerThread(void *args, zctx_t *ctx, void *pipe) {
     char *connection_id = zmsg_popstr(msg);
 
     zframe_t *content = zmsg_pop(msg);
-    net->Dispatch(string(connection_id), zframe_data(content), zframe_size(content));
+    net->Dispatch(string(connection_id),
+                  zframe_data(content), zframe_size(content));
     zframe_destroy(&identity);
     zframe_destroy(&content);
     free(connection_id);
@@ -138,22 +130,20 @@ ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest)
     : NetContext(src, dest) {
   // start connection to the remote host
   send_ctx_ = zctx_new();
-  send_sock_ = zsocket_new((zctx_t*) send_ctx_, ZMQ_DEALER);
+  send_sock_ = zsocket_new(static_cast<zctx_t*>(send_ctx_), ZMQ_DEALER);
   string host = "tcp://" + dest_id_;
-  CHECK(zsocket_connect(send_sock_, "%s", host.c_str()) == 0);
+  CHECK_EQ(zsocket_connect(send_sock_, "%s", host.c_str()), 0);
   LOG(ERROR)<< "Connected to " << host;
 }
 
 ZmqNetContext::~ZmqNetContext() {
-  zsocket_destroy((zctx_t*) send_ctx_, send_sock_);
-  zctx_destroy((zctx_t**) (&send_ctx_));
+  zsocket_destroy(static_cast<zctx_t*>(send_ctx_), send_sock_);
+  zctx_destroy(reinterpret_cast<zctx_t**>(&send_ctx_));
 }
 
-ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBackProc* func,
-                            void* data) {
-
+ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
   zframe_t* frame = zframe_new(ptr, len);
-  //free((char*) ptr);
+  // free((char*) ptr);
   zframe_t* id = zframe_new(src_id_.c_str(), src_id_.length());
   zmsg_t* msg = zmsg_new();
   zmsg_append(msg, &id);
@@ -162,14 +152,13 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBackProc* func,
   send_lock_.lock();
   int st = zmsg_send(&msg, send_sock_) == 0 ? len : -1;
   send_lock_.unlock();
-
   return st;
 }
 
 void ZmqNet::Dispatch(const node_id_t& source, const void *msg, int size) {
-  //recv_lock_.lock();
-  this->cb_(msg, size, this->upstream_handle_, source);
-  //recv_lock_.unlock();
+  // recv_lock_.lock();
+  (*this->cb_)(msg, size, source);
+  // recv_lock_.unlock();
 }
 
 ssize_t NetContext::SyncSend(const void *ptr, size_t len) {
@@ -181,4 +170,4 @@ ssize_t NetContext::SyncRecv(const void *ptr, size_t len) {
   // not implemented for now
   return 0;
 }
-}
+}  // namespace ustore

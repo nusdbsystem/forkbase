@@ -41,34 +41,34 @@
 #include <errno.h>
 
 #include "net/ae.h"
-//#include "zmalloc.h"
-//#include "config.h"
-
 
 /* Include the best multiplexing layer supported by this system.
  * The following should be ordered by performances, descending. */
-//#ifdef HAVE_EVPORT
-//#include "ae_evport.cc"
-//#else
-//#ifdef HAVE_EPOLL
+// #ifdef HAVE_EVPORT
+// #include "ae_evport.cc"
+// #else
+// #ifdef HAVE_EPOLL
 #include "ae_epoll.cc"
-//#else
-//#ifdef HAVE_KQUEUE
-//#include "ae_kqueue.cc"
-//#else
-//#include "ae_select.cc"
-//#endif
-//#endif
-//#endif
+// #else
+// #ifdef HAVE_KQUEUE
+// #include "ae_kqueue.cc"
+// #else
+// #include "ae_select.cc"
+// #endif
+// #endif
+// #endif
 
 aeEventLoop *aeCreateEventLoop(int setsize) {
   aeEventLoop *eventLoop;
   int i;
 
-  if ((eventLoop = (aeEventLoop *) zmalloc(sizeof(*eventLoop))) == NULL)
+  if ((eventLoop = static_cast<aeEventLoop*>(zmalloc(sizeof(*eventLoop))))
+      == NULL)
     goto err;
-  eventLoop->events = (aeFileEvent *) zmalloc(sizeof(aeFileEvent) * setsize);
-  eventLoop->fired = (aeFiredEvent *) zmalloc(sizeof(aeFiredEvent) * setsize);
+  eventLoop->events = static_cast<aeFileEvent*>(
+      zmalloc(sizeof(aeFileEvent) * setsize));
+  eventLoop->fired = static_cast<aeFiredEvent*>(
+      zmalloc(sizeof(aeFiredEvent) * setsize));
   if (eventLoop->events == NULL || eventLoop->fired == NULL)
     goto err;
   eventLoop->setsize = setsize;
@@ -116,10 +116,10 @@ int aeResizeSetSize(aeEventLoop *eventLoop, int setsize) {
   if (aeApiResize(eventLoop, setsize) == -1)
     return AE_ERR;
 
-  eventLoop->events = (aeFileEvent *) zrealloc(eventLoop->events,
-                                               sizeof(aeFileEvent) * setsize);
-  eventLoop->fired = (aeFiredEvent *) zrealloc(eventLoop->fired,
-                                               sizeof(aeFiredEvent) * setsize);
+  eventLoop->events = static_cast<aeFileEvent*>(zrealloc(eventLoop->events,
+                                               sizeof(aeFileEvent) * setsize));
+  eventLoop->fired = static_cast<aeFiredEvent*>(zrealloc(eventLoop->fired,
+                                               sizeof(aeFiredEvent) * setsize));
   eventLoop->setsize = setsize;
 
   /* Make sure that if we created new slots, they are initialized with
@@ -189,7 +189,7 @@ int aeGetFileEvents(aeEventLoop *eventLoop, int fd) {
   return fe->mask;
 }
 
-static void aeGetTime(long *seconds, long *milliseconds) {
+static void aeGetTime(int64_t *seconds, int64_t *milliseconds) {
   struct timeval tv;
 
   gettimeofday(&tv, NULL);
@@ -197,9 +197,9 @@ static void aeGetTime(long *seconds, long *milliseconds) {
   *milliseconds = tv.tv_usec / 1000;
 }
 
-static void aeAddMillisecondsToNow(long long milliseconds, long *sec,
-                                   long *ms) {
-  long cur_sec, cur_ms, when_sec, when_ms;
+static void aeAddMillisecondsToNow(int64_t milliseconds, int64_t *sec,
+                                   int64_t *ms) {
+  int64_t cur_sec, cur_ms, when_sec, when_ms;
 
   aeGetTime(&cur_sec, &cur_ms);
   when_sec = cur_sec + milliseconds / 1000;
@@ -212,13 +212,13 @@ static void aeAddMillisecondsToNow(long long milliseconds, long *sec,
   *ms = when_ms;
 }
 
-long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
+int64_t aeCreateTimeEvent(aeEventLoop *eventLoop, int64_t milliseconds,
                             aeTimeProc *proc, void *clientData,
                             aeEventFinalizerProc *finalizerProc) {
-  long long id = eventLoop->timeEventNextId++;
+  int64_t id = eventLoop->timeEventNextId++;
   aeTimeEvent *te;
 
-  te = (aeTimeEvent *) zmalloc(sizeof(*te));
+  te = static_cast<aeTimeEvent*>(zmalloc(sizeof(*te)));
   if (te == NULL)
     return AE_ERR;
   te->id = id;
@@ -231,7 +231,7 @@ long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
   return id;
 }
 
-int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id) {
+int aeDeleteTimeEvent(aeEventLoop *eventLoop, int64_t id) {
   aeTimeEvent *te, *prev = NULL;
 
   te = eventLoop->timeEventHead;
@@ -269,7 +269,8 @@ static aeTimeEvent *aeSearchNearestTimer(aeEventLoop *eventLoop) {
 
   while (te) {
     if (!nearest || te->when_sec < nearest->when_sec
-        || (te->when_sec == nearest->when_sec && te->when_ms < nearest->when_ms))
+        || (te->when_sec == nearest->when_sec
+            && te->when_ms < nearest->when_ms))
       nearest = te;
     te = te->next;
   }
@@ -280,7 +281,7 @@ static aeTimeEvent *aeSearchNearestTimer(aeEventLoop *eventLoop) {
 static int processTimeEvents(aeEventLoop *eventLoop) {
   int processed = 0;
   aeTimeEvent *te;
-  long long maxId;
+  int64_t maxId;
   time_t now = time(NULL);
 
   /* If the system clock is moved to the future, and then set back to the
@@ -303,8 +304,8 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
   te = eventLoop->timeEventHead;
   maxId = eventLoop->timeEventNextId - 1;
   while (te) {
-    long now_sec, now_ms;
-    long long id;
+    int64_t now_sec, now_ms;
+    int64_t id;
 
     if (te->id > maxId) {
       te = te->next;
@@ -377,7 +378,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
     if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
       shortest = aeSearchNearestTimer(eventLoop);
     if (shortest) {
-      long now_sec, now_ms;
+      int64_t now_sec, now_ms;
 
       /* Calculate the time missing for the nearest
        * timer to fire. */
@@ -437,7 +438,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
 
 /* Wait for milliseconds until the given file descriptor becomes
  * writable/readable/exception */
-int aeWait(int fd, int mask, long long milliseconds) {
+int aeWait(int fd, int mask, int64_t milliseconds) {
   struct pollfd pfd;
   int retmask = 0, retval;
 
@@ -472,19 +473,15 @@ void aeMain(aeEventLoop *eventLoop) {
   }
 }
 
-char *aeGetApiName(void) {
-  return aeApiName();
-}
-
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop,
                           aeBeforeSleepProc *beforesleep) {
   eventLoop->beforesleep = beforesleep;
 }
 
 void startEventLoop(aeEventLoop *el) {
-  //start epoll
+  // start epoll
   aeMain(el);
 
-  //end the service
+  // end the service
   aeDeleteEventLoop(el);
 }

@@ -28,6 +28,8 @@ OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
 OPTION(USE_LEVELDB "Use LevelDB as chunk storage" OFF)
 OPTION(TEST_NODEBUILDER "Test node builder" ON)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
+OPTION(MOCK_TEST "Use MockWorker" ON)
+OPTION(USE_RDMA "Use RDMA" OFF)
 
 if(TEST_NODEBUILDER)
   message(STATUS "Test Node Builder with Specific Rolling Hasher")
@@ -41,6 +43,14 @@ endif()
 
 if(ENABLE_DEBUG)
   ADD_DEFINITIONS(-DDEBUG)
+endif()
+if(MOCK_TEST)
+  message(STATUS "Use MockWorker")
+  add_definitions(-DMOCK_TEST)
+endif()
+if(USE_RDMA)
+  message(STATUS "Use RDMA")
+  add_definitions(-DUSE_RDMA)
 endif()
 
 # ---[ Dependencies

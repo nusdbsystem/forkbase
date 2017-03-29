@@ -1,14 +1,13 @@
-/*
- * rdma_config.h
- *
- *  Created on: Mar 16, 2017
- *      Author: zhanghao
- */
+// Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NET_RDMA_CONFIG_H_
-#define USTORE_NET_RDMA_CONFIG_H_
+#ifndef USTORE_USTORE_NET_RDMA_CONFIG_H_
+#define USTORE_USTORE_NET_RDMA_CONFIG_H_
+
+#ifdef USE_RDMA
 
 #include <vector>
+#include <string>
+
 using std::vector;
 using std::stringstream;
 using std::string;
@@ -21,26 +20,30 @@ namespace ustore {
 #define EVENTLOOP_FDSET_INCR (MIN_RESERVED_FDS+96)
 
 #define TCP_BACKLOG       511     /* TCP listen backlog */
-#define IP_STR_LEN 46 /* INET6_ADDRSTRLEN is 46, but we need to be sure */
+#define IP_STR_LEN 46  // INET6_ADDRSTRLEN is 46, but we need to be sure
 
 #define MAX_NUM_WORKER 20
 #define MAX_MASTER_PENDING_MSG 32
 #define MAX_UNSIGNALED_MSG 32
 
 #define HW_MAX_PENDING 16351
-#define MAX_WORKER_PENDING_MSG 8192
-#define MAX_WORKER_RECV_MSG 8192 //shouldn't larger than HW_MAX_PENDING
+#define MAX_WORKER_PENDING_MSG 1024
+// shouldn't larger than HW_MAX_PENDING
+#define MAX_WORKER_RECV_MSG MAX_WORKER_PENDING_MSG
+// shouldn't larger than HW_MAX_PENDING
+#define MAX_MASTER_RECV_MSG MAX_MASTER_PENDING_MSG
 #define MASTER_RDMA_SRQ_RX_DEPTH \
-    (MAX_MASTER_PENDING_MSG * MAX_NUM_WORKER)
+    (MAX_MASTER_RECV_MSG * MAX_NUM_WORKER)
 #define WORKER_RDMA_SRQ_RX_DEPTH \
-    (MAX_WORKER_PENDING_MSG * (MAX_NUM_WORKER-1) + MAX_MASTER_PENDING_MSG)
+    (MAX_WORKER_RECV_MSG * (MAX_NUM_WORKER-1) + MAX_MASTER_RECV_MSG)
 
 #define MAX_REQUEST_SIZE 1024
 #define WORKER_BUFFER_SIZE (MAX_WORKER_PENDING_MSG * MAX_REQUEST_SIZE)
 #define MASTER_BUFFER_SIZE (MAX_MASTER_PENDING_MSG * MAX_REQUEST_SIZE)
 
-#define MAX_IPPORT_STRLEN 21 //192.168.154.154:12345
-#define MAX_WORKERS_STRLEN (MAX_NUM_WORKER*MAX_IPPORT_STRLEN+MAX_NUM_WORKER-1)  //192.168.154.154:12345,
+#define MAX_IPPORT_STRLEN 21  // 192.168.154.154:12345
+// 192.168.154.154:12345,
+#define MAX_WORKERS_STRLEN (MAX_NUM_WORKER*MAX_IPPORT_STRLEN+MAX_NUM_WORKER-1)
 
 #define INIT_WORKQ_SIZE 2000
 
@@ -49,12 +52,15 @@ namespace ustore {
 #define SERVER_NOT_EXIST_EXCEPTION 3
 #define SERVER_ALREADY_EXIST_EXCEPTION 4
 
-#define MASTER_RDMA_CONN_STRLEN 22 /** 4 bytes for lid + 8 bytes qpn
-                                    * + 8 bytes for psn
-                                    * seperated by 2 colons */
+  /** 4 bytes for lid + 8 bytes qpn
+   * + 8 bytes for psn
+   * seperated by 2 colons */
+#define MASTER_RDMA_CONN_STRLEN 22
 #define WORKER_RDMA_CONN_STRLEN (MASTER_RDMA_CONN_STRLEN + 8 + 16 + 2)
-#define MAX_CONN_STRLEN (WORKER_RDMA_CONN_STRLEN+4+1) //4: four-digital wid, 1: ':', 1: \0
-#define MAX_CONN_STRLEN_G WORKER_RDMA_CONN_STRLEN + 22 //192.148.111.111:11234;
+// 4: four-digital wid, 1: ':', 1: \0
+#define MAX_CONN_STRLEN (WORKER_RDMA_CONN_STRLEN+4+1)
+// 192.148.111.111:11234;
+#define MAX_CONN_STRLEN_G WORKER_RDMA_CONN_STRLEN + 22
 
 #define HALF_BITS 0xffffffff
 #define QUARTER_BITS 0xffff
@@ -92,28 +98,25 @@ inline vector<T>& Split(stringstream& ss, vector<T>& elems, char delim) {
   T item;
   while (ss >> item) {
     elems.push_back(item);
-    if(ss.peek() == delim) ss.ignore();
+    if (ss.peek() == delim) ss.ignore();
   }
   return elems;
 }
 
 template <>
-vector<string>& Split<string>(stringstream& ss, vector<string>& elems, char delim) {
-  string item;
-  while (getline(ss, item, delim)) {
-    if(!item.empty()) elems.push_back(item);
-  }
-  return elems;
-}
+vector<string>& Split<string>(stringstream& ss,
+                              vector<string>& elems, char delim);
 
 template <class T>
-inline vector<T>& Split(const string& s, vector<T>& elems, char delim = DEFAULT_SPLIT_CHAR) {
+inline vector<T>& Split(const string& s, vector<T>& elems,
+                        char delim = DEFAULT_SPLIT_CHAR) {
   stringstream ss(s);
   return Split(ss, elems, delim);
 }
 
 template <class T>
-inline vector<T>& Split(char *s, vector<T>& elems, char delim = DEFAULT_SPLIT_CHAR) {
+inline vector<T>& Split(char *s, vector<T>& elems,
+                        char delim = DEFAULT_SPLIT_CHAR) {
   stringstream ss(s);
   return Split(ss, elems, delim);
 }
@@ -121,6 +124,7 @@ inline vector<T>& Split(char *s, vector<T>& elems, char delim = DEFAULT_SPLIT_CH
 // raddr means memory addr that is registered with RDMA device
 typedef void* raddr;
 
-} // end namespace ustore
+}  // end namespace ustore
 
-#endif /* USTORE_NET_RDMA_CONFIG_H_ */
+#endif
+#endif  // USTORE_USTORE_NET_RDMA_CONFIG_H_

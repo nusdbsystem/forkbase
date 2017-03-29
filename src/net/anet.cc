@@ -171,7 +171,7 @@ int anetTcpKeepAlive(char *err, int fd) {
 
 /* Set the socket send timeout (SO_SNDTIMEO socket option) to the specified
  * number of milliseconds, or disable it if the 'ms' argument is zero. */
-int anetSendTimeout(char *err, int fd, long long ms) {
+int anetSendTimeout(char *err, int fd, int64_t ms) {
   struct timeval tv;
 
   tv.tv_sec = ms / 1000;
@@ -448,7 +448,7 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af,
   char _port[6]; /* strlen("65535") */
   struct addrinfo hints, *servinfo, *p;
 
-  snprintf(_port, 6, "%d", port);
+  snprintf(_port, sizeof(_port), "%d", port);
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = af;
   hints.ai_socktype = SOCK_STREAM;
@@ -512,9 +512,9 @@ static int anetGenericAccept(char *err, int s, struct sockaddr *sa,
   while (1) {
     fd = accept(s, sa, len);
     if (fd == -1) {
-      if (errno == EINTR)
+      if (errno == EINTR) {
         continue;
-      else {
+      } else {
         anetSetError(err, "accept: %s", strerror(errno));
         return ANET_ERR;
       }
@@ -532,15 +532,15 @@ int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port) {
     return ANET_ERR;
 
   if (sa.ss_family == AF_INET) {
-    struct sockaddr_in *s = (struct sockaddr_in *) &sa;
+    struct sockaddr_in *s = reinterpret_cast<struct sockaddr_in *>(&sa);
     if (ip)
-      inet_ntop(AF_INET, (void*) &(s->sin_addr), ip, ip_len);
+      inet_ntop(AF_INET, &(s->sin_addr), ip, ip_len);
     if (port)
       *port = ntohs(s->sin_port);
   } else {
     struct sockaddr_in6 *s = (struct sockaddr_in6 *) &sa;
     if (ip)
-      inet_ntop(AF_INET6, (void*) &(s->sin6_addr), ip, ip_len);
+      inet_ntop(AF_INET6, &(s->sin6_addr), ip, ip_len);
     if (port)
       *port = ntohs(s->sin6_port);
   }
@@ -569,13 +569,13 @@ int anetPeerToString(int fd, char *ip, size_t ip_len, int *port) {
   if (sa.ss_family == AF_INET) {
     struct sockaddr_in *s = (struct sockaddr_in *) &sa;
     if (ip)
-      inet_ntop(AF_INET, (void*) &(s->sin_addr), ip, ip_len);
+      inet_ntop(AF_INET, &(s->sin_addr), ip, ip_len);
     if (port)
       *port = ntohs(s->sin_port);
   } else if (sa.ss_family == AF_INET6) {
     struct sockaddr_in6 *s = (struct sockaddr_in6 *) &sa;
     if (ip)
-      inet_ntop(AF_INET6, (void*) &(s->sin6_addr), ip, ip_len);
+      inet_ntop(AF_INET6, &(s->sin6_addr), ip, ip_len);
     if (port)
       *port = ntohs(s->sin6_port);
   } else if (sa.ss_family == AF_UNIX) {
@@ -615,13 +615,13 @@ int anetSockName(int fd, char *ip, size_t ip_len, int *port) {
   if (sa.ss_family == AF_INET) {
     struct sockaddr_in *s = (struct sockaddr_in *) &sa;
     if (ip)
-      inet_ntop(AF_INET, (void*) &(s->sin_addr), ip, ip_len);
+      inet_ntop(AF_INET, &(s->sin_addr), ip, ip_len);
     if (port)
       *port = ntohs(s->sin_port);
   } else {
     struct sockaddr_in6 *s = (struct sockaddr_in6 *) &sa;
     if (ip)
-      inet_ntop(AF_INET6, (void*) &(s->sin6_addr), ip, ip_len);
+      inet_ntop(AF_INET6, &(s->sin6_addr), ip, ip_len);
     if (port)
       *port = ntohs(s->sin6_port);
   }

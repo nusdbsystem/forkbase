@@ -1,9 +1,15 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef INCLUDE_NET_RDMA_NET_H_
-#define INCLUDE_NET_RDMA_NET_H_
+#ifndef USTORE_USTORE_NET_RDMA_NET_H_
+#define USTORE_USTORE_NET_RDMA_NET_H_
+
+#ifdef USE_RDMA
 
 #include <infiniband/verbs.h>
+#include <boost/asio/io_service.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread/thread.hpp>
+#include <syscall.h>
 #include <atomic>
 #include <mutex>
 #include <queue>
@@ -11,17 +17,13 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/thread/thread.hpp>
-#include <vector>
 #include <sstream>
-#include <syscall.h>
 #include "net/hashtable.h"
 #include "net/net.h"
 #include "net/ae.h"
 #include "utils/logging.h"
 #include "net/rdma_config.h"
+#include "utils/singleton.h"
 
 namespace ustore {
 
@@ -94,25 +96,22 @@ class RdmaNetContext : public NetContext {
   ~RdmaNetContext();
 
   // implementation of the methods inherited from NetContext
-  ssize_t Send(const void* ptr, size_t len, CallBackProc* func = nullptr,
-               void* handler = nullptr) override;
+  ssize_t Send(const void* ptr, size_t len, CallBack* func = nullptr) override;
 
   /**
    * Memory API
    * @dest: dest addr at remote node
    * @src: src addr at local node
    */
-  ssize_t Write(raddr dest, raddr src, size_t len, CallBackProc* func = nullptr,
-                void* handler = nullptr);
+  ssize_t Write(raddr dest, raddr src, size_t len, CallBack* func = nullptr);
   ssize_t WriteWithImm(raddr dest, raddr src, size_t len, uint32_t imm,
-                       CallBackProc* func = nullptr, void* handler = nullptr);
-  ssize_t Read(raddr dest, raddr src, size_t len, CallBackProc* func = nullptr,
-               void* handler = nullptr);
+                       CallBack* func = nullptr);
+  ssize_t Read(raddr dest, raddr src, size_t len, CallBack* func = nullptr);
   ssize_t WriteBlocking(raddr dest, raddr src, size_t len);
   ssize_t WriteWithImmBlocking(raddr dest, raddr src, size_t len, uint32_t imm);
   ssize_t ReadBlocking(raddr dest, raddr src, size_t len);
 
-  //for internel use
+  // for internel use
   int SetRemoteConnParam(const char *remConn);
   const char* GetRdmaConnString();
 
@@ -155,8 +154,8 @@ class RdmaNetContext : public NetContext {
    */
   ssize_t ReadGeneric(raddr dest, raddr src, size_t len, unsigned int id = 0,
                 bool signaled = false);
-  ssize_t CasGeneric(raddr src, uint64_t oldval, uint64_t newval, unsigned int id = 0,
-               bool signaled = false);
+  ssize_t CasGeneric(raddr src, uint64_t oldval, uint64_t newval,
+                     unsigned int id = 0, bool signaled = false);
 
   RdmaNetResource *resource_;
   ibv_qp *qp_;
@@ -194,13 +193,11 @@ class RdmaNet : public Net {
   void Start() override {}
   void Stop() override {}
 
-  void RegisterRecv(CallBackProc* func, void* handler) override;
-
-  //below are for internal use
+  // below are for internal use
   RdmaNetContext* CreateRdmaNetContext(const node_id_t& id, bool& exist);
   inline void RemoveContext(RdmaNetContext* ctx) {
     qpCliMap_.erase(ctx->GetQP());
-    //idCliMap_.erase(ctx->GetID());
+    // idCliMap_.erase(ctx->GetID());
     netmap_.erase(ctx->GetID());
   }
   void ProcessRdmaRequest();
@@ -208,12 +205,13 @@ class RdmaNet : public Net {
  private:
   void StartService(const node_id_t& id, RdmaNetResource* res);
 
-  inline RdmaNetContext* FindContext(uint32_t qpn) const {
+  inline RdmaNetContext* FindContext(uint32_t qpn) {
     RdmaNetContext* ctx = nullptr;
     try {
       ctx = qpCliMap_.at(qpn);
     } catch (const std::out_of_range& oor) {
-      LOG(WARNING) << "cannot find the client for qpn " << qpn << "(" << oor.what() << ")" << std::endl;
+      LOG(WARNING) << "cannot find the client for qpn "
+          << qpn << "(" << oor.what() << ")";
     }
     return ctx;
   }
@@ -221,19 +219,19 @@ class RdmaNet : public Net {
   inline RdmaNetContext* FindContextID(const node_id_t& id) const {
     RdmaNetContext* ctx = nullptr;
     if (netmap_.count(id)) {
-      ctx = (RdmaNetContext*)netmap_.at(id);
+      ctx = dynamic_cast<RdmaNetContext*>(netmap_.at(id));
     }
     return ctx;
   }
 
-  static void CbHandler(RdmaNet* ctx, const node_id_t& source, const void* msg, size_t size,
+  static void CbHandler(RdmaNet* ctx, const node_id_t& source,
+                        const void* msg, size_t size,
                         RdmaNetResource* resource, uint64_t wr_id);
-
   RdmaNetResource* resource_ = nullptr;
   aeEventLoop* el_ = nullptr;
   int sockfd_ = 0;
   HashTable<uint32_t, RdmaNetContext*> qpCliMap_;
-  //HashTable<std::string, RdmaNetContext*> idCliMap_;
+  // HashTable<std::string, RdmaNetContext*> idCliMap_;
   std::thread* st_ = nullptr;
   std::mutex net_lock_;
   int nthreads_;
@@ -241,34 +239,28 @@ class RdmaNet : public Net {
   boost::asio::io_service ioService_;
   boost::thread_group threadpool_;
   boost::asio::io_service::work work_;
-
 };
 
-class RdmaNetResourceFactory: private Noncopyable {
-public:
-  RdmaNetResourceFactory(RdmaNetResourceFactory const&) = delete;
-  void operator=(RdmaNetResourceFactory const&) = delete;
-  ~RdmaNetResourceFactory();
-
-  static RdmaNetResourceFactory* Instance() {
-    if (!instance) {
-      instance = new RdmaNetResourceFactory();
-    }
-
-    return instance;
+class RdmaNetResourceFactory:
+    public Singleton<RdmaNetResourceFactory>, private Noncopyable {
+  friend Singleton<RdmaNetResourceFactory>;
+ public:
+  ~RdmaNetResourceFactory() {
+    for (RdmaNetResource* r : resources) delete r;
   }
 
   RdmaNetResource* getRdmaNetResource(const char* devName = nullptr);
   RdmaNetResource* newRdmaNetResource(const char* devName = nullptr);
 
-private:
-  RdmaNetResourceFactory() {};
+ private:
+  RdmaNetResourceFactory() {}
 
-  static RdmaNetResourceFactory* instance;
   std::vector<RdmaNetResource *> resources;
   const char *defaultDevname = nullptr;
 };
 
 }  // namespace ustore
 
-#endif  // INCLUDE_NET_RDMA_NET_H_
+#endif
+
+#endif  // USTORE_USTORE_NET_RDMA_NET_H_

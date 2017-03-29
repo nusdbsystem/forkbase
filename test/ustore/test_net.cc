@@ -10,24 +10,35 @@
 #include <unistd.h>
 #include <thread>
 #include <assert.h>
+#include <vector>
 #include "net/net.h"
-#include "net/rdma_net.h"
-#include "net/zmq_net.h"
 #include "utils/logging.h"
-
-using namespace ustore;
-using std::string;
-using std::thread;
 
 //by default, it choose the zmq_net
 //if u want to test the rdma net, you have to define USE_RDMA
 //#define USE_RDMA
 
-void Cb(const void *msg, int size, void* handler, const node_id_t& source) {
-  ((char*)msg)[size] = '\0';
-  LOG(WARNING) << "received " << (char*)msg << ", expect " << source;
-  EXPECT_TRUE(!strcmp(static_cast<const char*>(msg), static_cast<const char*>(source.c_str())));
-}
+#ifdef USE_RDMA
+#include "net/rdma_net.h"
+#else
+#include "net/zmq_net.h"
+#endif
+
+using namespace ustore;
+using std::string;
+using std::thread;
+using std::vector;
+
+class TestCallBack : public CallBack {
+ public:
+  TestCallBack(void* handler = nullptr): CallBack(handler) {};
+  void operator()(const void *msg, int size, const node_id_t& source) {
+    ((char*) msg)[size] = '\0';
+    LOG(WARNING)<< "received " << (char*)msg << ", expect " << source;
+    EXPECT_TRUE(!strcmp(static_cast<const char*>(msg),
+                static_cast<const char*>(source.c_str())));
+  }
+};
 
 void Start(Net* net) {
   net->Start();
@@ -67,10 +78,14 @@ TEST(NetTest, MsgTest) {
   NetContext* ctx2_0 = net2->CreateNetContext(id0);
   NetContext* ctx2_1 = net2->CreateNetContext(id1);
 
+  TestCallBack cb0;
+  TestCallBack cb1;
+  TestCallBack cb2;
+
   //register receive callback function
-  net0->RegisterRecv(Cb, const_cast<char *>("net0"));
-  net1->RegisterRecv(Cb, const_cast<char *>("net1"));
-  net2->RegisterRecv(Cb, const_cast<char *>("net2"));
+  net0->RegisterRecv(&cb0);
+  net1->RegisterRecv(&cb1);
+  net2->RegisterRecv(&cb2);
 
   sleep(1.0);
 
@@ -99,6 +114,18 @@ TEST(NetTest, MsgTest) {
    */
   ctx2_1->Send(id2.c_str(), id2.length());
 
+  //free the resources
+  sleep(1);
+  net0->Stop();
+  net1->Stop();
+  net2->Stop();
+  sleep(1);
+  t0->join();
+  t1->join();
+  t2->join();
+  delete net0;
+  delete net1;
+  delete net2;
 }
 
 // test putting two value from node0 to node1 and node2
@@ -139,10 +166,14 @@ TEST(NetTest, CreateContexts) {
   NetContext* ctx2_0 = net2->GetNetContext(id0);
   NetContext* ctx2_1 = net2->GetNetContext(id1);
 
+  TestCallBack cb0;
+  TestCallBack cb1;
+  TestCallBack cb2;
+
   //register receive callback function
-  net0->RegisterRecv(Cb, const_cast<char *>("net0"));
-  net1->RegisterRecv(Cb, const_cast<char *>("net1"));
-  net2->RegisterRecv(Cb, const_cast<char *>("net2"));
+  net0->RegisterRecv(&cb0);
+  net1->RegisterRecv(&cb1);
+  net2->RegisterRecv(&cb2);
 
   sleep(1.0);
 
@@ -171,4 +202,13 @@ TEST(NetTest, CreateContexts) {
    */
   ctx2_1->Send(id2.c_str(), id2.length());
 
+  //free the resources
+  sleep(1);
+  net0->Stop();
+  net1->Stop();
+  net2->Stop();
+  sleep(1);
+  delete net0;
+  delete net1;
+  delete net2;
 }

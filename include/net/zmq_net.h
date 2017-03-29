@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef INCLUDE_NET_ZMQ_NET_H_
-#define INCLUDE_NET_ZMQ_NET_H_
+#ifndef USTORE_USTORE_NET_ZMQ_NET_H_
+#define USTORE_USTORE_NET_ZMQ_NET_H_
 
 #include <mutex>
 #include "net/net.h"
@@ -24,8 +24,6 @@ class ZmqNet : public Net {
   void Stop() override;
   inline bool IsRunning() const noexcept { return is_running_; }
 
-  void RegisterRecv(CallBackProc* func, void* handler) override;
-
   // process the received msg
   void Dispatch(const node_id_t& source, const void *msg, int size);
 
@@ -42,15 +40,14 @@ class ZmqNetContext : public NetContext {
   ~ZmqNetContext();
 
   // implementation of the methods inherited from NetContext
-  ssize_t Send(const void* ptr, size_t len, CallBackProc* func = nullptr,
-               void* handler = nullptr) override;
+  ssize_t Send(const void* ptr, size_t len, CallBack* func = nullptr) override;
 
  private:
-  //std::mutex recv_lock_, send_lock_;
+  // std::mutex recv_lock_, send_lock_;
   std::mutex send_lock_;
   void *send_sock_, *send_ctx_;
 };
 
 }  // namespace ustore
 
-#endif  // INCLUDE_NET_ZMQ_NET_H_
+#endif  // USTORE_USTORE_NET_ZMQ_NET_H_

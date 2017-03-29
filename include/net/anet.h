@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ANET_H
-#define ANET_H
+#ifndef USTORE_USTORE_NET_ANET_H_
+#define USTORE_USTORE_NET_ANET_H_
 
 #define ANET_OK 0
 #define ANET_ERR -1
@@ -72,9 +72,9 @@ int anetBlock(char *err, int fd);
 int anetEnableTcpNoDelay(char *err, int fd);
 int anetDisableTcpNoDelay(char *err, int fd);
 int anetTcpKeepAlive(char *err, int fd);
-int anetSendTimeout(char *err, int fd, long long ms);
+int anetSendTimeout(char *err, int fd, int64_t ms);
 int anetPeerToString(int fd, char *ip, size_t ip_len, int *port);
 int anetKeepAlive(char *err, int fd, int interval);
 int anetSockName(int fd, char *ip, size_t ip_len, int *port);
 
-#endif
+#endif  // USTORE_USTORE_NET_ANET_H_

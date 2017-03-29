@@ -18,12 +18,12 @@ using std::mutex;
  * The client sends requests to this ClientService, which then forwards 
  * them to the storage.  
  * 
- * The client threads (ClientThread) pulls request from NextRequest(.) method
- * which is modelled as a shared request queue.  
+ * The client threads (ClientThread) pulls request from workload->NextRequest(.)
+ * method which is modelled as a shared request queue.  
  *
  * The current design assumes the client is the same as the ClientService,
- * i.e. the ClientService issues the request themselves. Thus, NextRequest(.)
- * simply generates a new request everytime it is called.
+ * i.e. the ClientService issues the request themselves. Thus, Workload
+ * simply generates a new request whenever it is called.
  *
  */
 class ClientService {
@@ -33,11 +33,18 @@ class ClientService {
     static void ResponseDispatch(const void *msg, int size, void *handler,
                                  const node_id_t& source);
 
-    explicit ClientService(const node_id_t& master): master_(master) {}
+    explicit ClientService(const node_id_t addr, const node_id_t& master, 
+                            Workload *workload):
+                  node_addr_(addr), master_(master),
+                  is_running_(false), workload_(workload) {}
     ~ClientService();
 
-    // initialize the network, register callback, spawn ClientThreads
+    // initialize the network, register callback
     virtual void Init();
+    // Spawn client threads
+    virtual void Start();
+    // Stop: wait for client threads to join
+    virtual void Stop();
     /**
      * Handle a response from workers:
      * 1. It parse msg into a UStoreMessage
@@ -54,23 +61,25 @@ class ClientService {
      * information:
      *  + master
      *  + Network object (shared with other threads)
-     *  + id
+     *  + thread_id
      *  + ResponseBlob, which is responses_[id]
      */
-    void ClienThread(const node_id_t& master, int id);
-    /**
-     * Called from ClientThread (in a loop) to process next request.
-     * When the client is decoupled from ClientService, this method should
-     * have access to a shared queue of requests. 
-     */
-    virtual void NextRequest(RequestHandler *handler);
+    void ClientThread(const node_id_t& master, int thread_id);
 
+    static int range_cmp(RangeInfo a, RangeInfo b);
  private:
     int nthreads_;  // how many RequestHandler thread it uses
+    volatile bool is_running_;  // volatile to avoid caching old value
     node_id_t master_;  // master node
-    Net *net_;
+    node_id_t node_addr_;  // the node's address
+    Net *net_ = nullptr;
     vector<ResponseBlob*> responses_;  // the response queue
+    WorkerList *workers_ = nullptr;  // worker list
+    Workload *workload_ = nullptr;
+    vector<node_id_t> addresses_;  // worker addresses
+    CallBack* cb_ = nullptr;
 };
+
 }  // namespace ustore
 
 #endif  // USTORE_CLUSTER_CLIENT_SERVICE_H_

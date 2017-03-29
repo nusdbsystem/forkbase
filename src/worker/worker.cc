@@ -1,11 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include "worker/worker.h"
-
 namespace ustore {
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch,
-                      const Hash& version, Value* val) const {
+                      const Hash& version, Value* val) const {  
   return ErrorCode::kOK;
 }
 

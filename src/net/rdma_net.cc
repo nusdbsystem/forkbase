@@ -1,16 +1,6 @@
-/*
- * rdma_net.cc
- *
- *  Created on: Mar 13, 2017
- *      Author: zhanghao
- */
+// Copyright (c) 2017 The Ustore Authors.
 
-/*
- * rdma_net.cc
- *
- *  Created on: Jul 26, 2016
- *      Author: zhanghao
- */
+#ifdef USE_RDMA
 
 #include <cstring>
 #include <cassert>
@@ -27,6 +17,16 @@ namespace ustore {
 
 int page_size = 4096;
 int MAX_RDMA_INLINE_SIZE = 256;
+
+template <>
+vector<string>& Split<string>(stringstream& ss, vector<string>& elems,
+                              char delim) {
+  string item;
+  while (getline(ss, item, delim)) {
+    if (!item.empty()) elems.push_back(item);
+  }
+  return elems;
+}
 
 RdmaNetResource* RdmaNetResourceFactory::getRdmaNetResource(
     const char *devName) {
@@ -75,10 +75,11 @@ RdmaNetResource::RdmaNetResource(ibv_device *dev)
       slot_inuse_(0),
       slot_head_(0),
       recv_posted_() {
-  //int rx_depth;
+  // int rx_depth;
 
   if (!(context_ = ibv_open_device(dev))) {
-    LOG(WARNING)<< "unable to get context for " << ibv_get_device_name(dev) << std::endl;
+    LOG(WARNING)<< "unable to get context for "
+        << ibv_get_device_name(dev) << std::endl;
     return;
   }
 
@@ -92,8 +93,10 @@ RdmaNetResource::RdmaNetResource(ibv_device *dev)
     goto clean_channel;
   }
 
-  rx_depth_ = WORKER_RDMA_SRQ_RX_DEPTH > HW_MAX_PENDING ? HW_MAX_PENDING : WORKER_RDMA_SRQ_RX_DEPTH;
-  if (!(cq_ = ibv_create_cq(this->context_, (rx_depth_ << 1) + 1, NULL, this->channel_, 0))) {
+  rx_depth_ = WORKER_RDMA_SRQ_RX_DEPTH > HW_MAX_PENDING ?
+      HW_MAX_PENDING : WORKER_RDMA_SRQ_RX_DEPTH;
+  if (!(cq_ = ibv_create_cq(this->context_,
+                            (rx_depth_ << 1) + 1, NULL, this->channel_, 0))) {
     LOG(WARNING) << "Unable to create cq\n";
     goto clean_pd;
   }
@@ -183,9 +186,13 @@ int RdmaNetResource::RegCommSlot(int slot) {
 }
 
 char* RdmaNetResource::GetSlot(int slot) const {
-  assert(slots_.at(slot) == true && slot < slot_inuse_);
-  //TODO: check slot == tail
-  return (char*) ((uintptr_t) comm_buf_[BPOS(slot)]->addr + BOFF(slot));
+//  if(!(slots_.at(slot) == true && slot < slot_inuse_)) {
+//    LOG(WARNING) << "slot = " << slot << "slots_.at(slot) = "
+//      << slots_.at(slot) << " slot_inuse = " << slot_inuse_;
+//    assert(false);
+//  }
+  // TODO(zhanghao): check slot == tail
+  return static_cast<char*>(comm_buf_[BPOS(slot)]->addr) + BOFF(slot);
 }
 
 int RdmaNetResource::PostRecvSlot(int slot) {
@@ -211,7 +218,7 @@ int RdmaNetResource::PostRecvSlot(int slot) {
 
   ibv_recv_wr* bad_rr;
   if (ibv_post_srq_recv(srq_, &rr, &bad_rr)) {
-    LOG(WARNING) << "post recv request failed " << errno << strerror(errno) << std::endl;
+    LOG(WARNING) << "post recv request failed " << errno << strerror(errno);
     slots_.at(slot) = false;
     return 0;
   }
@@ -254,7 +261,7 @@ int RdmaNetResource::PostRecv(int n) {
     if (i + 1 < n)
       rr[i].next = &rr[i + 1];
 
-    //advance the slot_head_ by 1
+    // advance the slot_head_ by 1
     slots_.at(slot_head_) = true;
     if (++slot_head_ == slot_inuse_)
       slot_head_ = 0;
@@ -265,13 +272,16 @@ int RdmaNetResource::PostRecv(int n) {
   if (i > 0) {
     rr[i - 1].next = nullptr;
     ibv_recv_wr* bad_rr;
-    if (ibv_post_srq_recv(srq_, rr, &bad_rr)) {
-      LOG(WARNING)<< "post recv request failed: " << errno << strerror(errno);
+    int ret = 0;
+    if ((ret = ibv_post_srq_recv(srq_, rr, &bad_rr))) {
+      LOG(WARNING)<< "post recv request failed: "
+          << ret << " " << errno << " " << strerror(errno);
+      assert(false);
       int s = bad_rr->wr_id;
       ret -= RMINUS(slot_head_, s, slot_inuse_);
-      while(s != slot_head_) {
+      while (s != slot_head_) {
         slots_.at(s) = false;
-        if(++s == slot_inuse_) s = 0;
+        if (++s == slot_inuse_) s = 0;
       }
       slot_head_ = s;
     }
@@ -279,8 +289,6 @@ int RdmaNetResource::PostRecv(int n) {
   recv_posted_ += ret;
   return ret;
 }
-
-RdmaNetResourceFactory* RdmaNetResourceFactory::instance = nullptr;
 
 /*
  * TODO: check whether it is necessary if we already use the epoll mechanism
@@ -309,8 +317,9 @@ bool RdmaNetResource::GetCompEvent() const {
 RdmaNetContext* RdmaNetResource::NewRdmaNetContext(node_id_t id) {
   rdma_context_counter_++;
 
-  //int s = MAX_WORKER_PENDING_MSG;
-  int s = MAX_WORKER_PENDING_MSG > HW_MAX_PENDING ? HW_MAX_PENDING : MAX_WORKER_PENDING_MSG;
+  // int s = MAX_WORKER_PENDING_MSG;
+  int s = MAX_WORKER_PENDING_MSG > HW_MAX_PENDING ?
+      HW_MAX_PENDING : MAX_WORKER_PENDING_MSG;
   if (RegCommSlot(s)) {
     LOG(WARNING)<< "unable to register more communication slots\n";
     return nullptr;
@@ -321,7 +330,7 @@ RdmaNetContext* RdmaNetResource::NewRdmaNetContext(node_id_t id) {
 
 void RdmaNetResource::DeleteRdmaNetContext(RdmaNetContext* ctx) {
   rdma_context_counter_--;
-  //TODO: de-regsiter the slots
+  // TODO(zhanghao): de-regsiter the slots
   LOG(INFO)<< "delete RdmaNetContext: " << rdma_context_counter_ << std::endl;
   delete ctx;
 }
@@ -345,7 +354,7 @@ RdmaNetContext::RdmaNetContext(const node_id_t& id, RdmaNetResource *res)
     goto send_buf_err;
   }
 
-  //init the send buf
+  // init the send buf
   send_buf_ = ibv_reg_mr(res->pd_, buf, max_buf_size,
                          IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if (unlikely(!send_buf_)) {
@@ -357,7 +366,7 @@ RdmaNetContext::RdmaNetContext(const node_id_t& id, RdmaNetResource *res)
   pending_msg_ = to_signaled_send_msg_ = to_signaled_w_r_msg_ = 0;
   max_unsignaled_msg_ =
   MAX_UNSIGNALED_MSG > max_pending_msg_ ? max_pending_msg_ : MAX_UNSIGNALED_MSG;
-  //because we're using uint16_t to represent currently to_be_signalled msg
+  // because we're using uint16_t to represent currently to_be_signalled msg
   assert(max_unsignaled_msg_ <= USHRT_MAX);
   full_ = false;
 
@@ -405,8 +414,8 @@ RdmaNetContext::RdmaNetContext(const node_id_t& id, RdmaNetResource *res)
       LOG(WARNING)<< "Unable to query qp";
       goto clean_qp;
     }
-    LOG(INFO)<< "qattr.cap.max_inline_data = " << attr.cap.max_inline_data << "attr.cap.max_inline_data = "
-    << qattr.cap.max_inline_data;
+    LOG(INFO)<< "qattr.cap.max_inline_data = " << attr.cap.max_inline_data
+        << "attr.cap.max_inline_data = " << qattr.cap.max_inline_data;
     if (attr.cap.max_inline_data == 0) {
       LOG(INFO)<< "Do NOT support inline data";
       MAX_RDMA_INLINE_SIZE = 0;
@@ -415,8 +424,8 @@ RdmaNetContext::RdmaNetContext(const node_id_t& id, RdmaNetResource *res)
 
   return;
 
-  clean_qp: ibv_destroy_qp (qp_);
-  clean_mr: ibv_dereg_mr (send_buf_);
+  clean_qp: ibv_destroy_qp(qp_);
+  clean_mr: ibv_dereg_mr(send_buf_);
   send_mr_err: free(buf);
   send_buf_err: throw RDMA_CONTEXT_EXCEPTION;
 }
@@ -434,7 +443,8 @@ NetContext* RdmaNet::CreateNetContext(const node_id_t& id) {
   return ctx;
 }
 
-RdmaNetContext* RdmaNet::CreateRdmaNetContext(const node_id_t& id, bool& exist) {
+RdmaNetContext* RdmaNet::CreateRdmaNetContext(const node_id_t& id,
+                                              bool& exist) {
   net_lock_.lock();
   RdmaNetContext* ctx = nullptr;
   if (id == this->cur_node_) {
@@ -475,7 +485,7 @@ int RdmaNetContext::SetRemoteConnParam(const char *conn) {
 
   /* modify qp to RTR state */
   {
-    ibv_qp_attr attr = { };  //zero init the POD value (DON'T FORGET!!!!)
+    ibv_qp_attr attr = { };  // zero init the POD value (DON'T FORGET!!!!)
     attr.qp_state = IBV_QPS_RTR;
     attr.path_mtu = IBV_MTU_2048;
     attr.dest_qp_num = rqpn;
@@ -485,7 +495,7 @@ int RdmaNetContext::SetRemoteConnParam(const char *conn) {
     attr.ah_attr.is_global = 0;
     attr.ah_attr.dlid = rlid;
     attr.ah_attr.src_path_bits = 0;
-    //attr.ah_attr.sl = 1;
+    // attr.ah_attr.sl = 1;
     attr.ah_attr.port_num = resource_->ibport_;
 
     ret = ibv_modify_qp(
@@ -521,14 +531,14 @@ int RdmaNetContext::SetRemoteConnParam(const char *conn) {
     }
   }
 
-  //resource_->PostRecv(max_pending_msg);
+  // resource_->PostRecv(max_pending_msg);
   resource_->PostRecv(MAX_WORKER_RECV_MSG);
   return 0;
 }
 
 const char* RdmaNetContext::GetRdmaConnString() {
   if (!msg_) {
-    msg_ = (char *) malloc(WORKER_RDMA_CONN_STRLEN + 1);
+    msg_ = static_cast<char*>(malloc(WORKER_RDMA_CONN_STRLEN + 1));
   } else {
     return msg_;
   }
@@ -542,7 +552,7 @@ const char* RdmaNetContext::GetRdmaConnString() {
    * we use RDMA send/recv to do communication
    * for communication among workers, we also allow direct access to the whole memory space so that we expose the base addr and rkey
    */
-  sprintf(msg_, "%04x:%08x:%08x:%08x:%016lx",
+  snprintf(msg_, WORKER_RDMA_CONN_STRLEN + 1, "%04x:%08x:%08x:%08x:%016lx",
           this->resource_->portAttribute_.lid, this->qp_->qp_num,
           this->resource_->psn_, 0, 0L);
   out:
@@ -551,7 +561,7 @@ const char* RdmaNetContext::GetRdmaConnString() {
 }
 
 char* RdmaNetContext::GetFreeSlot_() {
-  int avail = RMINUS(slot_tail_, slot_head_, max_pending_msg_);  //slot_head_ <= slot_tail ? slot_tail-slot_head_ : slot_tail+max_pending_msg-slot_head_;
+  int avail = RMINUS(slot_tail_, slot_head_, max_pending_msg_);
   if (!avail && !full_)
     avail = max_pending_msg_;
   if (avail <= 0 || pending_msg_ >= max_pending_msg_) {
@@ -559,7 +569,7 @@ char* RdmaNetContext::GetFreeSlot_() {
     return nullptr;
   }
 
-  char* s = (char*) send_buf_->addr + slot_head_ * MAX_REQUEST_SIZE;
+  char* s = static_cast<char*>(send_buf_->addr) + slot_head_ * MAX_REQUEST_SIZE;
   if (++slot_head_ == max_pending_msg_)
     slot_head_ = 0;
   if (slot_head_ == slot_tail_)
@@ -570,7 +580,7 @@ char* RdmaNetContext::GetFreeSlot_() {
 char* RdmaNetContext::GetFreeSlot() {
   lock();
   char* s = GetFreeSlot_();
-  unlock();  //we delay the unlock to after-send
+  unlock();  // we delay the unlock to after-send
   return s;
 //  char* s = (char*)malloc(MAX_REQUEST_SIZE);
 //  return s;
@@ -597,7 +607,7 @@ ssize_t RdmaNetContext::Rdma(ibv_wr_opcode op, const void* src, size_t len,
   struct ibv_sge sge_list = { };
   struct ibv_send_wr wr = { };
   if (pending_msg_ >= max_pending_msg_) {
-    //TODO: add the send request to the waiting queue
+    // TODO(zhanghao): add the send request to the waiting queue
     LOG(INFO)<< "Rdma device is busy; will try later";
     if (op == IBV_WR_SEND && src) {
       char* copy = static_cast<char*>(malloc(len));
@@ -616,20 +626,21 @@ ssize_t RdmaNetContext::Rdma(ibv_wr_opcode op, const void* src, size_t len,
         && pending_requests_.back().oldval == oldval
         && pending_requests_.back().newval == newval);
 
-    //return -1;
+    // return -1;
     return len;
   }
 
   if (op == IBV_WR_SEND) {
     if (unlikely(!IsRegistered(src) && len > MAX_RDMA_INLINE_SIZE)) {
       if (len > MAX_REQUEST_SIZE) {
-        LOG(WARNING)<< "len = " << len << " MAX_REQUEST_SIZE = " << MAX_REQUEST_SIZE << " src = " << (char*) src;
+        LOG(WARNING)<< "len = " << len << " MAX_REQUEST_SIZE = "
+            << MAX_REQUEST_SIZE << " src = " << static_cast<const char*>(src);
         assert(false);
       }
       char* sbuf = GetFreeSlot_();
       assert(sbuf);
       memcpy(sbuf, src, len);
-      //free((void*)src);
+      // free((void*)src);
       sge_list.addr = (uintptr_t) sbuf;
       pending_send_msg_++;
     } else {
@@ -674,9 +685,10 @@ ssize_t RdmaNetContext::Rdma(ibv_wr_opcode op, const void* src, size_t len,
       - to_signaled_send_msg_;
   uint16_t curr_to_signaled_w_r_msg = pending_msg_ - pending_send_msg_
       - to_signaled_w_r_msg_;
+  // we signal msg for every max_unsignaled_msg
   if (unlikely(
       curr_to_signaled_send_msg + curr_to_signaled_w_r_msg
-          == max_unsignaled_msg_ || signaled)) {  //we signal msg for every max_unsignaled_msg
+          == max_unsignaled_msg_ || signaled)) {
     wr.send_flags |= IBV_SEND_SIGNALED;
 
     to_signaled_send_msg_ += curr_to_signaled_send_msg;
@@ -702,19 +714,21 @@ ssize_t RdmaNetContext::Rdma(ibv_wr_opcode op, const void* src, size_t len,
 
   struct ibv_send_wr *bad_wr;
   if (ibv_post_send(qp_, &wr, &bad_wr)) {
-    LOG(WARNING)<< "ibv_post_send failed: " << errno << strerror(errno) << std::endl;
+    LOG(WARNING)<< "ibv_post_send failed: " << errno << strerror(errno);
     return -2;
   }
-  if (op == IBV_WR_SEND && !IsRegistered((void *) sge_list.addr)) {
+  if (op == IBV_WR_SEND
+      && !IsRegistered(reinterpret_cast<void*>(sge_list.addr))) {
     assert(wr.send_flags & IBV_SEND_INLINE);
-    //free((void*)sge_list.addr);
+    // free((void*)sge_list.addr);
   }
   return ret;
 }
 
-ssize_t RdmaNetContext::SendGeneric(const void* ptr, size_t len, unsigned int id, bool signaled) {
+ssize_t RdmaNetContext::SendGeneric(const void* ptr, size_t len,
+                                    unsigned int id, bool signaled) {
   lock();
-  //lock(); //we already lock when getting the send buf
+  // lock(); // we already lock when getting the send buf
   ssize_t ret = Rdma(IBV_WR_SEND, ptr, len, id, signaled);
   unlock();
   return ret;
@@ -756,9 +770,10 @@ ssize_t RdmaNetContext::CasGeneric(raddr src, uint64_t oldval, uint64_t newval,
 }
 
 void RdmaNetContext::ProcessPendingRequests(int n) {
-  //process pending rdma requests
+  // process pending rdma requests
   int size = pending_requests_.size();
-  //we must iterate all the current pending requests in order to ensure the original order
+  // we must iterate all the current pending requests
+  // in order to ensure the original order
   int i = 0, j = -1;
 
   for (i = 0; i < n && i < size; i++) {
@@ -808,23 +823,23 @@ unsigned int RdmaNetContext::WriteComp(ibv_wc& wc) {
 }
 
 char* RdmaNetContext::RecvComp(ibv_wc& wc) {
-  //FIXME: thread-safe
-  //what if others grab this slot before the current thread finish its job
+  // FIXME: thread-safe
+  // what if others grab this slot before the current thread finish its job
   char* ret = resource_->GetSlot(wc.wr_id);
-  //resource_->ClearSlot(wc.wr_id);
+  // resource_->ClearSlot(wc.wr_id);
   resource_->recv_posted_ -= 1;
   return ret;
 }
 
 int RdmaNetContext::ExchConnParam(node_id_t cur_node, const char* ip,
                                   int port) {
-  //open the socket to exch rdma resouces
+  // open the socket to exch rdma resouces
   char neterr[ANET_ERR_LEN];
   int sockfd = anetTcpConnect(neterr, const_cast<char *>(ip), port);
   if (sockfd < 0) {
     LOG(WARNING) << "Connecting to " << ip << ":" << port << ":" << neterr;
     exit(1);
-    //return -1;
+    // return -1;
   }
 
   std::string conn;
@@ -841,7 +856,8 @@ int RdmaNetContext::ExchConnParam(node_id_t cur_node, const char* ip,
   /* waiting for server's response */
   int n = read(sockfd, msg, conn_len);
   if (n <= 0) {
-    LOG(WARNING) << "Failed to read conn param from server " << strerror(errno) << " read " << n << "bytes)\n";
+    LOG(WARNING) << "Failed to read conn param from server "
+        << strerror(errno) << " read " << n << "bytes)";
     return -1;
   }
   msg[n] = '\0';
@@ -862,36 +878,36 @@ int RdmaNetContext::ExchConnParam(node_id_t cur_node, const char* ip,
 }
 
 RdmaNetContext::~RdmaNetContext() {
-  ibv_destroy_qp (qp_);
-  ibv_dereg_mr (send_buf_);
+  ibv_destroy_qp(qp_);
+  ibv_dereg_mr(send_buf_);
   free(send_buf_->addr);
-  free (msg_);
+  free(msg_);
 }
 
 RdmaNet::RdmaNet(const node_id_t& id, int nthreads)
     : Net(id),
       work_(ioService_), nthreads_(nthreads) {
   resource_ = RdmaNetResourceFactory::Instance()->newRdmaNetResource();
-  //resource_ = RdmaNetResourceFactory::Instance()->getRdmaNetResource();
+  // resource_ = RdmaNetResourceFactory::Instance()->getRdmaNetResource();
   for (int i = 0; i < nthreads_; i++) {
-    threadpool_.create_thread(boost::bind(&boost::asio::io_service::run, &ioService_));
+    threadpool_.create_thread(
+        boost::bind(&boost::asio::io_service::run, &ioService_));
   }
   StartService(id, resource_);
 }
 
 RdmaNet::~RdmaNet() {
-  //delete resource_;
-  close (sockfd_);
+  // delete resource_;
+  close(sockfd_);
   LOG(INFO) << "delete RdmaNet" << std::endl;
-;
 }
 
 void RdmaNet::StartService(const node_id_t& id, RdmaNetResource* res) {
-
-  //create the event loop
+  // create the event loop
   el_ = aeCreateEventLoop(EVENTLOOP_FDSET_INCR);
 
-  //open the socket for listening to the connections from workers to exch rdma resouces
+  // open the socket for listening to the connections
+  // from workers to exch rdma resouces
   char neterr[ANET_ERR_LEN];
   vector<std::string> ip_port;
   Split(id, ip_port);
@@ -900,30 +916,34 @@ void RdmaNet::StartService(const node_id_t& id, RdmaNetResource* res) {
   int port = atoi(ip_port[1].c_str());
   sockfd_ = anetTcpServer(neterr, port, bind_addr, TCP_BACKLOG);
   if (sockfd_ < 0) {
-    LOG(WARNING) << "Opening port " << port << " (bind_addr " << bind_addr << "): " << neterr;
+    LOG(WARNING) << "Opening port " << port
+        << " (bind_addr " << bind_addr << "): " << neterr;
     assert(false);
   }
 
-  //register tcp event for rdma parameter exchange
-  if (sockfd_ > 0 && aeCreateFileEvent(el_, sockfd_, AE_READABLE, TcpHandle, this) == AE_ERR) {
+  // register tcp event for rdma parameter exchange
+  if (sockfd_ > 0 &&
+      aeCreateFileEvent(el_, sockfd_, AE_READABLE, TcpHandle, this) == AE_ERR) {
     LOG(WARNING) << "Unrecoverable error creating sockfd file event.";
   }
 
-//register rdma event
+  // register rdma event
   if (resource_->GetChannelFd() > 0 &&
-      aeCreateFileEvent(el_, resource_->GetChannelFd(), AE_READABLE, RdmaHandle, this) == AE_ERR) {
+      aeCreateFileEvent(el_, resource_->GetChannelFd(),
+                        AE_READABLE, RdmaHandle, this) == AE_ERR) {
     LOG(WARNING)<< "Unrecoverable error creating sockfd file event.";
   }
   this->st_ = new std::thread(startEventLoop, el_);
 }
 
-void RdmaNet::CbHandler(RdmaNet* net, const node_id_t& source, const void* msg, size_t size,
+void RdmaNet::CbHandler(RdmaNet* net, const node_id_t& source,
+                        const void* msg, size_t size,
                         RdmaNetResource* resource, uint64_t wr_id) {
   assert(net->cb_);
-  net->cb_(msg, size, net->upstream_handle_, source);
-//resource->ClearSlot(wr_id);
+  (*(net->cb_))(msg, size, source);
+  // resource->ClearSlot(wr_id);
   int n = resource->PostRecvSlot(wr_id);
-//Assert(n == 1);
+  // Assert(n == 1);
 }
 
 void RdmaNet::ProcessRdmaRequest() {
@@ -931,7 +951,7 @@ void RdmaNet::ProcessRdmaRequest() {
   ibv_wc wc[MAX_CQ_EVENTS];
   ibv_cq *cq = resource_->GetCompQueue();
   RdmaNetContext *ctx;
-//uint32_t immdata, id;
+  // uint32_t immdata, id;
   uint32_t immdata;
   int recv_c = 0;
 
@@ -949,8 +969,8 @@ void RdmaNet::ProcessRdmaRequest() {
 
       for (int i = 0; i < ne; ++i) {
         if (wc[i].status != IBV_WC_SUCCESS) {
-          LOG(WARNING)<< "Completion with error, op = " << wc[i].opcode << " (" <<
-          wc[i].status << ":" << ibv_wc_status_str(wc[i].status) << ")\n";
+          LOG(WARNING)<< "Completion with error, op = " << wc[i].opcode << " ("
+              << wc[i].status << ":" << ibv_wc_status_str(wc[i].status) << ")";
           continue;
         }
 
@@ -962,24 +982,25 @@ void RdmaNet::ProcessRdmaRequest() {
          */
         ctx = FindContext(wc[i].qp_num);
         if (unlikely(!ctx)) {
-          LOG(WARNING) << "cannot find the corresponding client for qp" << wc[i].qp_num << std::endl;
+          LOG(WARNING) << "cannot find the corresponding client for qp"
+              << wc[i].qp_num;
           continue;
         }
 
         switch (wc[i].opcode) {
           case IBV_WC_SEND:
           ctx->SendComp(wc[i]);
-          //send check initiated locally
-          //CompletionCheck(id);
-          //TODO: send out the waiting request
+          // send check initiated locally
+          // CompletionCheck(id);
+          // TODO(zhanghao): send out the waiting request
           break;
           case IBV_WC_RDMA_WRITE:
-          //update pending_msg_
+          // update pending_msg_
           LOG(WARNING) << "not supported for IBV_WC_RDMA_WRITE";
           ctx->WriteComp(wc[i]);
-          //write check initiated locally
-          //CompletionCheck(id);
-          //TODO: send out the waiting request
+          // write check initiated locally
+          // CompletionCheck(id);
+          // TODO(zhanghao): send out the waiting request
           break;
           case IBV_WC_RECV: {
             char* msg = ctx->RecvComp(wc[i]);
@@ -987,28 +1008,27 @@ void RdmaNet::ProcessRdmaRequest() {
             recv_c++;
 
             if (cb_) {
-              ioService_.post(
-                  boost::bind(CbHandler, this, ctx->GetID(), msg, wc[i].byte_len, resource_,
-                      wc[i].wr_id));
+              ioService_.post(boost::bind(CbHandler, this, ctx->GetID(),
+                         msg, wc[i].byte_len, resource_, wc[i].wr_id));
             } else {
               int n = resource_->PostRecvSlot(wc[i].wr_id);
-              //assert(n == 1);
+              // assert(n == 1);
             }
             //  if(ctx->cb_) {
             //    ctx->cb_(msg, wc[i].byte_len, ctx->upstream_handle_);
             //  }
-            //  //resource_->ClearSlot(wc[i].wr_id);
+            //  // resource_->ClearSlot(wc[i].wr_id);
             //
             //    int n = resource_->PostRecvSlot(wc[i].wr_id);
             //    assert(n == 1);
             break;
           }
           case IBV_WC_RECV_RDMA_WITH_IMM: {
-            LOG(WARNING) << "not supported for IBV_WC_RECV_RDMA_WITH_IMM" << std::endl;
+            LOG(WARNING) << "not supported for IBV_WC_RECV_RDMA_WITH_IMM";
             break;
           }
           default:
-            LOG(WARNING) << "unknown opcode received " << wc[i].opcode << std::endl;
+            LOG(WARNING) << "unknown opcode received " << wc[i].opcode;
             break;
         }
       }
@@ -1024,13 +1044,7 @@ void RdmaNet::ProcessRdmaRequest() {
   out: return;
 }
 
-void RdmaNet::RegisterRecv(CallBackProc* func, void* handler) {
-  cb_ = func;
-  upstream_handle_ = handler;
-}
-
-ssize_t RdmaNetContext::Send(const void* ptr, size_t len, CallBackProc* func,
-                             void* data) {
+ssize_t RdmaNetContext::Send(const void* ptr, size_t len, CallBack* func) {
   static int counter = 0;
   counter++;
   int ret = SendGeneric(ptr, len);
@@ -1039,7 +1053,7 @@ ssize_t RdmaNetContext::Send(const void* ptr, size_t len, CallBackProc* func,
 
 void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
   assert(data != nullptr);
-  RdmaNet *net = (RdmaNet*) (data);
+  RdmaNet *net = static_cast<RdmaNet*>(data);
   char msg[MAX_CONN_STRLEN_G + 1];
   int n;
   const char *p;
@@ -1072,7 +1086,8 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
 
   Split(msg, cv, ';');
   assert(cv.size() == 2);
-  if (unlikely(!(ctx = static_cast<RdmaNetContext*>(net->CreateRdmaNetContext(cv[0], exist))))) {
+  if (unlikely(!(ctx =
+      static_cast<RdmaNetContext*>(net->CreateRdmaNetContext(cv[0], exist))))) {
     goto out;
   }
   if (!exist) {
@@ -1093,8 +1108,9 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
 }
 
 void RdmaHandle(aeEventLoop *el, int fd, void *data, int mask) {
-  ((RdmaNet *) data)->ProcessRdmaRequest();
+  (static_cast<RdmaNet*>(data))->ProcessRdmaRequest();
 }
 
-}
+}  // namespace ustore
 
+#endif

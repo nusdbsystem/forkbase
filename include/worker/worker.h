@@ -33,7 +33,7 @@ class Worker : private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  ErrorCode Get(const Slice& key, const Slice& branch, const Hash& version,
+  virtual ErrorCode Get(const Slice& key, const Slice& branch, const Hash& version,
             Value* value) const;
 
   /**
@@ -45,7 +45,7 @@ class Worker : private Noncopyable {
    * @param version Data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+  virtual ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
            const Hash& previous, Hash* version);
 
   /**
@@ -57,7 +57,7 @@ class Worker : private Noncopyable {
    * @param new_branch The new branch.
    * @return Error code. (0 for success)
    */
-  ErrorCode Branch(const Slice& key, const Slice& old_branch,
+  virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
                    const Hash& version, const Slice& new_branch);
 
   /**
@@ -68,7 +68,7 @@ class Worker : private Noncopyable {
    * @param new_branch The target branch.
    * @return Error code. (0 for success)
    */
-  ErrorCode Move(const Slice& key, const Slice& old_branch,
+  virtual ErrorCode Move(const Slice& key, const Slice& old_branch,
                  const Slice& new_branch);
 
   /**
@@ -81,7 +81,7 @@ class Worker : private Noncopyable {
    * @param ref_version The referring version of data.
    * @return Error code. (0 for success)
    */
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+  virtual ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
                   const Slice& ref_branch, const Hash& ref_version,
                   Hash* version);
 
@@ -90,6 +90,32 @@ class Worker : private Noncopyable {
   HeadVersion head_ver_;
 };
 
+#ifdef MOCK_TEST
+class MockWorker : public Worker {
+ public:
+  explicit MockWorker(const WorkerID& id) : Worker(id), count_put_(0),
+                                count_merge_(0) {}
+
+  ErrorCode Get(const Slice& key, const Slice& branch, const Hash& version,
+            Value* value) const;
+
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+           const Hash& previous, Hash* version);
+
+  ErrorCode Branch(const Slice& key, const Slice& old_branch,
+                   const Hash& version, const Slice& new_branch);
+
+  ErrorCode Move(const Slice& key, const Slice& old_branch,
+                 const Slice& new_branch);
+
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Slice& ref_branch, const Hash& ref_version,
+                  Hash* version);
+ private:
+  int count_put_; // number of requests seen so far
+  int count_merge_;
+};
+#endif
 }  // namespace ustore
 
 #endif  // USTORE_WORKER_WORKER_H_

@@ -63,6 +63,11 @@ message UStoreMessage {
     required bytes new_version = 1;
   }
 
+  // MERGE_RESPONSE payload
+  message MergeResponsePayload {
+    required bytes new_version = 1;
+  }
+
   // GET_REQUEST payload - Nothing to do
 
   // GET_RESPONSE payload
@@ -88,6 +93,8 @@ message UStoreMessage {
     required bytes target_branch = 1;
     required bytes ref_branch = 2; 
     required bytes value = 3; 
+    optional bool forward = 4;
+    optional bool force = 5;
   }
 
   optional PutRequestPayload put_request_payload = 6; 
@@ -96,6 +103,7 @@ message UStoreMessage {
   optional BranchRequestPayload branch_request_payload = 9; 
   optional MoveRequestPayload move_request_payload = 10; 
   optional MergeRequestPayload merge_request_payload = 11; 
+  optional MergeResponsePayload merge_response_payload = 12; 
 }
 
 /**
@@ -115,14 +123,14 @@ message RangeResponse {
 
 /**
  * RangeInfo: contains the mapping between a key range [start,end) and a
- * workerInfo
+ * worker. For a simple partitioning scheme, RangeInfo is sorted by "start"
+ * and the first RangeInfo satisfying "start > key" is the owner.
  */
 message RangeInfo {
   // Range
   required bytes start = 1;
-  required bytes end = 2;
+  optional bytes end = 2;
 
   // Worker information
-  required bytes id = 3;
   required string address = 4;
 }

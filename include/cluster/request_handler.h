@@ -10,12 +10,17 @@
 #include "net/net.h"
 #include "proto/messages.pb.h"
 #include "spec/slice.h"
+#include "hash/hash.h"
 
 namespace ustore {
 
 using std::unordered_map;
 using std::condition_variable;
 using std::mutex;
+using std::vector;
+using google::protobuf::Message;
+
+class WorkerList;
 
 /**
  * A unit on the response queue. Each client request thread (RequestHandler)
@@ -71,31 +76,25 @@ struct ResponseBlob {
 class RequestHandler {
  public:
   explicit RequestHandler(const node_id_t& master, int id, Net *net,
-                          ResponseBlob *blob)
-      : master_(master), id_(id), net_(net), res_blob_(blob) {}
+                          ResponseBlob *blob, WorkerList* workers)
+      : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
   ~RequestHandler();
 
   /**
-   * Initialization. Must perform at least the following:
-   * 1. Connect to the master.
-   * 2. Connect to all other workers.
-   * 3. Initialize the worker list.
-   */
-  void Init();
-  /**
    * Storage APIs. The returned Message contains the Status field indicate
-   * if it is successful or not. 
+   * if it is successful or not. The calling function MUST delete the response
+   * message after use.
    */
-  Message* Put(const Slice &key, const Slice &branch, const Slice &version,
-               const Slice &value, bool forward = false, bool force = false);
-  Message* Get(const Slice &key, const Slice &branch, const Slice &version);
+  Message* Put(const Slice &key, const Slice &value, const Slice &branch,
+               const Hash &version, bool forward = false, bool force = false);
+  Message* Get(const Slice &key, const Slice &branch, const Hash &version);
   Message* Branch(const Slice &key, const Slice &old_branch,
-                  const Slice &version, const Slice &new_branch);
+                  const Hash &version, const Slice &new_branch);
   Message* Move(const Slice &key, const Slice &old_branch,
                 const Slice &new_branch);
   Message* Merge(const Slice &key, const Slice &value,
                  const Slice &target_branch, const Slice &ref_branch,
-                 const Slice &ref_version, bool forward = false,
+                 const Hash &ref_version, bool forward = false,
                  bool force = false);
 
   inline int id() const noexcept { return id_; }
@@ -112,14 +111,15 @@ class RequestHandler {
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
   Net *net_ = nullptr;  // for network communication
-  WorkerList *workers_;  // lists of workers to which requests are dispatched
-  ResponseBlob *blob_;  // response blob
+  WorkerList *workers_ = nullptr;  // lists of workers to which requests are dispatched
+  ResponseBlob *res_blob_ = nullptr;  // response blob
 };
 
 /**
  * List of workers and their key ranges. It is initialized and updated
  * with the information from the Master. The RequestHandler uses this to
- * determine where to send the requests to.
+ * determine where to send the requests to. One WorkerList object is shared
+ * by multiple RequestHandler.
  *
  * Different partition strategies may implement the list differently, especially
  * regarding the mapping from key to worker ID (Get_Worker method).
@@ -132,7 +132,7 @@ class WorkerList {
     /**
      * Invoked whenever the list is out of date.
      */
-    bool Update(const vector<RangeInfor> &workers);
+    bool Update(const vector<RangeInfo> &workers);
     /**
      * Return the ID (address string) of the worker node whose key range
      * contains the given key.
@@ -144,6 +144,36 @@ class WorkerList {
  private:
     // should be sorted by the range
     vector<RangeInfo> workers_;
+};
+
+/**
+ * Workload generator, that feeds requests to NextRequest(.) method
+ * Currently, there are 2 types: a default Workload that *should* generate
+ * requests from a distribution (like a driver in YCSB), and a TestWorkload
+ * for testing.
+ * Multiple client threads may share the same workload object.
+ * When ClientService is to served as backend to a HTTP server, for example,
+ * Workload can be extended to  
+ */
+class Workload {
+ public:
+  // return true if the request is processed successfully
+  virtual bool NextRequest(RequestHandler *reqhl)=0;
+};
+
+class RandomWorkload {
+ public:
+  RandomWorkload() {}
+  bool NextRequest(RequestHandler *reqhl);
+};
+
+class TestWorkload : public Workload {
+ public:
+  TestWorkload(const int nthreads, const int nreqs);
+  bool NextRequest(RequestHandler *reqhl);
+ private:
+  vector<int> req_idx_;
+  int nthreads_, nrequests_;
 };
 }  // namespace ustore
 
