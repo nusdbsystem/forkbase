@@ -3,19 +3,19 @@
 #include <string>
 
 #include "chunk/chunk.h"
-#include "store/chunk_store.h"
-#include "node/cell_node.h"
 #include "gtest/gtest.h"
+#include "node/cell_node.h"
+#include "store/chunk_store.h"
 #include "types/ucell.h"
 #include "utils/logging.h"
 
 TEST(UCell, Load) {
   ustore::Hash h1;
   h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  ustore::UType type = ustore::kBlob;
+  ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
 
-  ustore::ChunkStore* cs = ustore::GetChunkStore();
+  ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
   cs->Put(chunk->hash(), *chunk);
 
@@ -33,7 +33,7 @@ TEST(UCell, Create) {
   h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   h2.FromString("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   h3.FromString("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  ustore::UType type = ustore::kBlob;
+  ustore::UType type = ustore::UType::kBlob;
 
   const ustore::UCell* ucell = ustore::UCell::Create(type, h1,
                                                      h2, h3);

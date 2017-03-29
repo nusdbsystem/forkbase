@@ -1,9 +1,12 @@
 // Copyright (c) 2017 The Ustore Authors.
-#include "node/chunk_loader.h"
+
+#include "store/chunk_loader.h"
 
 namespace ustore {
 
-ChunkLoader::ChunkLoader(ChunkStore* cs) : cs_{cs} {}
+ChunkLoader::ChunkLoader() : cs_{store::GetChunkStore()} {}
+// ChunkLoader::ChunkLoader(ChunkStore* cs) : cs_{cs} {}
+
 ChunkLoader::~ChunkLoader() {
   for (auto& t : cache_) {
     delete t.second;

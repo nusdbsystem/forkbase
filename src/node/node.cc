@@ -23,7 +23,7 @@ const ChunkInfo MetaNode::MakeChunk(
     chunk_num_bytes += entry_num_byte;
   }
 
-  Chunk* chunk = new Chunk(ustore::kMetaChunk, chunk_num_bytes);
+  Chunk* chunk = new Chunk(ChunkType::kMeta, chunk_num_bytes);
   // encode num_entries
   memcpy(chunk->m_data(), &num_entries, sizeof(uint32_t));
 

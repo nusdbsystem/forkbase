@@ -22,7 +22,7 @@ const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
     chunk_len = PRE_HASH_2_OFFSET + HASH_BYTE_LEN;
     merged = true;
   }
-  Chunk* chunk = new Chunk(kCellChunk, chunk_len);
+  Chunk* chunk = new Chunk(ChunkType::kCell, chunk_len);
   *reinterpret_cast<UType*>(chunk->m_data() + UTYPE_OFFSET) = type;
   memcpy(chunk->m_data() + MERGED_OFFSET, &merged, sizeof(bool));
   memcpy(chunk->m_data() + DATA_HASH_OFFSET, dataHash.value(), HASH_BYTE_LEN);
