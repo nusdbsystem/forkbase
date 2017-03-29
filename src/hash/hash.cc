@@ -46,43 +46,34 @@ const std::map<char, byte_t> base32dict = {{'A', 0},
                                            {'6', 30},
                                            {'7', 31}};
 
-Hash::Hash(const byte_t* hash) { value_ = const_cast<byte_t*>(hash); }
-Hash::Hash(const Hash& hash) { value_ = hash.value_; }
-Hash::~Hash() {
-  if (own_) delete[] value_;
-}
-Hash& Hash::operator=(const Hash& hash) {
-  if (own_) delete[] value_;
-  own_ = false;
-  value_ = hash.value_;
+Hash& Hash::operator=(Hash hash) {
+  std::swap(own_, hash.own_);
+  std::swap(value_, hash.value_);
   return *this;
 }
 
-bool Hash::operator<(const Hash& hash) const {
-  CHECK(value_);
-  CHECK(hash.value_);
-  return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) < 0;
+bool operator<(const Hash& lhs, const Hash& rhs) {
+  CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+  return std::memcmp(lhs.value_, rhs.value(), HASH_BYTE_LEN) < 0;
 }
 
-bool Hash::operator==(const Hash& hash) const {
-  CHECK(value_);
-  CHECK(hash.value_);
-  return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) == 0;
+bool operator==(const Hash& lhs, const Hash& rhs) {
+  CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+  return std::memcmp(lhs.value_, rhs.value(), HASH_BYTE_LEN) == 0;
 }
 
-bool Hash::operator>(const Hash& hash) const {
-  CHECK(value_);
-  CHECK(hash.value_);
-  return std::memcmp(value_, hash.value(), HASH_BYTE_LEN) > 0;
+bool operator>(const Hash& lhs, const Hash& rhs) {
+  CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+  return std::memcmp(lhs.value_, rhs.value(), HASH_BYTE_LEN) > 0;
 }
 
-bool Hash::operator<=(const Hash& hash) const { return !operator>(hash); }
-bool Hash::operator>=(const Hash& hash) const { return !operator<(hash); }
-bool Hash::operator!=(const Hash& hash) const { return !operator==(hash); }
+bool operator<=(const Hash& lhs, const Hash& rhs) { return !operator>(lhs, rhs); }
+bool operator>=(const Hash& lhs, const Hash& rhs) { return !operator<(lhs, rhs); }
+bool operator!=(const Hash& lhs, const Hash& rhs) { return !operator==(lhs, rhs); }
 
 void Hash::CopyFrom(const Hash& hash) {
   Alloc();
-  memcpy(value_, hash.value_, HASH_BYTE_LEN);
+  std::memcpy(value_, hash.value_, HASH_BYTE_LEN);
 }
 
 // caution: this base32 implementation can only used in UStore case,

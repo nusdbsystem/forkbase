@@ -23,37 +23,34 @@ class Chunk : private Noncopyable {
   static const size_t META_SIZE = CHUNK_TYPE_OFFSET + sizeof(ChunkType);
 
   // allocate a new chunk with usable capacity (excluding meta data)
-  explicit Chunk(ChunkType type, uint32_t capacity) {
-    own_ = true;
-    head_ = new byte_t[META_SIZE + capacity];
+  Chunk(ChunkType type, uint32_t capacity, byte_t* data) 
+      : own_(true), head_(new byte_t[META_SIZE + capacity]) {
     *reinterpret_cast<uint32_t*>(head_ + NUM_BYTES_OFFSET) =
         META_SIZE + capacity;
     *reinterpret_cast<ChunkType*>(head_ + CHUNK_TYPE_OFFSET) = type;
+    std::copy(data, data + capacity, head_);
   }
-  explicit Chunk(byte_t* head, bool own = false) {
-    head_ = head;
-    own_ = own;
-  }
+
+  Chunk(const byte_t* head, bool own = false) noexcept : own_(own), head_(head) {}
+
   ~Chunk() {
     if (own_) delete[] head_;
   }
 
   // total number of bytes
-  inline uint32_t numBytes() const {
+  inline uint32_t numBytes() const noexcept{
     return *reinterpret_cast<uint32_t*>(head_ + NUM_BYTES_OFFSET);
   }
   // type of the chunk
-  inline ChunkType type() const {
+  inline ChunkType type() const noexcept{
     return *reinterpret_cast<ChunkType*>(head_ + CHUNK_TYPE_OFFSET);
   }
   // number of bytes used to store actual data
-  inline uint32_t capacity() const { return numBytes() - META_SIZE; }
+  inline uint32_t capacity() const noexcept{ return numBytes() - META_SIZE; }
   // pointer to the chunk
-  inline const byte_t* head() const { return head_; }
+  inline const byte_t* head() const noexcept{ return head_; }
   // pointer to actual data
-  inline const byte_t* data() const { return m_data(); }
-  // pointer to mutable data
-  inline byte_t* m_data() const { return head_ + META_SIZE; }
+  inline const byte_t* data() const noexcept{ return head_ + META_SIZE; }
   // chunk hash
   inline const Hash& hash() const {
     return hash_.empty() ? forceHash() : hash_;

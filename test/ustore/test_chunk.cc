@@ -8,8 +8,7 @@
 const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 
 TEST(Chunk, CreateNewChunk) {
-  const ustore::Chunk chunk(ustore::kBlobChunk, sizeof(raw_data));
-  memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
+  const ustore::Chunk chunk(ustore::kBlobChunk, sizeof(raw_data), raw_data);
   // check chunk type
   EXPECT_EQ(ustore::kBlobChunk, chunk.type());
   // check chunk size
@@ -26,8 +25,7 @@ TEST(Chunk, CreateNewChunk) {
 }
 
 TEST(Chunk, LoadChunk) {
-  const ustore::Chunk origin(ustore::kBlobChunk, sizeof(raw_data));
-  memcpy(origin.m_data(), raw_data, sizeof(raw_data));
+  const ustore::Chunk origin(ustore::kBlobChunk, sizeof(raw_data), raw_data);
   ustore::byte_t* buffer = new ustore::byte_t[origin.numBytes()];
   memcpy(buffer, origin.head(), origin.numBytes());
   const ustore::Chunk chunk(buffer);

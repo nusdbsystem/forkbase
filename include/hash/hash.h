@@ -8,26 +8,41 @@
 
 namespace ustore {
 
-const size_t HASH_BYTE_LEN = 20;
-const size_t HASH_STRING_LEN = 32;
-
 class Hash {
+ private:
+  // allocate space if previously not have
+  void Alloc();
+
+  bool own_ = false;
+  // big-endian
+  byte_t* value_ = nullptr;
+
  public:
+
+ static const size_t HASH_BYTE_LEN = 20;
+ static const size_t HASH_STRING_LEN = 32;
   // create empty hash
   Hash() {}
   // use existing hash
-  Hash(const Hash& hash);
+  Hash(const Hash& hash) noexcept : own_(false), value_(hash.value_) {}
+  // move ctor
+  Hash(Hash&& hash) noexcept : Hash(hash)  {
+      std::swap(own_, hash.own_);
+  }
   // use existing byte array
-  explicit Hash(const byte_t* hash);
-  ~Hash();
+  explicit Hash(byte_t* hash) noexcept : own_(false), value_(hash) {}
 
-  Hash& operator=(const Hash& hash);
-  bool operator<(const Hash& hash) const;
-  bool operator<=(const Hash& hash) const;
-  bool operator>(const Hash& hash) const;
-  bool operator>=(const Hash& hash) const;
-  bool operator==(const Hash& hash) const;
-  bool operator!=(const Hash& hash) const;
+  ~Hash() {
+      if (own_) delete[] value_;
+  }
+
+  inline Hash& operator=(Hash hash);
+  inline friend bool operator<(const Hash& lhs, const Hash& rhs);
+  inline friend bool operator<=(const Hash& lhs, const Hash& rhs);
+  inline friend bool operator>(const Hash& lhs, const Hash& rhs);
+  inline friend bool operator>=(const Hash& lhs, const Hash& rhs);
+  inline friend bool operator==(const Hash& lhs, const Hash& rhs);
+  inline friend bool operator!=(const Hash& lhs, const Hash& rhs);
 
   // check if the hash is empty
   inline bool empty() { return value_ == nullptr; }
@@ -44,13 +59,6 @@ class Hash {
   // encode to base32 format
   std::string ToString() const;
 
- private:
-  // allocate space if previously not have
-  void Alloc();
-
-  bool own_ = false;
-  // big-endian
-  byte_t* value_ = nullptr;
 };
 
 }  // namespace ustore

@@ -21,8 +21,9 @@ typedef std::string node_id_t;
  *          it is "registered" via the Net object (RegisterRecv)
  * source:  extracted from the received socket
  */ 
-typedef void CallBackProc(const void *msg, int size, void* handler,
-                                            const node_id_t& source);
+using CallBackProc = void (*)(const void *, int, void*, const node_id_t&);
+
+class NetContext;
 
 /**
  * Wrapper to all network connections. This should be created only once for each network
@@ -59,8 +60,7 @@ class Net : private Noncopyable {
   virtual void RegisterRecv(CallBackProc* func, void* handler) = 0;
 
  protected:
-  Net() {}
-  explicit Net(const& node_id_t id) : cur_node_(id) {}
+  explicit Net(const node_id_t& id) : cur_node_(id) {}
 
  private:
   node_id_t cur_node_;

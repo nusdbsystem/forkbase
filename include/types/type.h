@@ -26,7 +26,8 @@ enum ChunkType : byte_t {
   kMetaChunk = 1,
   // List of Leaf SeqNode Chunk
   kBlobChunk = 2,
-  kStringChunk = 3
+  kStringChunk = 3,
+  kValidateChunk = 255 // for storage only
 };
 
 }  // namespace ustore
