@@ -6,6 +6,7 @@
 #include "types/type.h"
 #include "spec/blob.h"
 #include "spec/slice.h"
+#include "utils/logging.h"
 
 namespace ustore {
 
@@ -15,21 +16,44 @@ namespace ustore {
  */
 class Value {
  public:
-  // create value from another value 
-  Value(const Value& v);
-  // create value with type String 
-  explicit Value(const Slice& v);
-  // create value with type Blob 
-  explicit Value(const Blob& v);
-  ~Value();
+  // create empty value
+  Value() {}
+  // create value from another value
+  Value(const Value& v) {
+    type_ = v.type_;
+    data_ = v.data_;
+  }
+  // create value with type String
+  explicit Value(const Slice& v) {
+    type_ = UType::kString;
+    data_ = &v;
+  }
+  // create value with type Blob
+  explicit Value(const Blob& v) {
+    type_ = UType::kBlob;
+    data_ = &v;
+  }
+  ~Value() {}
 
+  inline Value& operator==(const Value& v) {
+    type_ = v.type_;
+    data_ = v.data_;
+  }
+
+  inline bool isNull() const { return data_ == nullptr; }
   inline UType type() const { return type_; }
-  const Slice* slice() const { return static_cast<Slice*>(data_); }
-  const Blob* blob() const { return static_cast<Blob*>(data_); }
+  inline const Slice& slice() const {
+    CHECK(type_ == UType::kString);
+    return *static_cast<const Slice*>(data_);
+  }
+  inline const Blob& blob() const {
+    CHECK(type_ == UType::kBlob);
+    return *static_cast<const Blob*>(data_);
+  }
 
  private:
   UType type_;
-  void* data_ = nullptr;
+  const void* data_ = nullptr;
 };
 }  // namespace ustore
 

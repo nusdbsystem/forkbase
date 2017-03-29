@@ -15,15 +15,15 @@ namespace ustore {
 class Blob {
  public:
   // share data from existing array
-  Blob(const byte_t* data, size_t size);
-  ~Blob();
+  Blob(const byte_t* data, size_t size) : data_(data), size_(size) {}
+  ~Blob() {}
 
-  inline size_t size() { return size_; }
-  inline const byte_t* data() { return data_; }
+  inline size_t size() const { return size_; }
+  inline const byte_t* data() const { return data_; }
 
  private:
   size_t size_ = 0;
-  byte_t* data_ = nullptr;
+  const byte_t* data_ = nullptr;
 };
 }  // namespace ustore
 

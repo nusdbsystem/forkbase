@@ -3,6 +3,8 @@
 #ifndef USTORE_SPEC_SLICE_H_
 #define USTORE_SPEC_SLICE_H_
 
+#include <algorithm>
+#include <cstring>
 #include <string>
 
 namespace ustore {
@@ -14,21 +16,38 @@ namespace ustore {
 class Slice {
  public:
   // share data from c++ string
-  explicit Slice(const std::string& slice);
+  explicit Slice(const std::string& slice) {
+    len_ = slice.length();
+    data_ = slice.data();
+  }
   // share data from c string
-  explicit Slice(const char* slice);
-  ~Slice();
+  explicit Slice(const char* slice) {
+    len_ = std::strlen(slice);
+    data_ = slice;
+  }
+  ~Slice() {}
 
-  bool operator<(const Slice& slice) const;
-  bool operator>(const Slice& slice) const;
-  bool operator==(const Slice& slice) const;
+  inline bool operator<(const Slice& slice) const {
+    size_t min_len = std::min(len_, slice.len_);
+    int cmp = std::memcmp(data_, slice.data_, min_len);
+    return cmp ? cmp < 0 : len_ < slice.len_;
+  }
+  inline bool operator>(const Slice& slice) const {
+    size_t min_len = std::min(len_, slice.len_);
+    int cmp = std::memcmp(data_, slice.data_, min_len);
+    return cmp ? cmp > 0 : len_ > slice.len_;
+  }
+  inline bool operator==(const Slice& slice) const {
+    if (len_ != slice.len_) return false;
+    return std::memcmp(data_, slice.data_, len_) == 0;
+  }
 
-  inline size_t len() { return len_; }
-  inline const char* data() { return data_; }
+  inline size_t len() const { return len_; }
+  inline const char* data() const { return data_; }
 
  private:
   size_t len_ = 0;
-  char* data_ = nullptr;
+  const char* data_ = nullptr;
 };
 }  // namespace ustore
 
