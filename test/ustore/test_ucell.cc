@@ -11,7 +11,7 @@
 
 TEST(UCell, Load) {
   ustore::Hash h1;
-  h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
 
@@ -30,9 +30,9 @@ TEST(UCell, Load) {
 
 TEST(UCell, Create) {
   ustore::Hash h1, h2, h3;
-  h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h2.FromString("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h3.FromString("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h2.FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h3.FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
 
   const ustore::UCell* ucell = ustore::UCell::Create(type, h1,

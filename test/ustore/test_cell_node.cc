@@ -8,10 +8,9 @@
 
 TEST(CellNode, NewCellNode) {
   ustore::Hash h1;
-  h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
-
   ustore::CellNode cnode(chunk);
   EXPECT_EQ(cnode.type(), type);
   EXPECT_EQ(cnode.merged(), false);
@@ -22,8 +21,8 @@ TEST(CellNode, NewCellNode) {
 
 TEST(CellNode, SinglePreHash) {
   ustore::Hash h1, h2, h3;
-  h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h2.FromString("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h2.FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
 
   ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1, h2, h3);
@@ -39,9 +38,9 @@ TEST(CellNode, SinglePreHash) {
 
 TEST(CellNode, DoublePreHash) {
   ustore::Hash h1, h2, h3;
-  h1.FromString("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h2.FromString("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h3.FromString("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h2.FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  h3.FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
 
   ustore::UType type = ustore::UType::kBlob;
   const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1, h2, h3);

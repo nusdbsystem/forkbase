@@ -22,7 +22,7 @@ TEST(Chunk, CreateNewChunk) {
   // check chunk hash
   ustore::Hash h;
   h.Compute(chunk.head(), chunk.numBytes());
-  EXPECT_EQ(h.ToString(), chunk.hash().ToString());
+  EXPECT_EQ(h.ToBase32(), chunk.hash().ToBase32());
 }
 
 TEST(Chunk, LoadChunk) {
@@ -43,5 +43,5 @@ TEST(Chunk, LoadChunk) {
   // check chunk hash
   ustore::Hash h;
   h.Compute(chunk.head(), chunk.numBytes());
-  EXPECT_EQ(h.ToString(), chunk.hash().ToString());
+  EXPECT_EQ(h.ToBase32(), chunk.hash().ToBase32());
 }

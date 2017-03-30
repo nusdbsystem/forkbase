@@ -20,8 +20,9 @@ class CellNode {
     |Hash::kByteLength(optional) |
   */
  public:
-  // Create new chunk contains a new cell, preHash1 is Hash::NULL_HASH,
+  // Create new chunk contains a new cell, preHash1 is Hash::kNull,
   // preHash2 is empty hash (Hash())
+  // TODO(wangji): add preHash1 parameter, let user to pass in Hash::kNull
   static const Chunk* NewChunk(const UType type, const Hash& dataHash);
   // Create new chunk contains a new cell based on at least one pre-version,
   // preHash 2 is empty hash (Hash()) if non-exist

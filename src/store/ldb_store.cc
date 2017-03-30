@@ -22,7 +22,7 @@ LDBStore::~LDBStore() { delete db_; }
 
 const Chunk* LDBStore::Get(const Hash& key) {
   std::string val;
-  auto s = db_->Get(rd_opt_, key.ToString(), &val);
+  auto s = db_->Get(rd_opt_, key.ToBase32(), &val);
   if (s.ok()) {
     byte_t* buf = new byte_t[val.size()];
     std::copy(val.begin(), val.end(), buf);
@@ -38,7 +38,8 @@ const Chunk* LDBStore::Get(const Hash& key) {
 bool LDBStore::Put(const Hash& key, const Chunk& chunk) {
   CHECK(key == chunk.hash());
   std::string val;
-  auto s = db_->Get(rd_opt_, key.ToString(), &val);
+  // TODO(wangji): why change to base32, cannot directly store bytes?
+  auto s = db_->Get(rd_opt_, key.ToBase32(), &val);
   if (s.ok()) {
     // TODO(wangji): Add a compile option later to check those
     // byte_t* buf = new byte_t[val.size()];
@@ -49,7 +50,7 @@ bool LDBStore::Put(const Hash& key, const Chunk& chunk) {
     return true;
   } else if (s.IsNotFound()) {
     auto ws =
-        db_->Put(wr_opt_, key.ToString(),
+        db_->Put(wr_opt_, key.ToBase32(),
                  leveldb::Slice(
                      reinterpret_cast<char*>(const_cast<byte_t*>(chunk.head())),
                      chunk.numBytes()));

@@ -18,7 +18,7 @@ TEST(MetaEntry, EncodeDecode) {
 
   ustore::Hash data_hash;
   const char encoded_hash_value[] = "26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
-  data_hash.FromString(encoded_hash_value);
+  data_hash.FromBase32(encoded_hash_value);
 
   // construct order key from above hash
   // padding a false bool in front of hash value to indicate not by value
@@ -54,7 +54,7 @@ TEST(MetaNode, Basic) {
 
   ustore::Hash data_hash1;
   const char encoded_hash_value1[] = "36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
-  data_hash1.FromString(encoded_hash_value1);
+  data_hash1.FromBase32(encoded_hash_value1);
 
   ustore::OrderedKey key1(5);
 
@@ -67,7 +67,7 @@ TEST(MetaNode, Basic) {
   // construct second MetaEntry
   ustore::Hash data_hash2;
   const char encoded_hash_value2[] = "46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
-  data_hash2.FromString(encoded_hash_value2);
+  data_hash2.FromBase32(encoded_hash_value2);
 
   ustore::OrderedKey key2(10);
 

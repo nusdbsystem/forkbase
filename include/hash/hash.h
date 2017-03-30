@@ -3,6 +3,7 @@
 #ifndef USTORE_HASH_HASH_H_
 #define USTORE_HASH_HASH_H_
 
+#include <memory>
 #include <string>
 #include "types/type.h"
 
@@ -11,18 +12,22 @@ namespace ustore {
 class Hash {
  public:
   static constexpr size_t kByteLength = 20;
-  static constexpr size_t kStringLength = 32;
+  static constexpr size_t kBase32Length = 32;
   // the hash used to represent null value
   static const Hash kNull;
 
-  // Hash() : Hash(kNull) {} 
-  // TODO(wangsh): create null hash (point to Hash::kNull)
-  Hash() {} 
+  // TODO(wangsh): consider if need make default hash value as kNull
+  // TODO(wangsh): but will make uninitialized hash and kNull indistinguishable
+  Hash() {}
   // use existing hash
-  Hash(const Hash& hash);
+  Hash(const Hash& hash) : value_(hash.value_) {}
   // use existing byte array
-  explicit Hash(const byte_t* hash);
-  ~Hash();
+  explicit Hash(const byte_t* hash) : value_(hash) {}
+  ~Hash() {}
+
+  // movable
+  Hash(Hash&& hash);
+  Hash& operator=(Hash&& hash);
 
   Hash& operator=(const Hash& hash);
   bool operator<(const Hash& hash) const;
@@ -40,12 +45,14 @@ class Hash {
   void CopyFrom(const Hash& hash);
   // decode hash from base32 format
   // if do so, must allocate own value
-  void FromString(const std::string& base32);
+  void FromBase32(const std::string& base32);
   // compute hash from data
   // if do so, must allocate own value
   void Compute(const byte_t* data, size_t len);
   // encode to base32 format
-  std::string ToString() const;
+  std::string ToBase32() const;
+  // get a copy that contains own bytes
+  Hash Clone() const;
 
  private:
   static const byte_t kEmptyBytes[kByteLength];
@@ -53,9 +60,11 @@ class Hash {
   // allocate space if previously not have
   void Alloc();
 
-  bool own_ = false;
+  // hash own the value if is calculated by itself
+  std::unique_ptr<byte_t[]> own_;
+  // otherwise the pointer should be read-only
   // big-endian
-  byte_t* value_ = nullptr;
+  const byte_t* value_ = nullptr;
 };
 
 }  // namespace ustore
