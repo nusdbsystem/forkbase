@@ -6,8 +6,8 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include "types/type.h"
 #include "hash/hash.h"
+#include "types/type.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {

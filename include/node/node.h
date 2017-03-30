@@ -22,9 +22,9 @@ namespace ustore {
 // TODO(pingcheng): may replace pair with tuple
 using ChunkInfo = std::pair<const Chunk*, std::pair<const byte_t*, size_t>>;
 // TODO(wangji): change function to a policy-object
-using MakeChunkFunc = const ChunkInfo(*)(
-                          const std::vector<const byte_t*>& entries_data,
-                          const std::vector<size_t>& entries_num_bytes);
+using MakeChunkFunc =
+    const ChunkInfo (*)(const std::vector<const byte_t*>& entries_data,
+                        const std::vector<size_t>& entries_num_bytes);
 
 class SeqNode {
   /* SeqNode represents a general node in Prolly Tree.
@@ -139,8 +139,8 @@ class MetaEntry {
  private:
   static constexpr size_t kNumBytesOffset = 0;
   static constexpr size_t kNumLeavesOffset = kNumBytesOffset + sizeof(uint32_t);
-  static constexpr size_t kNumElementsOffset = kNumLeavesOffset
-                                               + sizeof(uint32_t);
+  static constexpr size_t kNumElementsOffset =
+      kNumLeavesOffset + sizeof(uint32_t);
   static constexpr size_t kHashOffset = kNumElementsOffset + sizeof(uint64_t);
   static constexpr size_t kKeyOffset = kHashOffset + Hash::kByteLength;
 
@@ -155,7 +155,7 @@ class LeafNode : public SeqNode {
   explicit LeafNode(const Chunk* chunk) : SeqNode(chunk) {}
   ~LeafNode() override {}
 
-  inline uint64_t numElements() const { return numEntries();}
+  inline uint64_t numElements() const { return numEntries(); }
 
   inline bool isLeaf() const override { return true; }
   // Get #bytes from start-th element (inclusive) to end-th element (exclusive)
@@ -170,8 +170,7 @@ class LeafNode : public SeqNode {
   // found = true if they are equal, false otherwise
   // If key of all elements < parameter key,
   //  return the number of entries.
-  virtual size_t GetIdxForKey(const OrderedKey& key,
-                                    bool* found) const = 0;
+  virtual size_t GetIdxForKey(const OrderedKey& key, bool* found) const = 0;
 };
 
 }  // namespace ustore

@@ -38,6 +38,7 @@ class Value {
   inline Value& operator=(const Value& v) {
     type_ = v.type_;
     data_ = v.data_;
+    return *this;
   }
 
   inline bool isNull() const { return data_ == nullptr; }

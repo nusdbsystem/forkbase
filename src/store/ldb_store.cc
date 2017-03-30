@@ -23,7 +23,11 @@ LDBStore::~LDBStore() { delete db_; }
 
 const Chunk* LDBStore::Get(const Hash& key) {
   std::string val;
-  auto s = db_->Get(rd_opt_, key.ToBase32(), &val);
+  auto s = db_->Get(
+      rd_opt_,
+      leveldb::Slice(reinterpret_cast<char*>(const_cast<byte_t*>(key.value())),
+                     Hash::kByteLength),
+      &val);
   if (s.ok()) {
     std::unique_ptr<byte_t[]> buf(new byte_t[val.size()]);
     std::copy(val.begin(), val.end(), buf.get());
@@ -39,8 +43,11 @@ const Chunk* LDBStore::Get(const Hash& key) {
 bool LDBStore::Put(const Hash& key, const Chunk& chunk) {
   CHECK(key == chunk.hash());
   std::string val;
-  // TODO(wangji): why change to base32, cannot directly store bytes?
-  auto s = db_->Get(rd_opt_, key.ToBase32(), &val);
+  auto s = db_->Get(
+      rd_opt_,
+      leveldb::Slice(reinterpret_cast<char*>(const_cast<byte_t*>(key.value())),
+                     Hash::kByteLength),
+      &val);
   if (s.ok()) {
     // TODO(wangji): Add a compile option later to check those
     // byte_t* buf = new byte_t[val.size()];
@@ -50,11 +57,13 @@ bool LDBStore::Put(const Hash& key, const Chunk& chunk) {
     // CHECK_EQ(h.ToString(), key.ToString());
     return true;
   } else if (s.IsNotFound()) {
-    auto ws =
-        db_->Put(wr_opt_, key.ToBase32(),
-                 leveldb::Slice(
-                     reinterpret_cast<char*>(const_cast<byte_t*>(chunk.head())),
-                     chunk.numBytes()));
+    auto ws = db_->Put(
+        wr_opt_, leveldb::Slice(
+                     reinterpret_cast<char*>(const_cast<byte_t*>(key.value())),
+                     Hash::kByteLength),
+        leveldb::Slice(
+            reinterpret_cast<char*>(const_cast<byte_t*>(chunk.head())),
+            chunk.numBytes()));
     CHECK(ws.ok()) << "Leveldb chunck storage internal error: "
                    << ws.ToString();
     return true;

@@ -13,7 +13,8 @@ TEST(UCell, Load) {
   ustore::Hash h1;
   h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
-  const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
+  const ustore::Chunk* chunk =
+      ustore::CellNode::NewChunk(type, h1, ustore::Hash::kNull);
 
   ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
@@ -35,8 +36,7 @@ TEST(UCell, Create) {
   h3.FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
 
-  const ustore::UCell* ucell = ustore::UCell::Create(type, h1,
-                                                     h2, h3);
+  const ustore::UCell* ucell = ustore::UCell::Create(type, h1, h2, h3);
 
   EXPECT_EQ(ucell->type(), type);
   EXPECT_EQ(ucell->merged(), true);

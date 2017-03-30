@@ -10,7 +10,8 @@ TEST(CellNode, NewCellNode) {
   ustore::Hash h1;
   h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
-  const ustore::Chunk* chunk = ustore::CellNode::NewChunk(type, h1);
+  const ustore::Chunk* chunk =
+      ustore::CellNode::NewChunk(type, h1, ustore::Hash::kNull);
   ustore::CellNode cnode(chunk);
   EXPECT_EQ(cnode.type(), type);
   EXPECT_EQ(cnode.merged(), false);

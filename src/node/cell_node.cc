@@ -8,8 +8,9 @@
 
 namespace ustore {
 
-const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash) {
-  return NewChunk(type, dataHash, Hash::kNull, Hash());
+const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
+                                const Hash& preHash) {
+  return NewChunk(type, dataHash, preHash, Hash());
 }
 
 const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
@@ -31,14 +32,13 @@ const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
               Hash::kByteLength);
   if (!preHash2.empty()) {
     std::memcpy(chunk->m_data() + kPreHash2Offset, preHash2.value(),
-           Hash::kByteLength);
+                Hash::kByteLength);
   }
   return chunk;
 }
 
 const Hash CellNode::preHash(bool second) const {
-  if (!second)
-    return Hash(chunk_->data() + kPreHash1Offset);
+  if (!second) return Hash(chunk_->data() + kPreHash1Offset);
   if (merged()) {
     CHECK_EQ(chunk_->capacity(), kChunkLength2PreHash);
     return Hash(chunk_->data() + kPreHash2Offset);

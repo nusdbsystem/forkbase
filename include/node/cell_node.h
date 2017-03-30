@@ -20,12 +20,13 @@ class CellNode {
     |Hash::kByteLength(optional) |
   */
  public:
-  // Create new chunk contains a new cell, preHash1 is Hash::kNull,
-  // preHash2 is empty hash (Hash())
-  // TODO(wangji): add preHash1 parameter, let user to pass in Hash::kNull
-  static const Chunk* NewChunk(const UType type, const Hash& dataHash);
-  // Create new chunk contains a new cell based on at least one pre-version,
-  // preHash 2 is empty hash (Hash()) if non-exist
+  // Create new chunk contains a new cell,
+  // preHash2 is empty hash (Hash()) in this cell.
+  static const Chunk* NewChunk(const UType type, const Hash& dataHash,
+                               const Hash& preHash);
+  // Create new chunk contains a new cell based on
+  // two previous versions, both previous versions are not empty.
+  // Used for merge operation.
   static const Chunk* NewChunk(const UType type, const Hash& dataHash,
                                const Hash& preHash1, const Hash& preHash2);
 
@@ -53,8 +54,8 @@ class CellNode {
   static constexpr size_t kPreHash1Offset = kDataHashOffset + Hash::kByteLength;
   static constexpr size_t kPreHash2Offset = kPreHash1Offset + Hash::kByteLength;
   static constexpr size_t kChunkLength1PreHash = kPreHash2Offset;
-  static constexpr size_t kChunkLength2PreHash = kPreHash2Offset
-                                                 + Hash::kByteLength;
+  static constexpr size_t kChunkLength2PreHash =
+      kPreHash2Offset + Hash::kByteLength;
 
   const Chunk* chunk_;
 };

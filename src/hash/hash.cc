@@ -61,6 +61,7 @@ Hash& Hash::operator=(Hash&& hash) {
   own_ = std::move(hash.own_);
   value_ = hash.value_;
   hash.value_ = nullptr;
+  return *this;
 }
 
 Hash& Hash::operator=(const Hash& hash) {
@@ -137,7 +138,6 @@ Hash Hash::Clone() const {
   std::memcpy(hash.own_.get(), value_, kByteLength);
   return hash;
 }
-
 
 void Hash::Alloc() {
   if (!own_) {
