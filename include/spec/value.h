@@ -35,7 +35,7 @@ class Value {
   }
   ~Value() {}
 
-  inline Value& operator==(const Value& v) {
+  inline Value& operator=(const Value& v) {
     type_ = v.type_;
     data_ = v.data_;
   }

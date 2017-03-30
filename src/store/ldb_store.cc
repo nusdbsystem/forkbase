@@ -1,4 +1,5 @@
 // Copyright (c) 2017 The Ustore Authors.
+
 #ifdef USE_LEVELDB
 
 #include "store/ldb_store.h"
@@ -24,9 +25,9 @@ const Chunk* LDBStore::Get(const Hash& key) {
   std::string val;
   auto s = db_->Get(rd_opt_, key.ToBase32(), &val);
   if (s.ok()) {
-    byte_t* buf = new byte_t[val.size()];
-    std::copy(val.begin(), val.end(), buf);
-    Chunk* c = new Chunk(buf, true);
+    std::unique_ptr<byte_t[]> buf(new byte_t[val.size()]);
+    std::copy(val.begin(), val.end(), buf.get());
+    Chunk* c = new Chunk(&buf);
     CHECK(key == c->hash());
     return c;
   } else {

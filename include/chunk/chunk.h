@@ -4,6 +4,7 @@
 #define USTORE_CHUNK_CHUNK_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include "types/type.h"
 #include "hash/hash.h"
@@ -23,37 +24,29 @@ class Chunk : private Noncopyable {
   static constexpr size_t kMetaLength = kChunkTypeOffset + sizeof(ChunkType);
 
   // allocate a new chunk with usable capacity (excluding meta data)
-  explicit Chunk(ChunkType type, uint32_t capacity) {
-    own_ = true;
-    head_ = new byte_t[kMetaLength + capacity];
-    *reinterpret_cast<uint32_t*>(head_ + kNumBytesOffset) =
-        kMetaLength + capacity;
-    *reinterpret_cast<ChunkType*>(head_ + kChunkTypeOffset) = type;
-  }
-  explicit Chunk(byte_t* head, bool own = false) {
-    head_ = head;
-    own_ = own;
-  }
-  ~Chunk() {
-    if (own_) delete[] head_;
-  }
+  explicit Chunk(ChunkType type, uint32_t capacity);
+  // create chunk but not own the data
+  explicit Chunk(const byte_t* head) : head_(head) {}
+  // create chunk and let it own the data
+  explicit Chunk(std::unique_ptr<byte_t[]>* head);
+  ~Chunk() {}
 
   // total number of bytes
   inline uint32_t numBytes() const {
-    return *reinterpret_cast<uint32_t*>(head_ + kNumBytesOffset);
+    return *reinterpret_cast<const uint32_t*>(head_ + kNumBytesOffset);
   }
   // type of the chunk
   inline ChunkType type() const {
-    return *reinterpret_cast<ChunkType*>(head_ + kChunkTypeOffset);
+    return *reinterpret_cast<const ChunkType*>(head_ + kChunkTypeOffset);
   }
   // number of bytes used to store actual data
   inline uint32_t capacity() const { return numBytes() - kMetaLength; }
   // pointer to the chunk
   inline const byte_t* head() const { return head_; }
   // pointer to actual data
-  inline const byte_t* data() const { return m_data(); }
+  inline const byte_t* data() const { return head_ + kMetaLength; }
   // pointer to mutable data
-  inline byte_t* m_data() const { return head_ + kMetaLength; }
+  byte_t* m_data() const;
   // chunk hash
   inline const Hash& hash() const {
     return hash_.empty() ? forceHash() : hash_;
@@ -65,8 +58,10 @@ class Chunk : private Noncopyable {
   }
 
  private:
-  bool own_ = false;
-  byte_t* head_ = nullptr;
+  // own the chunk if created by itself
+  std::unique_ptr<byte_t[]> own_;
+  // read-only chunk if passed from chunk storage
+  const byte_t* head_ = nullptr;
   mutable Hash hash_;
 };
 
