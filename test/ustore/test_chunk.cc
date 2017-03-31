@@ -10,6 +10,7 @@ const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 TEST(Chunk, CreateNewChunk) {
   const ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
   std::memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
+
   // check chunk type
   EXPECT_EQ(ustore::ChunkType::kBlob, chunk.type());
   // check chunk size
