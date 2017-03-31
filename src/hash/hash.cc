@@ -51,7 +51,6 @@ const std::map<char, byte_t> base32dict = {{'A', 0},
                                            {'6', 30},
                                            {'7', 31}};
 
-
 Hash::Hash(Hash&& hash) {
   own_ = std::move(hash.own_);
   value_ = hash.value_;
@@ -87,9 +86,9 @@ bool Hash::operator>(const Hash& hash) const {
   return std::memcmp(value_, hash.value(), kByteLength) > 0;
 }
 
-bool operator<=(const Hash& lhs, const Hash& rhs) { return !operator>(lhs, rhs); }
-bool operator>=(const Hash& lhs, const Hash& rhs) { return !operator<(lhs, rhs); }
-bool operator!=(const Hash& lhs, const Hash& rhs) { return !operator==(lhs, rhs); }
+bool Hash::operator<=(const Hash& hash) const { return !operator>(hash); }
+bool Hash::operator>=(const Hash& hash) const { return !operator<(hash); }
+bool Hash::operator!=(const Hash& hash) const { return !operator==(hash); }
 
 void Hash::CopyFrom(const Hash& hash) {
   Alloc();

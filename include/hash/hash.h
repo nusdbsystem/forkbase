@@ -10,16 +10,7 @@
 namespace ustore {
 
 class Hash {
- private:
-  // allocate space if previously not have
-  void Alloc();
-
-  bool own_ = false;
-  // big-endian
-  byte_t* value_ = nullptr;
-
  public:
-
   static constexpr size_t kByteLength = 20;
   static constexpr size_t kBase32Length = 32;
   // the hash used to represent null value
@@ -38,14 +29,13 @@ class Hash {
   Hash(Hash&& hash);
   Hash& operator=(Hash&& hash);
 
-
-  inline Hash& operator=(Hash hash);
-  inline friend bool operator<(const Hash& lhs, const Hash& rhs);
-  inline friend bool operator<=(const Hash& lhs, const Hash& rhs);
-  inline friend bool operator>(const Hash& lhs, const Hash& rhs);
-  inline friend bool operator>=(const Hash& lhs, const Hash& rhs);
-  inline friend bool operator==(const Hash& lhs, const Hash& rhs);
-  inline friend bool operator!=(const Hash& lhs, const Hash& rhs);
+  Hash& operator=(const Hash& hash);
+  bool operator<(const Hash& hash) const;
+  bool operator<=(const Hash& hash) const;
+  bool operator>(const Hash& hash) const;
+  bool operator>=(const Hash& hash) const;
+  bool operator==(const Hash& hash) const;
+  bool operator!=(const Hash& hash) const;
 
   // check if the hash is empty
   inline bool empty() const { return value_ == nullptr; }
@@ -75,7 +65,6 @@ class Hash {
   // otherwise the pointer should be read-only
   // big-endian
   const byte_t* value_ = nullptr;
-
 };
 
 }  // namespace ustore

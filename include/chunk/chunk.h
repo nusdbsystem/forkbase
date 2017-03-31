@@ -24,7 +24,6 @@ class Chunk : private Noncopyable {
   static constexpr size_t kMetaLength = kChunkTypeOffset + sizeof(ChunkType);
 
   // allocate a new chunk with usable capacity (excluding meta data)
-
   explicit Chunk(ChunkType type, uint32_t capacity);
   // create chunk but not own the data
   explicit Chunk(const byte_t* head) : head_(head) {}
@@ -42,15 +41,12 @@ class Chunk : private Noncopyable {
   }
   // number of bytes used to store actual data
   inline uint32_t capacity() const { return numBytes() - kMetaLength; }
-
   // pointer to the chunk
-  inline const byte_t* head() const noexcept{ return head_; }
+  inline const byte_t* head() const { return head_; }
   // pointer to actual data
-
   inline const byte_t* data() const { return head_ + kMetaLength; }
   // pointer to mutable data
   byte_t* m_data() const;
-
   // chunk hash
   inline const Hash& hash() const {
     return hash_.empty() ? forceHash() : hash_;
