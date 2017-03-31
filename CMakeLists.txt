@@ -42,7 +42,7 @@ endif()
 include(cmake/Dependencies.cmake)
 
 enable_testing()
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -pthread")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -pthread -Wreturn-type")
 # SET(PROTOBUF_PROTOC_EXECUTABLE "protoc")
 
 MESSAGE(STATUS "${PROTOBUF_PROTOC_EXECUTABLE}")
