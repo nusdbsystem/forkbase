@@ -45,8 +45,6 @@ FOREACH(fil ${proto_hdrs})
                      )
 ENDFOREACH()
 
-
-
 AUX_SOURCE_DIRECTORY(chunk chunk_source)
 LIST(APPEND ustore_srcs ${chunk_source})
 

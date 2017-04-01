@@ -27,6 +27,7 @@ include(cmake/Utils.cmake)
 OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
 OPTION(USE_LEVELDB "Use LevelDB as chunk storage" ON)
 OPTION(TEST_NODEBUILDER "Test Node Builder" ON)
+OPTION(ENABLE_NDEBUG "Enable NDEBUG flag" OFF)
 
 if(TEST_NODEBUILDER)
   message(STATUS "Test Node Builder with Specific Rolling Hasher")
@@ -38,11 +39,15 @@ if(USE_SHA256)
   add_definitions(-DUSE_SHA256)
 endif()
 
+if(ENABLE_NDEBUG)
+  ADD_DEFINITIONS(-DNDEBUG)
+endif()
+
 # ---[ Dependencies
 include(cmake/Dependencies.cmake)
 
 enable_testing()
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -pthread -Wreturn-type")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -fPIC -pthread -Wreturn-type")
 # SET(PROTOBUF_PROTOC_EXECUTABLE "protoc")
 
 MESSAGE(STATUS "${PROTOBUF_PROTOC_EXECUTABLE}")
