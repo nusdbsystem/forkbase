@@ -209,7 +209,7 @@ USTORE_DEFINE_CHECK_OP_IMPL(Check_GT, > )
   ::ustore::logging::CheckNotNull(__FILE__, __LINE__, \
                                   "'" #val "' Must be non NULL", (val))
 
-#ifndef NDEBUG
+#ifdef DEBUG
 // DCHECK_EQ/NE/...
 #define DCHECK(condition) CHECK(condition)
 #define DCHECK_EQ(val1, val2) CHECK_EQ(val1, val2)
@@ -218,6 +218,9 @@ USTORE_DEFINE_CHECK_OP_IMPL(Check_GT, > )
 #define DCHECK_LT(val1, val2) CHECK_LT(val1, val2)
 #define DCHECK_GE(val1, val2) CHECK_GE(val1, val2)
 #define DCHECK_GT(val1, val2) CHECK_GT(val1, val2)
+
+// wangsh: support debug logging
+#define DLOG(severity) LOG(severity)
 
 #else
 
@@ -237,6 +240,9 @@ USTORE_DEFINE_CHECK_OP_IMPL(Check_GT, > )
 #define DCHECK_LT(x, y) _USTORE_DCHECK_NOP(x, y)
 #define DCHECK_GE(x, y) _USTORE_DCHECK_NOP(x, y)
 #define DCHECK_GT(x, y) _USTORE_DCHECK_NOP(x, y)
+
+// wangsh: support debug logging
+#define DLOG(severity) while (false) LOG(severity)
 
 #endif
 

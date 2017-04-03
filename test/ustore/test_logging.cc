@@ -44,3 +44,22 @@ TEST(Logging, StderrLoggingLevel) {
   LOG(WARNING) << "test warning logging to stderr and file";
   LOG(ERROR) << "test error logging to stderr and file";
 }
+
+TEST(Logging, DebugInfoLogging) {
+  ustore::InitLogging("");
+  int a = 3;
+  DCHECK_EQ(a, 3);
+  DLOG(INFO) << "test debug info logging";
+}
+
+TEST(Logging, DebugWarningLogging) {
+  int a = 4;
+  DCHECK_EQ(a, 4);
+  DLOG(WARNING) << "test debug warning logging";
+}
+
+TEST(Logging, DebugErrorLogging) {
+  int a = 5;
+  DCHECK_EQ(a, 5);
+  DLOG(ERROR) << "test debug error logging";
+}

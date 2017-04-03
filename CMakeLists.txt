@@ -26,8 +26,8 @@ include(cmake/Utils.cmake)
 # --- [ Options
 OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
 OPTION(USE_LEVELDB "Use LevelDB as chunk storage" ON)
-OPTION(TEST_NODEBUILDER "Test Node Builder" ON)
-OPTION(ENABLE_NDEBUG "Enable NDEBUG flag" OFF)
+OPTION(TEST_NODEBUILDER "Test node builder" ON)
+OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
 
 if(TEST_NODEBUILDER)
   message(STATUS "Test Node Builder with Specific Rolling Hasher")
@@ -39,8 +39,8 @@ if(USE_SHA256)
   add_definitions(-DUSE_SHA256)
 endif()
 
-if(ENABLE_NDEBUG)
-  ADD_DEFINITIONS(-DNDEBUG)
+if(ENABLE_DEBUG)
+  ADD_DEFINITIONS(-DDEBUG)
 endif()
 
 # ---[ Dependencies
