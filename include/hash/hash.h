@@ -5,7 +5,10 @@
 
 #include <memory>
 #include <string>
+#include <cstring>
+
 #include "types/type.h"
+#include "utils/logging.h"
 
 namespace ustore {
 
@@ -18,24 +21,51 @@ class Hash {
 
   // TODO(wangsh): consider if need make default hash value as kNull
   // TODO(wangsh): but will make uninitialized hash and kNull indistinguishable
-  Hash() {}
+  inline Hash() {}
   // use existing hash
-  Hash(const Hash& hash) : value_(hash.value_) {}
+  inline Hash(const Hash& hash) noexcept: value_(hash.value_) {}
   // use existing byte array
-  explicit Hash(const byte_t* hash) : value_(hash) {}
-  ~Hash() {}
+  explicit inline Hash(const byte_t* hash) noexcept: value_(hash) {}
+  inline ~Hash() {}
 
   // movable
-  Hash(Hash&& hash);
-  Hash& operator=(Hash&& hash);
+  inline Hash(Hash&& hash) noexcept : own_(std::move(hash.own_)) {
+    std::swap(hash.value_, value_);
+  }
+  
+  // copy and move assignment 
+  inline Hash& operator=(Hash hash) noexcept {
+      own_.swap(hash.own_);
+      std::swap(value_, hash.value_);
+      return *this;
+  }
 
-  Hash& operator=(const Hash& hash);
-  bool operator<(const Hash& hash) const;
-  bool operator<=(const Hash& hash) const;
-  bool operator>(const Hash& hash) const;
-  bool operator>=(const Hash& hash) const;
-  bool operator==(const Hash& hash) const;
-  bool operator!=(const Hash& hash) const;
+  friend inline bool operator<(const Hash& lhs, const Hash& rhs) noexcept {
+      CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+      return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) < 0;
+  }
+
+  friend inline bool operator>(const Hash& lhs, const Hash& rhs) noexcept {
+      CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+      return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) > 0;
+  }
+
+  friend inline bool operator==(const Hash& lhs, const Hash& rhs) noexcept {
+      CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+      return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) == 0;
+  }
+
+  friend inline bool operator<=(const Hash& lhs, const Hash& rhs) noexcept {
+      return !operator>(lhs, rhs);
+  }
+
+  friend inline bool operator>=(const Hash& lhs, const Hash& rhs) noexcept {
+      return !operator<(lhs, rhs);
+  }
+
+  friend inline bool operator!=(const Hash& lhs, const Hash& rhs) noexcept {
+      return !operator==(lhs, rhs);
+  }
 
   // check if the hash is empty
   inline bool empty() const { return value_ == nullptr; }

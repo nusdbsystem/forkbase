@@ -3,17 +3,38 @@
 #ifndef USTORE_UTILS_SINGLETON_H_
 #define USTORE_UTILS_SINGLETON_H_
 
+#include <utility>
+
 namespace ustore {
 /// Thread-safe implementation for C++11 according to
 //  http://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
 template <typename T>
 class Singleton {
  public:
-  static T* Instance() {
-    static T data_;
-    return &data_;
+  //static T* Instance() {
+  //  if (data_ == nullptr) {
+  //      static T data;
+  //      data_ = &data;
+  //  }
+  //  return data_;
+  //}
+
+  template<typename... Args>
+  static T* Instance(Args&&... args) {
+    if (data_ == nullptr) {
+        static T data{std::forward<Args>(args)...};
+        data_ = &data;
+    }
+    return data_;
   }
+
+ private:
+  static T* data_;
 };
+
+template <typename T>
+T* Singleton<T>::data_ = nullptr;
+
 
 /// Thread Specific Singleton
 /// Each thread will have its own data_ storage.

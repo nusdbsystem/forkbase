@@ -51,44 +51,19 @@ const std::map<char, byte_t> base32dict = {{'A', 0},
                                            {'6', 30},
                                            {'7', 31}};
 
-Hash::Hash(Hash&& hash) {
-  own_ = std::move(hash.own_);
-  value_ = hash.value_;
-  hash.value_ = nullptr;
-}
-
-Hash& Hash::operator=(Hash&& hash) {
-  own_ = std::move(hash.own_);
-  value_ = hash.value_;
-  hash.value_ = nullptr;
-  return *this;
-}
-
-Hash& Hash::operator=(const Hash& hash) {
-  if (this == &hash) return *this;
-  own_.reset();
-  value_ = hash.value_;
-  return *this;
-}
-
-bool Hash::operator<(const Hash& hash) const {
-  CHECK(value_ && hash.value_);
-  return std::memcmp(value_, hash.value(), kByteLength) < 0;
-}
-
-bool Hash::operator==(const Hash& hash) const {
-  CHECK(value_ && hash.value_);
-  return std::memcmp(value_, hash.value(), kByteLength) == 0;
-}
-
-bool Hash::operator>(const Hash& hash) const {
-  CHECK(value_ && hash.value_);
-  return std::memcmp(value_, hash.value(), kByteLength) > 0;
-}
-
-bool Hash::operator<=(const Hash& hash) const { return !operator>(hash); }
-bool Hash::operator>=(const Hash& hash) const { return !operator<(hash); }
-bool Hash::operator!=(const Hash& hash) const { return !operator==(hash); }
+//Hash& Hash::operator=(Hash&& hash) {
+//  own_ = std::move(hash.own_);
+//  value_ = hash.value_;
+//  hash.value_ = nullptr;
+//  return *this;
+//}
+//
+//Hash& Hash::operator=(const Hash& hash) {
+//  if (this == &hash) return *this;
+//  own_.reset();
+//  value_ = hash.value_;
+//  return *this;
+//}
 
 void Hash::CopyFrom(const Hash& hash) {
   Alloc();

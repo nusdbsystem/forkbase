@@ -7,6 +7,11 @@
 
 namespace ustore {
 
+template <int N> 
+struct Int2Type{
+    enum {value = N};
+};
+
 template <typename T>
 struct is_char{
     constexpr static bool value = false;

@@ -31,7 +31,7 @@ const Chunk* LDBStore::Get(const Hash& key) {
   if (s.ok()) {
     std::unique_ptr<byte_t[]> buf(new byte_t[val.size()]);
     std::copy(val.begin(), val.end(), buf.get());
-    Chunk* c = new Chunk(&buf);
+    Chunk* c = new Chunk(std::move(buf));
     CHECK(key == c->hash());
     return c;
   } else {
