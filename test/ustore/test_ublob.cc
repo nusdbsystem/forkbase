@@ -8,11 +8,6 @@
 
 #include "types/ublob.h"
 
-#ifdef USE_LEVELDB
-#include "store/ldb_store.h"
-#include "utils/singleton.h"
-#endif  // USE_LEVELDB
-
 #include "utils/debug.h"
 #include "utils/logging.h"
 
@@ -322,11 +317,7 @@ TEST(SimpleUBlob, Load) {
 // Create a junk to load
   ustore::Chunk chunk(ustore::ChunkType::kBlob, len);
   std::memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
-  #ifdef USE_LEVELDB
-  ustore::ChunkStore* cs = ustore::Singleton<ustore::LDBStore>::Instance();
-  #else
-  // other storage
-  #endif  // USE_LEVELDB
+  ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
   cs->Put(chunk.hash(), chunk);
 ///////////////////////////////////////

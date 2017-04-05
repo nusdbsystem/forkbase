@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <cstring>
+#include <utility>
 
 #include "types/type.h"
 #include "utils/logging.h"
@@ -23,17 +24,17 @@ class Hash {
   // TODO(wangsh): but will make uninitialized hash and kNull indistinguishable
   inline Hash() {}
   // use existing hash
-  inline Hash(const Hash& hash) noexcept: value_(hash.value_) {}
+  inline Hash(const Hash& hash) noexcept : value_(hash.value_) {}
   // use existing byte array
-  explicit inline Hash(const byte_t* hash) noexcept: value_(hash) {}
+  explicit inline Hash(const byte_t* hash) noexcept : value_(hash) {}
   inline ~Hash() {}
 
   // movable
   inline Hash(Hash&& hash) noexcept : own_(std::move(hash.own_)) {
-    std::swap(hash.value_, value_);
+    std::swap(value_, hash.value_);
   }
-  
-  // copy and move assignment 
+
+  // copy and move assignment
   inline Hash& operator=(Hash hash) noexcept {
       own_.swap(hash.own_);
       std::swap(value_, hash.value_);

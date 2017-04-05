@@ -51,20 +51,6 @@ const std::map<char, byte_t> base32dict = {{'A', 0},
                                            {'6', 30},
                                            {'7', 31}};
 
-//Hash& Hash::operator=(Hash&& hash) {
-//  own_ = std::move(hash.own_);
-//  value_ = hash.value_;
-//  hash.value_ = nullptr;
-//  return *this;
-//}
-//
-//Hash& Hash::operator=(const Hash& hash) {
-//  if (this == &hash) return *this;
-//  own_.reset();
-//  value_ = hash.value_;
-//  return *this;
-//}
-
 void Hash::CopyFrom(const Hash& hash) {
   Alloc();
   std::memcpy(own_.get(), hash.value_, kByteLength);

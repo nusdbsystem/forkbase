@@ -11,14 +11,6 @@ namespace ustore {
 template <typename T>
 class Singleton {
  public:
-  //static T* Instance() {
-  //  if (data_ == nullptr) {
-  //      static T data;
-  //      data_ = &data;
-  //  }
-  //  return data_;
-  //}
-
   template<typename... Args>
   static T* Instance(Args&&... args) {
     if (data_ == nullptr) {
@@ -34,7 +26,6 @@ class Singleton {
 
 template <typename T>
 T* Singleton<T>::data_ = nullptr;
-
 
 /// Thread Specific Singleton
 /// Each thread will have its own data_ storage.

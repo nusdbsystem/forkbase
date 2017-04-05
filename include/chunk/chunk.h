@@ -8,6 +8,7 @@
 #include <string>
 #include "hash/hash.h"
 #include "types/type.h"
+#include "utils/logging.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
@@ -24,7 +25,7 @@ class Chunk : private Noncopyable {
   static constexpr size_t kMetaLength = kChunkTypeOffset + sizeof(ChunkType);
 
   // allocate a new chunk with usable capacity (excluding meta data)
-  explicit Chunk(ChunkType type, uint32_t capacity);
+  Chunk(ChunkType type, uint32_t capacity);
   // create chunk but not own the data
   explicit inline Chunk(const byte_t* head) noexcept : head_(head) {}
   // create chunk and let it own the data
@@ -32,21 +33,21 @@ class Chunk : private Noncopyable {
   ~Chunk() {}
 
   // total number of bytes
-  inline uint32_t numBytes() const noexcept{
+  inline uint32_t numBytes() const noexcept {
     return *reinterpret_cast<const uint32_t*>(head_ + kNumBytesOffset);
   }
   // type of the chunk
-  inline ChunkType type() const noexcept{
+  inline ChunkType type() const noexcept {
     return *reinterpret_cast<const ChunkType*>(head_ + kChunkTypeOffset);
   }
   // number of bytes used to store actual data
-  inline uint32_t capacity() const noexcept{ return numBytes() - kMetaLength; }
+  inline uint32_t capacity() const noexcept { return numBytes() - kMetaLength; }
 
   // pointer to the chunk
-  inline const byte_t* head() const noexcept{ return head_; }
+  inline const byte_t* head() const noexcept { return head_; }
 
   // pointer to actual data
-  inline const byte_t* data() const noexcept{ return head_ + kMetaLength; }
+  inline const byte_t* data() const noexcept { return head_ + kMetaLength; }
 
   // pointer to mutable data
   inline byte_t* m_data() const noexcept {
