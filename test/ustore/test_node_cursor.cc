@@ -4,7 +4,7 @@
 #include <string>
 #include "gtest/gtest.h"
 
-#include "node/chunker.h"
+#include "chunk/chunker.h"
 #include "node/cursor.h"
 #include "store/chunk_loader.h"
 #include "utils/singleton.h"

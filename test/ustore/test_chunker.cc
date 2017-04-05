@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "node/chunker.h"
+#include "chunk/chunker.h"
 
 TEST(FixedChunker, Basic) {
   const ustore::byte_t data[] = "abcde";

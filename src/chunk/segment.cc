@@ -1,12 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include "node/chunker.h"
+#include "chunk/segment.h"
 
 #include <cstring>  // for memcpy
 #include <utility>  // for std::move()
 #include "utils/logging.h"
 
 namespace ustore {
+
 void Segment::AppendForChunk(byte_t* chunk_buffer) const {
   std::memcpy(chunk_buffer, data_, num_bytes_);
 }
@@ -91,4 +92,5 @@ std::pair<const Segment*, const Segment*> VarSegment::Split(size_t idx) const {
       new VarSegment(postData, postSegBytes, std::move(postOffsets))};
   return split_segs;
 }
+
 }  // namespace ustore

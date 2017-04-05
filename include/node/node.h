@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "chunk/chunk.h"
-#include "node/chunker.h"
+#include "chunk/chunker.h"
 #include "node/orderedkey.h"
 #include "types/type.h"
 

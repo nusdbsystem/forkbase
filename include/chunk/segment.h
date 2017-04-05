@@ -1,13 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NODE_CHUNKER_H_
-#define USTORE_NODE_CHUNKER_H_
+#ifndef USTORE_CHUNK_SEGMENT_H_
+#define USTORE_CHUNK_SEGMENT_H_
 
 #include <cstddef>
 #include <vector>
 #include <utility>
 
-#include "chunk/chunk.h"
+#include "types/type.h"
 
 namespace ustore {
 class Segment {
@@ -91,18 +91,5 @@ class VarSegment : public Segment {
   std::vector<size_t> entry_offsets_;
 };
 
-struct ChunkInfo {
-  const Chunk* chunk;
-  // a Segment that holding a single MetaEntry bytes
-  const Segment* meta_seg;
-};
-
-class Chunker {
-  // An interface to make chunk from multiple segments.
-  //   Each type, e.g, Blob, MetaNode shall have one.
- public:
-  virtual const ChunkInfo make(const std::vector<const Segment*>& segments)
-      const = 0;
-};
 }  // namespace ustore
-#endif  // USTORE_NODE_CHUNKER_H_
+#endif  // USTORE_CHUNK_SEGMENT_H_

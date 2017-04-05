@@ -3,9 +3,9 @@
 #include "types/ublob.h"
 
 #include <cstring>
+#include "chunk/chunker.h"
 #include "node/node_builder.h"
 #include "node/blob_node.h"
-#include "node/chunker.h"
 #include "utils/logging.h"
 #include "utils/singleton.h"
 

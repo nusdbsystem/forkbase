@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "chunk/chunk.h"
-#include "node/chunker.h"
+#include "chunk/chunker.h"
 #include "node/cursor.h"
 #include "node/rolling_hash.h"
 #include "store/chunk_loader.h"

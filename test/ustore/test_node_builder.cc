@@ -8,8 +8,8 @@
 
 #include "gtest/gtest.h"
 
+#include "chunk/chunker.h"
 #include "node/blob_node.h"
-#include "node/chunker.h"
 #include "node/node_builder.h"
 #include "node/cursor.h"
 #include "store/chunk_loader.h"
