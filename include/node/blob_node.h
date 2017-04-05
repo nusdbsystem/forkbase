@@ -10,10 +10,11 @@
 #include "node/node.h"
 
 namespace ustore {
+
 class BlobChunker : public Chunker {
  public:
-  const ChunkInfo make(
-      const std::vector<const Segment*>& segments) const override;
+  const ChunkInfo make(const std::vector<const Segment*>& segments) const
+      override;
 };
 
 class BlobNode : public LeafNode {

@@ -62,6 +62,7 @@ class NodeCursor {
 
   inline NodeCursor* parent() const { return parent_cr_; }
 
+  // value is -1 when pointing to seq start
   inline int32_t idx() const { return idx_; }
 
   // move the pointer to point to idx entry
@@ -83,7 +84,7 @@ class NodeCursor {
   const SeqNode* seq_node_;
   ChunkLoader* chunk_loader_;
   // the index of pointed elements
-  //   can be -1 when pointing to seq start
+  // can be -1 when pointing to seq start
   int32_t idx_;
 };
 

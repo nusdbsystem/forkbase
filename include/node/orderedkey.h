@@ -31,7 +31,7 @@ class OrderedKey {
   // encode OrderedKey into buffer
   // given buffer capacity > numBytes
   size_t encode(byte_t* buffer) const;
-  bool isByValue() const {return by_value_; }
+  inline bool byValue() const { return by_value_; }
 
   bool operator>(const OrderedKey& otherKey) const;
   bool operator<(const OrderedKey& otherKey) const;

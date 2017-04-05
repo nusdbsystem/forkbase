@@ -138,11 +138,12 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
     size_t first_segment_offset = kMetaLogSize;
     // only a free list
     AppendInteger(meta, first_segment_offset);
-    LOG(INFO) << "init the meta segment";
+    LOG(INFO) << "init meta segment";
     FdWriteThenSync(fd, meta, kMetaLogSize);
 
+    LOG(INFO) << "init data segments...";
     for (int i = 0; i < kNumSegments; ++i) {
-      LOG(INFO) << "init the " << i << "-th segment";
+      DLOG(INFO) << "init the " << i << "-th segment";
       size_t prev_segment_offset = 0, next_segment_offset = 0;
       if (i > 0)
         prev_segment_offset = (i - 1) * kSegmentSize + kMetaLogSize;
@@ -151,6 +152,7 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
       AppendInteger(segment, prev_segment_offset, next_segment_offset);
       FdWriteThenSync(fd, segment, kSegmentSize);
     }
+    LOG(INFO) << "init segments done"; 
   }
 
   CHECK_GE(fd, 0);

@@ -83,9 +83,8 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
       isFixedEntryLen_(isFixedEntryLen) {
   if (cursor_->parent() != nullptr) {
     // non-leaf builder must work on MetaNode, which is of var len entry
-    parent_builder_ =
-        new NodeBuilder(cursor_->parent(), level + 1,
-                        Singleton<MetaChunker>::Instance(), false);
+    parent_builder_ = new NodeBuilder(cursor_->parent(), level + 1,
+                          Singleton<MetaChunker>::Instance(), false);
   }
   Resume();
 }
@@ -115,7 +114,6 @@ void NodeBuilder::Resume() {
 void NodeBuilder::AppendSegmentEntries(const Segment* entry_seg) {
   commited_ = false;
   // DLOG(INFO) << "Append Seg # Entries: " << entry_seg->numEntries();
-
   appended_segs_.push_back(entry_seg);
 }
 
@@ -198,14 +196,14 @@ const Chunk* NodeBuilder::Commit() {
 // parent metaentry that points the old chunk
 // shall be invalid and replaced by the created metaentry
 // of the new chunk.
-#ifdef DEBUG
-  size_t skip_p = parent_builder()->SkipEntries(1);
+// #ifdef DEBUG
+//   size_t skip_p = parent_builder()->SkipEntries(1);
 // if (skip_p > 0) {
 //   DLOG(INFO) << "Level: " << level_ << " Skipping Parents At Start. ";
 // }
-#else
+// #else
   parent_builder()->SkipEntries(1);
-#endif  // define DEBUG
+// #endif  // define DEBUG
   // First thing to do:
   // Detect Boundary and Make Chunk
   //   Pass the MetaEntry to upper level builder
@@ -228,7 +226,7 @@ const Chunk* NodeBuilder::Commit() {
     // if this builder is created by child recursively
     // Must have been appended some entries by child
     CHECK(!appended_segs_.empty());
-    cur_seg = appended_segs_.at(0);
+    cur_seg = appended_segs_[0];
     segIdx = 1;
   }
 
@@ -276,7 +274,7 @@ const Chunk* NodeBuilder::Commit() {
     }
 
     if (segIdx < appended_segs_.size()) {
-      cur_seg = appended_segs_.at(segIdx);
+      cur_seg = appended_segs_[segIdx];
       ++segIdx;
     } else {
       break;

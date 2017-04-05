@@ -10,13 +10,13 @@
 
 namespace ustore {
 
-const ChunkInfo MetaChunker::make(
-    const std::vector<const Segment*>& segments) const {
+const ChunkInfo MetaChunker::make(const std::vector<const Segment*>& segments)
+    const {
   size_t chunk_num_bytes = sizeof(uint32_t);
   size_t num_entries = 0;
   for (size_t i = 0; i < segments.size(); i++) {
-    chunk_num_bytes += segments.at(i)->numBytes();
-    num_entries += segments.at(i)->numEntries();
+    chunk_num_bytes += segments[i]->numBytes();
+    num_entries += segments[i]->numEntries();
   }
 
   Chunk* chunk = new Chunk(ChunkType::kMeta, chunk_num_bytes);
@@ -49,9 +49,7 @@ const ChunkInfo MetaChunker::make(
   size_t me_num_bytes;
   const byte_t* me_data = MetaEntry::Encode(
       total_num_leaves, total_num_elements, chunk->hash(), key, &me_num_bytes);
-
   const VarSegment* meta_seg = new VarSegment(me_data, me_num_bytes, {0});
-
   return {chunk, meta_seg};
 }
 
@@ -101,7 +99,7 @@ uint64_t MetaNode::entryOffset(size_t idx) const {
   CHECK_GE(idx, 0);
   CHECK_LT(idx, numEntries());
 
-  return offsets_.at(idx);
+  return offsets_[idx];
 }
 
 void MetaNode::PrecomputeOffset() {
@@ -170,7 +168,7 @@ const byte_t* MetaEntry::Encode(uint32_t num_leaves, uint64_t num_elements,
   std::memcpy(data + kNumLeavesOffset, &num_leaves, sizeof(uint32_t));
   std::memcpy(data + kNumElementsOffset, &num_elements, sizeof(uint64_t));
   std::memcpy(data + kHashOffset, data_hash.value(), Hash::kByteLength);
-  *(data + kKeyOffset) = static_cast<byte_t>(key.isByValue());
+  *(data + kKeyOffset) = static_cast<byte_t>(key.byValue());
   key.encode(data + kKeyOffset + sizeof(bool));
 
   *encode_len = num_bytes;

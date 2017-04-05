@@ -21,7 +21,7 @@ class UBlob : private Noncopyable {
   // Create the ChunkLoader
   static const UBlob* Create(const byte_t* data, size_t num_bytes);
 
-  ~UBlob() {}
+  ~UBlob() { delete root_node_; }
 
   // Return the number of bytes in this Blob
   inline size_t size() const { return root_node_->numElements(); }

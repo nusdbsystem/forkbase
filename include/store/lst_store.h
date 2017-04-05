@@ -98,11 +98,11 @@ class LSTStore
   ~LSTStore();
 
   inline size_t GetFreeSpaceMajor() {
-    return kSegmentSize - ::ustore::Hash::kByteLength - major_segment_offset_;
+    return kSegmentSize - Hash::kByteLength - major_segment_offset_;
   }
 
   inline size_t GetFreeSpaceMinor() {
-    return kSegmentSize - ::ustore::Hash::kByteLength - minor_segment_offset_;
+    return kSegmentSize - Hash::kByteLength - minor_segment_offset_;
   }
   void GC() {}
   void Load(void*);

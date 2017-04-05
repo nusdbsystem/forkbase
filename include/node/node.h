@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "chunk/chunk.h"
-#include "node/orderedkey.h"
 #include "node/chunker.h"
+#include "node/orderedkey.h"
 #include "types/type.h"
 
 namespace ustore {
@@ -98,8 +98,8 @@ class MetaNode : public SeqNode {
 
 class MetaChunker : public Chunker {
  public:
-  const ChunkInfo make(
-      const std::vector<const Segment*>& segments) const override;
+  const ChunkInfo make(const std::vector<const Segment*>& segments) const
+      override;
 };
 
 class MetaEntry {

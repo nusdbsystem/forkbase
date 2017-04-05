@@ -25,7 +25,7 @@ include(cmake/Utils.cmake)
 
 # --- [ Options
 OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
-OPTION(USE_LEVELDB "Use LevelDB as chunk storage" ON)
+OPTION(USE_LEVELDB "Use LevelDB as chunk storage" OFF)
 OPTION(TEST_NODEBUILDER "Test node builder" ON)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
 

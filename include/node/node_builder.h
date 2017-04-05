@@ -17,6 +17,8 @@
 namespace ustore {
 class NodeBuilder {
  public:
+  // TODO(wangji): if a chunker is binded to only fixed or unfixed length,
+  //               it is better to move isFixedEntryLen inside chunker impl
   // Perform operation at idx-th element at leaf rooted at root_hash
   static NodeBuilder* NewNodeBuilderAtIndex(const Hash& root_hash, size_t idx,
                                             ChunkLoader* chunk_loader,
@@ -28,7 +30,6 @@ class NodeBuilder {
                                           ChunkLoader* chunk_loader,
                                           const Chunker* chunker,
                                           bool isFixedEntryLen);
-
   // Construct a node builder to construct a fresh new Prolly Tree
   explicit NodeBuilder(const Chunker* chunker, bool isFixedEntryLen);
 
@@ -79,32 +80,22 @@ class NodeBuilder {
   // create an empty segment pointing data from current cursor
   Segment* SegAtCursor() const;
 
-  size_t numAppendSegs() const { return appended_segs_.size(); }
+  inline size_t numAppendSegs() const { return appended_segs_.size(); }
   // Access the parent builder.
   // Construct a new one, if not exists.
   NodeBuilder* parent_builder();
 
-  /////////////////////////////////////////////////////////////////////////
-  // Private Members
  private:
   NodeCursor* cursor_;  // shall be deleted during destruction
-
   NodeBuilder* parent_builder_;  // shall be deleted during destruction
-
   // a vector of appended segments for chunking
   std::vector<const Segment*> appended_segs_;
-
   Segment* pre_cursor_seg_;  // shall be deleted during destruction
-
   RollingHasher* rhasher_;  // shall be deleted
-  bool commited_ = true;    // false if exists operation to commit
-
+  bool commited_ = true;  // false if exists operation to commit
   size_t num_skip_entries_ = 0;
-
   size_t level_ = 0;
-
   const Chunker* chunker_;
-
   // whether the built entry is fixed length
   // type blob: true
   const bool isFixedEntryLen_;
