@@ -83,7 +83,7 @@ uint64_t MetaNode::numElementsUntilEntry(size_t entry_idx) const {
 const byte_t* MetaNode::data(size_t idx) const {
   // Skip num_entries field (4 bytes) at MetaNode head
   size_t byte_offset = entryOffset(idx);
-  return chunk_->m_data() + byte_offset;
+  return chunk_->data() + byte_offset;
 }
 
 size_t MetaNode::len(size_t idx) const {
