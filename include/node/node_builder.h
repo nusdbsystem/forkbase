@@ -4,6 +4,7 @@
 #define USTORE_NODE_NODE_BUILDER_H_
 
 #include <cstddef>
+#include <memory>
 #include <vector>
 #include <utility>
 
@@ -13,9 +14,10 @@
 #include "node/rolling_hash.h"
 #include "store/chunk_loader.h"
 #include "types/type.h"
+#include "utils/noncopyable.h"
 
 namespace ustore {
-class NodeBuilder {
+class NodeBuilder : Noncopyable{
  public:
   // TODO(wangji): if a chunker is binded to only fixed or unfixed length,
   //               it is better to move isFixedEntryLen inside chunker impl
@@ -63,7 +65,8 @@ class NodeBuilder {
   //   to upper builders to append
   // reset the rolling hasher
   // return the created chunk
-  const Chunk* HandleBoundary(const std::vector<const Segment*>& segments);
+  std::unique_ptr<const Chunk> HandleBoundary(
+                                 const std::vector<const Segment*>& segments);
   // Two things to do:
   //  * Populate the rolling hash with preceding elements before cursor point
   //      until its window size filled up
@@ -77,8 +80,9 @@ class NodeBuilder {
     return cursor_ == nullptr && numAppendSegs() <= 1;
   }
 
-  // create an empty segment pointing data from current cursor
-  Segment* SegAtCursor() const;
+  // Create an empty segment pointing data from current cursor
+  //   This created segs are pushed to created_segs of this nodebuilder
+  Segment* SegAtCursor();
 
   inline size_t numAppendSegs() const { return appended_segs_.size(); }
   // Access the parent builder.
@@ -90,7 +94,10 @@ class NodeBuilder {
   NodeBuilder* parent_builder_;  // shall be deleted during destruction
   // a vector of appended segments for chunking
   std::vector<const Segment*> appended_segs_;
-  Segment* pre_cursor_seg_;  // shall be deleted during destruction
+  // A vector to collect and own segs created by this nodebuilder
+  std::vector<std::unique_ptr<const Segment> > created_segs_;
+
+  Segment* pre_cursor_seg_;
   RollingHasher* rhasher_;  // shall be deleted
   bool commited_ = true;  // false if exists operation to commit
   size_t num_skip_entries_ = 0;

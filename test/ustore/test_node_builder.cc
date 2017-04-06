@@ -155,7 +155,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
 
     const ustore::BlobChunker* chunker =
         ustore::Singleton<ustore::BlobChunker>::Instance();
-    ustore::NodeBuilder builder = ustore::NodeBuilder(chunker, true);
+    ustore::NodeBuilder builder(chunker, true);
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.SpliceElements(0, &seg);
     root_chunk = builder.Commit();
@@ -313,7 +313,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
 
     const ustore::Chunker* chunker =
         ustore::Singleton<ustore::BlobChunker>::Instance();
-    ustore::NodeBuilder builder = ustore::NodeBuilder(chunker, true);
+    ustore::NodeBuilder builder(chunker, true);
 
     ustore::FixedSegment seg(original_content_, original_num_bytes_, 1);
 
@@ -332,7 +332,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     std::memcpy(special_content_, original_content_, special_num_bytes_);
 
     ustore::FixedSegment sseg(special_content_, special_num_bytes_, 1);
-    ustore::NodeBuilder abuilder = ustore::NodeBuilder(chunker, true);
+    ustore::NodeBuilder abuilder(chunker, true);
 
     abuilder.SpliceElements(0, &sseg);
     special_root_ = abuilder.Commit();

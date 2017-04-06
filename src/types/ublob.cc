@@ -18,7 +18,7 @@ const UBlob* UBlob::Load(const Hash& root_hash) {
 
 const UBlob* UBlob::Create(const byte_t* data, size_t num_bytes) {
   std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
-  NodeBuilder nb = NodeBuilder(Singleton<BlobChunker>::Instance(), true);
+  NodeBuilder nb(Singleton<BlobChunker>::Instance(), true);
 
   FixedSegment seg(data, num_bytes, 1);
   nb.SpliceElements(0, &seg);

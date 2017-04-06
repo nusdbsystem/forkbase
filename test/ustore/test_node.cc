@@ -113,8 +113,7 @@ TEST(MetaNode, Basic) {
                                        ::Instance()->make({&seg1, &seg2});
 
   // test on the created chunk
-  const ustore::Chunk* chunk = chunk_info.chunk;
-  ustore::MetaNode mnode(chunk);
+  ustore::MetaNode mnode(chunk_info.chunk.get());
 
   EXPECT_FALSE(mnode.isLeaf());
   EXPECT_EQ(3, mnode.numEntries());
@@ -146,10 +145,9 @@ TEST(MetaNode, Basic) {
   ustore::OrderedKey ckey2(20);
   EXPECT_TRUE(mnode.GetChildHashByKey(ckey2, &idx).empty());
   ASSERT_EQ(3, idx);
-  delete chunk;
 
   // Test on the created metaentry
-  const ustore::Segment* meta_seg = chunk_info.meta_seg;
+  auto meta_seg = std::move(chunk_info.meta_seg);
   ASSERT_EQ(1, meta_seg->numEntries());
 
   const ustore::byte_t* me_data = meta_seg->entry(0);
@@ -161,8 +159,6 @@ TEST(MetaNode, Basic) {
   EXPECT_EQ(num_elements1 + num_elements2 + num_elements3, me.numElements());
   EXPECT_EQ(me.orderedKey(), key3);
 
-  delete[] me_data;
   delete[] seg_data1;
   delete[] seg_data2;
-  delete meta_seg;
 }

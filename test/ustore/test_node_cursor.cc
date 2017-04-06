@@ -90,9 +90,8 @@ TEST(NodeCursor, Tree) {
       ustore::Singleton<ustore::MetaChunker>::Instance()->make(
           {&seg_a, &seg_b});
   // delete the useless MetaEntry bytes
-  delete cm_info.meta_seg;
 
-  const ustore::Chunk* cm = cm_info.chunk;
+  const ustore::Chunk* cm = cm_info.chunk.release();
 
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
 
@@ -187,4 +186,5 @@ TEST(NodeCursor, Tree) {
   delete cur3;
   delete cur4;
   delete cur5;
+  delete cm;
 }

@@ -45,22 +45,16 @@ TEST(BlobChunker, Basic) {
   ustore::ChunkInfo chunk_info = ustore::Singleton<ustore::BlobChunker>
                                        ::Instance()->make({&seg1, &seg2});
 
-  const ustore::Chunk* chunk = chunk_info.chunk;
-  const ustore::Segment* meta_seg = chunk_info.meta_seg;
 
   const ustore::byte_t r[] = "aabbb";
-  EXPECT_EQ(0, memcmp(chunk->data(), r, 5));
+  EXPECT_EQ(0, memcmp(chunk_info.chunk->data(), r, 5));
 
-  ASSERT_EQ(1, meta_seg->numEntries());
-  const ustore::byte_t* me_data = meta_seg->entry(0);
+  ASSERT_EQ(1, chunk_info.meta_seg->numEntries());
+  const ustore::byte_t* me_data = chunk_info.meta_seg->entry(0);
   ustore::MetaEntry me(me_data);
 
-  EXPECT_EQ(chunk->hash(), me.targetHash());
-  EXPECT_EQ(meta_seg->numBytes(), me.numBytes());
+  EXPECT_EQ(chunk_info.chunk->hash(), me.targetHash());
+  EXPECT_EQ(chunk_info.meta_seg->numBytes(), me.numBytes());
   EXPECT_EQ(5, me.numElements());
   EXPECT_EQ(1, me.numLeaves());
-
-  delete[] me_data;
-  delete meta_seg;
-  delete chunk;
 }

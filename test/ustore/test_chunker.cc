@@ -38,9 +38,6 @@ TEST(FixedChunker, Split) {
   EXPECT_EQ(5, splits.second->numEntries());
   EXPECT_EQ(0, memcmp(data, splits.second->data(), 5));
 
-  delete splits.first;
-  delete splits.second;
-
   // Split at Middle
   splits = seg1.Split(2);
   EXPECT_EQ(2, splits.first->numBytes());
@@ -51,9 +48,6 @@ TEST(FixedChunker, Split) {
   EXPECT_EQ(3, splits.second->numEntries());
   EXPECT_EQ(0, memcmp(data + 2, splits.second->data(), 3));
 
-  delete splits.first;
-  delete splits.second;
-
   // Split at End
   splits = seg1.Split(5);
   EXPECT_EQ(5, splits.first->numBytes());
@@ -61,8 +55,6 @@ TEST(FixedChunker, Split) {
   EXPECT_EQ(0, memcmp(data, splits.first->data(), 5));
   EXPECT_TRUE(splits.second->empty());
 
-  delete splits.first;
-  delete splits.second;
 }
 
 TEST(VarChunker, Basic) {
@@ -107,9 +99,6 @@ TEST(VarChunker, Split) {
   EXPECT_EQ(3, splits.second->numEntries());
   EXPECT_EQ(0, memcmp(data, splits.second->data(), 5));
 
-  delete splits.first;
-  delete splits.second;
-
   // Split at Middle
   splits = seg1.Split(2);
   EXPECT_EQ(3, splits.first->numBytes());
@@ -120,9 +109,6 @@ TEST(VarChunker, Split) {
   EXPECT_EQ(1, splits.second->numEntries());
   EXPECT_EQ(0, memcmp(data + 3, splits.second->data(), 2));
 
-  delete splits.first;
-  delete splits.second;
-
   // Split at End
   splits = seg1.Split(3);
   EXPECT_EQ(5, splits.first->numBytes());
@@ -130,6 +116,4 @@ TEST(VarChunker, Split) {
   EXPECT_EQ(0, memcmp(data, splits.first->data(), 5));
   EXPECT_TRUE(splits.second->empty());
 
-  delete splits.first;
-  delete splits.second;
 }

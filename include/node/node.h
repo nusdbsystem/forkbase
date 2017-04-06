@@ -98,7 +98,7 @@ class MetaNode : public SeqNode {
 
 class MetaChunker : public Chunker {
  public:
-  const ChunkInfo make(const std::vector<const Segment*>& segments) const
+  ChunkInfo make(const std::vector<const Segment*>& segments) const
       override;
 };
 

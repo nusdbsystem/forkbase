@@ -41,6 +41,7 @@ NodeBuilder::NodeBuilder(size_t level, const Chunker* chunker,
     : cursor_(nullptr),
       parent_builder_(nullptr),
       appended_segs_(),
+      created_segs_(),
       pre_cursor_seg_(nullptr),
 #ifdef TEST_NODEBUILDER
       rhasher_(RollingHasher::TestHasher()),
@@ -59,7 +60,6 @@ NodeBuilder::NodeBuilder(const Chunker* chunker, bool isFixedEntryLen)
     : NodeBuilder(0, chunker, isFixedEntryLen) {}
 
 NodeBuilder::~NodeBuilder() {
-  delete pre_cursor_seg_;
   delete rhasher_;
   delete cursor_;
   delete parent_builder_;
@@ -70,6 +70,7 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
     : cursor_(new NodeCursor(*cursor)),
       parent_builder_(nullptr),
       appended_segs_(),
+      created_segs_(),
       pre_cursor_seg_(nullptr),
 #ifdef TEST_NODEBUILDER
       rhasher_(RollingHasher::TestHasher()),
@@ -90,6 +91,7 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
 }
 
 void NodeBuilder::Resume() {
+
   int32_t original_idx = cursor_->idx();
 
   // place the cursor at start of SeqNode
@@ -152,7 +154,7 @@ size_t NodeBuilder::SkipEntries(size_t num_elements) {
 void NodeBuilder::SpliceElements(size_t num_delete,
                                  const Segment* element_seg) {
   if (!commited_) {
-    LOG(FATAL) << "There exists some uncommited_ operations. "
+    LOG(FATAL) << "There exists some uncommited operations. "
                << " Commit them first before doing any operation. ";
   }
   commited_ = false;
@@ -162,7 +164,6 @@ void NodeBuilder::SpliceElements(size_t num_delete,
     LOG(WARNING) << "Actual Remove " << actual_delete << " elements instead of "
                  << num_delete;
   }
-
   AppendSegmentEntries(element_seg);
 }
 
@@ -174,16 +175,17 @@ NodeBuilder* NodeBuilder::parent_builder() {
   return parent_builder_;
 }
 
-const Chunk* NodeBuilder::HandleBoundary(
+std::unique_ptr<const Chunk> NodeBuilder::HandleBoundary(
     const std::vector<const Segment*>& segments) {
   // DLOG(INFO) << "Start Handing Boundary. ";
-  ChunkInfo chunk_info = chunker_->make(segments);
+  ChunkInfo chunk_info = std::move(chunker_->make(segments));
 
-  const Chunk* chunk = chunk_info.chunk;
+  std::unique_ptr<const Chunk> chunk = std::move(chunk_info.chunk);
   // Dump chunk into storage here
   store::GetChunkStore()->Put(chunk->hash(), *chunk);
 
-  parent_builder()->AppendSegmentEntries(chunk_info.meta_seg);
+  parent_builder()->AppendSegmentEntries(chunk_info.meta_seg.get());
+  created_segs_.push_back(std::move(chunk_info.meta_seg));
 
   rhasher_->ClearLastBoundary();
 
@@ -207,7 +209,7 @@ const Chunk* NodeBuilder::Commit() {
   // First thing to do:
   // Detect Boundary and Make Chunk
   //   Pass the MetaEntry to upper level builder
-  const Chunk* last_created_chunk = nullptr;
+  std::unique_ptr<const Chunk> last_created_chunk;
   // iterate newly appended entries for making chunk
   //   only detecing a boundary, make a chunk
   // DLOG(INFO) << "\n\nCommit Level: " << level_
@@ -230,12 +232,6 @@ const Chunk* NodeBuilder::Commit() {
     segIdx = 1;
   }
 
-  // a container to collect the segments created by this node builder
-  //   to be deleted in the end
-  // TODO(pingcheng||wangji): Do it in some elegant way!!
-
-  std::vector<const Segment*> created_segs;
-
   while (true) {
     CHECK(cur_seg != nullptr);
     bool hasBoundary = false;
@@ -245,20 +241,17 @@ const Chunk* NodeBuilder::Commit() {
                           cur_seg->entryNumBytes(entryIdx));
 
       if (!rhasher_->CrossedBoundary()) continue;
-
       // Start to handle chunking
       hasBoundary = true;
-      auto split_segs = cur_seg->Split(entryIdx + 1);
-      chunk_segs.push_back(split_segs.first);
 
-      delete last_created_chunk;
+      auto splitted_segs = cur_seg->Split(entryIdx + 1);
+      chunk_segs.push_back(splitted_segs.first.get());
       last_created_chunk = HandleBoundary(chunk_segs);
       chunk_segs.clear();
 
-      cur_seg = split_segs.second;
-
-      created_segs.push_back(split_segs.first);
-      created_segs.push_back(split_segs.second);
+      cur_seg = splitted_segs.second.get();
+      created_segs_.push_back(std::move(splitted_segs.first));
+      created_segs_.push_back(std::move(splitted_segs.second));
 
       break;
     }  // end of for entryIdx
@@ -269,9 +262,7 @@ const Chunk* NodeBuilder::Commit() {
 
     // No boundary at this segment
     //   append into chunk_segs
-    if (!cur_seg->empty()) {
-      chunk_segs.push_back(cur_seg);
-    }
+    if (!cur_seg->empty()) {chunk_segs.push_back(cur_seg); }
 
     if (segIdx < appended_segs_.size()) {
       cur_seg = appended_segs_[segIdx];
@@ -309,9 +300,8 @@ const Chunk* NodeBuilder::Commit() {
           parent_builder()->SkipEntries(1);
           // DLOG(INFO) << "Skip Parent During Concat."
           //           << " Cur Seg Bytes: " << work_seg->numBytes();
-
+          CHECK(!work_seg->empty());
           chunk_segs.push_back(work_seg);
-          created_segs.push_back(work_seg);
 
           work_seg = SegAtCursor();
         }  // end if advanced2NextChunk
@@ -325,10 +315,8 @@ const Chunk* NodeBuilder::Commit() {
       //   if detecing boundary
       if (rhasher_->CrossedBoundary()) {
         // Create chunk seg
+        CHECK(!work_seg->empty());
         chunk_segs.push_back(work_seg);
-        created_segs.push_back(work_seg);
-
-        delete last_created_chunk;
         last_created_chunk = HandleBoundary(chunk_segs);
         chunk_segs.clear();
 
@@ -349,10 +337,8 @@ const Chunk* NodeBuilder::Commit() {
       if (!work_seg->empty()) {
         chunk_segs.push_back(work_seg);
       }
-      created_segs.push_back(work_seg);
     }
 
-    delete last_created_chunk;
     last_created_chunk = HandleBoundary(chunk_segs);
     chunk_segs.clear();
   }  // end if
@@ -360,33 +346,28 @@ const Chunk* NodeBuilder::Commit() {
   //   because current NodeBuilder is allowed to commit for once.
   // commited_ = true;
 
-  CHECK(last_created_chunk != nullptr);
+  CHECK(last_created_chunk);
   // upper node builder would build a tree node with a single metaentry
   //   This node will be excluded from final prolley tree
   // DLOG(INFO) << "Finish one level commiting.\n";
   const Chunk* root_chunk;
   if (parent_builder()->isInvalidNode()) {
-    root_chunk = last_created_chunk;
+    root_chunk = last_created_chunk.release();
   } else {
     root_chunk = parent_builder()->Commit();
   }
-  // delete the parent segments appended by current builder
-  for (const Segment* seg : parent_builder()->appended_segs_) {
-    // these data are allocated by this node builder during chunking
-    delete[] seg->data();
-    delete seg;
-  }
-  for (const Segment* seg : created_segs) {
-    delete seg;
-  }
+
   return root_chunk;
 }
 
-Segment* NodeBuilder::SegAtCursor() const {
+Segment* NodeBuilder::SegAtCursor() {
+  Segment* seg;
   if (isFixedEntryLen_) {
-    return new FixedSegment(cursor_->current(), cursor_->numCurrentBytes());
+    seg = new FixedSegment(cursor_->current(), cursor_->numCurrentBytes());
   } else {
-    return new VarSegment(cursor_->current());
+    seg = new VarSegment(cursor_->current());
   }
+  created_segs_.push_back(std::unique_ptr<const Segment>(seg));
+  return seg;
 }
 }  // namespace ustore
