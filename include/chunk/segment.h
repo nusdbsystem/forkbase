@@ -20,8 +20,7 @@ class Segment {
 
   //   The segment owns the data using this constructor.
   Segment(std::unique_ptr<const byte_t[]> data, size_t num_bytes)
-      : own_(std::move(data)), data_(own_.get()),
-        num_bytes_(num_bytes) {}
+      : own_(std::move(data)), data_(own_.get()), num_bytes_(num_bytes) {}
 
   // create an empty segment, to be prolonged later
   //   The segment does not own the data using this constructor.
@@ -45,7 +44,7 @@ class Segment {
   // The splitted segments does not own the data
   virtual std::pair<std::unique_ptr<const Segment>,
                     std::unique_ptr<const Segment> >
-      Split(size_t idx) const = 0;
+  Split(size_t idx) const = 0;
   // Append this segment on the chunk buffer
   //   number of appended bytes = numBytes()
   // Current implementation is the same for VarSegment and FixSegment
@@ -65,8 +64,8 @@ class Segment {
 class FixedSegment : public Segment {
   // Entries in FixedSegment are of the same number of bytes
  public:
-  FixedSegment(std::unique_ptr<const byte_t[]> data,
-               size_t num_bytes, size_t bytes_per_entry)
+  FixedSegment(std::unique_ptr<const byte_t[]> data, size_t num_bytes,
+               size_t bytes_per_entry)
       : Segment(std::move(data), num_bytes),
         bytes_per_entry_(bytes_per_entry) {}
   FixedSegment(const byte_t* data, size_t num_bytes, size_t bytes_per_entry)
@@ -84,7 +83,7 @@ class FixedSegment : public Segment {
   }
 
   std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment> >
-    Split(size_t idx) const override;
+  Split(size_t idx) const override;
 
  private:
   size_t bytes_per_entry_;
@@ -96,10 +95,10 @@ class VarSegment : public Segment {
   VarSegment(std::unique_ptr<const byte_t[]> data, size_t num_bytes,
              std::vector<size_t>&& entry_offsets)
       : Segment(std::move(data), num_bytes),
-        entry_offsets_(entry_offsets) {}
+        entry_offsets_(std::move(entry_offsets)) {}
   VarSegment(const byte_t* data, size_t num_bytes,
              std::vector<size_t>&& entry_offsets)
-      : Segment(data, num_bytes), entry_offsets_(entry_offsets) {}
+      : Segment(data, num_bytes), entry_offsets_(std::move(entry_offsets)) {}
   // An empty var segment to be prolonged later
   explicit VarSegment(const byte_t* data) : Segment(data) {}
   ~VarSegment() override {}
@@ -110,7 +109,7 @@ class VarSegment : public Segment {
   inline size_t numEntries() const override { return entry_offsets_.size(); }
 
   std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment> >
-    Split(size_t idx) const override;
+  Split(size_t idx) const override;
 
  private:
   std::vector<size_t> entry_offsets_;
