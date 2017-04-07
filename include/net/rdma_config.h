@@ -1,18 +1,20 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_NET_RDMA_CONFIG_H_
-#define USTORE_USTORE_NET_RDMA_CONFIG_H_
+#ifndef USTORE_NET_RDMA_CONFIG_H_
+#define USTORE_NET_RDMA_CONFIG_H_
 
 #ifdef USE_RDMA
 
 #include <vector>
 #include <string>
 
-using std::vector;
-using std::stringstream;
-using std::string;
 
 namespace ustore {
+
+using std::string;
+using std::stringstream;
+using std::vector;
+
 #define MAX_CQ_EVENTS 1024
 
 #define MIN_RESERVED_FDS 32
@@ -127,4 +129,4 @@ typedef void* raddr;
 }  // end namespace ustore
 
 #endif
-#endif  // USTORE_USTORE_NET_RDMA_CONFIG_H_
+#endif  // USTORE_NET_RDMA_CONFIG_H_

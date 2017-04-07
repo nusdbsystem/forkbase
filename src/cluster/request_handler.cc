@@ -1,13 +1,14 @@
 // Copyright (c) 2017 The Ustore Authors.
-#include <mutex>
+
 #include "cluster/request_handler.h"
+
 #include "proto/messages.pb.h"
 #include "utils/logging.h"
-using std::unique_lock;
+
 namespace ustore {
 
 Message* RequestHandler::WaitForResponse() {
-  unique_lock<mutex> lck(res_blob_->lock);
+  std::unique_lock<std::mutex> lck(res_blob_->lock);
   res_blob_->has_msg = false;
   while (!(res_blob_->has_msg))
     (res_blob_->condition).wait(lck);
@@ -30,7 +31,7 @@ Message* RequestHandler::Put(const Slice &key, const Slice &value,
                   const Slice &branch, const Hash &version,
                   bool forward, bool force) {
   // find worker
-  node_id_t dest = workers_->get_worker(key);
+  node_id_t dest = workers_->GetWorker(key);
   // use the heap, since the message can be big
   UStoreMessage *request = new UStoreMessage();
   // header
@@ -58,7 +59,7 @@ Message* RequestHandler::Put(const Slice &key, const Slice &value,
 Message* RequestHandler::Get(const Slice &key, const Slice &branch,
                                               const Hash &version) {
   // find worker
-  node_id_t dest = workers_->get_worker(key);
+  node_id_t dest = workers_->GetWorker(key);
   UStoreMessage request;
   // header
   request.set_type(UStoreMessage::GET_REQUEST);
@@ -75,7 +76,7 @@ Message* RequestHandler::Get(const Slice &key, const Slice &branch,
 Message* RequestHandler::Branch(const Slice &key, const Slice &old_branch,
                   const Hash &version, const Slice &new_branch) {
   // find worker
-  node_id_t dest = workers_->get_worker(key);
+  node_id_t dest = workers_->GetWorker(key);
   UStoreMessage request;
   // header
   request.set_type(UStoreMessage::BRANCH_REQUEST);
@@ -97,7 +98,7 @@ Message* RequestHandler::Branch(const Slice &key, const Slice &old_branch,
 Message* RequestHandler::Move(const Slice &key, const Slice &old_branch,
                 const Slice &new_branch) {
   // find worker
-  node_id_t dest = workers_->get_worker(key);
+  node_id_t dest = workers_->GetWorker(key);
   UStoreMessage request;
   // header
   request.set_type(UStoreMessage::MOVE_REQUEST);
@@ -119,7 +120,7 @@ Message* RequestHandler::Merge(const Slice &key, const Slice &value,
                  const Hash &ref_version, bool forward,
                  bool force) {
   // find worker
-  node_id_t dest = workers_->get_worker(key);
+  node_id_t dest = workers_->GetWorker(key);
   UStoreMessage request;
   // header
   request.set_type(UStoreMessage::MERGE_REQUEST);
@@ -143,19 +144,19 @@ Message* RequestHandler::Merge(const Slice &key, const Slice &value,
 }
 
 
-WorkerList::WorkerList(const vector<RangeInfo> &workers) {
+WorkerList::WorkerList(const std::vector<RangeInfo> &workers) {
   Update(workers);
 }
 
-bool WorkerList::Update(const vector<RangeInfo> &workers) {
+bool WorkerList::Update(const std::vector<RangeInfo> &workers) {
   workers_.clear();
-  for (RangeInfo ri : workers)
+  for (const RangeInfo& ri : workers)
     workers_.push_back(ri);
   return true;
 }
 
-node_id_t WorkerList::get_worker(const Slice& key) {
-  for (RangeInfo ri : workers_)
+node_id_t WorkerList::GetWorker(const Slice& key) {
+  for (const RangeInfo& ri : workers_)
     if (Slice(ri.start()) > key)
       return ri.address();
 

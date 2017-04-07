@@ -33,7 +33,7 @@ OPTION(USE_RDMA "Use RDMA" OFF)
 
 if(TEST_NODEBUILDER)
   message(STATUS "Test Node Builder with Specific Rolling Hasher")
-  ADD_DEFINITIONS(-DTEST_NODEBUILDER)
+  add_definitions(-DTEST_NODEBUILDER)
 endif()
 
 if(USE_SHA256)
@@ -42,7 +42,8 @@ if(USE_SHA256)
 endif()
 
 if(ENABLE_DEBUG)
-  ADD_DEFINITIONS(-DDEBUG)
+  message(STATUS "Use debug mode")
+  add_definitions(-DDEBUG)
 endif()
 if(MOCK_TEST)
   message(STATUS "Use MockWorker")

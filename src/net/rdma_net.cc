@@ -2,6 +2,8 @@
 
 #ifdef USE_RDMA
 
+#include "net/rdma_net.h"
+
 #include <cstring>
 #include <cassert>
 #include <climits>
@@ -10,7 +12,6 @@
 #include "net/ae.h"
 #include "net/anet.h"
 #include "utils/logging.h"
-#include "net/rdma_net.h"
 #include "net/rdma_config.h"
 
 namespace ustore {

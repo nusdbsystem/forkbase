@@ -33,8 +33,8 @@ class Worker : private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Get(const Slice& key, const Slice& branch, const Hash& version,
-            Value* value) const;
+  virtual ErrorCode Get(const Slice& key, const Slice& branch,
+                        const Hash& version, Value* value) const;
 
   /**
    * @brief Write data with its specified version and branch.
@@ -46,7 +46,7 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-           const Hash& previous, Hash* version);
+                        const Hash& previous, Hash* version);
 
   /**
    * @brief Create a new branch for the data.
@@ -58,7 +58,7 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
-                   const Hash& version, const Slice& new_branch);
+                           const Hash& version, const Slice& new_branch);
 
   /**
    * @brief Move data to another branch.
@@ -69,7 +69,7 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Move(const Slice& key, const Slice& old_branch,
-                 const Slice& new_branch);
+                         const Slice& new_branch);
 
   /**
    * @brief Merge two branches of the data.
@@ -81,9 +81,9 @@ class Worker : private Noncopyable {
    * @param ref_version The referring version of data.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Slice& ref_branch, const Hash& ref_version,
-                  Hash* version);
+  virtual ErrorCode Merge(const Slice& key, const Value& val,
+                          const Slice& tgt_branch, const Slice& ref_branch,
+                          const Hash& ref_version, Hash* version);
 
  private:
   const WorkerID id_;
@@ -112,7 +112,7 @@ class MockWorker : public Worker {
                   const Slice& ref_branch, const Hash& ref_version,
                   Hash* version);
  private:
-  int count_put_; // number of requests seen so far
+  int count_put_;  // number of requests seen so far
   int count_merge_;
 };
 #endif

@@ -5,7 +5,6 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <unordered_map>
 #include <vector>
 #include "net/net.h"
 #include "proto/messages.pb.h"
@@ -14,10 +13,6 @@
 
 namespace ustore {
 
-using std::unordered_map;
-using std::condition_variable;
-using std::mutex;
-using std::vector;
 using google::protobuf::Message;
 
 class WorkerList;
@@ -33,8 +28,8 @@ class WorkerList;
  * response is set.
  */
 struct ResponseBlob {
-  mutex lock;
-  condition_variable condition;
+  std::mutex lock;
+  std::condition_variable condition;
   bool has_msg;
   Message *message = nullptr;
 };
@@ -75,9 +70,9 @@ struct ResponseBlob {
 
 class RequestHandler {
  public:
-  explicit RequestHandler(const node_id_t& master, int id, Net *net,
-                          ResponseBlob *blob, WorkerList* workers)
-      : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
+  RequestHandler(const node_id_t& master, int id, Net *net, ResponseBlob *blob,
+      WorkerList* workers)
+    : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
   ~RequestHandler();
 
   /**
@@ -111,7 +106,8 @@ class RequestHandler {
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
   Net *net_ = nullptr;  // for network communication
-  WorkerList *workers_ = nullptr;  // lists of workers to which requests are dispatched
+  WorkerList *workers_ = nullptr;  // lists of workers to which requests are
+                                   // dispatched
   ResponseBlob *res_blob_ = nullptr;  // response blob
 };
 
@@ -126,24 +122,24 @@ class RequestHandler {
  */
 class WorkerList {
  public:
-    explicit WorkerList(const vector<RangeInfo> &workers);
+    explicit WorkerList(const std::vector<RangeInfo> &workers);
     ~WorkerList() {}
 
     /**
      * Invoked whenever the list is out of date.
      */
-    bool Update(const vector<RangeInfo> &workers);
+    bool Update(const std::vector<RangeInfo> &workers);
     /**
      * Return the ID (address string) of the worker node whose key range
      * contains the given key.
      * It always returns a valid ID, but the node may have gone offline. The calling
      * function is responsible for updating the list.
      */
-    node_id_t get_worker(const Slice& key);
+    node_id_t GetWorker(const Slice& key);
 
  private:
     // should be sorted by the range
-    vector<RangeInfo> workers_;
+    std::vector<RangeInfo> workers_;
 };
 
 /**
@@ -158,7 +154,7 @@ class WorkerList {
 class Workload {
  public:
   // return true if the request is processed successfully
-  virtual bool NextRequest(RequestHandler *reqhl)=0;
+  virtual bool NextRequest(RequestHandler *reqhl) = 0;
 };
 
 class RandomWorkload {
@@ -169,10 +165,10 @@ class RandomWorkload {
 
 class TestWorkload : public Workload {
  public:
-  TestWorkload(const int nthreads, const int nreqs);
+  TestWorkload(int nthreads, int nreqs);
   bool NextRequest(RequestHandler *reqhl);
  private:
-  vector<int> req_idx_;
+  std::vector<int> req_idx_;
   int nthreads_, nrequests_;
 };
 }  // namespace ustore

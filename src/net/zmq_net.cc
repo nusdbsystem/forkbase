@@ -1,22 +1,24 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include "net/zmq_net.h"
+
 #include <czmq.h>
 #include <gflags/gflags.h>
 #include <string>
 #include <set>
-// #include <glog/logging.h>
 #include "utils/logging.h"
 
-using std::string;
-using std::vector;
+namespace ustore {
 
 /**
  * Implementation of Network communication via ZeroMQ
  */
 DEFINE_string(inproc, "inproc://test", "");
+
 #define POLL_TIMEOUT 10
-namespace ustore {
+
+using std::string;
+using std::vector;
 
 // server thread to process messages
 void ServerThread(void *args, zctx_t *ctx, void *pipe);
@@ -133,7 +135,7 @@ ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest)
   send_sock_ = zsocket_new(static_cast<zctx_t*>(send_ctx_), ZMQ_DEALER);
   string host = "tcp://" + dest_id_;
   CHECK_EQ(zsocket_connect(send_sock_, "%s", host.c_str()), 0);
-  LOG(ERROR)<< "Connected to " << host;
+  LOG(INFO)<< "Connected to " << host;
 }
 
 ZmqNetContext::~ZmqNetContext() {

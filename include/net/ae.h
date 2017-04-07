@@ -30,8 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef USTORE_USTORE_NET_AE_H_
-#define USTORE_USTORE_NET_AE_H_
+#ifndef USTORE_NET_AE_H_
+#define USTORE_NET_AE_H_
 
 #include <time.h>
 
@@ -129,4 +129,4 @@ int aeGetSetSize(aeEventLoop *eventLoop);
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize);
 void startEventLoop(aeEventLoop *el);
 
-#endif  // USTORE_USTORE_NET_AE_H_
+#endif  // USTORE_NET_AE_H_

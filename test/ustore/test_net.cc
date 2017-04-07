@@ -34,7 +34,7 @@ class TestCallBack : public CallBack {
   TestCallBack(void* handler = nullptr): CallBack(handler) {};
   void operator()(const void *msg, int size, const node_id_t& source) {
     ((char*) msg)[size] = '\0';
-    LOG(WARNING)<< "received " << (char*)msg << ", expect " << source;
+    DLOG(INFO)<< "received " << (char*)msg << ", expect " << source;
     EXPECT_TRUE(!strcmp(static_cast<const char*>(msg),
                 static_cast<const char*>(source.c_str())));
   }

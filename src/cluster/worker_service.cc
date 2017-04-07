@@ -1,9 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors
-#include <iostream>
-#include <algorithm>
-#include <mutex>
-#include <fstream>
+
 #include "cluster/worker_service.h"
+
+#include <algorithm>
+#include <iostream>
+#include <fstream>
 #include "utils/config.h"
 #include "spec/slice.h"
 #include "hash/hash.h"
@@ -12,14 +13,11 @@
 #include "worker/worker.h"
 #include "utils/logging.h"
 
-using std::sort;
-using std::unique_lock;
-using std::ifstream;
 namespace ustore {
 
-class WSCallBack: public CallBack {
+class WSCallBack : public CallBack {
  public:
-  WSCallBack(void* handler): CallBack(handler) {};
+  explicit WSCallBack(void* handler) : CallBack(handler) {}
   void operator()(const void *msg, int size, const node_id_t& source) override {
     (reinterpret_cast<WorkerService *>(handler_))->HandleRequest(
                                         msg, size, source);
@@ -32,14 +30,14 @@ WorkerService::~WorkerService() {
   delete worker_;
 }
 
-int WorkerService::range_cmp(RangeInfo a, RangeInfo b) {
+int WorkerService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
   return Slice(a.start()) < Slice(b.start());
 }
 
 // for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void WorkerService::Init() {
   // init the network: connects to the workers
-  ifstream fin(Config::WORKER_FILE, ifstream::in);
+  std::ifstream fin(Config::WORKER_FILE, std::ifstream::in);
   CHECK(fin);
   node_id_t worker_addr;
   Hash h;
@@ -60,16 +58,17 @@ void WorkerService::Init() {
   }
   fin.close();
 
-  sort(ranges_.begin(), ranges_.end(), range_cmp);
-
+  std::sort(ranges_.begin(), ranges_.end(), range_cmp);
   // add address of the client service
-  ifstream fin_cs(Config::CLIENTSERVICE_FILE, ifstream::in);
+  std::ifstream fin_cs(Config::CLIENTSERVICE_FILE, std::ifstream::in);
   CHECK(fin_cs);
   node_id_t cs_addr;
   while (fin_cs >> cs_addr)
     addresses_.push_back(cs_addr);
   fin_cs.close();
 
+// TODO(zhanghao): define a static function in net.cc to create net instance,
+// instead of directly use USE_RDMA flag everywhere
 #ifdef USE_RDMA
   net_ = new RdmaNet(node_addr_, Config::RECV_THREADS);
 #else
@@ -77,7 +76,6 @@ void WorkerService::Init() {
 #endif
 
   fin.close();
-
   // init worker
 #ifdef MOCK_TEST
   worker_ = new MockWorker(worker_id);

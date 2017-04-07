@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_NET_ZMQ_NET_H_
-#define USTORE_USTORE_NET_ZMQ_NET_H_
+#ifndef USTORE_NET_ZMQ_NET_H_
+#define USTORE_NET_ZMQ_NET_H_
 
 #include <mutex>
 #include "net/net.h"
@@ -50,4 +50,4 @@ class ZmqNetContext : public NetContext {
 
 }  // namespace ustore
 
-#endif  // USTORE_USTORE_NET_ZMQ_NET_H_
+#endif  // USTORE_NET_ZMQ_NET_H_

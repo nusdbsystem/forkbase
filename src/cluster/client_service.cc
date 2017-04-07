@@ -1,24 +1,23 @@
 // Copyright (c) 2017 The Ustore Authors
+
+#include "cluster/client_service.h"
+
+#include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <thread>
-#include <fstream>
-#include <algorithm>
-#include "cluster/client_service.h"
-#include "utils/config.h"
-#include "net/zmq_net.h"
 #include "net/rdma_net.h"
+#include "net/zmq_net.h"
+#include "utils/config.h"
 #include "utils/logging.h"
-
-using std::sort;
-using std::thread;
-using std::unique_lock;
-using std::ifstream;
 
 namespace ustore {
 
-class CSCallBack: public CallBack {
+using std::thread;
+
+class CSCallBack : public CallBack {
  public:
-  CSCallBack(void* handler): CallBack(handler) {};
+  explicit CSCallBack(void* handler) : CallBack(handler) {}
   void operator()(const void *msg, int size, const node_id_t& source) override {
     (reinterpret_cast<ClientService *>(handler_))->HandleResponse(
                                         msg, size, source);
@@ -32,17 +31,17 @@ ClientService::~ClientService() {
   delete net_;
 }
 
-int ClientService::range_cmp(RangeInfo a, RangeInfo b) {
+int ClientService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
   return Slice(a.start()) < Slice(b.start());
 }
 
 // for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void ClientService::Init() {
   // init the network: connects to the workers
-  ifstream fin(Config::WORKER_FILE);
+  std::ifstream fin(Config::WORKER_FILE);
   CHECK(fin);
   node_id_t worker_addr;
-  vector<RangeInfo> workers;
+  std::vector<RangeInfo> workers;
   Hash h;
   while (fin >> worker_addr) {
     RangeInfo rif;
@@ -52,8 +51,7 @@ void ClientService::Init() {
     workers.push_back(rif);
     addresses_.push_back(worker_addr);
   }
-
-  sort(workers.begin(), workers.end(), ClientService::range_cmp);
+  std::sort(workers.begin(), workers.end(), ClientService::range_cmp);
 
 #ifdef USE_RDMA
   net_ = new RdmaNet(node_addr_, Config::RECV_THREADS);
@@ -64,17 +62,14 @@ void ClientService::Init() {
 
   // init worker list
   workers_ = new WorkerList(workers);
-
   // init response queue
   for (int i = 0; i < Config::SERVICE_THREADS; i++)
     responses_.push_back(new ResponseBlob());
 }
 
 void ClientService::Start() {
-  vector<thread> client_threads;
-
+  std::vector<thread> client_threads;
   net_->CreateNetContexts(addresses_);
-
   cb_ = new CSCallBack(this);
   net_->RegisterRecv(cb_);
 #ifdef USE_RDMA
@@ -86,7 +81,7 @@ void ClientService::Start() {
 
   for (int i = 0; i < Config::SERVICE_THREADS; i++)
     client_threads.push_back(thread(&ClientService::ClientThread, this,
-                                      master_, i));
+                                    master_, i));
   is_running_ = true;
   for (int i=0; i < Config::SERVICE_THREADS; i++)
     client_threads[i].join();
@@ -99,7 +94,7 @@ void ClientService::HandleResponse(const void *msg, int size,
   ResponseBlob *res_blob = responses_[ustore_msg->source()];
 
   res_blob->message = ustore_msg;
-  unique_lock<mutex> lck(res_blob->lock);
+  std::unique_lock<std::mutex> lck(res_blob->lock);
   res_blob->has_msg = true;
   (res_blob->condition).notify_all();
 }
@@ -111,8 +106,7 @@ void ClientService::Stop() {
 
 void ClientService::ClientThread(const node_id_t& master, int thread_id) {
   RequestHandler *reqhl = new RequestHandler(master, thread_id, net_,
-                                         responses_[thread_id], workers_);
-
+                                             responses_[thread_id], workers_);
   while (is_running_ && workload_->NextRequest(reqhl)) {}
 }
 }  // namespace ustore

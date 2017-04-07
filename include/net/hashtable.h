@@ -10,16 +10,14 @@
 #include <exception>
 #include <unordered_map>
 
+// TODO(zhanghao): need to clean these code, we do not have this flag
+// TODO(zhanghao): why not use std lib for hashtable ?
 #ifdef USE_COCKOOHASH
 
 #include "../lib/libcuckoo/src/cuckoohash_map.hh"
 #include "../lib/libcuckoo/src/city_hasher.hh"
 #include "net/murmur_hasher.h"
 
-using std::mutex;
-using std::array;
-using std::string;
-using std::exception;
 
 const size_t lock_array_size = 1 << 16;
 
@@ -33,9 +31,9 @@ class HashTable : public cuckoohash_map<Key, T, CityHasher<Key>> {
 #endif
 
  public:
-  HashTable(string name = "DEFAULT_HASHTABLE_NAME", size_t n = DEFAULT_SIZE,
-            double mlf = DEFAULT_MINIMUM_LOAD_FACTOR, size_t mhp =
-                NO_MAXIMUM_HASHPOWER)
+  HashTable(std::string name = "DEFAULT_HASHTABLE_NAME",
+            size_t n = DEFAULT_SIZE, double mlf = DEFAULT_MINIMUM_LOAD_FACTOR,
+            size_t mhp = NO_MAXIMUM_HASHPOWER)
       : name(name),
 #ifdef USE_CITYHASH
         cuckoohash_map<Key, T, CityHasher<Key>>::cuckoohash_map(n, mlf, mhp)
@@ -57,7 +55,7 @@ class HashTable : public cuckoohash_map<Key, T, CityHasher<Key>> {
     T ret;
     try {
       ret = this->find(key);
-    } catch (const exception& e) {
+    } catch (const std::exception& e) {
       printf("cannot find the key for hash table %s (%s)", name.c_str(),
              e.what());
       assert(false);
@@ -66,8 +64,8 @@ class HashTable : public cuckoohash_map<Key, T, CityHasher<Key>> {
   }
 
  private:
-  array<LockWrapper, lock_array_size> lock_;
-  string name;
+  std::array<LockWrapper, lock_array_size> lock_;
+  std::string name;
 };
 
 template<typename Key, typename T>

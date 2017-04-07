@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_NET_NET_H_
-#define USTORE_USTORE_NET_NET_H_
+#ifndef USTORE_NET_NET_H_
+#define USTORE_NET_NET_H_
 
 #include <string>
 #include <unordered_map>
@@ -11,7 +11,7 @@
 
 namespace ustore {
 
-typedef std::string node_id_t;
+using node_id_t = std::string;
 
 /**
  * Callback functor that is invoked on receiving of a message.
@@ -115,4 +115,4 @@ class NetContext {
 
 }  // namespace ustore
 
-#endif  // USTORE_USTORE_NET_NET_H_
+#endif  // USTORE_NET_NET_H_

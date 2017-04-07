@@ -48,6 +48,9 @@ ENDFOREACH()
 AUX_SOURCE_DIRECTORY(chunk chunk_source)
 LIST(APPEND ustore_srcs ${chunk_source})
 
+AUX_SOURCE_DIRECTORY(cluster cluster_source)
+LIST(APPEND ustore_srcs ${cluster_source})
+
 AUX_SOURCE_DIRECTORY(hash hash_source)
 LIST(APPEND ustore_srcs ${hash_source})
 
@@ -69,11 +72,6 @@ LIST(APPEND ustore_srcs ${utils_source})
 AUX_SOURCE_DIRECTORY(worker worker_source)
 LIST(APPEND ustore_srcs ${worker_source})
 
-AUX_SOURCE_DIRECTORY(net net_source)
-LIST(APPEND ustore_srcs ${net_source})
-
-AUX_SOURCE_DIRECTORY(cluster cluster_source)
-LIST(APPEND ustore_srcs ${cluster_source})
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 ADD_DEPENDENCIES(ustore_objs copy_protobuf)
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_NET_RDMA_NET_H_
-#define USTORE_USTORE_NET_RDMA_NET_H_
+#ifndef USTORE_NET_RDMA_NET_H_
+#define USTORE_NET_RDMA_NET_H_
 
 #ifdef USE_RDMA
 
@@ -263,4 +263,4 @@ class RdmaNetResourceFactory:
 
 #endif
 
-#endif  // USTORE_USTORE_NET_RDMA_NET_H_
+#endif  // USTORE_NET_RDMA_NET_H_
