@@ -15,19 +15,17 @@ ChunkInfo BlobChunker::make(const std::vector<const Segment*>& segments)
     chunk_num_bytes += segments[i]->numBytes();
     num_entries += segments[i]->numEntries();
   }
-  auto chunk = std::unique_ptr<Chunk>(new Chunk(ChunkType::kBlob,
-                                                      chunk_num_bytes));
+  std::unique_ptr<Chunk> chunk(new Chunk(ChunkType::kBlob, chunk_num_bytes));
   size_t seg_offset = 0;
   for (const Segment* seg : segments) {
     seg->AppendForChunk(chunk->m_data() + seg_offset);
     seg_offset += seg->numBytes();
   }
   size_t me_num_bytes;
-  auto meta_data = std::unique_ptr<const byte_t[]>(
-                    MetaEntry::Encode(1, num_entries, chunk->hash(),
-                                      OrderedKey(0), &me_num_bytes));
-  auto meta_seg = std::unique_ptr<const Segment>(
-                    new VarSegment(std::move(meta_data), me_num_bytes, {0}));
+  std::unique_ptr<const byte_t[]> meta_data(MetaEntry::Encode(
+      1, num_entries, chunk->hash(), OrderedKey(0), &me_num_bytes));
+  std::unique_ptr<const Segment> meta_seg(
+      new VarSegment(std::move(meta_data), me_num_bytes, {0}));
   return {std::move(chunk), std::move(meta_seg)};
 }
 

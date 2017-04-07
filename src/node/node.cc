@@ -19,8 +19,7 @@ ChunkInfo MetaChunker::make(const std::vector<const Segment*>& segments)
     num_entries += segments[i]->numEntries();
   }
 
-  auto chunk = std::unique_ptr<Chunk>(
-                 new Chunk(ChunkType::kMeta, chunk_num_bytes));
+  std::unique_ptr<Chunk> chunk(new Chunk(ChunkType::kMeta, chunk_num_bytes));
   // encode num_entries
   std::memcpy(chunk->m_data(), &num_entries, sizeof(uint32_t));
 
@@ -48,10 +47,10 @@ ChunkInfo MetaChunker::make(const std::vector<const Segment*>& segments)
   const OrderedKey key = pre_me->orderedKey();
   delete pre_me;
   size_t me_num_bytes;
-  auto meta_data = std::unique_ptr<const byte_t[]>(MetaEntry::Encode(
+  std::unique_ptr<const byte_t[]> meta_data(MetaEntry::Encode(
       total_num_leaves, total_num_elements, chunk->hash(), key, &me_num_bytes));
-  auto meta_seg = std::unique_ptr<const Segment>(
-                    new VarSegment(std::move(meta_data), me_num_bytes, {0}));
+  std::unique_ptr<const Segment> meta_seg(
+      new VarSegment(std::move(meta_data), me_num_bytes, {0}));
   return {std::move(chunk), std::move(meta_seg)};
 }
 

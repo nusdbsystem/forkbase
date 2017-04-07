@@ -29,8 +29,7 @@ size_t FixedSegment::entryNumBytes(size_t idx) const {
   return bytes_per_entry_;
 }
 
-std::pair<std::unique_ptr<const Segment>,
-          std::unique_ptr<const Segment> >
+std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment>>
     FixedSegment::Split(size_t idx) const {
   CHECK(!empty());
   CHECK_LE(0, idx);
@@ -43,12 +42,10 @@ std::pair<std::unique_ptr<const Segment>,
     postData = entry(idx);
   }
   std::pair<std::unique_ptr<const Segment>,
-            std::unique_ptr<const Segment> > split_segs = {
-      std::unique_ptr<const Segment>(new FixedSegment(preData,
-                                                      preSegBytes,
+            std::unique_ptr<const Segment>> split_segs = {
+      std::unique_ptr<const Segment>(new FixedSegment(preData, preSegBytes,
                                                       bytes_per_entry_)),
-      std::unique_ptr<const Segment>(new FixedSegment(postData,
-                                                      postSegBytes,
+      std::unique_ptr<const Segment>(new FixedSegment(postData, postSegBytes,
                                                       bytes_per_entry_))};
   return split_segs;
 }
@@ -73,7 +70,7 @@ inline size_t VarSegment::entryNumBytes(size_t idx) const {
 }
 
 std::pair<std::unique_ptr<const Segment>,
-          std::unique_ptr<const Segment> > VarSegment::Split(size_t idx) const {
+          std::unique_ptr<const Segment>> VarSegment::Split(size_t idx) const {
   CHECK(!empty());
   CHECK_LE(0, idx);
   CHECK_GE(numEntries(), idx);
@@ -94,13 +91,11 @@ std::pair<std::unique_ptr<const Segment>,
     postOffsets.push_back(entry_offsets_[i] - entry_offsets_[idx]);
   }
   std::pair<std::unique_ptr<const Segment>,
-            std::unique_ptr<const Segment> > split_segs = {
-      std::unique_ptr<const Segment>(new VarSegment(preData,
-                                              preSegBytes,
-                                              std::move(preOffsets))),
-      std::unique_ptr<const Segment>(new VarSegment(postData,
-                                              postSegBytes,
-                                              std::move(postOffsets)))};
+            std::unique_ptr<const Segment>> split_segs = {
+      std::unique_ptr<const Segment>(new VarSegment(preData, preSegBytes,
+                                                    std::move(preOffsets))),
+      std::unique_ptr<const Segment>(new VarSegment(postData, postSegBytes,
+                                                    std::move(postOffsets)))};
   return split_segs;
 }
 

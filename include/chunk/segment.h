@@ -43,7 +43,7 @@ class Segment {
   //   if idx = numEntries(), the second segment is empty
   // The splitted segments does not own the data
   virtual std::pair<std::unique_ptr<const Segment>,
-                    std::unique_ptr<const Segment> >
+                    std::unique_ptr<const Segment>>
   Split(size_t idx) const = 0;
   // Append this segment on the chunk buffer
   //   number of appended bytes = numBytes()
@@ -82,7 +82,7 @@ class FixedSegment : public Segment {
     return num_bytes_ / bytes_per_entry_;
   }
 
-  std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment> >
+  std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment>>
   Split(size_t idx) const override;
 
  private:
@@ -108,7 +108,7 @@ class VarSegment : public Segment {
   size_t entryNumBytes(size_t idx) const override;
   inline size_t numEntries() const override { return entry_offsets_.size(); }
 
-  std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment> >
+  std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment>>
   Split(size_t idx) const override;
 
  private:

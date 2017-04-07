@@ -91,9 +91,7 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
 }
 
 void NodeBuilder::Resume() {
-
   int32_t original_idx = cursor_->idx();
-
   // place the cursor at start of SeqNode
   cursor_->seek(0);
   pre_cursor_seg_ = SegAtCursor();
@@ -178,17 +176,15 @@ NodeBuilder* NodeBuilder::parent_builder() {
 std::unique_ptr<const Chunk> NodeBuilder::HandleBoundary(
     const std::vector<const Segment*>& segments) {
   // DLOG(INFO) << "Start Handing Boundary. ";
-  ChunkInfo chunk_info = std::move(chunker_->make(segments));
+  ChunkInfo chunk_info = chunker_->make(segments);
 
-  std::unique_ptr<const Chunk> chunk = std::move(chunk_info.chunk);
+  std::unique_ptr<const Chunk> chunk(std::move(chunk_info.chunk));
   // Dump chunk into storage here
   store::GetChunkStore()->Put(chunk->hash(), *chunk);
 
   parent_builder()->AppendSegmentEntries(chunk_info.meta_seg.get());
   created_segs_.push_back(std::move(chunk_info.meta_seg));
-
   rhasher_->ClearLastBoundary();
-
   return chunk;
 }
 
@@ -218,7 +214,6 @@ const Chunk* NodeBuilder::Commit() {
 
   // vector of segments to make a chunk
   std::vector<const Segment*> chunk_segs;
-
   // The current seg to work on chunking
   const Segment* cur_seg = pre_cursor_seg_;
   size_t segIdx = 0;  // point to the next seg to handle after cur_seg

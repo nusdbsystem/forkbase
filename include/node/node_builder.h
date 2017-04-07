@@ -17,7 +17,7 @@
 #include "utils/noncopyable.h"
 
 namespace ustore {
-class NodeBuilder : Noncopyable{
+class NodeBuilder : Noncopyable {
  public:
   // TODO(wangji): if a chunker is binded to only fixed or unfixed length,
   //               it is better to move isFixedEntryLen inside chunker impl
@@ -95,7 +95,7 @@ class NodeBuilder : Noncopyable{
   // a vector of appended segments for chunking
   std::vector<const Segment*> appended_segs_;
   // A vector to collect and own segs created by this nodebuilder
-  std::vector<std::unique_ptr<const Segment> > created_segs_;
+  std::vector<std::unique_ptr<const Segment>> created_segs_;
 
   Segment* pre_cursor_seg_;
   RollingHasher* rhasher_;  // shall be deleted

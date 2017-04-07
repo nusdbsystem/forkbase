@@ -3,6 +3,7 @@
 #ifndef USTORE_CHUNK_CHUNKER_H_
 #define USTORE_CHUNK_CHUNKER_H_
 
+#include <memory>
 #include <vector>
 
 #include "chunk/chunk.h"
