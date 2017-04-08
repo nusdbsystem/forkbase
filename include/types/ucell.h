@@ -30,6 +30,9 @@ class UCell : private Noncopyable {
     return node_->preHash(second);
   }
 
+  // hash of this ucell
+  inline const Hash hash() const { return node_->hash(); }
+
  private:
   // Private contructor to be called by Load() or Create()
   explicit UCell(const Chunk* chunk);

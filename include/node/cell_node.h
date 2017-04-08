@@ -47,6 +47,9 @@ class CellNode {
   // the request second prehash does not exist
   const Hash preHash(bool second = false) const;
 
+  // hash of this node
+  inline const Hash hash() const { return chunk_->hash(); }
+
  private:
   static constexpr size_t kUTypeOffset = 0;
   static constexpr size_t kMergedOffset = kUTypeOffset + sizeof(UType);

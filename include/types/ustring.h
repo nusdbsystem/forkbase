@@ -26,6 +26,8 @@ class UString : private Noncopyable {
   //   return string length
   // TODO(pingcheng): only need to provide non-copy read api
   inline const size_t data(byte_t* buffer) const { return node_->Copy(buffer); }
+  // hash of this ucell
+  inline const Hash hash() const { return node_->hash(); }
 
  private:
   // Private construcstor to create an instance based on the root chunk data

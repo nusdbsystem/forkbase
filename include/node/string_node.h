@@ -28,6 +28,9 @@ class StringNode {
 // return the number of bytes copied.
   size_t Copy(byte_t* buffer) const;
 
+  // hash of this node
+  inline const Hash hash() const { return chunk_->hash(); }
+
  private:
   const Chunk* chunk_;
 };
