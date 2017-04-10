@@ -19,6 +19,9 @@ class Slice {
   // share data from c++ string
   explicit Slice(const std::string& slice)
       : data_(slice.data()), len_(slice.length()) {}
+  // delete constructor that takes in rvalue std::string
+  //   to avoid the memory space of parameter is released unawares.
+  Slice(std::string&& slice) = delete;
   // share data from c string
   explicit Slice(const char* slice) : data_(slice) {
     len_ = std::strlen(slice);
