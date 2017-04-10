@@ -15,6 +15,7 @@ namespace ustore {
 class Blob {
  public:
   // share data from existing array
+  Blob(const Blob& blob) : data_(blob.data_), size_(blob.size_) {}
   Blob(const byte_t* data, size_t size) : data_(data), size_(size) {}
   ~Blob() {}
 
@@ -22,8 +23,8 @@ class Blob {
   inline const byte_t* data() const { return data_; }
 
  private:
-  size_t size_ = 0;
   const byte_t* data_ = nullptr;
+  size_t size_ = 0;
 };
 }  // namespace ustore
 

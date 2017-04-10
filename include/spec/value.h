@@ -19,42 +19,37 @@ class Value {
   // create empty value
   Value() {}
   // create value from another value
-  Value(const Value& v) {
-    type_ = v.type_;
-    data_ = v.data_;
-  }
+  Value(const Value& v) : type_(v.type_), data_(v.data_), size_(v.size_) {}
   // create value with type String
-  explicit Value(const Slice& v) {
-    type_ = UType::kString;
-    data_ = &v;
-  }
+  explicit Value(const Slice& v)
+      : type_(UType::kString), data_(v.data()), size_(v.len()) {}
   // create value with type Blob
-  explicit Value(const Blob& v) {
-    type_ = UType::kBlob;
-    data_ = &v;
-  }
+  explicit Value(const Blob& v)
+      : type_(UType::kBlob), data_(v.data()), size_(v.size()) {}
   ~Value() {}
 
   inline Value& operator=(const Value& v) {
     type_ = v.type_;
     data_ = v.data_;
+    size_ = v.size_;
     return *this;
   }
 
   inline bool isNull() const { return data_ == nullptr; }
   inline UType type() const { return type_; }
-  inline const Slice& slice() const {
+  inline Slice slice() const {
     CHECK(type_ == UType::kString);
-    return *static_cast<const Slice*>(data_);
+    return Slice(static_cast<const char*>(data_), size_);
   }
-  inline const Blob& blob() const {
+  inline Blob blob() const {
     CHECK(type_ == UType::kBlob);
-    return *static_cast<const Blob*>(data_);
+    return Blob(static_cast<const byte_t*>(data_), size_);
   }
 
  private:
   UType type_;
   const void* data_ = nullptr;
+  size_t size_;
 };
 }  // namespace ustore
 

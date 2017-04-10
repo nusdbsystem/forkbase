@@ -15,16 +15,15 @@ namespace ustore {
  */
 class Slice {
  public:
+  Slice(const Slice& slice) : data_(slice.data_), len_(slice.len_) {}
   // share data from c++ string
-  explicit Slice(const std::string& slice) {
-    len_ = slice.length();
-    data_ = slice.data();
-  }
+  explicit Slice(const std::string& slice)
+      : data_(slice.data()), len_(slice.length()) {}
   // share data from c string
-  explicit Slice(const char* slice) {
+  explicit Slice(const char* slice) : data_(slice) {
     len_ = std::strlen(slice);
-    data_ = slice;
   }
+  Slice(const char* slice, size_t len) : data_(slice), len_(len) {}
   ~Slice() {}
 
   inline bool operator<(const Slice& slice) const {
@@ -46,8 +45,8 @@ class Slice {
   inline const char* data() const { return data_; }
 
  private:
-  size_t len_ = 0;
   const char* data_ = nullptr;
+  size_t len_ = 0;
 };
 }  // namespace ustore
 
