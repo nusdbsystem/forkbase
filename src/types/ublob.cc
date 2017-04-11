@@ -7,7 +7,6 @@
 #include "node/node_builder.h"
 #include "node/blob_node.h"
 #include "utils/logging.h"
-#include "utils/singleton.h"
 
 namespace ustore {
 const UBlob* UBlob::Load(const Hash& root_hash) {
@@ -18,7 +17,7 @@ const UBlob* UBlob::Load(const Hash& root_hash) {
 
 const UBlob* UBlob::Create(const byte_t* data, size_t num_bytes) {
   std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
-  NodeBuilder nb(Singleton<BlobChunker>::Instance(), true);
+  NodeBuilder nb(BlobChunker::Instance(), true);
 
   FixedSegment seg(data, num_bytes, 1);
   nb.SpliceElements(0, &seg);
@@ -41,7 +40,7 @@ const UBlob* UBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
                            size_t num_append) const {
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(
       root_node_->hash(), pos, chunk_loader_.get(),
-      Singleton<BlobChunker>::Instance(), true);
+      BlobChunker::Instance(), true);
 
   FixedSegment seg(data, num_append, 1);
   nb->SpliceElements(num_delete, &seg);

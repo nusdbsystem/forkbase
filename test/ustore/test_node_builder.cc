@@ -15,7 +15,6 @@
 #include "store/chunk_loader.h"
 #include "utils/debug.h"
 #include "utils/logging.h"
-#include "utils/singleton.h"
 
 class NodeBuilderEnv : public ::testing::Test {
  protected:
@@ -153,8 +152,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     original_content_ = new ustore::byte_t[num_original_bytes_];
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
-    const ustore::BlobChunker* chunker =
-        ustore::Singleton<ustore::BlobChunker>::Instance();
+    const ustore::BlobChunker* chunker = ustore::BlobChunker::Instance();
     ustore::NodeBuilder builder(chunker, true);
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.SpliceElements(0, &seg);
@@ -165,8 +163,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
                    size_t num_insert_bytes, size_t num_delete_bytes,
                    bool isVerbose = false) {
     verbose = isVerbose;
-    const ustore::BlobChunker* chunker =
-        ustore::Singleton<ustore::BlobChunker>::Instance();
+    const ustore::BlobChunker* chunker = ustore::BlobChunker::Instance();
     ustore::NodeBuilder* b = ustore::NodeBuilder::NewNodeBuilderAtIndex(
         root_chunk->hash(), splice_idx, loader_, chunker, true);
 
@@ -311,8 +308,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     original_content_ = new ustore::byte_t[original_num_bytes_];
     std::memcpy(original_content_, raw_data, original_num_bytes_);
 
-    const ustore::Chunker* chunker =
-        ustore::Singleton<ustore::BlobChunker>::Instance();
+    const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
     ustore::NodeBuilder builder(chunker, true);
 
     ustore::FixedSegment seg(original_content_, original_num_bytes_, 1);
@@ -324,8 +320,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
   void SetUpSpecialTree() {
     // Construct special tree with both implicit and explicit boundary in the
     // end
-    const ustore::Chunker* chunker =
-        ustore::Singleton<ustore::BlobChunker>::Instance();
+    const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
     // length of first three leaf chunks of above tree
     special_num_bytes_ = 67 + 38 + 193;
     special_content_ = new ustore::byte_t[special_num_bytes_];
@@ -341,8 +336,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
   void test_splice_case(const ustore::Hash& root_hash, size_t splice_idx,
                         const ustore::byte_t* append_data,
                         size_t append_num_bytes, size_t num_delete) {
-    const ustore::Chunker* chunker =
-        ustore::Singleton<ustore::BlobChunker>::Instance();
+    const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
 
     ustore::NodeBuilder* b = ustore::NodeBuilder::NewNodeBuilderAtIndex(
         root_hash, splice_idx, loader_, chunker, true);

@@ -5,7 +5,6 @@
 #include "gtest/gtest.h"
 #include "store/chunk_loader.h"
 #include "store/chunk_store.h"
-#include "utils/singleton.h"
 
 const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 

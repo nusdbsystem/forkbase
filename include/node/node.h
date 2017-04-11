@@ -11,6 +11,7 @@
 #include "chunk/chunker.h"
 #include "node/orderedkey.h"
 #include "types/type.h"
+#include "utils/singleton.h"
 
 namespace ustore {
 class SeqNode {
@@ -96,10 +97,16 @@ class MetaNode : public SeqNode {
   std::vector<size_t> offsets_;
 };
 
-class MetaChunker : public Chunker {
+class MetaChunker : public Singleton<MetaChunker>, public Chunker {
+ friend class Singleton<MetaChunker>;
+
  public:
   ChunkInfo make(const std::vector<const Segment*>& segments) const
       override;
+  ~MetaChunker() {}
+
+ private:
+  MetaChunker() {}
 };
 
 class MetaEntry {

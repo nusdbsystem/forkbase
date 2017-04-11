@@ -23,6 +23,7 @@ class Chunker {
  public:
   virtual ChunkInfo make(
       const std::vector<const Segment*>& segments) const = 0;
+  virtual ~Chunker() {}
 };
 }  // namespace ustore
 #endif  // USTORE_CHUNK_CHUNKER_H_

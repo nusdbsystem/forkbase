@@ -11,13 +11,15 @@
 #include "store/chunk_store.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
+#include "utils/singleton.h"
 
 namespace ustore {
 
-class LDBStore : public ChunkStore, private Noncopyable {
+class LDBStore
+    : private Noncopyable, public Singleton<LDBStore>, public ChunkStore {
+  friend class Singleton<LDBStore>;  
+
  public:
-  LDBStore();
-  explicit LDBStore(const std::string& dbpath);
   ~LDBStore();
   /*
    * store allocates the returned chunck,
@@ -27,6 +29,9 @@ class LDBStore : public ChunkStore, private Noncopyable {
   bool Put(const Hash& key, const Chunk& chunk) override;
 
  private:
+  LDBStore();
+  explicit LDBStore(const std::string& dbpath);
+
   leveldb::DB* db_;
   leveldb::Options opt_;
   leveldb::WriteOptions wr_opt_;

@@ -6,8 +6,6 @@
 
 #include "chunk/chunk.h"
 #include "node/blob_node.h"
-#include "utils/singleton.h"
-#include "utils/logging.h"
 
 const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 
@@ -42,9 +40,8 @@ TEST(BlobChunker, Basic) {
 
   ustore::FixedSegment seg1(r1, 2, 1);
   ustore::FixedSegment seg2(r2, 3, 1);
-  ustore::ChunkInfo chunk_info = ustore::Singleton<ustore::BlobChunker>
-                                       ::Instance()->make({&seg1, &seg2});
-
+  ustore::ChunkInfo chunk_info =
+    ustore::BlobChunker::Instance()->make({&seg1, &seg2});
 
   const ustore::byte_t r[] = "aabbb";
   EXPECT_EQ(0, memcmp(chunk_info.chunk->data(), r, 5));

@@ -7,7 +7,6 @@
 #include "chunk/chunker.h"
 #include "node/cursor.h"
 #include "store/chunk_loader.h"
-#include "utils/singleton.h"
 
 // NOTE: Haven't test GetCursorByKey
 TEST(NodeCursor, SingleNode) {
@@ -87,8 +86,7 @@ TEST(NodeCursor, Tree) {
   ustore::VarSegment seg_b(me_b, mtb_numBytes, {0});
   // Create MetaNode Chunk
   ustore::ChunkInfo cm_info =
-      ustore::Singleton<ustore::MetaChunker>::Instance()->make(
-          {&seg_a, &seg_b});
+      ustore::MetaChunker::Instance()->make({&seg_a, &seg_b});
   // delete the useless MetaEntry bytes
 
   const ustore::Chunk* cm = cm_info.chunk.release();

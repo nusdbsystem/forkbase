@@ -10,7 +10,6 @@
 
 #include "utils/debug.h"
 #include "utils/logging.h"
-#include "utils/singleton.h"
 
 namespace ustore {
 
@@ -85,7 +84,7 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
   if (cursor_->parent() != nullptr) {
     // non-leaf builder must work on MetaNode, which is of var len entry
     parent_builder_ = new NodeBuilder(cursor_->parent(), level + 1,
-                          Singleton<MetaChunker>::Instance(), false);
+                          MetaChunker::Instance(), false);
   }
   Resume();
 }
@@ -168,7 +167,7 @@ void NodeBuilder::SpliceElements(size_t num_delete,
 NodeBuilder* NodeBuilder::parent_builder() {
   if (parent_builder_ == nullptr) {
     parent_builder_ =
-        new NodeBuilder(level_ + 1, Singleton<MetaChunker>::Instance(), false);
+        new NodeBuilder(level_ + 1, MetaChunker::Instance(), false);
   }
   return parent_builder_;
 }

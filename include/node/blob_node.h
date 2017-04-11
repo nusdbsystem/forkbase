@@ -8,13 +8,20 @@
 
 #include "chunk/chunk.h"
 #include "node/node.h"
+#include "utils/singleton.h"
 
 namespace ustore {
 
-class BlobChunker : public Chunker {
+class BlobChunker : public Singleton<BlobChunker>, public Chunker {
+  friend class Singleton<BlobChunker>;
+
  public:
   ChunkInfo make(const std::vector<const Segment*>& segments) const
       override;
+
+ private:
+  BlobChunker() {}
+  ~BlobChunker() {}
 };
 
 class BlobNode : public LeafNode {
