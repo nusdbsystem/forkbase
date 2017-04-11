@@ -3,11 +3,16 @@
 #ifndef USTORE_WORKER_HEAD_VERSION_H_
 #define USTORE_WORKER_HEAD_VERSION_H_
 
+#include <boost/optional.hpp>
+#include <unordered_map>
+#include <unordered_set>
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
+
+using HashOpt = boost::optional<Hash>;
 
 /**
  * @brief Table of head versions of data.
@@ -16,32 +21,38 @@ namespace ustore {
  */
 class HeadVersion : private Noncopyable {
  public:
-  // TODO(linqian): support applications that do not need branch notion, but
-  //  need to retrieve all latest version
-  //  maybe create another LatestHeadVersion class (v.s. BranchHeadVersion)
   HeadVersion() {}
   ~HeadVersion() {}
 
-  /**
-   * @brief Retrieve the head version of data according to the specified
-   *        branch.
-   *
-   * @param key Data key.
-   * @param branch Branch to look for.
-   * @return Head version of data as per request.
-   */
-  const Hash& Get(const Slice& key, const Slice& branch) const;
+  const HashOpt Get(const Slice& key, const Slice& branch) const;
 
-  /**
-   * @brief Update the head version of data according to the specified
-   *        branch.
-   *
-   * @param ver The updating version.
-   * @param key Data key.
-   * @param branch Branch to update.
-   * @return Error code. (0 for success)
-   */
-  void Put(const Slice& key, const Slice& branch, const Hash& version);
+  const std::unordered_set<Hash>& GetLatest(const Slice& key) const;
+
+  void Put(const Slice& key, const Slice& branch, const Hash& ver,
+           const bool is_new_ver = true);
+
+  void Put(const Slice& key, const Hash& old_ver, const Hash& new_ver);
+
+  void Merge(const Slice& key, const Hash& old_ver1, const Hash& old_ver2,
+             const Hash& new_ver);
+
+  void RemoveBranch(const Slice& key, const Slice& branch);
+
+  void RenameBranch(const Slice& key, const Slice& old_branch,
+                    const Slice& new_branch);
+
+  const bool Exists(const Slice& key, const Slice& branch) const;
+
+  const bool IsLatest(const Slice& key, const Hash& ver) const;
+
+  const bool IsBranchHead(const Slice& key, const Slice& branch,
+                          const Hash& ver) const;
+
+  const std::unordered_set<Slice> ListBranch(const Slice& key) const;
+
+ private:
+  std::unordered_map<Slice, std::unordered_map<Slice, Hash>> branch_ver_;
+  std::unordered_map<Slice, std::unordered_set<Hash>> latest_ver_;
 };
 
 }  // namespace ustore

@@ -3,6 +3,7 @@
 #ifndef USTORE_SPEC_BLOB_H_
 #define USTORE_SPEC_BLOB_H_
 
+#include <cstring>
 #include <string>
 #include "types/type.h"
 
@@ -23,6 +24,11 @@ class Blob {
     data_ = blob.data_;
     size_ = blob.size_;
     return *this;
+  }
+
+  inline bool operator==(const Blob& blob) const {
+    if (size_ != blob.size_) return false;
+    return std::memcmp(data_, blob.data_, size_) == 0;
   }
 
   inline size_t size() const { return size_; }

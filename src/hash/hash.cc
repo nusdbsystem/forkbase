@@ -19,37 +19,38 @@ const Hash Hash::kNull(kEmptyBytes);
 
 constexpr char base32alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const std::map<char, byte_t> base32dict = {{'A', 0},
-                                           {'B', 1},
-                                           {'C', 2},
-                                           {'D', 3},
-                                           {'E', 4},
-                                           {'F', 5},
-                                           {'G', 6},
-                                           {'H', 7},
-                                           {'I', 8},
-                                           {'J', 9},
-                                           {'K', 10},
-                                           {'L', 11},
-                                           {'M', 12},
-                                           {'N', 13},
-                                           {'O', 14},
-                                           {'P', 15},
-                                           {'Q', 16},
-                                           {'R', 17},
-                                           {'S', 18},
-                                           {'T', 19},
-                                           {'U', 20},
-                                           {'V', 21},
-                                           {'W', 22},
-                                           {'X', 23},
-                                           {'Y', 24},
-                                           {'Z', 25},
-                                           {'2', 26},
-                                           {'3', 27},
-                                           {'4', 28},
-                                           {'5', 29},
-                                           {'6', 30},
-                                           {'7', 31}};
+  {'B', 1},
+  {'C', 2},
+  {'D', 3},
+  {'E', 4},
+  {'F', 5},
+  {'G', 6},
+  {'H', 7},
+  {'I', 8},
+  {'J', 9},
+  {'K', 10},
+  {'L', 11},
+  {'M', 12},
+  {'N', 13},
+  {'O', 14},
+  {'P', 15},
+  {'Q', 16},
+  {'R', 17},
+  {'S', 18},
+  {'T', 19},
+  {'U', 20},
+  {'V', 21},
+  {'W', 22},
+  {'X', 23},
+  {'Y', 24},
+  {'Z', 25},
+  {'2', 26},
+  {'3', 27},
+  {'4', 28},
+  {'5', 29},
+  {'6', 30},
+  {'7', 31}
+};
 
 void Hash::CopyFrom(const Hash& hash) {
   Alloc();
@@ -115,5 +116,10 @@ void Hash::Compute(const byte_t* data, size_t len) {
   std::copy(fullhash, fullhash + kByteLength, own_.get());
 }
 #endif  // USE_SHA256
+
+std::ostream& operator<<(std::ostream& os, const Hash & obj) {
+  os << obj.value();
+  return os;
+}
 
 }  // namespace ustore

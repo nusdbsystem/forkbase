@@ -3,11 +3,13 @@
 #ifndef USTORE_HASH_HASH_H_
 #define USTORE_HASH_HASH_H_
 
+#include <cstring>
+#include <iostream>
+#include <cstring>
 #include <memory>
 #include <string>
-#include <cstring>
 #include <utility>
-
+#include "hash/murmurhash_ustore.hpp"
 #include "types/type.h"
 #include "utils/logging.h"
 
@@ -85,6 +87,8 @@ class Hash {
   // get a copy that contains own bytes
   Hash Clone() const;
 
+  friend std::ostream& operator<<(std::ostream &, const Hash &);
+
  private:
   static const byte_t kEmptyBytes[kByteLength];
 
@@ -99,4 +103,17 @@ class Hash {
 };
 
 }  // namespace ustore
+
+namespace std {
+template<>
+struct hash<ustore::Hash> {
+  inline size_t operator()(const ::ustore::Hash & obj) const {
+    const auto & hval = obj.value();
+    size_t ret;
+    std::copy(hval, hval + sizeof(ret), reinterpret_cast<::ustore::byte_t*>(&ret));
+    return ret;
+  }
+};
+} // namespace std
+
 #endif  // USTORE_HASH_HASH_H_

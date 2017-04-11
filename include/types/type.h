@@ -8,7 +8,7 @@ namespace ustore {
 typedef unsigned char byte_t;
 
 /*
- * Supported data types 
+ * Supported data types
  */
 enum class UType : byte_t {
   // Primitive types
@@ -46,7 +46,15 @@ enum class ErrorCode : byte_t {
   kUnknownOp = 1,
   kInvalidRange = 2,
   kReadFailed = 3,
-  kWriteFailed = 4
+  kWriteFailed = 4,
+  kBranchExists = 5,
+  kBranchNotExists = 6,
+  kUCellNotfound = 7,
+  kTypeUnsupported = 8,
+  kInvalidParameters = 9,
+  kFailedCreateUCell = 10,
+  kFailedCreateUBlob = 11,
+  kFailedCreateUString = 12
 };
 
 }  // namespace ustore

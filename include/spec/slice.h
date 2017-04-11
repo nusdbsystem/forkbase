@@ -5,20 +5,22 @@
 
 #include <algorithm>
 #include <cstring>
+#include <iostream>
 #include <string>
+#include "hash/murmurhash_ustore.hpp"
 
 namespace ustore {
 
-/*
- * slice is a unified type for c and c++ style strings
- * it only pointer to the head of original string, does not copy the content
+/**
+ * Slice is a unified type for C and C++ style strings.
+ * It only points to the head of original string, does not copy the content.
  */
 class Slice {
  public:
   Slice(const Slice& slice) : data_(slice.data_), len_(slice.len_) {}
   // share data from c++ string
   explicit Slice(const std::string& slice)
-      : data_(slice.data()), len_(slice.length()) {}
+    : data_(slice.data()), len_(slice.length()) {}
   // delete constructor that takes in rvalue std::string
   //   to avoid the memory space of parameter is released unawares.
   Slice(std::string&& slice) = delete;
@@ -50,13 +52,31 @@ class Slice {
     return std::memcmp(data_, slice.data_, len_) == 0;
   }
 
+  inline bool empty() const { return len_ == 0; }
   inline size_t len() const { return len_; }
   inline const char* data() const { return data_; }
+
+  friend std::ostream& operator<<(std::ostream &, const Slice &);
 
  private:
   const char* data_ = nullptr;
   size_t len_ = 0;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Slice & obj) {
+  os << std::string(obj.data(), obj.len());
+  return os;
+}
+
 }  // namespace ustore
+
+namespace std {
+template<>
+struct hash<ustore::Slice> {
+  inline size_t operator()(const ustore::Slice & obj) const {
+    return ustore::MurmurHash(obj.data(), obj.len());
+  }
+};
+} // namespace std
 
 #endif  // USTORE_SPEC_SLICE_H_
