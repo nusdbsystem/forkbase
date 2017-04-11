@@ -19,6 +19,12 @@ class Blob {
   Blob(const byte_t* data, size_t size) : data_(data), size_(size) {}
   ~Blob() {}
 
+  inline Blob& operator=(const Blob& blob) {
+    data_ = blob.data_;
+    size_ = blob.size_;
+    return *this;
+  }
+
   inline size_t size() const { return size_; }
   inline const byte_t* data() const { return data_; }
 

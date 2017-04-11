@@ -29,6 +29,12 @@ class Slice {
   Slice(const char* slice, size_t len) : data_(slice), len_(len) {}
   ~Slice() {}
 
+  inline Slice& operator=(const Slice& slice) {
+    data_ = slice.data_;
+    len_ = slice.len_;
+    return *this;
+  }
+
   inline bool operator<(const Slice& slice) const {
     size_t min_len = std::min(len_, slice.len_);
     int cmp = std::memcmp(data_, slice.data_, min_len);
