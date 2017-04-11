@@ -5,17 +5,30 @@
 
 #include <utility>
 
+#include "thread_model.h"
+
 namespace ustore {
 /// Thread-safe implementation for C++11 according to
 //  http://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
-template <typename T>
-class Singleton {
+
+template <typename T, 
+      template<typename> class ThreadedPolicy = SingleThreaded>
+class Singleton : private ThreadedPolicy<T> {
  public:
-  template<typename... Args>
-  static T* Instance(Args&&... args) {
+  static T* Instance() {
+      static T* data = MakeSingleton();
+      return data;
+  }
+
+  template<typename... Args> 
+  static T* MakeSingleton(Args&&... args) {
     if (data_ == nullptr) {
-        static T data{std::forward<Args>(args)...};
-        data_ = &data;
+        typename ThreadedPolicy<T>::Lock lock();
+        // double check
+        if (data_ == nullptr) {
+            static T data{std::forward<Args>(args)...};
+            data_ = &data;
+        }
     }
     return data_;
   }
@@ -24,8 +37,9 @@ class Singleton {
   static T* data_;
 };
 
-template <typename T>
-T* Singleton<T>::data_ = nullptr;
+template <typename T, 
+      template<typename> class ThreadedPolicy>
+T* Singleton<T, ThreadedPolicy>::data_ = nullptr;
 
 /// Thread Specific Singleton
 /// Each thread will have its own data_ storage.
