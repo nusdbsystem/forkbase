@@ -103,10 +103,10 @@ class MetaChunker : public Singleton<MetaChunker>, public Chunker {
  public:
   ChunkInfo make(const std::vector<const Segment*>& segments) const
       override;
-  ~MetaChunker() {}
 
  private:
   MetaChunker() {}
+  ~MetaChunker() {}
 };
 
 class MetaEntry {
