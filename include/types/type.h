@@ -27,7 +27,8 @@ enum class UType : byte_t {
  * Chunk types in chunk store
  */
 enum class ChunkType : byte_t {
-  kNull = 0, // used in chunk store
+  // used in chunk store
+  kNull = 0,
   // UCell Chunk
   kCell = 1,
   // Meta SeqNode Chunk
@@ -35,7 +36,8 @@ enum class ChunkType : byte_t {
   // Instances of Leaf SeqNode Chunk
   kBlob = 3,
   kString = 4,
-  kInvalid = 5 // indicate the validity
+  // Indicate the validity
+  kInvalid = 5
 };
 
 /*

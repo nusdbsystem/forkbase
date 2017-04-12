@@ -20,13 +20,12 @@ namespace ustore {
 class Worker : private Noncopyable {
  public:
   using WorkerID = uint32_t;
-
   static const Slice kNullBranch;
 
   explicit Worker(const WorkerID& id) : id_(id) {}
   ~Worker() {}
 
-  WorkerID id() const { return id_; }
+  inline WorkerID id() const { return id_; }
 
   /**
    * @brief Obtain the head version of the specified branch.
@@ -44,7 +43,8 @@ class Worker : private Noncopyable {
    * @param key Data key.
    * @return A set of all the latest versions of data.
    */
-  inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key) const {
+  inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
+      const {
     return head_ver_.GetLatest(key);
   }
 
@@ -54,7 +54,7 @@ class Worker : private Noncopyable {
    * @param key Data key. 
    * @param ver Data version.
    */
-  inline const bool IsLatest(const Slice& key, const Hash& ver) const {
+  inline bool IsLatest(const Slice& key, const Hash& ver) const {
     return head_ver_.IsLatest(key, ver);
   }
 
@@ -64,7 +64,7 @@ class Worker : private Noncopyable {
    * @param key Data key.
    * @return A set of all the branches of data.
    */
-  inline const std::unordered_set<Slice> ListBranch(const Slice& key) const {
+  inline std::unordered_set<Slice> ListBranch(const Slice& key) const {
     return head_ver_.ListBranch(key);
   }
 
@@ -77,8 +77,8 @@ class Worker : private Noncopyable {
    * @return True if the given version is the head version of the specified 
    *         branch; otherwise false.
    */
-  inline const bool IsBranchHead(const Slice& key, const Slice& branch,
-                                 const Hash& ver) const {
+  inline bool IsBranchHead(const Slice& key, const Slice& branch,
+                           const Hash& ver) const {
     return head_ver_.IsBranchHead(key, branch, ver);
   }
 
@@ -236,17 +236,12 @@ class Worker : private Noncopyable {
                   const Hash& ref_ver2, Hash* ver);
 
  private:
-  const WorkerID id_;
-  HeadVersion head_ver_;
-
   inline ErrorCode EitherBranchOrVersion(
-    const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
-    const Hash& ver, std::function<ErrorCode()> f_run_for_version) const;
-
+      const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
+      const Hash& ver, std::function<ErrorCode()> f_run_for_version) const;
   inline ErrorCode Read(const UCell* ucell, Value* val) const;
   inline ErrorCode ReadBlob(const UCell* ucell, Value* val) const;
   inline ErrorCode ReadString(const UCell* ucell, Value* val) const;
-
   inline ErrorCode Write(const Slice& key, const Value& val,
                          const Hash& prev_ver1, const Hash& prev_ver2,
                          Hash* ver) const;
@@ -259,6 +254,9 @@ class Worker : private Noncopyable {
   inline ErrorCode CreateUCell(const Slice& key, const UType& utype,
                                const Hash& utype_hash, const Hash& prev_ver1,
                                const Hash& prev_ver2, Hash* ver) const;
+
+  const WorkerID id_;
+  HeadVersion head_ver_;
 };
 
 #ifdef MOCK_TEST

@@ -1,12 +1,14 @@
+// Copyright (c) 2017 The Ustore Authors.
+
 #include <cstddef>
 #include "hash/murmurhash3.h"
 
-#ifndef _HASH_MURMURHASH_USTORE_HPP_
-#define _HASH_MURMURHASH_USTORE_HPP_
+#ifndef USTORE_HASH_MURMURHASH_H_
+#define USTORE_HASH_MURMURHASH_H_
 
 namespace ustore {
 
-static const uint32_t kMurmurHashSeed = 0xbc9f1d34; // from LevelDB
+static const uint32_t kMurmurHashSeed = 0xbc9f1d34;  // from LevelDB
 
 inline const uint32_t MurmurHash32(const void* key, const int& len) {
   uint32_t hash;
@@ -20,4 +22,4 @@ inline const size_t MurmurHash(const void* key, const int& len) {
 
 }  // namespace ustore
 
-#endif // _HASH_MURMURHASH_USTORE_HPP_
+#endif  // USTORE_HASH_MURMURHASH_H_

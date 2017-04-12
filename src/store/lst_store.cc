@@ -340,7 +340,7 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   // if key already exists, return without error
   // CHECK_EQ(this->chunk_map_.count(key.value()), 0);
   if (chunk_map_.find(key.value()) != chunk_map_.end()) {
-    DLOG(WARNING) << "key:" << key.ToBase32() << " already exists";
+    // DLOG(WARNING) << "key:" << key.ToBase32() << " already exists";
     return true;
   }
   

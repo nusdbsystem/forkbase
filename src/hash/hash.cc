@@ -118,7 +118,7 @@ void Hash::Compute(const byte_t* data, size_t len) {
 #endif  // USE_SHA256
 
 std::ostream& operator<<(std::ostream& os, const Hash & obj) {
-  os << obj.value();
+  os << obj.ToBase32();
   return os;
 }
 

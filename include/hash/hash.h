@@ -3,13 +3,13 @@
 #ifndef USTORE_HASH_HASH_H_
 #define USTORE_HASH_HASH_H_
 
+#include <algorithm>
 #include <cstring>
 #include <iostream>
-#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
-#include "hash/murmurhash_ustore.hpp"
+#include "hash/murmurhash.h"
 #include "types/type.h"
 #include "utils/logging.h"
 
@@ -106,14 +106,15 @@ class Hash {
 
 namespace std {
 template<>
-struct hash<ustore::Hash> {
-  inline size_t operator()(const ::ustore::Hash & obj) const {
-    const auto & hval = obj.value();
+struct hash<::ustore::Hash> {
+  inline size_t operator()(const ::ustore::Hash& obj) const {
+    const auto& hval = obj.value();
     size_t ret;
-    std::copy(hval, hval + sizeof(ret), reinterpret_cast<::ustore::byte_t*>(&ret));
+    std::copy(hval, hval + sizeof(ret),
+              reinterpret_cast<::ustore::byte_t*>(&ret));
     return ret;
   }
 };
-} // namespace std
+}  // namespace std
 
 #endif  // USTORE_HASH_HASH_H_

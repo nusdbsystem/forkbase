@@ -29,7 +29,7 @@ class HeadVersion : private Noncopyable {
   const std::unordered_set<Hash>& GetLatest(const Slice& key) const;
 
   void Put(const Slice& key, const Slice& branch, const Hash& ver,
-           const bool is_new_ver = true);
+           bool is_new_ver = true);
 
   void Put(const Slice& key, const Hash& old_ver, const Hash& new_ver);
 
@@ -41,14 +41,14 @@ class HeadVersion : private Noncopyable {
   void RenameBranch(const Slice& key, const Slice& old_branch,
                     const Slice& new_branch);
 
-  const bool Exists(const Slice& key, const Slice& branch) const;
+  bool Exists(const Slice& key, const Slice& branch) const;
 
-  const bool IsLatest(const Slice& key, const Hash& ver) const;
+  bool IsLatest(const Slice& key, const Hash& ver) const;
 
-  const bool IsBranchHead(const Slice& key, const Slice& branch,
-                          const Hash& ver) const;
+  bool IsBranchHead(const Slice& key, const Slice& branch,
+                    const Hash& ver) const;
 
-  const std::unordered_set<Slice> ListBranch(const Slice& key) const;
+  std::unordered_set<Slice> ListBranch(const Slice& key) const;
 
  private:
   std::unordered_map<Slice, std::unordered_map<Slice, Hash>> branch_ver_;

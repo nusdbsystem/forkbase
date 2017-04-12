@@ -7,7 +7,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
-#include "hash/murmurhash_ustore.hpp"
+#include "hash/murmurhash.h"
 
 namespace ustore {
 
@@ -20,10 +20,10 @@ class Slice {
   Slice(const Slice& slice) : data_(slice.data_), len_(slice.len_) {}
   // share data from c++ string
   explicit Slice(const std::string& slice)
-    : data_(slice.data()), len_(slice.length()) {}
+      : data_(slice.data()), len_(slice.length()) {}
   // delete constructor that takes in rvalue std::string
   //   to avoid the memory space of parameter is released unawares.
-  Slice(std::string&& slice) = delete;
+  explicit Slice(std::string&& slice) = delete;
   // share data from c string
   explicit Slice(const char* slice) : data_(slice) {
     len_ = std::strlen(slice);
@@ -56,14 +56,14 @@ class Slice {
   inline size_t len() const { return len_; }
   inline const char* data() const { return data_; }
 
-  friend std::ostream& operator<<(std::ostream &, const Slice &);
+  friend std::ostream& operator<<(std::ostream& os, const Slice& obj);
 
  private:
   const char* data_ = nullptr;
   size_t len_ = 0;
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Slice & obj) {
+inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
   os << std::string(obj.data(), obj.len());
   return os;
 }
@@ -72,11 +72,11 @@ inline std::ostream& operator<<(std::ostream& os, const Slice & obj) {
 
 namespace std {
 template<>
-struct hash<ustore::Slice> {
-  inline size_t operator()(const ustore::Slice & obj) const {
-    return ustore::MurmurHash(obj.data(), obj.len());
+struct hash<::ustore::Slice> {
+  inline size_t operator()(const ::ustore::Slice& obj) const {
+    return ::ustore::MurmurHash(obj.data(), obj.len());
   }
 };
-} // namespace std
+}  // namespace std
 
 #endif  // USTORE_SPEC_SLICE_H_
