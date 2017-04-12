@@ -5,21 +5,24 @@
 
 #include <utility>
 
-#include "thread_model.h"
+#include "utils/thread_model.h"
 
 namespace ustore {
 
-// For thread safety, define USTORE_MULTI_THREADING and pass ClassLevelLockable 
+// For thread safety, define USTORE_MULTI_THREADING and pass ClassLevelLockable
 // as the template template parameter
-template <typename T, 
+template <typename T,
       template<typename> class ThreadedPolicy = SingleThreaded>
 class Singleton : private ThreadedPolicy<T> {
  public:
+  // Get instance
+  // or init it without constructor parameter
   static T* Instance() {
       return data_ == nullptr ? MakeSingleton() : data_;
   }
 
-  template<typename... Args> 
+  // Init instance explicitly with constructor parameters
+  template<typename... Args>
   static T* MakeSingleton(Args&&... args) {
       typename ThreadedPolicy<T>::Lock lock();
       // double check
@@ -34,7 +37,7 @@ class Singleton : private ThreadedPolicy<T> {
   static T* data_;
 };
 
-template <typename T, 
+template <typename T,
       template<typename> class ThreadedPolicy>
 T* Singleton<T, ThreadedPolicy>::data_ = nullptr;
 }  // namespace ustore
