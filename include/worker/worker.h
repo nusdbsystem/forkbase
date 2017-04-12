@@ -43,15 +43,14 @@ class Worker : private Noncopyable {
    * @param key Data key.
    * @return A set of all the latest versions of data.
    */
-  inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
-      const {
+  inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key) const {
     return head_ver_.GetLatest(key);
   }
 
   /**
    * @brief Check if the given version is one of the latest versions of data.
-   * 
-   * @param key Data key. 
+   *
+   * @param key Data key.
    * @param ver Data version.
    */
   inline bool IsLatest(const Slice& key, const Hash& ver) const {
@@ -69,12 +68,12 @@ class Worker : private Noncopyable {
   }
 
   /**
-   * @brief Check whether the given version is the head version of the 
+   * @brief Check whether the given version is the head version of the
    *        specified branch.
    * @param key Data key.
    * @param branch The operating branch.
    * @param ver Data version.
-   * @return True if the given version is the head version of the specified 
+   * @return True if the given version is the head version of the specified
    *         branch; otherwise false.
    */
   inline bool IsBranchHead(const Slice& key, const Slice& branch,
@@ -237,8 +236,8 @@ class Worker : private Noncopyable {
 
  private:
   inline ErrorCode EitherBranchOrVersion(
-      const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
-      const Hash& ver, std::function<ErrorCode()> f_run_for_version) const;
+    const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
+    const Hash& ver, std::function<ErrorCode()> f_run_for_version) const;
   inline ErrorCode Read(const UCell* ucell, Value* val) const;
   inline ErrorCode ReadBlob(const UCell* ucell, Value* val) const;
   inline ErrorCode ReadString(const UCell* ucell, Value* val) const;

@@ -21,8 +21,13 @@ const std::unordered_set<Hash>& HeadVersion::GetLatest(const Slice& key) const {
   return latest_ver_.at(key);
 }
 
+void HeadVersion::PutForBranchOnly(const Slice& key, const Slice& branch,
+                                   const Hash& ver) {
+  branch_ver_[key][branch] = ver.Clone();
+}
+
 void HeadVersion::Put(const Slice& key, const Slice& branch,
-                      const Hash& ver, bool is_new_ver) {
+                      const Hash& ver) {
   auto& bv_key = branch_ver_[key];
   auto& lv_key = latest_ver_[key];
 
@@ -32,8 +37,9 @@ void HeadVersion::Put(const Slice& key, const Slice& branch,
     DLOG(INFO) << "Branch \"" << branch << "\" for Key \"" << key
                << "\" is created";
   }
+
   bv_key[branch] = ver.Clone();
-  if (is_new_ver) lv_key.insert(ver.Clone());
+  lv_key.insert(ver.Clone());
 }
 
 void HeadVersion::Put(const Slice& key, const Hash& old_ver,
@@ -64,9 +70,9 @@ void HeadVersion::RemoveBranch(const Slice& key, const Slice& branch) {
 void HeadVersion::RenameBranch(const Slice& key, const Slice& old_branch,
                                const Slice& new_branch) {
   DCHECK(Exists(key, old_branch)) << ": Branch \"" << old_branch
-    << "for Key \"" << key << "\" does not exist!";
+                                  << "for Key \"" << key << "\" does not exist!";
   DCHECK(!Exists(key, new_branch)) << ": Branch \"" << new_branch
-    << "for Key \"" << key << "\" already exists!";
+                                   << "for Key \"" << key << "\" already exists!";
   auto& bv_key = branch_ver_[key];
   // move hash from old branch to new branch
   bv_key[new_branch] = std::move(bv_key[old_branch]);

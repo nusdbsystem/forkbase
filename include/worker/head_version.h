@@ -28,8 +28,10 @@ class HeadVersion : private Noncopyable {
 
   const std::unordered_set<Hash>& GetLatest(const Slice& key) const;
 
-  void Put(const Slice& key, const Slice& branch, const Hash& ver,
-           bool is_new_ver = true);
+  void PutForBranchOnly(const Slice& key, const Slice& branch,
+                        const Hash& ver);
+
+  void Put(const Slice& key, const Slice& branch, const Hash& ver);
 
   void Put(const Slice& key, const Hash& old_ver, const Hash& new_ver);
 
