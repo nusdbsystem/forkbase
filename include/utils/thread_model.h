@@ -3,26 +3,32 @@
 #ifndef USTORE_UTILS_THREAD_MODEL_H_
 #define USTORE_UTILS_THREAD_MODEL_H_
 
+#ifdef USTORE_MULTI_THREADING
 #include <mutex>
+#endif
 
 #include "noncopyable.h"
 
+namespace ustore {
+
 template <typename T>
 struct SingleThreaded {
-    public:
-        class Lock {
+    protected:
+        class Lock : private Noncopyable {
             Lock () {}
             ~Lock () {}
         };
 };
 
-
+#ifdef USTORE_MULTI_THREADING
 template <typename T>
 struct ClassLevelLockable {
-    class Lock;
-    friend class Lock;
-    public:
-        class Lock {
+    protected:
+        class Lock;
+        friend class Lock;
+        class Lock : private Noncopyable{
+            // should be noncopyable; otherwise deadlock occurs in copt ctor
+            // and assignment operator
             Lock () {
                 ClassLevelLockable::mtx_.lock();
             }
@@ -30,9 +36,6 @@ struct ClassLevelLockable {
             ~Lock() {
                 ClassLevelLockable::mtx_.unlock();
             }
-
-            Lock (const Lock&) = delete;
-            Lock& operator=(const Lock&) = delete;
         };
     private:
         static std::mutex mtx_;
@@ -40,4 +43,6 @@ struct ClassLevelLockable {
 
 template <typename T>
 std::mutex ClassLevelLockable<T>::mtx_;
+#endif
+};
 #endif 
