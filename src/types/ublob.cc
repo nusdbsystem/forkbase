@@ -9,56 +9,54 @@
 #include "utils/logging.h"
 
 namespace ustore {
-const UBlob* UBlob::Load(const Hash& root_hash) {
+UBlob UBlob::Load(const Hash& root_hash) {
   std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
-  const Chunk* root_chunk = loader->Load(root_hash);
-  return new UBlob(root_chunk, loader);
+  return UBlob(root_hash, loader);
 }
 
-const UBlob* UBlob::Create(const byte_t* data, size_t num_bytes) {
+UBlob UBlob::Create(const byte_t* data, size_t num_bytes) {
   std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
   NodeBuilder nb(BlobChunker::Instance(), true);
-
   FixedSegment seg(data, num_bytes, 1);
   nb.SpliceElements(0, &seg);
-  const Chunk* root_chunk = nb.Commit();
-  return new UBlob(root_chunk, loader);
+  Hash root_hash(nb.Commit());
+  return UBlob(root_hash, loader);
 }
 
-UBlob::UBlob(const Chunk* chunk, std::shared_ptr<ChunkLoader> loader)
+UBlob::UBlob(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader)
     : chunk_loader_(loader) {
+  const Chunk* chunk = loader->Load(root_hash);
   if (chunk->type() == ChunkType::kMeta) {
-    root_node_ = new MetaNode(chunk);
+    root_node_ = std::unique_ptr<const SeqNode>(new MetaNode(chunk));
   } else if (chunk->type() == ChunkType::kBlob) {
-    root_node_ = new BlobNode(chunk);
+    root_node_ = std::unique_ptr<const SeqNode>(new BlobNode(chunk));
   } else {
     LOG(FATAL) << "Cannot be other chunk type for Ublob.";
   }
 }
 
-const UBlob* UBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
-                           size_t num_append) const {
+UBlob UBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
+                    size_t num_append) const {
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(
-      root_node_->hash(), pos, chunk_loader_.get(),
-      BlobChunker::Instance(), true);
+      root_node_->hash(), pos, chunk_loader_.get(), BlobChunker::Instance(),
+      true);
 
   FixedSegment seg(data, num_append, 1);
   nb->SpliceElements(num_delete, &seg);
 
-  const Chunk* result_chunk = nb->Commit();
-  return new UBlob(result_chunk, chunk_loader_);
+  Hash root_hash(nb->Commit());
+  return UBlob(root_hash, chunk_loader_);
 }
 
-const UBlob* UBlob::Insert(size_t pos, const byte_t* data,
-                           size_t num_insert) const {
+UBlob UBlob::Insert(size_t pos, const byte_t* data, size_t num_insert) const {
   return Splice(pos, 0, data, num_insert);
 }
 
-const UBlob* UBlob::Delete(size_t pos, size_t num_delete) const {
+UBlob UBlob::Delete(size_t pos, size_t num_delete) const {
   return Splice(pos, num_delete, nullptr, 0);
 }
 
-const UBlob* UBlob::Append(byte_t* data, size_t num_append) const {
+UBlob UBlob::Append(byte_t* data, size_t num_append) const {
   return Splice(size(), 0, data, num_append);
 }
 

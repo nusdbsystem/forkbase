@@ -3,6 +3,7 @@
 #ifndef USTORE_TYPES_UCELL_H_
 #define USTORE_TYPES_UCELL_H_
 
+#include <memory>
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "node/cell_node.h"
@@ -15,11 +16,18 @@ class UCell : private Noncopyable {
  public:
   // Create the chunk data and dump to storage
   // Return the UCell instance
-  static const UCell* Create(UType data_type, const Hash& data_root_hash,
-                             const Hash& preHash1, const Hash& preHash2);
-  static const UCell* Load(const Hash& unode_hash);
+  static UCell Create(UType data_type, const Hash& data_root_hash,
+                      const Hash& preHash1, const Hash& preHash2);
+  static UCell Load(const Hash& unode_hash);
 
-  ~UCell() { delete node_; }  // remove node_;
+  UCell() {}
+  UCell(UCell&& ucell) : node_(std::move(ucell.node_)) {}
+  ~UCell() {}  // remove node_;
+
+  UCell& operator=(UCell&& ucell) {
+    std::swap(node_, ucell.node_);
+    return *this;
+  }
 
   inline UType type() const { return node_->type(); }
   inline const bool merged() const { return node_->merged(); }
@@ -37,7 +45,7 @@ class UCell : private Noncopyable {
   // Private contructor to be called by Load() or Create()
   explicit UCell(const Chunk* chunk);
 
-  const CellNode* node_;
+  std::unique_ptr<const CellNode> node_;
 };
 
 }  // namespace ustore

@@ -4,6 +4,7 @@
 #define USTORE_NODE_CELL_NODE_H_
 
 #include <cstddef>
+#include <memory>
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "types/type.h"
@@ -32,7 +33,7 @@ class CellNode {
 
   explicit CellNode(const Chunk* chunk) : chunk_(chunk) {}
   // cell node does not have chunkloader, need to delete chunk
-  ~CellNode() { delete chunk_; }
+  ~CellNode() {}
 
   inline UType type() const {
     return *reinterpret_cast<const UType*>(chunk_->data() + kUTypeOffset);
@@ -60,7 +61,7 @@ class CellNode {
   static constexpr size_t kChunkLength2PreHash =
       kPreHash2Offset + Hash::kByteLength;
 
-  const Chunk* chunk_;
+  std::unique_ptr<const Chunk> chunk_;
 };
 
 }  // namespace ustore

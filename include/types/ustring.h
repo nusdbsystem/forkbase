@@ -4,6 +4,7 @@
 #define USTORE_TYPES_USTRING_H_
 
 #include <cstddef>
+#include <memory>
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "node/string_node.h"
@@ -16,12 +17,19 @@ class UString : private Noncopyable {
  public:
   // create the UString based on the data
   //   dump the created chunk into storage
-  static const UString* Create(const byte_t* data, size_t num_bytes);
-  static const UString* Load(const Hash& hash);
+  static UString Create(const byte_t* data, size_t num_bytes);
+  static UString Load(const Hash& hash);
 
-  ~UString() { delete node_; }
+  UString() {}
+  UString(UString&& ustring) : node_(std::move(ustring.node_)) {}
+  ~UString() {}
 
-  inline size_t len() const { return node_->len();}
+  UString& operator=(UString&& ustring) {
+    std::swap(node_, ustring.node_);
+    return *this;
+  }
+
+  inline size_t len() const { return node_->len(); }
   // copy string contents to buffer
   //   return string length
   // TODO(pingcheng): only need to provide non-copy read api
@@ -35,7 +43,7 @@ class UString : private Noncopyable {
   explicit UString(const Chunk* chunk);
 
   // Responsible to remove during destructing
-  const StringNode* node_;
+  std::unique_ptr<const StringNode> node_;
 };
 
 }  // namespace ustore

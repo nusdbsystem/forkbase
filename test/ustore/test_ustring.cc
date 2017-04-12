@@ -10,8 +10,7 @@
 #include "utils/debug.h"
 #include "utils/logging.h"
 
-const ustore::byte_t raw_data[] =
-    "The quick brown fox jumps over the lazy dog";
+const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 
 TEST(UString, Load) {
   //////////////////////////////////////////////////////
@@ -24,12 +23,11 @@ TEST(UString, Load) {
   cs->Put(chunk->hash(), *chunk);
   //////////////////////////////////////////////////////
 
-  const ustore::UString* ustring = ustore::UString::Load(chunk->hash());
-  ASSERT_EQ(sizeof(raw_data), ustring->len());
-
+  ustore::UString ustring = ustore::UString::Load(chunk->hash());
+  ASSERT_EQ(sizeof(raw_data), ustring.len());
 
   ustore::byte_t* buffer = new ustore::byte_t[sizeof(raw_data)];
-  ASSERT_EQ(sizeof(raw_data), ustring->data(buffer));
+  ASSERT_EQ(sizeof(raw_data), ustring.data(buffer));
 
   std::string buf_str = ustore::byte2str(buffer, sizeof(raw_data));
   std::string expected_str = ustore::byte2str(raw_data, sizeof(raw_data));
@@ -38,13 +36,12 @@ TEST(UString, Load) {
 }
 
 TEST(UString, Create) {
-  const ustore::UString* ustring = ustore::UString::Create(raw_data,
-                                                           sizeof(raw_data));
+  ustore::UString ustring = ustore::UString::Create(raw_data, sizeof(raw_data));
 
-  ASSERT_EQ(sizeof(raw_data), ustring->len());
+  ASSERT_EQ(sizeof(raw_data), ustring.len());
 
   ustore::byte_t* buffer = new ustore::byte_t[sizeof(raw_data)];
-  ASSERT_EQ(sizeof(raw_data), ustring->data(buffer));
+  ASSERT_EQ(sizeof(raw_data), ustring.data(buffer));
 
   std::string buf_str = ustore::byte2str(buffer, sizeof(raw_data));
   std::string expected_str = ustore::byte2str(raw_data, sizeof(raw_data));

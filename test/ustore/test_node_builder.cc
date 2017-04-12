@@ -156,7 +156,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     ustore::NodeBuilder builder(chunker, true);
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.SpliceElements(0, &seg);
-    root_chunk = builder.Commit();
+    root_chunk = loader_->Load(builder.Commit());
   }
 
   void Test_Splice(size_t splice_idx, ustore::byte_t* insert_bytes,
@@ -170,7 +170,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     ustore::FixedSegment seg(insert_bytes, num_insert_bytes, 1);
 
     b->SpliceElements(num_delete_bytes, &seg);
-    const ustore::Chunk* c = b->Commit();
+    const ustore::Chunk* c = loader_->Load(b->Commit());
 
     Test_Tree_Integrity(c->hash(), loader_);
     const ustore::byte_t* expected_data =
@@ -180,13 +180,11 @@ class NodeBuilderSimple : public NodeBuilderEnv {
 
     delete[] expected_data;
     delete b;
-    delete c;
   }
 
   virtual void TearDown() {
     NodeBuilderEnv::TearDown();
     delete[] original_content_;
-    delete root_chunk;
   }
 
   const ustore::Chunk* root_chunk;
@@ -314,7 +312,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     ustore::FixedSegment seg(original_content_, original_num_bytes_, 1);
 
     builder.SpliceElements(0, &seg);
-    root_chunk_ = builder.Commit();
+    root_chunk_ = loader_->Load(builder.Commit());
   }
 
   void SetUpSpecialTree() {
@@ -330,7 +328,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     ustore::NodeBuilder abuilder(chunker, true);
 
     abuilder.SpliceElements(0, &sseg);
-    special_root_ = abuilder.Commit();
+    special_root_ = loader_->Load(abuilder.Commit());
   }
 
   void test_splice_case(const ustore::Hash& root_hash, size_t splice_idx,
@@ -344,7 +342,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     ustore::FixedSegment seg(append_data, append_num_bytes, 1);
 
     b->SpliceElements(num_delete, &seg);
-    const ustore::Chunk* c = b->Commit();
+    const ustore::Chunk* c = loader_->Load(b->Commit());
 
     Test_Tree_Integrity(c->hash(), loader_);
     const ustore::byte_t* d =
@@ -354,7 +352,6 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     Test_Same_Content(c->hash(), loader_, d);
 
     delete b;
-    delete c;
     delete[] d;
   }
 
@@ -390,10 +387,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
   virtual void TearDown() {
     NodeBuilderEnv::TearDown();
     delete[] original_content_;
-    delete root_chunk_;
-
     delete[] special_content_;
-    delete special_root_;
   }
 
   const ustore::Chunk* root_chunk_;

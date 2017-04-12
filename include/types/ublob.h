@@ -16,12 +16,22 @@
 namespace ustore {
 class UBlob : private Noncopyable {
  public:
-  static const UBlob* Load(const Hash& root_hash);
+  static UBlob Load(const Hash& root_hash);
   // Create the new UBlob from initial data
   // Create the ChunkLoader
-  static const UBlob* Create(const byte_t* data, size_t num_bytes);
+  static UBlob Create(const byte_t* data, size_t num_bytes);
 
-  ~UBlob() { delete root_node_; }
+  UBlob() {}
+  UBlob(UBlob&& ublob)
+      : root_node_(std::move(ublob.root_node_)),
+        chunk_loader_(std::move(ublob.chunk_loader_)) {}
+
+  UBlob& operator=(UBlob&& ublob) {
+    std::swap(root_node_, ublob.root_node_);
+    std::swap(chunk_loader_, ublob.chunk_loader_);
+    return *this;
+  }
+  ~UBlob() {}
 
   // Return the number of bytes in this Blob
   inline size_t size() const { return root_node_->numElements(); }
@@ -36,23 +46,23 @@ class UBlob : private Noncopyable {
    *  Return:
    *    the new Blob reflecting the operation
    */
-  const UBlob* Splice(size_t pos, size_t num_delete, const byte_t* data,
-                      size_t num_insert) const;
+  UBlob Splice(size_t pos, size_t num_delete, const byte_t* data,
+               size_t num_insert) const;
   /** Insert bytes given a position
    *
    *  Use Splice internally
    */
-  const UBlob* Insert(size_t pos, const byte_t* data, size_t num_insert) const;
+  UBlob Insert(size_t pos, const byte_t* data, size_t num_insert) const;
   /** Delete bytes from a given position
    *
    *  Use Splice internally
    */
-  const UBlob* Delete(size_t pos, size_t num_delete) const;
+  UBlob Delete(size_t pos, size_t num_delete) const;
   /** Append bytes from the last position of Blob
    *
    *  Use Splice internally
    */
-  const UBlob* Append(byte_t* data, size_t num_insert) const;
+  UBlob Append(byte_t* data, size_t num_insert) const;
   /** Read the blob data and copy into buffer
    *    Args:
    *      pos: the number of position to read
@@ -64,16 +74,16 @@ class UBlob : private Noncopyable {
    */
   size_t Read(size_t pos, size_t len, byte_t* buffer) const;
 
-  inline const Hash hash() const { return root_node_->hash();}
+  inline const Hash hash() const { return root_node_->hash(); }
 
  private:
   // Private contrucstor to create an instance based on the root chunk data
   // To be called by Load() and Init()
-  UBlob(const Chunk* chunk, std::shared_ptr<ChunkLoader> loader);
+  UBlob(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader);
 
   // Can either be a leaf(BlobLeafNode) or a non-leaf (MetaNode)
   // Responsible to remove
-  const SeqNode* root_node_;
+  std::unique_ptr<const SeqNode> root_node_;
   // chunk loader is shared among evolved objects
   std::shared_ptr<ChunkLoader> chunk_loader_;  // responsible to delete
 };

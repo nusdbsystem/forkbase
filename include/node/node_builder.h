@@ -10,6 +10,7 @@
 
 #include "chunk/chunk.h"
 #include "chunk/chunker.h"
+#include "hash/hash.h"
 #include "node/cursor.h"
 #include "node/rolling_hash.h"
 #include "store/chunk_loader.h"
@@ -43,8 +44,8 @@ class NodeBuilder : Noncopyable {
 
   // Commit the uncommited operation
   // Create and dump the chunk into storage
-  //  nullptr returned if fail to dump
-  const Chunk* Commit();
+  // @return The hash (a.k.a. the key) of the newly commited root chunk.
+  Hash Commit();
 
  private:
   // Internal constructor used to recursively construct Parent NodeBuilder
@@ -66,7 +67,7 @@ class NodeBuilder : Noncopyable {
   // reset the rolling hasher
   // return the created chunk
   std::unique_ptr<const Chunk> HandleBoundary(
-                                 const std::vector<const Segment*>& segments);
+      const std::vector<const Segment*>& segments);
   // Two things to do:
   //  * Populate the rolling hash with preceding elements before cursor point
   //      until its window size filled up
@@ -90,7 +91,7 @@ class NodeBuilder : Noncopyable {
   NodeBuilder* parent_builder();
 
  private:
-  NodeCursor* cursor_;  // shall be deleted during destruction
+  NodeCursor* cursor_;           // shall be deleted during destruction
   NodeBuilder* parent_builder_;  // shall be deleted during destruction
   // a vector of appended segments for chunking
   std::vector<const Segment*> appended_segs_;
@@ -99,7 +100,7 @@ class NodeBuilder : Noncopyable {
 
   Segment* pre_cursor_seg_;
   RollingHasher* rhasher_;  // shall be deleted
-  bool commited_ = true;  // false if exists operation to commit
+  bool commited_ = true;    // false if exists operation to commit
   size_t num_skip_entries_ = 0;
   size_t level_ = 0;
   const Chunker* chunker_;

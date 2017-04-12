@@ -9,21 +9,21 @@
 
 namespace ustore {
 
-const UString* UString::Create(const byte_t* data, size_t num_bytes) {
+UString UString::Create(const byte_t* data, size_t num_bytes) {
   const Chunk* chunk = StringNode::NewChunk(data, num_bytes);
   store::GetChunkStore()->Put(chunk->hash(), *chunk);
-  return new UString(chunk);
+  return UString(chunk);
 }
 
-const UString* UString::Load(const Hash& hash) {
+UString UString::Load(const Hash& hash) {
   // ustring do not need chunk loader, as it has only one chunk
   const Chunk* chunk = store::GetChunkStore()->Get(hash);
-  return new UString(chunk);
+  return UString(chunk);
 }
 
 UString::UString(const Chunk* chunk) {
   if (chunk->type() == ChunkType::kString) {
-    node_ = new StringNode(chunk);
+    node_ = std::unique_ptr<const StringNode>(new StringNode(chunk));
   } else {
     LOG(FATAL) << "Cannot be other chunk type for UString";
   }

@@ -20,14 +20,14 @@ TEST(UCell, Load) {
   // Put the chunk into storage
   cs->Put(chunk->hash(), *chunk);
 
-  const ustore::UCell* ucell = ustore::UCell::Load(chunk->hash());
+  ustore::UCell ucell = ustore::UCell::Load(chunk->hash());
 
-  EXPECT_EQ(type, ucell->type());
-  EXPECT_FALSE(ucell->merged());
-  EXPECT_EQ(h1, ucell->dataHash());
-  EXPECT_EQ(ustore::Hash::kNull, ucell->preUNodeHash());
+  EXPECT_EQ(type, ucell.type());
+  EXPECT_FALSE(ucell.merged());
+  EXPECT_EQ(h1, ucell.dataHash());
+  EXPECT_EQ(ustore::Hash::kNull, ucell.preUNodeHash());
 
-  EXPECT_TRUE(ucell->preUNodeHash(true).empty());
+  EXPECT_TRUE(ucell.preUNodeHash(true).empty());
 }
 
 TEST(UCell, Create) {
@@ -37,11 +37,11 @@ TEST(UCell, Create) {
   h3.FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
 
-  const ustore::UCell* ucell = ustore::UCell::Create(type, h1, h2, h3);
+  ustore::UCell ucell = ustore::UCell::Create(type, h1, h2, h3);
 
-  EXPECT_EQ(type, ucell->type());
-  EXPECT_TRUE(ucell->merged());
-  EXPECT_EQ(h1, ucell->dataHash());
-  EXPECT_EQ(h2, ucell->preUNodeHash());
-  EXPECT_EQ(h3, ucell->preUNodeHash(true));
+  EXPECT_EQ(type, ucell.type());
+  EXPECT_TRUE(ucell.merged());
+  EXPECT_EQ(h1, ucell.dataHash());
+  EXPECT_EQ(h2, ucell.preUNodeHash());
+  EXPECT_EQ(h3, ucell.preUNodeHash(true));
 }

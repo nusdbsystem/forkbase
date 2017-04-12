@@ -84,7 +84,7 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
   if (cursor_->parent() != nullptr) {
     // non-leaf builder must work on MetaNode, which is of var len entry
     parent_builder_ = new NodeBuilder(cursor_->parent(), level + 1,
-                          MetaChunker::Instance(), false);
+                                      MetaChunker::Instance(), false);
   }
   Resume();
 }
@@ -187,20 +187,20 @@ std::unique_ptr<const Chunk> NodeBuilder::HandleBoundary(
   return chunk;
 }
 
-const Chunk* NodeBuilder::Commit() {
+Hash NodeBuilder::Commit() {
   CHECK(!commited_);
-// As we are about to make new chunk,
-// parent metaentry that points the old chunk
-// shall be invalid and replaced by the created metaentry
-// of the new chunk.
-// #ifdef DEBUG
-//   size_t skip_p = parent_builder()->SkipEntries(1);
-// if (skip_p > 0) {
-//   DLOG(INFO) << "Level: " << level_ << " Skipping Parents At Start. ";
-// }
-// #else
+  // As we are about to make new chunk,
+  // parent metaentry that points the old chunk
+  // shall be invalid and replaced by the created metaentry
+  // of the new chunk.
+  // #ifdef DEBUG
+  //   size_t skip_p = parent_builder()->SkipEntries(1);
+  // if (skip_p > 0) {
+  //   DLOG(INFO) << "Level: " << level_ << " Skipping Parents At Start. ";
+  // }
+  // #else
   parent_builder()->SkipEntries(1);
-// #endif  // define DEBUG
+  // #endif  // define DEBUG
   // First thing to do:
   // Detect Boundary and Make Chunk
   //   Pass the MetaEntry to upper level builder
@@ -256,7 +256,9 @@ const Chunk* NodeBuilder::Commit() {
 
     // No boundary at this segment
     //   append into chunk_segs
-    if (!cur_seg->empty()) {chunk_segs.push_back(cur_seg); }
+    if (!cur_seg->empty()) {
+      chunk_segs.push_back(cur_seg);
+    }
 
     if (segIdx < appended_segs_.size()) {
       cur_seg = appended_segs_[segIdx];
@@ -344,14 +346,11 @@ const Chunk* NodeBuilder::Commit() {
   // upper node builder would build a tree node with a single metaentry
   //   This node will be excluded from final prolley tree
   // DLOG(INFO) << "Finish one level commiting.\n";
-  const Chunk* root_chunk;
-  if (parent_builder()->isInvalidNode()) {
-    root_chunk = last_created_chunk.release();
-  } else {
-    root_chunk = parent_builder()->Commit();
+  Hash root_key(last_created_chunk->hash().Clone());
+  if (!parent_builder()->isInvalidNode()) {
+    root_key = parent_builder()->Commit();
   }
-
-  return root_chunk;
+  return root_key;
 }
 
 Segment* NodeBuilder::SegAtCursor() {

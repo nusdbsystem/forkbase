@@ -4,6 +4,7 @@
 #define USTORE_NODE_STRING_NODE_H_
 
 #include <cstddef>
+#include <memory>
 #include "chunk/chunk.h"
 #include "types/type.h"
 
@@ -20,7 +21,7 @@ class StringNode {
   static const Chunk* NewChunk(const byte_t* data, size_t num_bytes);
 
   explicit StringNode(const Chunk* chunk) : chunk_(chunk) {}
-  ~StringNode() { delete chunk_; }
+  ~StringNode() {}
 
   size_t len() const;  // the byte count of this string
 // Copy all the string bytes to buffer
@@ -32,7 +33,7 @@ class StringNode {
   inline const Hash hash() const { return chunk_->hash(); }
 
  private:
-  const Chunk* chunk_;
+  std::unique_ptr<const Chunk> chunk_;
 };
 }  // namespace ustore
 
