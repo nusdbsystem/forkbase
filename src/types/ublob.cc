@@ -20,7 +20,7 @@ UBlob UBlob::Create(const byte_t* data, size_t num_bytes) {
   FixedSegment seg(data, num_bytes, 1);
   nb.SpliceElements(0, &seg);
   Hash root_hash(nb.Commit());
-  return UBlob(std::move(root_hash), loader);
+  return UBlob(root_hash, loader);
 }
 
 UBlob::UBlob(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader)
@@ -45,7 +45,7 @@ UBlob UBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
   nb->SpliceElements(num_delete, &seg);
 
   Hash root_hash(nb->Commit());
-  return UBlob(std::move(root_hash), chunk_loader_);
+  return UBlob(root_hash, chunk_loader_);
 }
 
 UBlob UBlob::Insert(size_t pos, const byte_t* data, size_t num_insert) const {

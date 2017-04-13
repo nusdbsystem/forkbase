@@ -11,7 +11,6 @@ namespace ustore {
 
 UCell UCell::Create(UType data_type, const Hash& data_root_hash,
                     const Hash& preHash1, const Hash& preHash2) {
-  // TODO(wangji): memory leak...
   const Chunk* chunk =
       CellNode::NewChunk(data_type, data_root_hash, preHash1, preHash2);
   store::GetChunkStore()->Put(chunk->hash(), *chunk);
@@ -20,7 +19,6 @@ UCell UCell::Create(UType data_type, const Hash& data_root_hash,
 
 UCell UCell::Load(const Hash& hash) {
   // ucell do not need chunk loader, as it has only one chunk
-  // TODO(wangji): memory leak...
   const Chunk* chunk = store::GetChunkStore()->Get(hash);
   return UCell(chunk);
 }

@@ -23,13 +23,14 @@ const std::unordered_set<Hash>& HeadVersion::GetLatest(const Slice& key) const {
 
 void HeadVersion::PutForBranchOnly(const Slice& key, const Slice& branch,
                                    const Hash& ver) {
-  branch_ver_[key][branch] = ver.Clone();
+  branch_ver_[Persist(key)][Persist(branch)] = ver.Clone();
 }
 
 void HeadVersion::Put(const Slice& key, const Slice& branch,
                       const Hash& ver) {
-  auto& bv_key = branch_ver_[key];
-  auto& lv_key = latest_ver_[key];
+  Slice pkey = Persist(key);
+  auto& bv_key = branch_ver_[pkey];
+  auto& lv_key = latest_ver_[pkey];
 
   if (auto& old_ver_opt = Get(key, branch)) {
     lv_key.erase(*old_ver_opt);
@@ -38,20 +39,20 @@ void HeadVersion::Put(const Slice& key, const Slice& branch,
                << "\" is created";
   }
 
-  bv_key[branch] = ver.Clone();
+  bv_key[Persist(branch)] = ver.Clone();
   lv_key.insert(ver.Clone());
 }
 
 void HeadVersion::Put(const Slice& key, const Hash& old_ver,
                       const Hash& new_ver) {
-  auto& lv_key = latest_ver_[key];
+  auto& lv_key = latest_ver_[Persist(key)];
   lv_key.erase(old_ver);
   lv_key.insert(new_ver.Clone());
 }
 
 void HeadVersion::Merge(const Slice& key, const Hash& old_ver1,
                         const Hash& old_ver2, const Hash& new_ver) {
-  auto& lv_key = latest_ver_[key];
+  auto& lv_key = latest_ver_.at(key);
   lv_key.erase(old_ver1);
   lv_key.erase(old_ver2);
   lv_key.insert(new_ver.Clone());
@@ -59,7 +60,7 @@ void HeadVersion::Merge(const Slice& key, const Hash& old_ver1,
 
 void HeadVersion::RemoveBranch(const Slice& key, const Slice& branch) {
   if (Exists(key, branch)) {
-    auto& bv_key = branch_ver_[key];
+    auto& bv_key = branch_ver_.at(key);
     bv_key.erase(branch);
   } else {
     LOG(WARNING) << "Branch \"" << branch << "for Key \"" << key
@@ -73,9 +74,9 @@ void HeadVersion::RenameBranch(const Slice& key, const Slice& old_branch,
     << "for Key \"" << key << "\" does not exist!";
   DCHECK(!Exists(key, new_branch)) << ": Branch \"" << new_branch
     << "for Key \"" << key << "\" already exists!";
-  auto& bv_key = branch_ver_[key];
+  auto& bv_key = branch_ver_.at(key);
   // move hash from old branch to new branch
-  bv_key[new_branch] = std::move(bv_key[old_branch]);
+  bv_key[Persist(new_branch)] = std::move(bv_key.at(old_branch));
   bv_key.erase(old_branch);
 }
 
@@ -106,6 +107,12 @@ std::unordered_set<Slice> HeadVersion::ListBranch(const Slice& key) const {
     }
   }
   return branchs;
+}
+
+Slice HeadVersion::Persist(const Slice& slice) {
+  std::string s(slice.data(), slice.len());
+  branch_str_.insert(s);
+  return Slice(*branch_str_.find(s));
 }
 
 }  // namespace ustore

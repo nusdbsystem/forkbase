@@ -10,7 +10,6 @@
 namespace ustore {
 
 UString UString::Create(const byte_t* data, size_t num_bytes) {
-  // TODO(wangji): memory leak
   const Chunk* chunk = StringNode::NewChunk(data, num_bytes);
   store::GetChunkStore()->Put(chunk->hash(), *chunk);
   return UString(chunk);
@@ -18,7 +17,6 @@ UString UString::Create(const byte_t* data, size_t num_bytes) {
 
 UString UString::Load(const Hash& hash) {
   // ustring do not need chunk loader, as it has only one chunk
-  // TODO(wangji): memory leak
   const Chunk* chunk = store::GetChunkStore()->Get(hash);
   return UString(chunk);
 }
