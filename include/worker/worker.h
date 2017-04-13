@@ -43,7 +43,8 @@ class Worker : private Noncopyable {
    * @param key Data key.
    * @return A set of all the latest versions of data.
    */
-  inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key) const {
+  inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
+      const {
     return head_ver_.GetLatest(key);
   }
 

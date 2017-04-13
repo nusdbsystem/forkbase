@@ -31,7 +31,7 @@ void HeadVersion::Put(const Slice& key, const Slice& branch,
   auto& bv_key = branch_ver_[key];
   auto& lv_key = latest_ver_[key];
 
-  if (const auto& old_ver_opt = Get(key, branch)) {
+  if (auto& old_ver_opt = Get(key, branch)) {
     lv_key.erase(*old_ver_opt);
   } else {
     DLOG(INFO) << "Branch \"" << branch << "\" for Key \"" << key
@@ -70,9 +70,9 @@ void HeadVersion::RemoveBranch(const Slice& key, const Slice& branch) {
 void HeadVersion::RenameBranch(const Slice& key, const Slice& old_branch,
                                const Slice& new_branch) {
   DCHECK(Exists(key, old_branch)) << ": Branch \"" << old_branch
-                                  << "for Key \"" << key << "\" does not exist!";
+    << "for Key \"" << key << "\" does not exist!";
   DCHECK(!Exists(key, new_branch)) << ": Branch \"" << new_branch
-                                   << "for Key \"" << key << "\" already exists!";
+    << "for Key \"" << key << "\" already exists!";
   auto& bv_key = branch_ver_[key];
   // move hash from old branch to new branch
   bv_key[new_branch] = std::move(bv_key[old_branch]);
