@@ -20,16 +20,16 @@ UBlob UBlob::Create(const byte_t* data, size_t num_bytes) {
   FixedSegment seg(data, num_bytes, 1);
   nb.SpliceElements(0, &seg);
   Hash root_hash(nb.Commit());
-  return UBlob(root_hash, loader);
+  return UBlob(std::move(root_hash), loader);
 }
 
 UBlob::UBlob(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader)
     : chunk_loader_(loader) {
   const Chunk* chunk = loader->Load(root_hash);
   if (chunk->type() == ChunkType::kMeta) {
-    root_node_ = std::unique_ptr<const SeqNode>(new MetaNode(chunk));
+    root_node_.reset(new MetaNode(chunk));
   } else if (chunk->type() == ChunkType::kBlob) {
-    root_node_ = std::unique_ptr<const SeqNode>(new BlobNode(chunk));
+    root_node_.reset(new BlobNode(chunk));
   } else {
     LOG(FATAL) << "Cannot be other chunk type for Ublob.";
   }
@@ -45,7 +45,7 @@ UBlob UBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
   nb->SpliceElements(num_delete, &seg);
 
   Hash root_hash(nb->Commit());
-  return UBlob(root_hash, chunk_loader_);
+  return UBlob(std::move(root_hash), chunk_loader_);
 }
 
 UBlob UBlob::Insert(size_t pos, const byte_t* data, size_t num_insert) const {

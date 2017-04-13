@@ -30,7 +30,7 @@ class StringNode {
   size_t Copy(byte_t* buffer) const;
 
   // hash of this node
-  inline const Hash hash() const { return chunk_->hash(); }
+  inline Hash hash() const { return chunk_->hash(); }
 
  private:
   std::unique_ptr<const Chunk> chunk_;

@@ -41,15 +41,15 @@ class CellNode {
   inline bool merged() const {
     return *reinterpret_cast<const bool*>(chunk_->data() + kMergedOffset);
   }
-  inline const Hash dataHash() const {
+  inline Hash dataHash() const {
     return Hash(chunk_->data() + kDataHashOffset);
   }
   // return empty hash (Hash()) if
   // the request second prehash does not exist
-  const Hash preHash(bool second = false) const;
+  Hash preHash(bool second = false) const;
 
   // hash of this node
-  inline const Hash hash() const { return chunk_->hash(); }
+  inline Hash hash() const { return chunk_->hash(); }
 
  private:
   static constexpr size_t kUTypeOffset = 0;

@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 #include "chunk/chunk.h"
 #include "hash/hash.h"
@@ -25,13 +26,13 @@ class UBlob : private Noncopyable {
   UBlob(UBlob&& ublob)
       : root_node_(std::move(ublob.root_node_)),
         chunk_loader_(std::move(ublob.chunk_loader_)) {}
+  ~UBlob() {}
 
   UBlob& operator=(UBlob&& ublob) {
     std::swap(root_node_, ublob.root_node_);
     std::swap(chunk_loader_, ublob.chunk_loader_);
     return *this;
   }
-  ~UBlob() {}
 
   // TODO(pingcheng): when load a invalid hash, set empty true
   inline bool empty() const { return false; }

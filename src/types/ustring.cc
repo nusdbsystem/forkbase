@@ -10,6 +10,7 @@
 namespace ustore {
 
 UString UString::Create(const byte_t* data, size_t num_bytes) {
+  // TODO(wangji): memory leak
   const Chunk* chunk = StringNode::NewChunk(data, num_bytes);
   store::GetChunkStore()->Put(chunk->hash(), *chunk);
   return UString(chunk);
@@ -17,13 +18,14 @@ UString UString::Create(const byte_t* data, size_t num_bytes) {
 
 UString UString::Load(const Hash& hash) {
   // ustring do not need chunk loader, as it has only one chunk
+  // TODO(wangji): memory leak
   const Chunk* chunk = store::GetChunkStore()->Get(hash);
   return UString(chunk);
 }
 
 UString::UString(const Chunk* chunk) {
   if (chunk->type() == ChunkType::kString) {
-    node_ = std::unique_ptr<const StringNode>(new StringNode(chunk));
+    node_.reset(new StringNode(chunk));
   } else {
     LOG(FATAL) << "Cannot be other chunk type for UString";
   }

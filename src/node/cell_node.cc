@@ -37,7 +37,7 @@ const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
   return chunk;
 }
 
-const Hash CellNode::preHash(bool second) const {
+Hash CellNode::preHash(bool second) const {
   if (!second) return Hash(chunk_->data() + kPreHash1Offset);
   if (merged()) {
     CHECK_EQ(chunk_->capacity(), kChunkLength2PreHash);

@@ -4,6 +4,7 @@
 #define USTORE_TYPES_UCELL_H_
 
 #include <memory>
+#include <utility>
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "node/cell_node.h"
@@ -22,7 +23,7 @@ class UCell : private Noncopyable {
 
   UCell() {}
   UCell(UCell&& ucell) : node_(std::move(ucell.node_)) {}
-  ~UCell() {}  // remove node_;
+  ~UCell() {}
 
   UCell& operator=(UCell&& ucell) {
     std::swap(node_, ucell.node_);
@@ -33,15 +34,15 @@ class UCell : private Noncopyable {
   inline bool empty() const { return false; }
   inline UType type() const { return node_->type(); }
   inline bool merged() const { return node_->merged(); }
-  inline const Hash dataHash() const { return node_->dataHash(); }
+  inline Hash dataHash() const { return node_->dataHash(); }
   // return empty hash (Hash()) if
   // the request second prehash does not exist
-  inline const Hash preUNodeHash(bool second = false) const {
+  inline Hash preUNodeHash(bool second = false) const {
     return node_->preHash(second);
   }
 
   // hash of this ucell
-  inline const Hash hash() const { return node_->hash(); }
+  inline Hash hash() const { return node_->hash(); }
 
  private:
   // Private contructor to be called by Load() or Create()
