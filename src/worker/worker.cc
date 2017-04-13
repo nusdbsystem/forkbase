@@ -150,8 +150,8 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
   Slice slice = val.slice();
   // ensure to release memory
   std::unique_ptr<const UString> ustring(
-      UString::Create(reinterpret_cast<const byte_t*>(slice.data()),
-                      slice.len()));
+    UString::Create(reinterpret_cast<const byte_t*>(slice.data()),
+                    slice.len()));
   if (ustring == nullptr) {
     LOG(ERROR) << "Failed to create UString for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUString;
@@ -164,8 +164,8 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                               const Hash& utype_hash, const Hash& prev_ver1,
                               const Hash& prev_ver2, Hash* ver) const {
   // ensure to release memory
-  std::unique_ptr<const UCell> ucell(UCell::Create(utype, utype_hash, prev_ver1,
-                                                   prev_ver2));
+  std::unique_ptr<const UCell> ucell(
+    UCell::Create(utype, utype_hash, prev_ver1, prev_ver2));
   if (ucell == nullptr) {
     LOG(ERROR) << "Failed to create UCell for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
@@ -199,7 +199,7 @@ ErrorCode Worker::Branch(const Slice& key, const Hash& ver,
                << "\" already exists!";
     return ErrorCode::kBranchExists;
   }
-  head_ver_.Put(key, new_branch, ver, false);
+  head_ver_.PutForBranchOnly(key, new_branch, ver);
   return ErrorCode::kOK;
 }
 

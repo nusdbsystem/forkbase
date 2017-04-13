@@ -21,19 +21,25 @@ const std::unordered_set<Hash>& HeadVersion::GetLatest(const Slice& key) const {
   return latest_ver_.at(key);
 }
 
+void HeadVersion::PutForBranchOnly(const Slice& key, const Slice& branch,
+                                   const Hash& ver) {
+  branch_ver_[key][branch] = ver.Clone();
+}
+
 void HeadVersion::Put(const Slice& key, const Slice& branch,
-                      const Hash& ver, bool is_new_ver) {
+                      const Hash& ver) {
   auto& bv_key = branch_ver_[key];
   auto& lv_key = latest_ver_[key];
 
-  if (const auto& old_ver_opt = Get(key, branch)) {
+  if (auto& old_ver_opt = Get(key, branch)) {
     lv_key.erase(*old_ver_opt);
   } else {
     DLOG(INFO) << "Branch \"" << branch << "\" for Key \"" << key
                << "\" is created";
   }
+
   bv_key[branch] = ver.Clone();
-  if (is_new_ver) lv_key.insert(ver.Clone());
+  lv_key.insert(ver.Clone());
 }
 
 void HeadVersion::Put(const Slice& key, const Hash& old_ver,
