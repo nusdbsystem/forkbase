@@ -239,9 +239,9 @@ class Worker : private Noncopyable {
   inline ErrorCode EitherBranchOrVersion(
     const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
     const Hash& ver, std::function<ErrorCode()> f_run_for_version) const;
-  inline ErrorCode Read(const UCell* ucell, Value* val) const;
-  inline ErrorCode ReadBlob(const UCell* ucell, Value* val) const;
-  inline ErrorCode ReadString(const UCell* ucell, Value* val) const;
+  inline ErrorCode Read(const UCell& ucell, Value* val) const;
+  inline ErrorCode ReadBlob(const UCell& ucell, Value* val) const;
+  inline ErrorCode ReadString(const UCell& ucell, Value* val) const;
   inline ErrorCode Write(const Slice& key, const Value& val,
                          const Hash& prev_ver1, const Hash& prev_ver2,
                          Hash* ver) const;

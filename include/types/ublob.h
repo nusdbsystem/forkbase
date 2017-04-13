@@ -33,6 +33,8 @@ class UBlob : private Noncopyable {
   }
   ~UBlob() {}
 
+  // TODO(pingcheng): when load a invalid hash, set empty true
+  inline bool empty() const { return false; }
   // Return the number of bytes in this Blob
   inline size_t size() const { return root_node_->numElements(); }
   /** Delete some bytes from a position and insert new bytes

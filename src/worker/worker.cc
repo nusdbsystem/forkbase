@@ -50,19 +50,18 @@ ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) const {
 
 ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) const {
   DCHECK_NE(ver, Hash::kNull);
-  // ensure to release memory
-  std::unique_ptr<const UCell> ucell(UCell::Load(ver));
-  if (ucell == nullptr) {
+  UCell ucell(UCell::Load(ver));
+  if (ucell.empty()) {
     LOG(WARNING) << "Data ver \"" << ver << "\" does not exists!";
     return ErrorCode::kUCellNotfound;
   }
-  return Read(ucell.get(), val);
+  return Read(ucell, val);
 }
 
-ErrorCode Worker::Read(const UCell* ucell, Value* val) const {
+ErrorCode Worker::Read(const UCell& ucell, Value* val) const {
   DCHECK_NE(ucell, nullptr);
   ErrorCode ec = ErrorCode::kTypeUnsupported;
-  switch (ucell->type()) {
+  switch (ucell.type()) {
     case UType::kBlob:
       ec = ReadBlob(ucell, val);
       break;
@@ -71,29 +70,27 @@ ErrorCode Worker::Read(const UCell* ucell, Value* val) const {
       break;
     default:
       LOG(WARNING) << "Unsupported data type: "
-                   << static_cast<int>(ucell->type());
+                   << static_cast<int>(ucell.type());
   }
   return ec;
 }
 
-ErrorCode Worker::ReadBlob(const UCell* ucell, Value* val) const {
-  // ensure to release memory
-  std::unique_ptr<const UBlob> ublob(UBlob::Load(ucell->dataHash()));
-  size_t n_bytes = ublob->size();
+ErrorCode Worker::ReadBlob(const UCell& ucell, Value* val) const {
+  UBlob ublob(UBlob::Load(ucell.dataHash()));
+  size_t n_bytes = ublob.size();
   byte_t* buffer = new byte_t[n_bytes];  // Note: potential memory leak
-  n_bytes = ublob->Read(0, n_bytes, buffer);
-  DCHECK_EQ(ublob->size(), n_bytes);
+  n_bytes = ublob.Read(0, n_bytes, buffer);
+  DCHECK_EQ(ublob.size(), n_bytes);
   *val = Value(Blob(buffer, n_bytes));
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::ReadString(const UCell* ucell, Value* val) const {
-  // ensure to release memory
-  std::unique_ptr<const UString> ustring(UString::Load(ucell->dataHash()));
-  size_t n_bytes = ustring->len();
+ErrorCode Worker::ReadString(const UCell& ucell, Value* val) const {
+  UString ustring(UString::Load(ucell.dataHash()));
+  size_t n_bytes = ustring.len();
   char* buffer = new char[n_bytes];  // Note: potential memory leak
-  n_bytes = ustring->data(reinterpret_cast<byte_t*>(buffer));
-  DCHECK_EQ(ustring->len(), n_bytes);
+  n_bytes = ustring.data(reinterpret_cast<byte_t*>(buffer));
+  DCHECK_EQ(ustring.len(), n_bytes);
   *val = Value(Slice(buffer, n_bytes));
   return ErrorCode::kOK;
 }
@@ -134,13 +131,12 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
                             const Hash& prev_ver1, const Hash& prev_ver2,
                             Hash* ver) const {
   Blob blob = val.blob();
-  // ensure to release memory
-  std::unique_ptr<const UBlob> ublob(UBlob::Create(blob.data(), blob.size()));
-  if (ublob == nullptr) {
+  UBlob ublob(UBlob::Create(blob.data(), blob.size()));
+  if (ublob.empty()) {
     LOG(ERROR) << "Failed to create UBlob for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUBlob;
   }
-  return CreateUCell(key, UType::kBlob, ublob->hash(), prev_ver1, prev_ver2,
+  return CreateUCell(key, UType::kBlob, ublob.hash(), prev_ver1, prev_ver2,
                      ver);
 }
 
@@ -148,29 +144,25 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                               const Hash& prev_ver1, const Hash& prev_ver2,
                               Hash* ver) const {
   Slice slice = val.slice();
-  // ensure to release memory
-  std::unique_ptr<const UString> ustring(
-    UString::Create(reinterpret_cast<const byte_t*>(slice.data()),
-                    slice.len()));
-  if (ustring == nullptr) {
+  UString ustring(UString::Create(reinterpret_cast<const byte_t*>(slice.data()),
+                  slice.len()));
+  if (ustring.empty()) {
     LOG(ERROR) << "Failed to create UString for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUString;
   }
-  return CreateUCell(key, UType::kString, ustring->hash(), prev_ver1, prev_ver2,
+  return CreateUCell(key, UType::kString, ustring.hash(), prev_ver1, prev_ver2,
                      ver);
 }
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                               const Hash& utype_hash, const Hash& prev_ver1,
                               const Hash& prev_ver2, Hash* ver) const {
-  // ensure to release memory
-  std::unique_ptr<const UCell> ucell(
-    UCell::Create(utype, utype_hash, prev_ver1, prev_ver2));
-  if (ucell == nullptr) {
+  UCell ucell(UCell::Create(utype, utype_hash, prev_ver1, prev_ver2));
+  if (ucell.empty()) {
     LOG(ERROR) << "Failed to create UCell for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
   }
-  *ver = ucell->hash().Clone();
+  *ver = ucell.hash().Clone();
   return ErrorCode::kOK;
 }
 

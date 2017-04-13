@@ -29,6 +29,8 @@ class UString : private Noncopyable {
     return *this;
   }
 
+  // TODO(pingcheng): when load a invalid hash, set empty true
+  inline bool empty() const { return false; }
   inline size_t len() const { return node_->len(); }
   // copy string contents to buffer
   //   return string length

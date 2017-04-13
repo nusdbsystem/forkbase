@@ -29,8 +29,10 @@ class UCell : private Noncopyable {
     return *this;
   }
 
+  // TODO(pingcheng): when load a invalid hash, set empty true
+  inline bool empty() const { return false; }
   inline UType type() const { return node_->type(); }
-  inline const bool merged() const { return node_->merged(); }
+  inline bool merged() const { return node_->merged(); }
   inline const Hash dataHash() const { return node_->dataHash(); }
   // return empty hash (Hash()) if
   // the request second prehash does not exist
