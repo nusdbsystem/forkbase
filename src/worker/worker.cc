@@ -27,7 +27,7 @@ ErrorCode Worker::EitherBranchOrVersion(
 }
 
 const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
-  auto& ver_opt = head_ver_.Get(key, branch);
+  const auto& ver_opt = head_ver_.Get(key, branch);
   return ver_opt ? *ver_opt : Hash::kNull;
 }
 
@@ -52,7 +52,7 @@ ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) const {
   DCHECK_NE(ver, Hash::kNull);
   UCell ucell(UCell::Load(ver));
   if (ucell.empty()) {
-    LOG(WARNING) << "Data ver \"" << ver << "\" does not exists!";
+    LOG(WARNING) << "Data version \"" << ver << "\" does not exists!";
     return ErrorCode::kUCellNotfound;
   }
   return Read(ucell, val);
@@ -93,6 +93,11 @@ ErrorCode Worker::ReadString(const UCell& ucell, Value* val) const {
   DCHECK_EQ(ustring.len(), n_bytes);
   *val = Value(Slice(buffer, n_bytes));
   return ErrorCode::kOK;
+}
+
+ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
+                      Hash* ver) {
+  return Put(key, val, branch, GetBranchHead(key, branch), ver);
 }
 
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
@@ -145,7 +150,7 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                               Hash* ver) const {
   Slice slice = val.slice();
   UString ustring(UString::Create(reinterpret_cast<const byte_t*>(slice.data()),
-                  slice.len()));
+                                  slice.len()));
   if (ustring.empty()) {
     LOG(ERROR) << "Failed to create UString for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUString;

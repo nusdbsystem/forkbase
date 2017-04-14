@@ -35,12 +35,9 @@ const Blob blob4(reinterpret_cast<const byte_t*>(slice4.data()), slice4.len());
 TEST(Worker, PutString) {
   EXPECT_EQ(0, worker.ListBranch(key1).size());
 
-  const byte_t ver0_raw[] = "000";
-  const Hash ver0(ver0_raw);
-
   Hash ver1;
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key1, Value(slice1), branch1, ver0, &ver1));
+            worker.Put(key1, Value(slice1), branch1, &ver1));
   EXPECT_EQ(ver1, worker.GetBranchHead(key1, branch1));
   EXPECT_EQ(1, worker.ListBranch(key1).size());
   EXPECT_TRUE(worker.IsBranchHead(key1, branch1, ver1));
@@ -62,7 +59,7 @@ TEST(Worker, PutString) {
 
   Hash ver5;
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key1, Value(slice2), branch2, ver0, &ver5));
+            worker.Put(key1, Value(slice2), branch2, &ver5));
   EXPECT_EQ(ErrorCode::kOK,
             worker.Put(key1, Value(slice1), branch2, ver5, &ver5));
   EXPECT_EQ(ver5, worker.GetBranchHead(key1, branch2));
@@ -90,12 +87,9 @@ TEST(Worker, GetString) {
 TEST(Worker, PutBlob) {
   EXPECT_EQ(0, worker.ListBranch(key2).size());
 
-  const byte_t ver0_raw[] = "000";
-  const Hash ver0(ver0_raw);
-
   Hash ver1;
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key2, Value(blob1), branch1, ver0, &ver1));
+            worker.Put(key2, Value(blob1), branch1, &ver1));
   EXPECT_EQ(ver1, worker.GetBranchHead(key2, branch1));
   EXPECT_EQ(1, worker.ListBranch(key2).size());
   EXPECT_TRUE(worker.IsBranchHead(key2, branch1, ver1));
@@ -116,7 +110,7 @@ TEST(Worker, PutBlob) {
 
   Hash ver5;
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key2, Value(blob2), branch2, ver0, &ver5));
+            worker.Put(key2, Value(blob2), branch2, &ver5));
   EXPECT_EQ(ErrorCode::kOK,
             worker.Put(key2, Value(blob1), branch2, ver5, &ver5));
   EXPECT_EQ(ver5, worker.GetBranchHead(key2, branch2));

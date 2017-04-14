@@ -44,7 +44,7 @@ class Worker : private Noncopyable {
    * @return A set of all the latest versions of data.
    */
   inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
-      const {
+  const {
     return head_ver_.GetLatest(key);
   }
 
@@ -113,6 +113,21 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Get(const Slice& key, const Hash& ver, Value* val) const;
+
+  /**
+   * @brief Write data.
+   *
+   * Write data based on the branch head. If the branch does not exist, the
+   * write will be based on the Hash::kNull.
+   *
+   * @param key Data key.
+   * @param val Data val.
+   * @param branch The operating branch.
+   * @param ver Accommodator of the new data version.
+   * @return Error code. (0 for success)
+   */
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+                Hash* ver);
 
   /**
    * @brief Write data.
