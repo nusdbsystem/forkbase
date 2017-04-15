@@ -41,7 +41,7 @@ ErrorCode Worker::Get(const Slice& key, const Slice& branch, const Hash& ver,
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) const {
   auto& version_opt = head_ver_.Get(key, branch);
   if (!version_opt) {
-    LOG(WARNING) << "Branch \"" << branch << "for Key \"" << key
+    LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
                  << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
@@ -182,7 +182,7 @@ ErrorCode Worker::Branch(const Slice& key, const Slice& old_branch,
                          const Slice& new_branch) {
   auto& version_opt = head_ver_.Get(key, old_branch);
   if (!version_opt) {
-    LOG(ERROR) << "Branch \"" << old_branch << "for Key \"" << key
+    LOG(ERROR) << "Branch \"" << old_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
@@ -192,7 +192,7 @@ ErrorCode Worker::Branch(const Slice& key, const Slice& old_branch,
 ErrorCode Worker::Branch(const Slice& key, const Hash& ver,
                          const Slice& new_branch) {
   if (head_ver_.Exists(key, new_branch)) {
-    LOG(ERROR) << "Branch \"" << new_branch << "for Key \"" << key
+    LOG(ERROR) << "Branch \"" << new_branch << "\" for Key \"" << key
                << "\" already exists!";
     return ErrorCode::kBranchExists;
   }
@@ -203,12 +203,12 @@ ErrorCode Worker::Branch(const Slice& key, const Hash& ver,
 ErrorCode Worker::Move(const Slice& key, const Slice& old_branch,
                        const Slice& new_branch) {
   if (!head_ver_.Exists(key, old_branch)) {
-    LOG(ERROR) << "Branch \"" << old_branch << "for Key \"" << key
+    LOG(ERROR) << "Branch \"" << old_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
   if (head_ver_.Exists(key, new_branch)) {
-    LOG(ERROR) << "Branch \"" << new_branch << "for Key \"" << key
+    LOG(ERROR) << "Branch \"" << new_branch << "\" for Key \"" << key
                << "\" already exists!";
     return ErrorCode::kBranchExists;
   }
@@ -229,7 +229,7 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         Hash* ver) {
   auto& ref_ver_opt = head_ver_.Get(key, ref_branch);
   if (!ref_ver_opt) {
-    LOG(ERROR) << "Branch \"" << ref_branch << "for Key \"" << key
+    LOG(ERROR) << "Branch \"" << ref_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
@@ -241,7 +241,7 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         Hash* ver) {
   auto& tgt_ver_opt = head_ver_.Get(key, tgt_branch);
   if (!tgt_ver_opt) {
-    LOG(ERROR) << "Branch \"" << tgt_branch << "for Key \"" << key
+    LOG(ERROR) << "Branch \"" << tgt_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
