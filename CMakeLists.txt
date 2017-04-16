@@ -28,7 +28,7 @@ OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
 OPTION(USE_LEVELDB "Use LevelDB as chunk storage" OFF)
 OPTION(TEST_NODEBUILDER "Test node builder" ON)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
-OPTION(MOCK_TEST "Use MockWorker" ON)
+OPTION(MOCK_TEST "Use MockWorker" OFF)
 OPTION(USE_RDMA "Use RDMA" OFF)
 
 if(TEST_NODEBUILDER)

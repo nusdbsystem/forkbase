@@ -102,7 +102,7 @@ class Worker : private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  ErrorCode Get(const Slice& key, const Slice& branch, Value* val) const;
+  virtual ErrorCode Get(const Slice& key, const Slice& branch, Value* val) const;
 
   /**
    * @brief Read data.
@@ -112,7 +112,7 @@ class Worker : private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  ErrorCode Get(const Slice& key, const Hash& ver, Value* val) const;
+  virtual ErrorCode Get(const Slice& key, const Hash& ver, Value* val) const;
 
   /**
    * @brief Write data.
@@ -151,7 +151,7 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
+  virtual ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
                 Hash* ver);
 
   /**
@@ -173,7 +173,7 @@ class Worker : private Noncopyable {
    * @param new_branch The new branch.
    * @return Error code. (0 for success)
    */
-  ErrorCode Branch(const Slice& key, const Slice& old_branch,
+  virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
                    const Slice& new_branch);
 
   /**
@@ -183,7 +183,7 @@ class Worker : private Noncopyable {
    * @param new_branch The new branch.
    * @return Error code. (0 for success)
    */
-  ErrorCode Branch(const Slice& key, const Hash& ver, const Slice& new_branch);
+  virtual ErrorCode Branch(const Slice& key, const Hash& ver, const Slice& new_branch);
 
   /**
    * @brief Rename the branch.
@@ -221,7 +221,7 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+  virtual ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
                   const Slice& ref_branch, Hash* ver);
 
   /**
@@ -234,7 +234,7 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+  virtual ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
                   const Hash& ref_ver, Hash* ver);
 
   /**
@@ -247,7 +247,7 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Merge(const Slice& key, const Value& val, const Hash& ref_ver1,
+  virtual ErrorCode Merge(const Slice& key, const Value& val, const Hash& ref_ver1,
                   const Hash& ref_ver2, Hash* ver);
 
  private:
@@ -282,12 +282,45 @@ class MockWorker : public Worker {
 
   ErrorCode Get(const Slice& key, const Slice& branch, const Hash& ver,
                 Value* val) const;
+  ErrorCode Get(const Slice& key, const Slice& branch,
+                Value* val) const {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
+  ErrorCode Get(const Slice& key, const Hash& version,
+                Value* val) const {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
 
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 const Hash& previous, Hash* ver);
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+                Hash* ver) {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
+
+  ErrorCode Put(const Slice& key, const Value& val, const Hash& version,
+                Hash* ver) {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
 
   ErrorCode Branch(const Slice& key, const Slice& old_branch,
                    const Hash& ver, const Slice& new_branch);
+  ErrorCode Branch(const Slice& key,
+                   const Hash& ver, const Slice& new_branch) {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
+
+  ErrorCode Branch(const Slice& key,
+                   const Slice& old_branch, const Slice& new_branch) {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
+
 
   ErrorCode Move(const Slice& key, const Slice& old_branch,
                  const Slice& new_branch);
@@ -295,6 +328,21 @@ class MockWorker : public Worker {
   ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
                   const Slice& ref_branch, const Hash& ref_ver,
                   Hash* ver);
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Slice& ref_branch,
+                  Hash* ver) {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
+
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Hash& ref_ver,
+                  Hash* ver) {
+    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
+    return ErrorCode::kUnknownOp;
+  }
+
+
  private:
   int count_put_;  // number of requests seen so far
   int count_merge_;

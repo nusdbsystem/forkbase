@@ -101,18 +101,24 @@ void WorkerService::HandleRequest(const void *msg, int size,
   response->set_source(ustore_msg->source());
 
   ErrorCode error_code;
+  CHECK(ustore_msg->has_branch() || ustore_msg->has_version());
+  CHECK(!(ustore_msg->has_branch() && ustore_msg->has_version()));
   switch (ustore_msg->type()) {
     case UStoreMessage::PUT_REQUEST:
     {
       UStoreMessage::PutRequestPayload payload =
                       ustore_msg->put_request_payload();
-      Hash new_version;
-      error_code = worker_->Put(Slice(ustore_msg->key()),
-        Value(Blob((const byte_t*)(payload.value().data()),
-                    (payload.value().length()))),
-        Slice(ustore_msg->branch()),
-        Hash((const byte_t*)((ustore_msg->version()).data())),
-        &new_version);
+      Hash new_version;    
+      error_code = ustore_msg->has_branch()
+        ? worker_->Put(Slice(ustore_msg->key()),
+          Value(Blob((const byte_t*)(payload.value().data()),
+                      (payload.value().length()))),
+          Slice(ustore_msg->branch()), &new_version)
+        : worker_->Put(Slice(ustore_msg->key()),
+          Value(Blob((const byte_t*)(payload.value().data()),
+                      (payload.value().length()))),
+          Hash((const byte_t*)((ustore_msg->version()).data())),
+          &new_version);
       UStoreMessage::PutResponsePayload *res_payload =
                       response->mutable_put_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
@@ -121,10 +127,12 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::GET_REQUEST:
     {
       Value *val = new Value();
-      error_code = worker_->Get(Slice(ustore_msg->key()),
-          Slice(ustore_msg->branch()),
-          Hash((const byte_t*)((ustore_msg->version()).data())),
-          val);
+      error_code = ustore_msg->has_branch() 
+           ? worker_->Get(Slice(ustore_msg->key()), 
+                          Slice(ustore_msg->branch()), val)
+           : worker_->Get(Slice(ustore_msg->key()),
+              Hash((const byte_t*)((ustore_msg->version()).data())), val);
+
       UStoreMessage::GetResponsePayload *payload =
               response->mutable_get_response_payload();
       payload->set_value((val->blob()).data(), (val->blob()).size());
@@ -135,10 +143,15 @@ void WorkerService::HandleRequest(const void *msg, int size,
     {
       UStoreMessage::BranchRequestPayload payload =
                     ustore_msg->branch_request_payload();
-      error_code = worker_->Branch(Slice(ustore_msg->key()),
-          Slice(ustore_msg->branch()),
-          Hash((const byte_t*)((ustore_msg->version()).data())),
-          Slice(payload.new_branch()));
+
+      error_code = ustore_msg->has_branch() 
+        ? worker_->Branch(Slice(ustore_msg->key()),
+                      Slice(ustore_msg->branch()),
+                      Slice(payload.new_branch()))
+        : worker_->Branch(Slice(ustore_msg->key()),
+              Hash((const byte_t*)((ustore_msg->version()).data())),
+              Slice(payload.new_branch()));
+
       break;
     }
     case UStoreMessage::MOVE_REQUEST:
@@ -154,12 +167,20 @@ void WorkerService::HandleRequest(const void *msg, int size,
       UStoreMessage::MergeRequestPayload payload =
                     (ustore_msg->merge_request_payload());
       Hash new_version;
-      error_code = worker_->Merge(Slice(ustore_msg->key()),
-        Value(Blob((const byte_t*)(payload.value().data()),
-              (payload.value()).length())),
-        Slice(payload.target_branch()), Slice(payload.ref_branch()),
-        Hash((const byte_t*)((ustore_msg->version())).data()),
-        &new_version);
+
+      error_code = ustore_msg->has_branch()
+        ? worker_->Merge(Slice(ustore_msg->key()),
+              Value(Blob((const byte_t*)(payload.value().data()),
+                          (payload.value()).length())),
+              Slice(payload.target_branch()), Slice(payload.ref_branch()),
+              &new_version)
+        :  worker_->Merge(Slice(ustore_msg->key()),
+              Value(Blob((const byte_t*)(payload.value().data()),
+                          (payload.value()).length())),
+              Slice(payload.target_branch()),
+              Hash((const byte_t*)((ustore_msg->version())).data()),
+              &new_version);
+
       UStoreMessage::MergeResponsePayload *res_payload =
                     response->mutable_merge_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);

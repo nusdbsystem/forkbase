@@ -80,17 +80,28 @@ class RequestHandler {
    * if it is successful or not. The calling function MUST delete the response
    * message after use.
    */
-  Message* Put(const Slice &key, const Slice &value, const Slice &branch,
+  Message* Put(const Slice &key, const Slice &value,
                const Hash &version, bool forward = false, bool force = false);
-  Message* Get(const Slice &key, const Slice &branch, const Hash &version);
+  Message* Put(const Slice &key, const Slice &value, const Slice &branch,
+               bool forward = false, bool force = false);
+
+  Message* Get(const Slice &key, const Slice &branch);
+  Message* Get(const Slice &key, const Hash &version);
+
   Message* Branch(const Slice &key, const Slice &old_branch,
-                  const Hash &version, const Slice &new_branch);
+                  const Slice &new_branch);
+  Message* Branch(const Slice &key, const Hash &version,
+                  const Slice &new_branch);
+
   Message* Move(const Slice &key, const Slice &old_branch,
                 const Slice &new_branch);
+
   Message* Merge(const Slice &key, const Slice &value,
                  const Slice &target_branch, const Slice &ref_branch,
-                 const Hash &ref_version, bool forward = false,
-                 bool force = false);
+                 bool forward = false, bool force = false);
+  Message* Merge(const Slice &key, const Slice &value,
+                 const Slice &target_branch, const Hash &ref_version,
+                 bool forward = false, bool force = false);
 
   inline int id() const noexcept { return id_; }
 
@@ -102,6 +113,15 @@ class RequestHandler {
   Message* WaitForResponse();
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
+
+  // helper methods for creating messages
+  UStoreMessage *CreatePutRequest(const Slice &key, const Slice &value,
+                                    bool forward, bool force);
+  UStoreMessage *CreateGetRequest(const Slice &key);
+  UStoreMessage *CreateBranchRequest(const Slice &key,
+                                      const Slice &new_branch);
+  UStoreMessage *CreateMergeRequest(const Slice &key, const Slice &value,
+                      const Slice &target_branch, bool forward, bool force);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node

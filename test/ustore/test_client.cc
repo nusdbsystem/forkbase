@@ -32,7 +32,6 @@ using std::set;
 using std::ifstream;
 using std::string;
 
-const Slice MASTER_BRANCH("master");
 const int NREQUESTS = 4;
 const string keys[] = {"aaa", "bbb", "ccc", "ddd"};
 const string values[] = {"where is the wisdome in knowledge",
@@ -83,7 +82,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
   // put
   UStoreMessage *msg = reinterpret_cast<UStoreMessage *>
                 (reqhl->Put(Slice(keys[idx]), Slice(values[idx]),
-                      MASTER_BRANCH, HEAD_VERSION));
+                      HEAD_VERSION));
 
   Hash version((const byte_t*)(msg->put_response_payload())
                                 .new_version().data());
@@ -96,7 +95,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
 
   // get it back
   msg = reinterpret_cast<UStoreMessage *>
-              (reqhl->Get(Slice(keys[idx]), MASTER_BRANCH, version));
+              (reqhl->Get(Slice(keys[idx]), version));
   Blob value((const byte_t*)msg->get_response_payload().value().data(),
               msg->get_response_payload().value().length());
 #ifdef MOCK_TEST
@@ -110,15 +109,15 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
   // branch from head
   string new_branch = "branch_"+std::to_string(idx);
   msg = reinterpret_cast<UStoreMessage *>
-              (reqhl->Branch(Slice(keys[idx]), MASTER_BRANCH,
-                              HEAD_VERSION, Slice(new_branch)));
+              (reqhl->Branch(Slice(keys[idx]), 
+                              version, Slice(new_branch)));
   EXPECT_EQ(msg->status(), UStoreMessage::SUCCESS);
   delete msg;
 
   // put on the new branch
   msg = reinterpret_cast<UStoreMessage *>
               (reqhl->Put(Slice(keys[idx]), Slice(values[idx]),
-                              Slice(new_branch), HEAD_VERSION));
+                              Slice(new_branch)));
   Hash branch_version((const byte_t*)msg->put_response_payload()
                                                 .new_version().data());
 #ifdef MOCK_TEST
@@ -131,7 +130,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
   // merge
   msg = reinterpret_cast<UStoreMessage *>
               (reqhl->Merge(Slice(keys[idx]), Slice(values[idx]),
-                    Slice(new_branch), MASTER_BRANCH, branch_version));
+                    Slice(new_branch), version));
   Hash merge_version((const byte_t*)msg->merge_response_payload()
                                                   .new_version().data());
 #ifdef MOCK_TEST

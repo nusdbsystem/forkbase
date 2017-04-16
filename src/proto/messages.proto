@@ -91,7 +91,7 @@ message UStoreMessage {
   // MERGE_REQUEST
   message MergeRequestPayload {
     required bytes target_branch = 1;
-    required bytes ref_branch = 2; 
+    optional bytes ref_branch = 2; 
     required bytes value = 3; 
     optional bool forward = 4;
     optional bool force = 5;
