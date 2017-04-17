@@ -71,6 +71,7 @@ class Worker : private Noncopyable {
   /**
    * @brief Check whether the given version is the head version of the
    *        specified branch.
+   *
    * @param key Data key.
    * @param branch The operating branch.
    * @param ver Data version.
@@ -80,6 +81,19 @@ class Worker : private Noncopyable {
   inline bool IsBranchHead(const Slice& key, const Slice& branch,
                            const Hash& ver) const {
     return head_ver_.IsBranchHead(key, branch, ver);
+  }
+
+  /**
+   * @brief Update latest version by a UCell.
+   *
+   * @param key Data key.
+   * @param ucell The referring UCell object.
+   */
+  inline void UpdateLatestVersion(const Slice& key, const UCell& ucell) {
+    const auto& prev_ver1 = ucell.preUNodeHash();
+    const auto& prev_ver2 = ucell.preUNodeHash(true);
+    const auto& ver = ucell.hash();
+    head_ver_.PutLatest(key, prev_ver1, prev_ver2, ver);
   }
 
   /**

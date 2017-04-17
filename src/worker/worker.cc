@@ -145,7 +145,7 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
     return ErrorCode::kFailedCreateUCell;
   }
   *ver = ucell.hash().Clone();
-  head_ver_.PutLatest(key, prev_ver1, prev_ver2, *ver);
+  UpdateLatestVersion(key, ucell);
   return ErrorCode::kOK;
 }
 
