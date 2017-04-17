@@ -27,8 +27,8 @@ bool RequestHandler::Send(const Message *msg, const node_id_t& node_id) {
   return true;
 }
 
-UStoreMessage *RequestHandler::CreatePutRequest(const Slice &key, const Slice &value,
-                                  bool forward, bool force) {
+UStoreMessage *RequestHandler::CreatePutRequest(const Slice &key,
+    const Slice &value, bool forward, bool force) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::PUT_REQUEST);
@@ -104,7 +104,8 @@ Message* RequestHandler::Get(const Slice &key, const Hash &version) {
   return WaitForResponse();
 }
 
-UStoreMessage *RequestHandler::CreateBranchRequest(const Slice &key, const Slice &new_branch) {
+UStoreMessage *RequestHandler::CreateBranchRequest(const Slice &key,
+    const Slice &new_branch) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::BRANCH_REQUEST);
@@ -161,8 +162,8 @@ Message* RequestHandler::Move(const Slice &key, const Slice &old_branch,
   return WaitForResponse();
 }
 
-UStoreMessage *RequestHandler::CreateMergeRequest(const Slice &key, const Slice &value,
-                  const Slice &target_branch, bool forward, bool force) {
+UStoreMessage *RequestHandler::CreateMergeRequest(const Slice &key,
+    const Slice &value, const Slice &target_branch, bool forward, bool force) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::MERGE_REQUEST);

@@ -35,9 +35,9 @@ using std::string;
 const int NREQUESTS = 4;
 const string keys[] = {"aaa", "bbb", "ccc", "ddd"};
 const string values[] = {"where is the wisdome in knowledge",
-                                "where is the knowledge in information",
-                                "the brown fox",
-                                "jump over"};
+                         "where is the knowledge in information",
+                         "the brown fox",
+                         "jump over"};
 #ifdef MOCK_TEST
 const vector<string> PUT_VERSIONS = {"V3IF4YAWUNEXGCVSJWXKKVBBQ6FPT6FN",
                              "PRZKYN2N4DXGGPER6AQUL4YN5OLIRJHB",
@@ -89,7 +89,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
 #ifdef MOCK_TEST
   EXPECT_EQ(check_results(PUT_VERSIONS, version.ToBase32()), true);
 #else
-  LOG(ERROR) << "PUT version : " << version.ToBase32();
+  DLOG(INFO) << "PUT version : " << version.ToBase32();
 #endif
   delete msg;
 
@@ -101,7 +101,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
 #ifdef MOCK_TEST
   EXPECT_EQ(string((const char*)value.data(), value.size()), GET_VALUE);
 #else
-  LOG(ERROR) << "GET value : " << string((const char*)value.data(),
+  DLOG(INFO) << "GET value : " << string((const char*)value.data(),
                                             value.size());
 #endif
   delete msg;
@@ -109,7 +109,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
   // branch from head
   string new_branch = "branch_"+std::to_string(idx);
   msg = reinterpret_cast<UStoreMessage *>
-              (reqhl->Branch(Slice(keys[idx]), 
+              (reqhl->Branch(Slice(keys[idx]),
                               version, Slice(new_branch)));
   EXPECT_EQ(msg->status(), UStoreMessage::SUCCESS);
   delete msg;
@@ -123,7 +123,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
 #ifdef MOCK_TEST
   EXPECT_EQ(check_results(PUT_VERSIONS, branch_version.ToBase32()), true);
 #else
-  LOG(ERROR) << "PUT version: " << branch_version.ToBase32() << std::endl;
+  DLOG(INFO) << "PUT version: " << branch_version.ToBase32() << std::endl;
 #endif
   delete msg;
 
@@ -136,7 +136,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
 #ifdef MOCK_TEST
   EXPECT_EQ(check_results(MERGE_VERSIONS, merge_version.ToBase32()), true);
 #else
-  LOG(ERROR) << "MERGE version: " << merge_version.ToBase32() << std::endl;
+  DLOG(INFO) << "MERGE version: " << merge_version.ToBase32() << std::endl;
 #endif
   delete msg;
 
@@ -154,7 +154,7 @@ TEST(TestMessage, TestClient1Thread) {
     workers.push_back(new WorkerService(worker_addr, ""));
 
   vector<thread> worker_threads;
-  for (int i = 0; i < workers.size(); i++) 
+  for (int i = 0; i < workers.size(); i++)
     workers[i]->Init();
 
   // launch clients
@@ -166,9 +166,9 @@ TEST(TestMessage, TestClient1Thread) {
   client->Init();
 
   thread client_thread(thread(&ClientService::Start, client));
-  for (int i = 0; i < workers.size(); i++) 
+  for (int i = 0; i < workers.size(); i++)
     worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
-  
+
 
   // wait for client to finish, then stop
   client_thread.join();

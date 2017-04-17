@@ -116,10 +116,10 @@ class RequestHandler {
 
   // helper methods for creating messages
   UStoreMessage *CreatePutRequest(const Slice &key, const Slice &value,
-                                    bool forward, bool force);
+                                  bool forward, bool force);
   UStoreMessage *CreateGetRequest(const Slice &key);
   UStoreMessage *CreateBranchRequest(const Slice &key,
-                                      const Slice &new_branch);
+                                     const Slice &new_branch);
   UStoreMessage *CreateMergeRequest(const Slice &key, const Slice &value,
                       const Slice &target_branch, bool forward, bool force);
 

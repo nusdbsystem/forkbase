@@ -102,7 +102,8 @@ class Worker : private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Get(const Slice& key, const Slice& branch, Value* val) const;
+  virtual ErrorCode Get(const Slice& key, const Slice& branch, Value* val)
+      const;
 
   /**
    * @brief Read data.
@@ -151,8 +152,8 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
-                Hash* ver);
+  virtual ErrorCode Put(const Slice& key, const Value& val,
+                        const Hash& prev_ver, Hash* ver);
 
   /**
    * @brief Create a new branch for the data.
@@ -174,7 +175,7 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
-                   const Slice& new_branch);
+                           const Slice& new_branch);
 
   /**
    * @brief Create a new branch for the data.
@@ -183,7 +184,8 @@ class Worker : private Noncopyable {
    * @param new_branch The new branch.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Branch(const Slice& key, const Hash& ver, const Slice& new_branch);
+  virtual ErrorCode Branch(const Slice& key, const Hash& ver,
+                           const Slice& new_branch);
 
   /**
    * @brief Rename the branch.
@@ -221,8 +223,8 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Slice& ref_branch, Hash* ver);
+  virtual ErrorCode Merge(const Slice& key, const Value& val,
+      const Slice& tgt_branch, const Slice& ref_branch, Hash* ver);
 
   /**
    * @brief Merge two branches of the data.
@@ -234,8 +236,8 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Hash& ref_ver, Hash* ver);
+  virtual ErrorCode Merge(const Slice& key, const Value& val,
+      const Slice& tgt_branch, const Hash& ref_ver, Hash* ver);
 
   /**
    * @brief Merge two versions of the data.
@@ -247,28 +249,26 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value& val, const Hash& ref_ver1,
-                  const Hash& ref_ver2, Hash* ver);
+  virtual ErrorCode Merge(const Slice& key, const Value& val,
+      const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver);
 
  private:
-  inline ErrorCode EitherBranchOrVersion(
+  ErrorCode EitherBranchOrVersion(
     const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
     const Hash& ver, std::function<ErrorCode()> f_run_for_version) const;
-  inline ErrorCode Read(const UCell& ucell, Value* val) const;
-  inline ErrorCode ReadBlob(const UCell& ucell, Value* val) const;
-  inline ErrorCode ReadString(const UCell& ucell, Value* val) const;
-  inline ErrorCode Write(const Slice& key, const Value& val,
-                         const Hash& prev_ver1, const Hash& prev_ver2,
-                         Hash* ver) const;
-  inline ErrorCode WriteBlob(const Slice& key, const Value& val,
-                             const Hash& prev_ver1, const Hash& prev_ver2,
-                             Hash* ver) const;
-  inline ErrorCode WriteString(const Slice& key, const Value& val,
-                               const Hash& prev_ver1, const Hash& prev_ver2,
-                               Hash* ver) const;
-  inline ErrorCode CreateUCell(const Slice& key, const UType& utype,
-                               const Hash& utype_hash, const Hash& prev_ver1,
-                               const Hash& prev_ver2, Hash* ver) const;
+  ErrorCode Read(const UCell& ucell, Value* val) const;
+  ErrorCode ReadBlob(const UCell& ucell, Value* val) const;
+  ErrorCode ReadString(const UCell& ucell, Value* val) const;
+  ErrorCode Write(const Slice& key, const Value& val, const Hash& prev_ver1,
+                  const Hash& prev_ver2, Hash* ver) const;
+  ErrorCode WriteBlob(const Slice& key, const Value& val, const Hash& prev_ver1,
+                      const Hash& prev_ver2, Hash* ver) const;
+  ErrorCode WriteString(const Slice& key, const Value& val,
+                        const Hash& prev_ver1, const Hash& prev_ver2,
+                        Hash* ver) const;
+  ErrorCode CreateUCell(const Slice& key, const UType& utype,
+                        const Hash& utype_hash, const Hash& prev_ver1,
+                        const Hash& prev_ver2, Hash* ver) const;
 
   const WorkerID id_;
   HeadVersion head_ver_;

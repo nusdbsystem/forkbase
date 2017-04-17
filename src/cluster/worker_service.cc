@@ -108,7 +108,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
     {
       UStoreMessage::PutRequestPayload payload =
                       ustore_msg->put_request_payload();
-      Hash new_version;    
+      Hash new_version;
       error_code = ustore_msg->has_branch()
         ? worker_->Put(Slice(ustore_msg->key()),
           Value(Blob((const byte_t*)(payload.value().data()),
@@ -127,8 +127,8 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::GET_REQUEST:
     {
       Value *val = new Value();
-      error_code = ustore_msg->has_branch() 
-           ? worker_->Get(Slice(ustore_msg->key()), 
+      error_code = ustore_msg->has_branch()
+           ? worker_->Get(Slice(ustore_msg->key()),
                           Slice(ustore_msg->branch()), val)
            : worker_->Get(Slice(ustore_msg->key()),
               Hash((const byte_t*)((ustore_msg->version()).data())), val);
@@ -144,7 +144,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       UStoreMessage::BranchRequestPayload payload =
                     ustore_msg->branch_request_payload();
 
-      error_code = ustore_msg->has_branch() 
+      error_code = ustore_msg->has_branch()
         ? worker_->Branch(Slice(ustore_msg->key()),
                       Slice(ustore_msg->branch()),
                       Slice(payload.new_branch()))
