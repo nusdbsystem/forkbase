@@ -25,6 +25,7 @@ const std::unordered_set<Hash>& HeadVersion::GetLatest(
 void HeadVersion::PutBranch(const Slice& key, const Slice& branch,
                             const Hash& ver) {
   branch_ver_[Persist(key)][Persist(branch)] = ver.Clone();
+  LogBranchUpdate(key, branch, ver);
 }
 
 void HeadVersion::PutLatest(const Slice& key, const Hash& prev_ver1,
@@ -39,6 +40,7 @@ void HeadVersion::RemoveBranch(const Slice& key, const Slice& branch) {
   if (Exists(key, branch)) {
     auto& bv_key = branch_ver_.at(key);
     bv_key.erase(branch);
+    LogBranchUpdate(key, branch, Hash::kNull);
   } else {
     LOG(WARNING) << "Branch \"" << branch << "for Key \"" << key
                  << "\" does not exist!";
@@ -55,7 +57,9 @@ void HeadVersion::RenameBranch(const Slice& key, const Slice& old_branch,
                                    << "\" already exists!";
   auto& bv_key = branch_ver_.at(key);
   bv_key[Persist(new_branch)] = std::move(bv_key.at(old_branch));
+  LogBranchUpdate(key, new_branch, bv_key.at(new_branch));
   bv_key.erase(old_branch);
+  LogBranchUpdate(key, old_branch, Hash::kNull);
 }
 
 bool HeadVersion::Exists(const Slice& key, const Slice& branch) const {
