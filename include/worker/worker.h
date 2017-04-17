@@ -44,7 +44,7 @@ class Worker : private Noncopyable {
    * @return A set of all the latest versions of data.
    */
   inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
-    const {
+  const {
     return head_ver_.GetLatest(key);
   }
 
@@ -102,19 +102,6 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Get(const Slice& key, const Hash& ver, Value* val) const;
-
-  /**
-   * @brief Write data.
-   *
-   * @param key Data key.
-   * @param val Data val.
-   * @param branch The operating branch.
-   * @param prev_ver The previous ver of data.
-   * @param ver Accommodator of the new data version.
-   * @return Error code. (0 for success)
-   */
-  virtual ErrorCode Put(const Slice& key, const Value& val,
-                        const Slice& branch, const Hash& prev_ver, Hash* ver);
 
   /**
    * @brief Write data.
@@ -221,15 +208,28 @@ class Worker : private Noncopyable {
   ErrorCode ReadBlob(const UCell& ucell, Value* val) const;
   ErrorCode ReadString(const UCell& ucell, Value* val) const;
   ErrorCode Write(const Slice& key, const Value& val, const Hash& prev_ver1,
-                  const Hash& prev_ver2, Hash* ver) const;
+                  const Hash& prev_ver2, Hash* ver);
   ErrorCode WriteBlob(const Slice& key, const Value& val, const Hash& prev_ver1,
-                      const Hash& prev_ver2, Hash* ver) const;
+                      const Hash& prev_ver2, Hash* ver);
   ErrorCode WriteString(const Slice& key, const Value& val,
                         const Hash& prev_ver1, const Hash& prev_ver2,
-                        Hash* ver) const;
+                        Hash* ver);
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Hash& utype_hash, const Hash& prev_ver1,
-                        const Hash& prev_ver2, Hash* ver) const;
+                        const Hash& prev_ver2, Hash* ver);
+
+  /**
+   * @brief Write data.
+   *
+   * @param key Data key.
+   * @param val Data val.
+   * @param branch The operating branch.
+   * @param prev_ver The previous ver of data.
+   * @param ver Accommodator of the new data version.
+   * @return Error code. (0 for success)
+   */
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+                const Hash& prev_ver, Hash* ver);
 
   const WorkerID id_;
   HeadVersion head_ver_;
@@ -252,8 +252,6 @@ class MockWorker : public Worker {
     return ErrorCode::kUnknownOp;
   }
 
-  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-                const Hash& previous, Hash* ver);
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 Hash* ver) {
     LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";

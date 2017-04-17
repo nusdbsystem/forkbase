@@ -10,15 +10,15 @@
 
 namespace ustore {
 
-const Slice Worker::kNullBranch{""};
+// const Slice Worker::kNullBranch{""};
 
 const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
-  const auto& ver_opt = head_ver_.Get(key, branch);
+  const auto& ver_opt = head_ver_.GetBranch(key, branch);
   return ver_opt ? *ver_opt : Hash::kNull;
 }
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) const {
-  auto& version_opt = head_ver_.Get(key, branch);
+  auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
     LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
                  << "\" does not exist!";
@@ -82,21 +82,19 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
                       const Hash& prev_ver, Hash* ver) {
   if (branch.empty()) return Put(key, val, prev_ver, ver);
-  ErrorCode ec = Write(key, val, prev_ver, Hash(), ver);
-  if (ec == ErrorCode::kOK) head_ver_.Put(key, branch, *ver);
+  ErrorCode ec = Write(key, val, prev_ver, Hash::kNull, ver);
+  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
   return ec;
 }
 
 ErrorCode Worker::Put(const Slice& key, const Value& val,
                       const Hash& prev_ver, Hash* ver) {
-  ErrorCode ec = Write(key, val, prev_ver, Hash(), ver);
-  if (ec == ErrorCode::kOK) head_ver_.Put(key, prev_ver, *ver);
-  return ec;
+  return Write(key, val, prev_ver, Hash::kNull, ver);
 }
 
 ErrorCode Worker::Write(const Slice& key, const Value& val,
                         const Hash& prev_ver1, const Hash& prev_ver2,
-                        Hash* ver) const {
+                        Hash* ver) {
   ErrorCode ec = ErrorCode::kTypeUnsupported;
   switch (val.type()) {
     case UType::kBlob:
@@ -113,7 +111,7 @@ ErrorCode Worker::Write(const Slice& key, const Value& val,
 
 ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
                             const Hash& prev_ver1, const Hash& prev_ver2,
-                            Hash* ver) const {
+                            Hash* ver) {
   Blob blob = val.blob();
   UBlob ublob(UBlob::Create(blob.data(), blob.size()));
   if (ublob.empty()) {
@@ -126,7 +124,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
 
 ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                               const Hash& prev_ver1, const Hash& prev_ver2,
-                              Hash* ver) const {
+                              Hash* ver) {
   Slice slice = val.slice();
   UString ustring(UString::Create(reinterpret_cast<const byte_t*>(slice.data()),
                                   slice.len()));
@@ -140,19 +138,20 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                               const Hash& utype_hash, const Hash& prev_ver1,
-                              const Hash& prev_ver2, Hash* ver) const {
+                              const Hash& prev_ver2, Hash* ver) {
   UCell ucell(UCell::Create(utype, utype_hash, prev_ver1, prev_ver2));
   if (ucell.empty()) {
     LOG(ERROR) << "Failed to create UCell for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
   }
   *ver = ucell.hash().Clone();
+  head_ver_.PutLatest(key, prev_ver1, prev_ver2, *ver);
   return ErrorCode::kOK;
 }
 
 ErrorCode Worker::Branch(const Slice& key, const Slice& old_branch,
                          const Slice& new_branch) {
-  auto& version_opt = head_ver_.Get(key, old_branch);
+  auto& version_opt = head_ver_.GetBranch(key, old_branch);
   if (!version_opt) {
     LOG(ERROR) << "Branch \"" << old_branch << "\" for Key \"" << key
                << "\" does not exist!";
@@ -168,7 +167,7 @@ ErrorCode Worker::Branch(const Slice& key, const Hash& ver,
                << "\" already exists!";
     return ErrorCode::kBranchExists;
   }
-  head_ver_.PutForBranchOnly(key, new_branch, ver);
+  head_ver_.PutBranch(key, new_branch, ver);
   return ErrorCode::kOK;
 }
 
@@ -191,7 +190,7 @@ ErrorCode Worker::Move(const Slice& key, const Slice& old_branch,
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Slice& tgt_branch, const Slice& ref_branch,
                         Hash* ver) {
-  auto& ref_ver_opt = head_ver_.Get(key, ref_branch);
+  auto& ref_ver_opt = head_ver_.GetBranch(key, ref_branch);
   if (!ref_ver_opt) {
     LOG(ERROR) << "Branch \"" << ref_branch << "\" for Key \"" << key
                << "\" does not exist!";
@@ -203,23 +202,21 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Slice& tgt_branch, const Hash& ref_ver,
                         Hash* ver) {
-  auto& tgt_ver_opt = head_ver_.Get(key, tgt_branch);
+  auto& tgt_ver_opt = head_ver_.GetBranch(key, tgt_branch);
   if (!tgt_ver_opt) {
     LOG(ERROR) << "Branch \"" << tgt_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
   ErrorCode ec = Write(key, val, *tgt_ver_opt, ref_ver, ver);
-  if (ec == ErrorCode::kOK) head_ver_.Put(key, tgt_branch, *ver);
+  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, tgt_branch, *ver);
   return ec;
 }
 
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Hash& ref_ver1, const Hash& ref_ver2,
                         Hash* ver) {
-  auto ec = Write(key, val, ref_ver1, ref_ver2, ver);
-  if (ec == ErrorCode::kOK) head_ver_.Merge(key, ref_ver1, ref_ver2, *ver);
-  return ec;
+  return Write(key, val, ref_ver1, ref_ver2, ver);
 }
 
 }  // namespace ustore
