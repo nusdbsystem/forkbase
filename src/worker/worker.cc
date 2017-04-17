@@ -12,30 +12,9 @@ namespace ustore {
 
 const Slice Worker::kNullBranch{""};
 
-ErrorCode Worker::EitherBranchOrVersion(
-  const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
-  const Hash& ver, std::function<ErrorCode()> f_run_for_version) const {
-  if (ver.empty() && branch.empty()) {
-    LOG(ERROR) << "Branch and version cannot be both empty!";
-    return ErrorCode::kInvalidParameters;
-  }
-  if (!ver.empty() && !branch.empty()) {
-    LOG(ERROR) << "Branch and version cannot be both set!";
-    return ErrorCode::kInvalidParameters;
-  }
-  return ver.empty() ? f_run_for_branch() : f_run_for_version();
-}
-
 const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
   const auto& ver_opt = head_ver_.Get(key, branch);
   return ver_opt ? *ver_opt : Hash::kNull;
-}
-
-ErrorCode Worker::Get(const Slice& key, const Slice& branch, const Hash& ver,
-                      Value* val) const {
-  return EitherBranchOrVersion(
-  branch, [&]() { return Get(key, branch, val); },
-  ver, [&]() { return Get(key, ver, val); });
 }
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) const {
@@ -172,13 +151,6 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
 }
 
 ErrorCode Worker::Branch(const Slice& key, const Slice& old_branch,
-                         const Hash& ver, const Slice& new_branch) {
-  return EitherBranchOrVersion(
-  old_branch, [&]() { return Branch(key, old_branch, new_branch); },
-  ver, [&]() { return Branch(key, ver, new_branch); });
-}
-
-ErrorCode Worker::Branch(const Slice& key, const Slice& old_branch,
                          const Slice& new_branch) {
   auto& version_opt = head_ver_.Get(key, old_branch);
   if (!version_opt) {
@@ -214,14 +186,6 @@ ErrorCode Worker::Move(const Slice& key, const Slice& old_branch,
   }
   head_ver_.RenameBranch(key, old_branch, new_branch);
   return ErrorCode::kOK;
-}
-
-ErrorCode Worker::Merge(const Slice& key, const Value& val,
-                        const Slice& tgt_branch, const Slice& ref_branch,
-                        const Hash& ref_ver, Hash* ver) {
-  return EitherBranchOrVersion(
-  ref_branch, [&]() { return Merge(key, val, tgt_branch, ref_branch, ver); },
-  ref_ver, [&]() { return Merge(key, val, tgt_branch, ref_ver, ver); });
 }
 
 ErrorCode Worker::Merge(const Slice& key, const Value& val,

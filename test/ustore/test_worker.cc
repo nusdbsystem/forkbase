@@ -80,7 +80,7 @@ TEST(Worker, GetString) {
 
   for (auto && ver : worker.GetLatestVersions(key1)) {
     Value val;
-    EXPECT_EQ(ErrorCode::kOK, worker.Get(key1, Worker::kNullBranch, ver, &val));
+    EXPECT_EQ(ErrorCode::kOK, worker.Get(key1, ver, &val));
   }
 }
 
@@ -131,7 +131,7 @@ TEST(Worker, GetBlob) {
 
   for (auto && ver : worker.GetLatestVersions(key2)) {
     Value val;
-    EXPECT_EQ(ErrorCode::kOK, worker.Get(key2, Worker::kNullBranch, ver, &val));
+    EXPECT_EQ(ErrorCode::kOK, worker.Get(key2, ver, &val));
   }
 }
 

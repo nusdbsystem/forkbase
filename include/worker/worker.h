@@ -44,7 +44,7 @@ class Worker : private Noncopyable {
    * @return A set of all the latest versions of data.
    */
   inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
-      const {
+    const {
     return head_ver_.GetLatest(key);
   }
 
@@ -87,23 +87,11 @@ class Worker : private Noncopyable {
    *
    * @param key Data key.
    * @param branch The operating branch.
-   * @param ver Data version.
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Get(const Slice& key, const Slice& branch,
-                        const Hash& ver, Value* val) const;
-
-  /**
-   * @brief Read data.
-   *
-   * @param key Data key.
-   * @param branch The operating branch.
-   * @param val Accommodator of the to-be-retrieved value.
-   * @return Error code. (0 for success)
-   */
-  virtual ErrorCode Get(const Slice& key, const Slice& branch, Value* val)
-      const;
+                        Value* val) const;
 
   /**
    * @brief Read data.
@@ -125,8 +113,8 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-                        const Hash& prev_ver, Hash* ver);
+  virtual ErrorCode Put(const Slice& key, const Value& val,
+                        const Slice& branch, const Hash& prev_ver, Hash* ver);
 
   /**
    * @brief Write data.
@@ -154,18 +142,6 @@ class Worker : private Noncopyable {
    */
   virtual ErrorCode Put(const Slice& key, const Value& val,
                         const Hash& prev_ver, Hash* ver);
-
-  /**
-   * @brief Create a new branch for the data.
-   *
-   * @param old_branch The base branch. If provided, the new branch should be
-   *                   based on the head of the base branch.
-   * @param ver Data version.
-   * @param new_branch The new branch.
-   * @return Error code. (0 for success)
-   */
-  virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
-                           const Hash& ver, const Slice& new_branch);
 
   /**
    * @brief Create a new branch for the data.
@@ -205,26 +181,12 @@ class Worker : private Noncopyable {
    * @param val Data value.
    * @param tgt_branch The target branch.
    * @param ref_branch The referring branch.
-   * @param ref_ver The referring version of data.
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value& val,
                           const Slice& tgt_branch, const Slice& ref_branch,
-                          const Hash& ref_ver, Hash* ver);
-
-  /**
-   * @brief Merge two branches of the data.
-   *
-   * @param key Data key.
-   * @param val Data value.
-   * @param tgt_branch The target branch.
-   * @param ref_branch The referring branch.
-   * @param ver Accommodator of the new data version.
-   * @return Error code. (0 for success)
-   */
-  virtual ErrorCode Merge(const Slice& key, const Value& val,
-      const Slice& tgt_branch, const Slice& ref_branch, Hash* ver);
+                          Hash* ver);
 
   /**
    * @brief Merge two branches of the data.
@@ -237,7 +199,8 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value& val,
-      const Slice& tgt_branch, const Hash& ref_ver, Hash* ver);
+                          const Slice& tgt_branch, const Hash& ref_ver,
+                          Hash* ver);
 
   /**
    * @brief Merge two versions of the data.
@@ -250,12 +213,10 @@ class Worker : private Noncopyable {
    * @return Error code. (0 for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value& val,
-      const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver);
+                          const Hash& ref_ver1, const Hash& ref_ver2,
+                          Hash* ver);
 
  private:
-  ErrorCode EitherBranchOrVersion(
-    const Slice& branch, std::function<ErrorCode()> f_run_for_branch,
-    const Hash& ver, std::function<ErrorCode()> f_run_for_version) const;
   ErrorCode Read(const UCell& ucell, Value* val) const;
   ErrorCode ReadBlob(const UCell& ucell, Value* val) const;
   ErrorCode ReadString(const UCell& ucell, Value* val) const;
@@ -280,8 +241,6 @@ class MockWorker : public Worker {
   explicit MockWorker(const WorkerID& id) : Worker(id), count_put_(0),
     count_merge_(0) {}
 
-  ErrorCode Get(const Slice& key, const Slice& branch, const Hash& ver,
-                Value* val) const;
   ErrorCode Get(const Slice& key, const Slice& branch,
                 Value* val) const {
     LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
@@ -307,8 +266,6 @@ class MockWorker : public Worker {
     return ErrorCode::kUnknownOp;
   }
 
-  ErrorCode Branch(const Slice& key, const Slice& old_branch,
-                   const Hash& ver, const Slice& new_branch);
   ErrorCode Branch(const Slice& key,
                    const Hash& ver, const Slice& new_branch) {
     LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
@@ -326,9 +283,6 @@ class MockWorker : public Worker {
                  const Slice& new_branch);
 
   ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Slice& ref_branch, const Hash& ref_ver,
-                  Hash* ver);
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
                   const Slice& ref_branch,
                   Hash* ver) {
     LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
@@ -341,7 +295,6 @@ class MockWorker : public Worker {
     LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
     return ErrorCode::kUnknownOp;
   }
-
 
  private:
   int count_put_;  // number of requests seen so far
