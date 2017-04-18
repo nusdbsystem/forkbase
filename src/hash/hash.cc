@@ -60,7 +60,7 @@ void Hash::CopyFrom(const Hash& hash) {
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
 // which is a multiplier of 5 bits, so no need of padding.
-void Hash::FromBase32(const std::string& base32) {
+Hash& Hash::FromBase32(const std::string& base32) {
   CHECK_EQ(kBase32Length, base32.length())
       << "length of input string is not 32 bytes";
   Alloc();
@@ -78,6 +78,8 @@ void Hash::FromBase32(const std::string& base32) {
     }
     dest += 5;
   }
+
+  return *this;
 }
 
 std::string Hash::ToBase32() const {
