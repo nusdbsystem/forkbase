@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include "utils/config.h"
+#include "utils/env.h"
 #include "spec/slice.h"
 #include "hash/hash.h"
 #include "net/zmq_net.h"
@@ -37,7 +37,8 @@ int WorkerService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
 // for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void WorkerService::Init() {
   // init the network: connects to the workers
-  std::ifstream fin(Config::WORKER_FILE, std::ifstream::in);
+  std::ifstream fin(Env::Instance()->GetConfig()->worker_file(),
+                    std::ifstream::in);
   CHECK(fin);
   node_id_t worker_addr;
   Hash h;
@@ -60,7 +61,8 @@ void WorkerService::Init() {
 
   std::sort(ranges_.begin(), ranges_.end(), range_cmp);
   // add address of the client service
-  std::ifstream fin_cs(Config::CLIENTSERVICE_FILE, std::ifstream::in);
+  std::ifstream fin_cs(Env::Instance()->GetConfig()->clientservice_file(),
+                       std::ifstream::in);
   CHECK(fin_cs);
   node_id_t cs_addr;
   while (fin_cs >> cs_addr)
@@ -72,7 +74,7 @@ void WorkerService::Init() {
 #ifdef USE_RDMA
   net_ = new RdmaNet(node_addr_, Config::RECV_THREADS);
 #else
-  net_ = new ZmqNet(node_addr_, Config::RECV_THREADS);
+  net_ = new ZmqNet(node_addr_, Env::Instance()->GetConfig()->recv_threads());
 #endif
 
   fin.close();

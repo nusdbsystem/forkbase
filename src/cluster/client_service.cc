@@ -8,7 +8,7 @@
 #include <thread>
 #include "net/rdma_net.h"
 #include "net/zmq_net.h"
-#include "utils/config.h"
+#include "utils/env.h"
 #include "utils/logging.h"
 
 namespace ustore {
@@ -38,7 +38,7 @@ int ClientService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
 // for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void ClientService::Init() {
   // init the network: connects to the workers
-  std::ifstream fin(Config::WORKER_FILE);
+  std::ifstream fin(Env::Instance()->GetConfig()->worker_file());
   CHECK(fin);
   node_id_t worker_addr;
   std::vector<RangeInfo> workers;
@@ -54,16 +54,16 @@ void ClientService::Init() {
   std::sort(workers.begin(), workers.end(), ClientService::range_cmp);
 
 #ifdef USE_RDMA
-  net_ = new RdmaNet(node_addr_, Config::RECV_THREADS);
+  net_ = new RdmaNet(node_addr_, Env::Instance()->GetConfig()->recv_threads());
 #else
-  net_ = new ZmqNet(node_addr_, Config::RECV_THREADS);
+  net_ = new ZmqNet(node_addr_, Env::Instance()->GetConfig()->recv_threads());
 #endif
   fin.close();
 
   // init worker list
   workers_ = new WorkerList(workers);
   // init response queue
-  for (int i = 0; i < Config::SERVICE_THREADS; i++)
+  for (int i = 0; i < Env::Instance()->GetConfig()->recv_threads(); i++)
     responses_.push_back(new ResponseBlob());
 }
 
@@ -79,11 +79,11 @@ void ClientService::Start() {
   new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
 #endif
 
-  for (int i = 0; i < Config::SERVICE_THREADS; i++)
+  for (int i = 0; i < Env::Instance()->GetConfig()->service_threads(); i++)
     client_threads.push_back(thread(&ClientService::ClientThread, this,
                                     master_, i));
   is_running_ = true;
-  for (int i=0; i < Config::SERVICE_THREADS; i++)
+  for (int i=0; i < Env::Instance()->GetConfig()->service_threads(); i++)
     client_threads[i].join();
 }
 

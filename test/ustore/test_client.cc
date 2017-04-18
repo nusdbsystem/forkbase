@@ -9,7 +9,7 @@
 #include "gtest/gtest.h"
 #include "proto/messages.pb.h"
 #include "types/type.h"
-#include "utils/config.h"
+#include "utils/env.h"
 #include "cluster/worker_service.h"
 #include "cluster/client_service.h"
 #include "hash/hash.h"
@@ -25,6 +25,7 @@ using ustore::Config;
 using ustore::Slice;
 using ustore::Hash;
 using ustore::Blob;
+using ustore::Env;
 
 using std::thread;
 using std::vector;
@@ -147,7 +148,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
 TEST(TestMessage, TestClient1Thread) {
   ustore::SetStderrLogging(ustore::WARNING);
   // launch workers
-  ifstream fin(Config::WORKER_FILE);
+  ifstream fin(Env::Instance()->GetConfig()->worker_file());
   string worker_addr;
   vector<WorkerService*> workers;
   while (fin >> worker_addr)
@@ -158,7 +159,7 @@ TEST(TestMessage, TestClient1Thread) {
     workers[i]->Init();
 
   // launch clients
-  ifstream fin_client(Config::CLIENTSERVICE_FILE);
+  ifstream fin_client(Env::Instance()->GetConfig()->clientservice_file());
   string clientservice_addr;
   fin_client >> clientservice_addr;
   ClientService *client = new ClientService(clientservice_addr, "",
