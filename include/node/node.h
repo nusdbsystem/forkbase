@@ -14,7 +14,16 @@
 #include "utils/singleton.h"
 
 namespace ustore {
-class SeqNode {
+class Node {
+ public:
+  explicit Node(const Chunk* chunk) : chunk_(chunk) {}
+  inline const Hash hash() const { return chunk_->hash(); }
+
+ protected:
+  const Chunk* chunk_;
+};
+
+class SeqNode : public Node {
   /* SeqNode represents a general node in Prolly Tree.
 
      Its subclass is either be a internal node containing meta-data
@@ -22,7 +31,7 @@ class SeqNode {
   */
 
  public:
-  explicit SeqNode(const Chunk* chunk) : chunk_(chunk) {}
+  explicit SeqNode(const Chunk* chunk) : Node(chunk) {}
   virtual ~SeqNode() {}  // NOT delete chunk!!
 
   // Whether this SeqNode is a leaf
@@ -38,11 +47,6 @@ class SeqNode {
   virtual const byte_t* data(size_t idx) const = 0;
   // return the byte len of the idx-th entry
   virtual size_t len(size_t idx) const = 0;
-
-  inline const Hash hash() const { return chunk_->hash(); }
-
- protected:
-  const Chunk* chunk_;
 };
 
 class MetaNode : public SeqNode {

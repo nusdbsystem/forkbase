@@ -27,12 +27,14 @@ class NodeBuilder : Noncopyable {
                                             ChunkLoader* chunk_loader,
                                             const Chunker* chunker,
                                             bool isFixedEntryLen);
+
   // Perform operation at idx-th element at leaf rooted at root_hash
   static NodeBuilder* NewNodeBuilderAtKey(const Hash& root_hash,
                                           const OrderedKey& key,
                                           ChunkLoader* chunk_loader,
                                           const Chunker* chunker,
-                                          bool isFixedEntryLen);
+                                          bool isFixedEntryLen,
+                                          bool* found);
   // Construct a node builder to construct a fresh new Prolly Tree
   explicit NodeBuilder(const Chunker* chunker, bool isFixedEntryLen);
 

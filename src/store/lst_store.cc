@@ -59,6 +59,8 @@ constexpr static inline bool IsChunkValid(ChunkType type) noexcept {
          || type == ChunkType::kCell
          || type == ChunkType::kMeta
          || type == ChunkType::kBlob
+         || type == ChunkType::kList
+         || type == ChunkType::kMap
          || type == ChunkType::kString
          || type == ChunkType::kInvalid;
 }
@@ -152,7 +154,7 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
       AppendInteger(segment, prev_segment_offset, next_segment_offset);
       FdWriteThenSync(fd, segment, kSegmentSize);
     }
-    LOG(INFO) << "init segments done"; 
+    LOG(INFO) << "init segments done";
   }
 
   CHECK_GE(fd, 0);
@@ -343,7 +345,7 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
     // DLOG(WARNING) << "key:" << key.ToBase32() << " already exists";
     return true;
   }
-  
+
   static size_t to_sync_chunks = 0;
   static auto last_sync_time_point = std::chrono::steady_clock::now();
 

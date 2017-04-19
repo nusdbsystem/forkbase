@@ -38,8 +38,10 @@ enum class ChunkType : byte_t {
   // Instances of Leaf SeqNode Chunk
   kBlob = 3,
   kString = 4,
+  kMap = 5,
+  kList = 6,
   // Indicate the validity
-  kInvalid = 5
+  kInvalid = 99,
 };
 
 /*

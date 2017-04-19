@@ -23,8 +23,9 @@ class NodeCursor {
 
   // Init Cursor to point a element at leaf in a tree
   // The element has the smallest key larger than the parameter key
+  // @return [args] whether this key is found
   static NodeCursor* GetCursorByKey(const Hash& hash, const OrderedKey& key,
-                                    ChunkLoader* ch_loader);
+                                    ChunkLoader* ch_loader, bool* found);
 
   // Copy constructor used to clone a NodeCursor
   // Need to recursively copy the parent NodeCursor

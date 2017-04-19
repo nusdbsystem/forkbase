@@ -44,7 +44,7 @@ ChunkInfo MetaChunker::make(const std::vector<const Segment*>& segments)
     seg_offset += seg->numBytes();
   }
 
-  const OrderedKey key = pre_me->orderedKey();
+  const OrderedKey key(pre_me->orderedKey());
   delete pre_me;
   size_t me_num_bytes;
   std::unique_ptr<const byte_t[]> meta_data(MetaEntry::Encode(

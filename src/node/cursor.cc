@@ -4,12 +4,13 @@
 
 #include "hash/hash.h"
 #include "node/blob_node.h"
+#include "node/list_node.h"
+#include "node/map_node.h"
 #include "node/node.h"
 #include "node/orderedkey.h"
 #include "utils/logging.h"
 
 namespace ustore {
-
 // utility function for cursor usage
 const SeqNode* CreateSeqNodeFromChunk(const Chunk* chunk) {
   CHECK_NE(chunk, nullptr);
@@ -18,6 +19,10 @@ const SeqNode* CreateSeqNodeFromChunk(const Chunk* chunk) {
       return new MetaNode(chunk);
     case ChunkType::kBlob:
       return new BlobNode(chunk);
+    case ChunkType::kMap:
+      return new MapNode(chunk);
+    case ChunkType::kList:
+      return new ListNode(chunk);
     default:
       LOG(FATAL) << "Other Non-chunkable Node Not Supported!";
       return nullptr;
@@ -63,7 +68,7 @@ NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, size_t idx,
 }
 
 NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
-                                       ChunkLoader* ch_loader) {
+                                       ChunkLoader* ch_loader, bool* found) {
   const SeqNode* seq_node = nullptr;
   NodeCursor* parent_cursor = nullptr;
   size_t entry_idx = 0;
@@ -90,8 +95,7 @@ NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
   //   make cursor point to the end of leaf
   //   entry_idx = numEntries()
   const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node);
-  bool found;
-  entry_idx = lnode->GetIdxForKey(key, &found);
+  entry_idx = lnode->GetIdxForKey(key, found);
   return new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
 }
 // copy cosntructor

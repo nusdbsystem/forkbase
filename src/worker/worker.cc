@@ -36,7 +36,7 @@ ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) {
 }
 
 ErrorCode Worker::Read(const UCell& ucell, Value* val) const {
-  DCHECK_NE(ucell, nullptr);
+  DCHECK(!ucell.empty());
   ErrorCode ec = ErrorCode::kTypeUnsupported;
   switch (ucell.type()) {
     case UType::kBlob:

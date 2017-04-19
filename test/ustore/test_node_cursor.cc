@@ -6,9 +6,10 @@
 
 #include "chunk/chunker.h"
 #include "node/cursor.h"
+#include "node/map_node.h"
+#include "types/umap.h"
 #include "store/chunk_loader.h"
 
-// NOTE: Haven't test GetCursorByKey
 TEST(NodeCursor, SingleNode) {
   // Construct a tree with only a root blob node
   const ustore::byte_t ra[] = "abc";
@@ -185,4 +186,190 @@ TEST(NodeCursor, Tree) {
   delete cur4;
   delete cur5;
   delete cm;
+}
+
+TEST(NodeCursor, SingleNodeByKey) {
+  constexpr const ustore::byte_t k1[] = "k1";
+  constexpr const ustore::byte_t v1[] = "v1";
+  constexpr const ustore::byte_t k2[] = "k22";
+  constexpr const ustore::byte_t v2[] = "v22";
+  constexpr const ustore::byte_t k3[] = "k333";
+  constexpr const ustore::byte_t v3[] = "v333";
+
+  ustore::KVItem kv1{k1, v1, 2, 2};
+  ustore::KVItem kv2{k2, v2, 3, 3};
+  ustore::KVItem kv3{k3, v3, 4, 4};
+
+  ustore::byte_t* seg_data12 = new ustore::byte_t[100];
+  ustore::byte_t* seg_data3 = new ustore::byte_t[100];
+
+  size_t kv1_num_bytes = ustore::MapNode::encode(seg_data12, kv1);
+  size_t kv2_num_bytes = ustore::MapNode::encode(seg_data12
+                                                 + kv1_num_bytes, kv2);
+  size_t kv3_num_bytes = ustore::MapNode::encode(seg_data3, kv3);
+
+  size_t seg12_num_bytes = kv1_num_bytes + kv2_num_bytes;
+  ustore::VarSegment seg12(seg_data12, seg12_num_bytes, {0, kv1_num_bytes});
+
+  size_t seg3_num_bytes = kv3_num_bytes;
+  ustore::VarSegment seg3(seg_data3, seg3_num_bytes, {0});
+
+  std::vector<const ustore::Segment*> segs {&seg12, &seg3};
+  ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->make(segs);
+
+  const ustore::Chunk* chunk = chunk_info.chunk.get();
+  ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
+  ustore::ChunkLoader loader;
+  EXPECT_TRUE(chunk_store->Put(chunk->hash(), *chunk));
+
+  // Find the smallest key
+  bool found = true;
+  constexpr ustore::byte_t k0[] = "k0";
+  const ustore::OrderedKey key0(false, k0, 2);
+  ustore::NodeCursor* cursor = ustore::NodeCursor::GetCursorByKey(
+                                  chunk->hash(), key0,
+                                  &loader, &found);
+  EXPECT_EQ(0, cursor->idx());
+  EXPECT_FALSE(found);
+  delete cursor;
+
+  // Find the exact key
+  found = false;
+  const ustore::OrderedKey key1(false, k1, 2);
+  cursor = ustore::NodeCursor::GetCursorByKey(
+                                  chunk->hash(), key1,
+                                  &loader, &found);
+  EXPECT_EQ(0, cursor->idx());
+  EXPECT_TRUE(found);
+  delete cursor;
+
+  // Find the non-exact key
+  found = true;
+  constexpr ustore::byte_t k12[] = "k12";
+  const ustore::OrderedKey key12(false, k12, 3);
+  cursor = ustore::NodeCursor::GetCursorByKey(
+                                  chunk->hash(), key12,
+                                  &loader, &found);
+  EXPECT_EQ(1, cursor->idx());
+  EXPECT_FALSE(found);
+  delete cursor;
+
+  // Find the non-exact key
+  found = true;
+  constexpr ustore::byte_t k4[] = "k4";
+  const ustore::OrderedKey key4(false, k4, 2);
+  cursor = ustore::NodeCursor::GetCursorByKey(
+                                  chunk->hash(), key4,
+                                  &loader, &found);
+  EXPECT_EQ(3, cursor->idx());
+  EXPECT_FALSE(found);
+  delete cursor;
+}
+
+TEST(NodeCursor, TreeByKey) {
+  // Construct a tree and access by key
+  constexpr const ustore::byte_t k1[] = "k1";
+  constexpr const ustore::byte_t v1[] = "v1";
+  constexpr const ustore::byte_t k2[] = "k22";
+  constexpr const ustore::byte_t v2[] = "v22";
+  constexpr const ustore::byte_t k3[] = "k333";
+  constexpr const ustore::byte_t v3[] = "v333";
+
+  ustore::KVItem kv1{k1, v1, 2, 2};
+  ustore::KVItem kv2{k2, v2, 3, 3};
+  ustore::KVItem kv3{k3, v3, 4, 4};
+
+  ustore::byte_t* seg_data1 = new ustore::byte_t[100];
+  ustore::byte_t* seg_data2 = new ustore::byte_t[100];
+  ustore::byte_t* seg_data3 = new ustore::byte_t[100];
+
+  size_t kv1_num_bytes = ustore::MapNode::encode(seg_data1, kv1);
+  size_t kv2_num_bytes = ustore::MapNode::encode(seg_data2, kv2);
+  size_t kv3_num_bytes = ustore::MapNode::encode(seg_data3, kv3);
+
+  size_t seg1_num_bytes = kv1_num_bytes;
+  ustore::VarSegment seg1(seg_data1, seg1_num_bytes, {0});
+
+  size_t seg2_num_bytes = kv2_num_bytes;
+  ustore::VarSegment seg2(seg_data2, seg2_num_bytes, {0});
+
+  size_t seg3_num_bytes = kv3_num_bytes;
+  ustore::VarSegment seg3(seg_data3, seg3_num_bytes, {0});
+
+  ustore::ChunkInfo chunk_info12 = ustore::MapChunker::Instance()
+                                   ->make({&seg1, &seg2});
+  ustore::ChunkInfo chunk_info3 = ustore::MapChunker::Instance()
+                                   ->make({&seg3});
+
+  ustore::ChunkInfo chunkinfo_meta = ustore::MetaChunker::Instance()
+                                     ->make({chunk_info12.meta_seg.get(),
+                                               chunk_info12.meta_seg.get()});
+
+  ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
+  EXPECT_TRUE(chunk_store->Put(chunk_info12.chunk->hash(),
+                               *(chunk_info12.chunk)));
+
+  EXPECT_TRUE(chunk_store->Put(chunk_info3.chunk->hash(),
+                               *(chunk_info3.chunk)));
+
+  EXPECT_TRUE(chunk_store->Put(chunkinfo_meta.chunk->hash(),
+                               *(chunkinfo_meta.chunk)));
+  //////////////////////////////////////////////////////////////
+
+  ustore::Hash root_hash = chunkinfo_meta.chunk->hash();
+
+  ustore::ChunkLoader loader;
+
+  // Find the smallest key
+  bool found = true;
+  constexpr ustore::byte_t k0[] = "k0";
+  const ustore::OrderedKey key0(false, k0, 2);
+  ustore::NodeCursor* cursor = ustore::NodeCursor::GetCursorByKey(
+                                  root_hash, key0,
+                                  &loader, &found);
+  EXPECT_EQ(0, cursor->idx());
+  EXPECT_FALSE(found);
+  delete cursor;
+
+  // Find the first exact key
+  found = false;
+  const ustore::OrderedKey key1(false, k1, 2);
+  cursor = ustore::NodeCursor::GetCursorByKey(
+                                  root_hash, key1,
+                                  &loader, &found);
+  EXPECT_EQ(0, cursor->idx());
+  EXPECT_TRUE(found);
+  delete cursor;
+
+  // Find the last exact key in a chunk
+  found = false;
+  const ustore::OrderedKey key2(false, k2, 3);
+  cursor = ustore::NodeCursor::GetCursorByKey(
+                                  root_hash, key2,
+                                  &loader, &found);
+  EXPECT_EQ(1, cursor->idx());
+  EXPECT_TRUE(found);
+  delete cursor;
+
+  // Find the non-exact key at start of chunk
+  found = true;
+  constexpr ustore::byte_t k23[] = "k23";
+  const ustore::OrderedKey key23(false, k23, 3);
+  cursor = ustore::NodeCursor::GetCursorByKey(
+                                  root_hash, key23,
+                                  &loader, &found);
+  EXPECT_EQ(2, cursor->idx());
+  EXPECT_FALSE(found);
+  delete cursor;
+
+  // Search until the last key
+  found = true;
+  constexpr ustore::byte_t k4[] = "k4";
+  const ustore::OrderedKey key4(false, k4, 2);
+  cursor = ustore::NodeCursor::GetCursorByKey(
+                                  root_hash, key4,
+                                  &loader, &found);
+  EXPECT_EQ(2, cursor->idx());
+  EXPECT_FALSE(found);
+  delete cursor;
 }

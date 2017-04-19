@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "types/type.h"
+#include "spec/slice.h"
 
 namespace ustore {
 
@@ -17,11 +18,19 @@ class OrderedKey {
    0  -- variable size
  */
  public:
+  inline static const OrderedKey fromSlice(const Slice& key) {
+    return OrderedKey(false,
+                      reinterpret_cast<const byte_t*>(key.data()),
+                      key.len());
+  }
   // Set an integer value for key
   // own set to false
+  OrderedKey() {}
   explicit OrderedKey(uint64_t value);
   // Set the hash data for key
   OrderedKey(bool by_value, const byte_t* data, size_t num_bytes);
+  OrderedKey& operator=(const OrderedKey& key) = default;
+  OrderedKey(const OrderedKey& key) = default;
   ~OrderedKey() {}
 
   inline const byte_t* data() const { return data_; }
@@ -44,7 +53,7 @@ class OrderedKey {
   }
 
  private:
-  const size_t num_bytes_;  // number of bytes of data
+  size_t num_bytes_;  // number of bytes of data
   // Parse the data as a number to compare
   // Otherwise as hash value
   bool by_value_;
