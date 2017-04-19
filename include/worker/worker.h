@@ -110,8 +110,8 @@ class Worker : public DB, private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Get(const Slice& key, const Slice& branch,
-                        Value* val) const;
+  ErrorCode Get(const Slice& key, const Slice& branch,
+                Value* val) const override;
 
   /**
    * @brief Read data.
@@ -121,7 +121,8 @@ class Worker : public DB, private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Get(const Slice& key, const Hash& ver, Value* val) const;
+  ErrorCode Get(const Slice& key, const Hash& ver,
+                Value* val) const override;
 
   /**
    * @brief Write data.
@@ -135,8 +136,8 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Value& val,
-                        const Slice& branch, Hash* ver);
+  ErrorCode Put(const Slice& key, const Value& val,
+                const Slice& branch, Hash* ver) override;
 
   /**
    * @brief Write data.
@@ -147,8 +148,8 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Value& val,
-                        const Hash& prev_ver, Hash* ver);
+  ErrorCode Put(const Slice& key, const Value& val,
+                const Hash& prev_ver, Hash* ver) override;
 
   /**
    * @brief Create a new branch for the data.
@@ -157,8 +158,8 @@ class Worker : public DB, private Noncopyable {
    * @param new_branch The new branch.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
-                           const Slice& new_branch);
+  ErrorCode Branch(const Slice& key, const Slice& old_branch,
+                   const Slice& new_branch) override;
 
   /**
    * @brief Create a new branch for the data.
@@ -167,8 +168,8 @@ class Worker : public DB, private Noncopyable {
    * @param new_branch The new branch.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Branch(const Slice& key, const Hash& ver,
-                           const Slice& new_branch);
+  ErrorCode Branch(const Slice& key, const Hash& ver,
+                   const Slice& new_branch) override;
 
   /**
    * @brief Rename the branch.
@@ -178,8 +179,8 @@ class Worker : public DB, private Noncopyable {
    * @param new_branch The target branch.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Rename(const Slice& key, const Slice& old_branch,
-                           const Slice& new_branch);
+  ErrorCode Rename(const Slice& key, const Slice& old_branch,
+                   const Slice& new_branch) override;
 
   /**
    * @brief Merge two branches of the data.
@@ -191,9 +192,8 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value& val,
-                          const Slice& tgt_branch, const Slice& ref_branch,
-                          Hash* ver);
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Slice& ref_branch, Hash* ver) override;
 
   /**
    * @brief Merge two branches of the data.
@@ -205,9 +205,8 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value& val,
-                          const Slice& tgt_branch, const Hash& ref_ver,
-                          Hash* ver);
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Hash& ref_ver, Hash* ver) override;
 
   /**
    * @brief Merge two versions of the data.
@@ -219,9 +218,8 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value& val,
-                          const Hash& ref_ver1, const Hash& ref_ver2,
-                          Hash* ver);
+  ErrorCode Merge(const Slice& key, const Value& val, const Hash& ref_ver1,
+                  const Hash& ref_ver2, Hash* ver) override;
 
  private:
   ErrorCode Read(const UCell& ucell, Value* val) const;

@@ -75,7 +75,7 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 # copy the conf directory
 FILE(COPY conf DESTINATION ${PROJECT_BINARY_DIR}) 
-MESSAGE(STATUS "copy directory: /conf")
+MESSAGE(STATUS "copy directory: conf")
 
 ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(src)
