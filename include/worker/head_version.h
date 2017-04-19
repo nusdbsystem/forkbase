@@ -22,7 +22,7 @@ using HashOpt = boost::optional<Hash>;
  */
 class HeadVersion : private Noncopyable {
  public:
-  //TODO(yaochang): persist the log of branch update.
+  // TODO(yaochang): persist the log of branch update.
   inline void LogBranchUpdate(const Slice& key, const Slice& branch,
                               const Hash& ver) const {}
 

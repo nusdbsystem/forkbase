@@ -10,8 +10,6 @@
 
 namespace ustore {
 
-// const Slice Worker::kNullBranch{""};
-
 const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
   const auto& ver_opt = head_ver_.GetBranch(key, branch);
   return ver_opt ? *ver_opt : Hash::kNull;

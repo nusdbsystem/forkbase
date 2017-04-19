@@ -6,14 +6,13 @@
 
 namespace ustore {
 
-const HashOpt HeadVersion::GetBranch(const Slice& key,
-                                     const Slice& branch) const {
+const HashOpt HeadVersion::GetBranch(const Slice& key, const Slice& branch)
+    const {
   return Exists(key, branch) ?
          boost::make_optional(branch_ver_.at(key).at(branch)) : boost::none;
 }
 
-const std::unordered_set<Hash>& HeadVersion::GetLatest(
-  const Slice& key) const {
+const std::unordered_set<Hash>& HeadVersion::GetLatest(const Slice& key) const {
   if (latest_ver_.find(key) == latest_ver_.end()) {
     DLOG(INFO) << "No data exists for Key \"" << key << "\"";
     static const std::unordered_set<Hash> empty;
@@ -30,7 +29,7 @@ void HeadVersion::PutBranch(const Slice& key, const Slice& branch,
 
 void HeadVersion::PutLatest(const Slice& key, const Hash& prev_ver1,
                             const Hash& prev_ver2, const Hash& ver) {
-  auto& lv_key = latest_ver_[key];
+  auto& lv_key = latest_ver_[Persist(key)];
   lv_key.erase(prev_ver1);
   lv_key.erase(prev_ver2);
   lv_key.insert(ver.Clone());

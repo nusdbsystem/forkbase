@@ -111,13 +111,18 @@ void Hash::Alloc() {
 }
 
 #ifdef USE_SHA256
-void Hash::Compute(const byte_t* data, size_t len) {
+Hash& Hash::Compute(const byte_t* data, size_t len) {
   Alloc();
   byte_t fullhash[kBase32Length];
   picosha2::hash256(data, data + len, fullhash, fullhash + kBase32Length);
   std::copy(fullhash, fullhash + kByteLength, own_.get());
+  return *this;
 }
 #endif  // USE_SHA256
+
+inline Hash& Hash::Compute(const std::string& data) {
+  return Compute(reinterpret_cast<const byte_t*>(data.c_str()), data.size());
+}
 
 std::ostream& operator<<(std::ostream& os, const Hash & obj) {
   os << obj.ToBase32();

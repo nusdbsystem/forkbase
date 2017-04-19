@@ -81,11 +81,8 @@ class Hash {
   Hash& FromBase32(const std::string& base32);
   // compute hash from data
   // if do so, must allocate own value
-  void Compute(const byte_t* data, size_t len);
-  inline Hash& Compute(const std::string data) {
-    Compute(reinterpret_cast<const byte_t*>(data.c_str()), data.size());
-    return *this;
-  }
+  Hash& Compute(const byte_t* data, size_t len);
+  Hash& Compute(const std::string& data);
   // encode to base32 format
   std::string ToBase32() const;
   // get a copy that contains own bytes

@@ -20,7 +20,6 @@ namespace ustore {
 class Worker : private Noncopyable {
  public:
   using WorkerID = uint32_t;
-  static const Slice kNullBranch;
 
   explicit Worker(const WorkerID& id) : id_(id) {}
   ~Worker() {}
@@ -43,6 +42,10 @@ class Worker : private Noncopyable {
    * @param key Data key.
    * @return A set of all the latest versions of data.
    */
+  // TODO(linqian): may need copy and return std::vector<std::string>, otherwise
+  //  it is not thead-safe.
+  // TODO(linqian): later on, we may have filters on the returned versions, e.g,
+  //  return last 10 latest versions
   inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
   const {
     return head_ver_.GetLatest(key);
@@ -64,6 +67,8 @@ class Worker : private Noncopyable {
    * @param key Data key.
    * @return A set of all the branches of data.
    */
+  // TODO(linqian): may need copy and return std::vector<std::string>, otherwise
+  //  it is not thread-safe.
   inline std::unordered_set<Slice> ListBranch(const Slice& key) const {
     return head_ver_.ListBranch(key);
   }
@@ -90,8 +95,8 @@ class Worker : private Noncopyable {
    * @param ucell The referring UCell object.
    */
   inline void UpdateLatestVersion(const Slice& key, const UCell& ucell) {
-    const auto& prev_ver1 = ucell.preUNodeHash();
-    const auto& prev_ver2 = ucell.preUNodeHash(true);
+    const auto& prev_ver1 = ucell.preUCellHash();
+    const auto& prev_ver2 = ucell.preUCellHash(true);
     const auto& ver = ucell.hash();
     head_ver_.PutLatest(key, prev_ver1, prev_ver2, ver);
   }
