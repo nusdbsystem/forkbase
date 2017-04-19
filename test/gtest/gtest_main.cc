@@ -29,10 +29,12 @@
 
 #include <stdio.h>
 
+#include "utils/env.h"
 #include "gtest/gtest.h"
 
 GTEST_API_ int main(int argc, char **argv) {
   printf("Running main() from gtest_main.cc\n");
   testing::InitGoogleTest(&argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return RUN_ALL_TESTS();
 }
