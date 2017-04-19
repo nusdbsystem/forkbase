@@ -158,7 +158,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
     {
       UStoreMessage::MoveRequestPayload payload =
                     (ustore_msg->move_request_payload());
-      error_code = worker_->Move(Slice(ustore_msg->key()),
+      error_code = worker_->Rename(Slice(ustore_msg->key()),
           Slice(ustore_msg->branch()), Slice(payload.new_branch()));
       break;
     }

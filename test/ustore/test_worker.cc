@@ -145,7 +145,7 @@ TEST(Worker, Branch) {
 
 TEST(Worker, RenameBranch) {
   const Hash head_b1 = worker.GetBranchHead(key1, branch1);
-  EXPECT_EQ(ErrorCode::kOK, worker.Move(key1, branch1, branch4));
+  EXPECT_EQ(ErrorCode::kOK, worker.Rename(key1, branch1, branch4));
   EXPECT_EQ(head_b1, worker.GetBranchHead(key1, branch4));
   const auto branches_key1 = worker.ListBranch(key1);
   EXPECT_EQ(3, branches_key1.size());

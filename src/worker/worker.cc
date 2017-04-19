@@ -169,8 +169,8 @@ ErrorCode Worker::Branch(const Slice& key, const Hash& ver,
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::Move(const Slice& key, const Slice& old_branch,
-                       const Slice& new_branch) {
+ErrorCode Worker::Rename(const Slice& key, const Slice& old_branch,
+                         const Slice& new_branch) {
   if (!head_ver_.Exists(key, old_branch)) {
     LOG(ERROR) << "Branch \"" << old_branch << "\" for Key \"" << key
                << "\" does not exist!";

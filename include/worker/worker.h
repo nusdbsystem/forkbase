@@ -5,6 +5,7 @@
 
 #include <unordered_set>
 #include "hash/hash.h"
+#include "spec/db.h"
 #include "spec/slice.h"
 #include "spec/value.h"
 #include "types/type.h"
@@ -14,13 +15,13 @@
 
 namespace ustore {
 
+using WorkerID = uint32_t;
+
 /**
  * @brief Worker node management.
  */
-class Worker : private Noncopyable {
+class Worker : public DB, private Noncopyable {
  public:
-  using WorkerID = uint32_t;
-
   explicit Worker(const WorkerID& id) : id_(id) {}
   ~Worker() {}
 
@@ -134,8 +135,8 @@ class Worker : private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-                Hash* ver);
+  virtual ErrorCode Put(const Slice& key, const Value& val,
+                        const Slice& branch, Hash* ver);
 
   /**
    * @brief Write data.
@@ -177,8 +178,8 @@ class Worker : private Noncopyable {
    * @param new_branch The target branch.
    * @return Error code. (0 for success)
    */
-  virtual ErrorCode Move(const Slice& key, const Slice& old_branch,
-                         const Slice& new_branch);
+  virtual ErrorCode Rename(const Slice& key, const Slice& old_branch,
+                           const Slice& new_branch);
 
   /**
    * @brief Merge two branches of the data.

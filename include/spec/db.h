@@ -6,7 +6,7 @@
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"
-#include "types/types.h"
+#include "types/type.h"
 
 namespace ustore {
 
@@ -21,7 +21,7 @@ class DB {
    * @return        Error code. (ErrorCode::ok for success)
    */
   virtual ErrorCode Get(const Slice& key, const Slice& branch,
-                        Value* value) = 0;
+                        Value* value) const = 0;
   /**
    * @brief Read the value of a version.
    *
@@ -31,9 +31,9 @@ class DB {
    * @return        Error code. (ErrorCode::ok for success)
    */
   virtual ErrorCode Get(const Slice& key, const Hash& version,
-                        Value* value) = 0;
+                        Value* value) const = 0;
   /**
-   * @brief Write a new value as the head of a branch. 
+   * @brief Write a new value as the head of a branch.
    *
    * @param key     Target key.
    * @param branch  Branch to update.
@@ -41,10 +41,10 @@ class DB {
    * @param version Returned version.
    * @return        Error code. (ErrorCode::ok for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Slice& branch,
-                        const Value& value, Hash* version) = 0;
+  virtual ErrorCode Put(const Slice& key, const Value& value,
+                        const Slice& branch, Hash* version) = 0;
   /**
-   * @brief Write a new value as the successor of a version. 
+   * @brief Write a new value as the successor of a version.
    *
    * @param key         Target key.
    * @param pre_version Previous version refered to.
@@ -52,8 +52,8 @@ class DB {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::ok for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Hash& pre_version,
-                        const Value& value, Hash* version) = 0;
+  virtual ErrorCode Put(const Slice& key, const Value& value,
+                        const Hash& pre_version, Hash* version) = 0;
   /**
    * @brief Create a new branch which points to the head of a branch.
    *
@@ -75,7 +75,7 @@ class DB {
   virtual ErrorCode Branch(const Slice& key, const Hash& version,
                            const Slice& new_branch) = 0;
   /**
-   * @brief Rename an existing branch. 
+   * @brief Rename an existing branch.
    *
    * @param key         Target key.
    * @param old_branch  Existing branch name.
@@ -95,8 +95,8 @@ class DB {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::ok for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Slice& tgt_branch,
-                          const Slice& ref_branch, const Value& value,
+  virtual ErrorCode Merge(const Slice& key, const Value& value,
+                          const Slice& tgt_branch, const Slice& ref_branch,
                           Hash* version) = 0;
   /**
    * @brief Merge target branch to a referring version.
@@ -108,11 +108,11 @@ class DB {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::ok for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Slice& tgt_branch,
-                          const Hash& ref_version, const Value& value,
+  virtual ErrorCode Merge(const Slice& key, const Value& value,
+                          const Slice& tgt_branch, const Hash& ref_version,
                           Hash* version) = 0;
   /**
-   * @brief Merge two existing versions. 
+   * @brief Merge two existing versions.
    *
    * @param key           Target key.
    * @param ref_version1  The first referring branch.
@@ -121,10 +121,10 @@ class DB {
    * @param version       Returned version.
    * @return              Error code. (ErrorCode::ok for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Hash& ref_version1,
-                          const Hash& ref_version2, const Value& value,
+  virtual ErrorCode Merge(const Slice& key, const Value& value,
+                          const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) = 0;
-}
+};
 
 }  // namespace ustore
 
