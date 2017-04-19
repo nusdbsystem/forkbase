@@ -60,7 +60,7 @@ void Hash::CopyFrom(const Hash& hash) {
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
 // which is a multiplier of 5 bits, so no need of padding.
-void Hash::FromBase32(const std::string& base32) {
+Hash& Hash::FromBase32(const std::string& base32) {
   CHECK_EQ(kBase32Length, base32.length())
       << "length of input string is not 32 bytes";
   Alloc();
@@ -78,6 +78,8 @@ void Hash::FromBase32(const std::string& base32) {
     }
     dest += 5;
   }
+
+  return *this;
 }
 
 std::string Hash::ToBase32() const {
@@ -109,13 +111,18 @@ void Hash::Alloc() {
 }
 
 #ifdef USE_SHA256
-void Hash::Compute(const byte_t* data, size_t len) {
+Hash& Hash::Compute(const byte_t* data, size_t len) {
   Alloc();
   byte_t fullhash[kBase32Length];
   picosha2::hash256(data, data + len, fullhash, fullhash + kBase32Length);
   std::copy(fullhash, fullhash + kByteLength, own_.get());
+  return *this;
 }
 #endif  // USE_SHA256
+
+inline Hash& Hash::Compute(const std::string& data) {
+  return Compute(reinterpret_cast<const byte_t*>(data.c_str()), data.size());
+}
 
 std::ostream& operator<<(std::ostream& os, const Hash & obj) {
   os << obj.ToBase32();

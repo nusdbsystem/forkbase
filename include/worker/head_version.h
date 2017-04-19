@@ -4,6 +4,7 @@
 #define USTORE_WORKER_HEAD_VERSION_H_
 
 #include <boost/optional.hpp>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include "hash/hash.h"
@@ -21,22 +22,21 @@ using HashOpt = boost::optional<Hash>;
  */
 class HeadVersion : private Noncopyable {
  public:
+  // TODO(yaochang): persist the log of branch update.
+  inline void LogBranchUpdate(const Slice& key, const Slice& branch,
+                              const Hash& ver) const {}
+
   HeadVersion() {}
   ~HeadVersion() {}
 
-  const HashOpt Get(const Slice& key, const Slice& branch) const;
+  const HashOpt GetBranch(const Slice& key, const Slice& branch) const;
 
   const std::unordered_set<Hash>& GetLatest(const Slice& key) const;
 
-  void PutForBranchOnly(const Slice& key, const Slice& branch,
-                        const Hash& ver);
+  void PutBranch(const Slice& key, const Slice& branch, const Hash& ver);
 
-  void Put(const Slice& key, const Slice& branch, const Hash& ver);
-
-  void Put(const Slice& key, const Hash& old_ver, const Hash& new_ver);
-
-  void Merge(const Slice& key, const Hash& old_ver1, const Hash& old_ver2,
-             const Hash& new_ver);
+  void PutLatest(const Slice& key, const Hash& prev_ver1,
+                 const Hash& prev_ver2, const Hash& ver);
 
   void RemoveBranch(const Slice& key, const Slice& branch);
 

@@ -37,7 +37,7 @@ class UCell : private Noncopyable {
   inline Hash dataHash() const { return node_->dataHash(); }
   // return empty hash (Hash()) if
   // the request second prehash does not exist
-  inline Hash preUNodeHash(bool second = false) const {
+  inline Hash preUCellHash(bool second = false) const {
     return node_->preHash(second);
   }
 

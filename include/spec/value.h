@@ -35,7 +35,7 @@ class Value {
     return *this;
   }
 
-  inline bool isNull() const { return data_ == nullptr; }
+  inline bool empty() const { return data_ == nullptr; }
   inline UType type() const { return type_; }
   inline Slice slice() const {
     CHECK(type_ == UType::kString);
@@ -44,6 +44,20 @@ class Value {
   inline Blob blob() const {
     CHECK(type_ == UType::kBlob);
     return Blob(static_cast<const byte_t*>(data_), size_);
+  }
+
+  // ensure to call Release when finish using a value returned from worker
+  inline void Release() {
+    if (empty()) return;
+    switch (type_) {
+      case UType::kString:
+        delete[] slice().data();
+        break;
+      case UType::kBlob:
+        delete[] blob().data();
+        break;
+    }
+    data_ = nullptr;
   }
 
  private:

@@ -44,7 +44,7 @@ TEST(Worker, PutString) {
 
   Hash ver2;
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key1, Value(slice2), branch1, ver1, &ver2));
+            worker.Put(key1, Value(slice2), branch1, &ver2));
   EXPECT_FALSE(worker.IsBranchHead(key1, branch1, ver1));
   EXPECT_EQ(ver2, worker.GetBranchHead(key1, branch1));
 
@@ -61,7 +61,7 @@ TEST(Worker, PutString) {
   EXPECT_EQ(ErrorCode::kOK,
             worker.Put(key1, Value(slice2), branch2, &ver5));
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key1, Value(slice1), branch2, ver5, &ver5));
+            worker.Put(key1, Value(slice1), branch2, &ver5));
   EXPECT_EQ(ver5, worker.GetBranchHead(key1, branch2));
   EXPECT_EQ(2, worker.ListBranch(key1).size());
   EXPECT_EQ(3, worker.GetLatestVersions(key1).size());
@@ -80,7 +80,7 @@ TEST(Worker, GetString) {
 
   for (auto && ver : worker.GetLatestVersions(key1)) {
     Value val;
-    EXPECT_EQ(ErrorCode::kOK, worker.Get(key1, Worker::kNullBranch, ver, &val));
+    EXPECT_EQ(ErrorCode::kOK, worker.Get(key1, ver, &val));
   }
 }
 
@@ -96,7 +96,7 @@ TEST(Worker, PutBlob) {
 
   Hash ver2;
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key2, Value(blob2), branch1, ver1, &ver2));
+            worker.Put(key2, Value(blob2), branch1, &ver2));
   EXPECT_FALSE(worker.IsBranchHead(key2, branch1, ver1));
   EXPECT_EQ(ver2, worker.GetBranchHead(key2, branch1));
 
@@ -112,7 +112,7 @@ TEST(Worker, PutBlob) {
   EXPECT_EQ(ErrorCode::kOK,
             worker.Put(key2, Value(blob2), branch2, &ver5));
   EXPECT_EQ(ErrorCode::kOK,
-            worker.Put(key2, Value(blob1), branch2, ver5, &ver5));
+            worker.Put(key2, Value(blob1), branch2, &ver5));
   EXPECT_EQ(ver5, worker.GetBranchHead(key2, branch2));
   EXPECT_EQ(2, worker.ListBranch(key2).size());
   EXPECT_EQ(3, worker.GetLatestVersions(key2).size());
@@ -131,7 +131,7 @@ TEST(Worker, GetBlob) {
 
   for (auto && ver : worker.GetLatestVersions(key2)) {
     Value val;
-    EXPECT_EQ(ErrorCode::kOK, worker.Get(key2, Worker::kNullBranch, ver, &val));
+    EXPECT_EQ(ErrorCode::kOK, worker.Get(key2, ver, &val));
   }
 }
 
@@ -160,7 +160,7 @@ TEST(Worker, Merge) {
             worker.Merge(key1, Value(slice5), branch4, branch2, &head_b4));
   EXPECT_TRUE(worker.IsBranchHead(key1, branch4, head_b4));
   EXPECT_EQ(3, worker.ListBranch(key1).size());
-  EXPECT_EQ(4, worker.GetLatestVersions(key1).size());
+  EXPECT_EQ(3, worker.GetLatestVersions(key1).size());
 
   const Hash head_b3 = worker.GetBranchHead(key1, branch3);
   Hash head_b2;
