@@ -11,30 +11,28 @@
 namespace gflags = google;
 #endif  // GFLAGS_GFLAGS_H_
 
-/**
- * This is a temporary place for storing global configuration
- * parameters, e.g. number of nodes, of threads, etc.
- * The specific values are defined in config.cc
- */
 namespace ustore {
 
 DECLARE_string(config);  // passed from the commandline
 
 /*
  * USTORE environment
+ *  This is the place place for storing global configuration
+ * parameters.
  */
-class Env: public Singleton<Env>, private Noncopyable {
- public:
-  const Config* GetConfig();
-  void ClearConfig() {
-    if (config_) {
-      delete config_;
-      config_ = nullptr;
-    }
-  }
 
+class Env : public Singleton<Env>, private Noncopyable {
+  friend class Singleton<Env>;
+ public:
+  static const char* kDefaultConfigFile;
+  
+  const Config* config() { return &config_; }
+ 
  private:
-  Config* config_ = nullptr;
+  Env();
+  ~Env() {}
+  
+  Config config_;
 };
 
 }  // namespace ustore

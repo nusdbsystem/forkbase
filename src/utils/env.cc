@@ -11,25 +11,27 @@
 namespace ustore {
 
 // configuration file passed from the commandline
-DEFINE_string(config, "conf/config", "");
+DEFINE_string(config, Env::kDefaultConfigFile, "");
 
-const Config* Env::GetConfig() {
-  if (!config_) {
-    config_ = new Config;
-    int fd = open(FLAGS_config.c_str(), O_RDONLY);
-    if (fd == -1) {
-      LOG(INFO) << "Using default configuration (file \""
-          << FLAGS_config << "\" not found)";
-    } else {
-      LOG(INFO) << "Load configuration \"" << FLAGS_config << "\"";
-      google::protobuf::TextFormat::Parse(
-          new google::protobuf::io::FileInputStream(fd), config_);
-    }
-    LOG(INFO) << "worker_file: " << config_->worker_file();
-    LOG(INFO) << "clientservice_file = " << config_->clientservice_file();
-    LOG(INFO) << "recv_threads: " << config_->recv_threads();
-    LOG(INFO) << "service_threads = " << config_->service_threads();
+const char* Env::kDefaultConfigFile = "conf/config";
+
+Env::Env() {
+  int fd = open(FLAGS_config.c_str(), O_RDONLY);
+  if (fd == -1) {
+    LOG(WARNING) << "Using default configuration (file \""
+                 << FLAGS_config << "\" not found)";
+    FLAGS_config = kDefaultConfigFile;
+    fd = open(FLAGS_config.c_str(), O_RDONLY);
+    if (fd == -1)
+    LOG(FATAL) << "Fail to load default configuration (file \""
+               << FLAGS_config << "\" not found)";
   }
-  return config_;
+  LOG(INFO) << "Load configuration \"" << FLAGS_config << "\"";
+  google::protobuf::TextFormat::Parse(
+      new google::protobuf::io::FileInputStream(fd), &config_);
+  LOG(INFO) << "worker_file: " << config_.worker_file();
+  LOG(INFO) << "clientservice_file = " << config_.clientservice_file();
+  LOG(INFO) << "recv_threads: " << config_.recv_threads();
+  LOG(INFO) << "service_threads = " << config_.service_threads();
 }
 }  // namespace ustore

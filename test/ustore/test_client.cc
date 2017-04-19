@@ -148,7 +148,7 @@ bool ustore::TestWorkload::NextRequest(ustore::RequestHandler *reqhl) {
 TEST(TestMessage, TestClient1Thread) {
   ustore::SetStderrLogging(ustore::WARNING);
   // launch workers
-  ifstream fin(Env::Instance()->GetConfig()->worker_file());
+  ifstream fin(Env::Instance()->config()->worker_file());
   string worker_addr;
   vector<WorkerService*> workers;
   while (fin >> worker_addr)
@@ -159,7 +159,7 @@ TEST(TestMessage, TestClient1Thread) {
     workers[i]->Init();
 
   // launch clients
-  ifstream fin_client(Env::Instance()->GetConfig()->clientservice_file());
+  ifstream fin_client(Env::Instance()->config()->clientservice_file());
   string clientservice_addr;
   fin_client >> clientservice_addr;
   ClientService *client = new ClientService(clientservice_addr, "",
