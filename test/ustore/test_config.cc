@@ -35,9 +35,4 @@ TEST(ConfigTest, ConfigParse) {
   CHECK_EQ(c->clientservice_file(), kDefaultClientServiceFile);
   CHECK_EQ(c->recv_threads(), kDefaultRecvThreads);  // default value
   CHECK_EQ(c->service_threads(), kDefaultServiceThreads);  // default value
-
-  // delete the config file
-  if (remove(ustore::FLAGS_config.c_str())) {  // error
-    LOG(WARNING) << "delete test config file failed";
-  }
 }
