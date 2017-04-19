@@ -6,8 +6,8 @@ package ustore;
  * Configuration parameters
  */
 message Config {
-  optional string worker_file =  1 [default = "../conf/workers"]; // file containing worker hostnames
-  optional string clientservice_file = 2 [default = "../conf/client_services"]; // file containing client hostnames
+  optional string worker_file =  1 [default = "conf/workers"]; // file containing worker hostnames
+  optional string clientservice_file = 2 [default = "conf/client_services"]; // file containing client hostnames
   optional int32 recv_threads = 3 [default = 2]; // number of receiving threads 
   optional int32 service_threads = 4 [default = 1]; // number of server threads
 }

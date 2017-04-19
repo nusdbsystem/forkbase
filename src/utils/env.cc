@@ -11,7 +11,7 @@
 namespace ustore {
 
 // configuration file passed from the commandline
-DEFINE_string(config, "../conf/config", "");
+DEFINE_string(config, "conf/config", "");
 
 const Config* Env::GetConfig() {
   if (!config_) {
