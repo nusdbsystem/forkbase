@@ -1,7 +1,4 @@
 // Copyright (c) 2017 The Ustore Authors
-
-#include "cluster/client_service.h"
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -10,6 +7,7 @@
 #include "net/zmq_net.h"
 #include "utils/env.h"
 #include "utils/logging.h"
+#include "cluster/remote_client_service.h"
 
 namespace ustore {
 
@@ -19,24 +17,23 @@ class CSCallBack : public CallBack {
  public:
   explicit CSCallBack(void* handler) : CallBack(handler) {}
   void operator()(const void *msg, int size, const node_id_t& source) override {
-    (reinterpret_cast<ClientService *>(handler_))->HandleResponse(
+    (reinterpret_cast<RemoteClientService *>(handler_))->HandleResponse(
                                         msg, size, source);
   }
 };
 
-ClientService::~ClientService() {
+RemoteClientService::~RemoteClientService() {
   delete cb_;
   delete workers_;
-  delete workload_;
   delete net_;
 }
 
-int ClientService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
+int RemoteClientService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
   return Slice(a.start()) < Slice(b.start());
 }
 
 // for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
-void ClientService::Init() {
+void RemoteClientService::Init() {
   // init the network: connects to the workers
   std::ifstream fin(Env::Instance()->config()->worker_file());
   CHECK(fin) << "Cannot find worker file: "
@@ -52,7 +49,7 @@ void ClientService::Init() {
     workers.push_back(rif);
     addresses_.push_back(worker_addr);
   }
-  std::sort(workers.begin(), workers.end(), ClientService::range_cmp);
+  std::sort(workers.begin(), workers.end(), RemoteClientService::range_cmp);
 
 #ifdef USE_RDMA
   net_ = new RdmaNet(node_addr_, Env::Instance()->config()->recv_threads());
@@ -63,13 +60,9 @@ void ClientService::Init() {
 
   // init worker list
   workers_ = new WorkerList(workers);
-  // init response queue
-  for (int i = 0; i < Env::Instance()->config()->recv_threads(); i++)
-    responses_.push_back(new ResponseBlob());
 }
 
-void ClientService::Start() {
-  std::vector<thread> client_threads;
+void RemoteClientService::Start() {
   net_->CreateNetContexts(addresses_);
   cb_ = new CSCallBack(this);
   net_->RegisterRecv(cb_);
@@ -79,16 +72,10 @@ void ClientService::Start() {
 #else
   new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
 #endif
-
-  for (int i = 0; i < Env::Instance()->config()->service_threads(); i++)
-    client_threads.push_back(thread(&ClientService::ClientThread, this,
-                                    master_, i));
   is_running_ = true;
-  for (int i=0; i < Env::Instance()->config()->service_threads(); i++)
-    client_threads[i].join();
 }
 
-void ClientService::HandleResponse(const void *msg, int size,
+void RemoteClientService::HandleResponse(const void *msg, int size,
                                    const node_id_t& source) {
   UStoreMessage *ustore_msg = new UStoreMessage();
   ustore_msg->ParseFromArray(msg, size);
@@ -100,14 +87,16 @@ void ClientService::HandleResponse(const void *msg, int size,
   (res_blob->condition).notify_all();
 }
 
-void ClientService::Stop() {
+void RemoteClientService::Stop() {
   net_->Stop();
   is_running_ = false;
 }
 
-void ClientService::ClientThread(const node_id_t& master, int thread_id) {
-  RequestHandler *reqhl = new RequestHandler(master, thread_id, net_,
-                                             responses_[thread_id], workers_);
-  while (is_running_ && workload_->NextRequest(reqhl)) {}
+ClientDb* RemoteClientService::CreateClientDb() {
+  // adding a new response blob
+  ResponseBlob *resblob = new ResponseBlob();
+  responses_.push_back(resblob);
+  return new ClientDb(master_, nclients_++, net_, resblob, workers_); 
 }
+
 }  // namespace ustore

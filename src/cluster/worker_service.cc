@@ -156,10 +156,10 @@ void WorkerService::HandleRequest(const void *msg, int size,
 
       break;
     }
-    case UStoreMessage::MOVE_REQUEST:
+    case UStoreMessage::RENAME_REQUEST:
     {
-      UStoreMessage::MoveRequestPayload payload =
-                    (ustore_msg->move_request_payload());
+      UStoreMessage::RenameRequestPayload payload =
+                    (ustore_msg->rename_request_payload());
       error_code = worker_->Rename(Slice(ustore_msg->key()),
           Slice(ustore_msg->branch()), Slice(payload.new_branch()));
       break;
@@ -176,12 +176,20 @@ void WorkerService::HandleRequest(const void *msg, int size,
                           (payload.value()).length())),
               Slice(payload.target_branch()), Slice(payload.ref_branch()),
               &new_version)
-        :  worker_->Merge(Slice(ustore_msg->key()),
-              Value(Blob((const byte_t*)(payload.value().data()),
+        :  (payload.has_ref_version() 
+              ? 
+                worker_->Merge(Slice(ustore_msg->key()),
+                Value(Blob((const byte_t*)(payload.value().data()),
                           (payload.value()).length())),
-              Slice(payload.target_branch()),
-              Hash((const byte_t*)((ustore_msg->version())).data()),
-              &new_version);
+                Hash((const byte_t*)((ustore_msg->version())).data()),
+                Hash((const byte_t*)((payload.ref_version())).data()),
+                &new_version)
+              : worker_->Merge(Slice(ustore_msg->key()),
+                Value(Blob((const byte_t*)(payload.value().data()),
+                          (payload.value()).length())),
+                Slice(payload.target_branch()),
+                Hash((const byte_t*)((ustore_msg->version())).data()),
+                &new_version));
 
       UStoreMessage::MergeResponsePayload *res_payload =
                     response->mutable_merge_response_payload();
@@ -192,18 +200,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       break;
   }
 
-  // add Status
-  switch (error_code) {
-    case ErrorCode::kOK:
-      response->set_status(UStoreMessage::SUCCESS);
-      break;
-    case ErrorCode::kInvalidRange:
-      response->set_status(UStoreMessage::INVALID_RANGE);
-      break;
-    default:
-      response->set_status(UStoreMessage::FAILED);
-      break;
-  }
+  response->set_status((int)error_code); 
   // send response back
   byte_t *serialized = new byte_t[response->ByteSize()];
   response->SerializeToArray(serialized, response->ByteSize());

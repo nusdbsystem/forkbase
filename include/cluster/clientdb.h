@@ -10,7 +10,7 @@
 #include "proto/messages.pb.h"
 #include "spec/slice.h"
 #include "hash/hash.h"
-
+#include "spec/db.h"
 namespace ustore {
 
 using google::protobuf::Message;
@@ -18,7 +18,7 @@ using google::protobuf::Message;
 class WorkerList;
 
 /**
- * A unit on the response queue. Each client request thread (RequestHandler)
+ * A unit on the response queue. Each client request thread 
  * waits on one of this object. The thread goes to sleep waiting for has_msg
  * condition to hold true. The has_msg variable will be set by the registered
  * callback method of the network thread
@@ -35,6 +35,8 @@ struct ResponseBlob {
 };
 
 /**
+ * ClientDb object is created from RemoteClientService. 
+ * 
  * Main entrance to the storage. It interfaces with the client (same process),
  * the master and the worker. It has 3 main tasks:
  *
@@ -45,8 +47,8 @@ struct ResponseBlob {
  * 3. When the response indicates error (INVALID_RANGE, for example), it
  * syncs with the master.
  *
- * Each RequestHandler thread processes request synchronously, but responses
- * arrive asynchronously from the network. To route the response back to the
+ * Each ClientDb can be run on a separate thread, processing requests synchronously.
+ * Responses arrive asynchronously from the network. To route the response back to the
  * correct thread, we use thread ID to identify the message. That is:
  *    + Each UStoreMessage request now contains a field named "source"
  *    + After sending the message, the thread waits on a ResponseBlob
@@ -54,54 +56,39 @@ struct ResponseBlob {
  *    + When a UStoreMessage response arrives, the network thread (callback)
  *      checks for the source and wakes up the corresponding ResponseBlob
  *
- * Basically the old ClientService, a client can invoke RequestHandler in
- * multiple threads, like this:
- *
- *    void ClientThread(node_id_t master, int id) {
- *      RequestHandler *rh = new RequestHandler(...);
- *      while (true) {
- *        status = rh->Get(..); // synchronous
- *        if (status!=SUCESS)
- *          rh->Get(..); // try again
- *        ...         
- *      }
- *    }
  */
 
-class RequestHandler {
+class ClientDb : public DB {
  public:
-  RequestHandler(const node_id_t& master, int id, Net *net, ResponseBlob *blob,
+  ClientDb(const node_id_t& master, int id, Net *net, ResponseBlob *blob,
       WorkerList* workers)
     : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
-  ~RequestHandler();
+  ~ClientDb();
 
-  /**
-   * Storage APIs. The returned Message contains the Status field indicate
-   * if it is successful or not. The calling function MUST delete the response
-   * message after use.
-   */
-  Message* Put(const Slice &key, const Slice &value,
-               const Hash &version, bool forward = false, bool force = false);
-  Message* Put(const Slice &key, const Slice &value, const Slice &branch,
-               bool forward = false, bool force = false);
-
-  Message* Get(const Slice &key, const Slice &branch);
-  Message* Get(const Slice &key, const Hash &version);
-
-  Message* Branch(const Slice &key, const Slice &old_branch,
-                  const Slice &new_branch);
-  Message* Branch(const Slice &key, const Hash &version,
-                  const Slice &new_branch);
-
-  Message* Move(const Slice &key, const Slice &old_branch,
-                const Slice &new_branch);
-
-  Message* Merge(const Slice &key, const Slice &value,
-                 const Slice &target_branch, const Slice &ref_branch,
-                 bool forward = false, bool force = false);
-  Message* Merge(const Slice &key, const Slice &value,
-                 const Slice &target_branch, const Hash &ref_version,
-                 bool forward = false, bool force = false);
+  // Storage APIs. Inheritted from DB.
+  ErrorCode Get(const Slice& key, const Slice& branch,
+                        Value* value) override;
+  ErrorCode Get(const Slice& key, const Hash& version,
+                        Value* value) override;
+  ErrorCode Put(const Slice& key, const Value& value,
+                        const Slice& branch, Hash* version) override;
+  ErrorCode Put(const Slice& key, const Value& value,
+                        const Hash& pre_version, Hash* version) override;
+  ErrorCode Branch(const Slice& key, const Slice& old_branch,
+                           const Slice& new_branch) override;
+  ErrorCode Branch(const Slice& key, const Hash& version,
+                           const Slice& new_branch) override;
+  ErrorCode Rename(const Slice& key, const Slice& old_branch,
+                           const Slice& new_branch) override;
+  ErrorCode Merge(const Slice& key, const Value& value,
+                          const Slice& tgt_branch, const Slice& ref_branch,
+                          Hash* version) override;
+  ErrorCode Merge(const Slice& key, const Value& value,
+                          const Slice& tgt_branch, const Hash& ref_version,
+                          Hash* version) override;
+  ErrorCode Merge(const Slice& key, const Value& value,
+                          const Hash& ref_version1, const Hash& ref_version2,
+                          Hash* version) override;
 
   inline int id() const noexcept { return id_; }
 
@@ -115,13 +102,12 @@ class RequestHandler {
   bool SyncWithMaster();
 
   // helper methods for creating messages
-  UStoreMessage *CreatePutRequest(const Slice &key, const Slice &value,
-                                  bool forward, bool force);
+  UStoreMessage *CreatePutRequest(const Slice &key, const Value &value);
   UStoreMessage *CreateGetRequest(const Slice &key);
   UStoreMessage *CreateBranchRequest(const Slice &key,
                                      const Slice &new_branch);
-  UStoreMessage *CreateMergeRequest(const Slice &key, const Slice &value,
-                      const Slice &target_branch, bool forward, bool force);
+  UStoreMessage *CreateMergeRequest(const Slice &key, const Value &value,
+                      const Slice &target_branch);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
@@ -160,36 +146,6 @@ class WorkerList {
  private:
     // should be sorted by the range
     std::vector<RangeInfo> workers_;
-};
-
-/**
- * Workload generator, that feeds requests to NextRequest(.) method
- * Currently, there are 2 types: a default Workload that *should* generate
- * requests from a distribution (like a driver in YCSB), and a TestWorkload
- * for testing.
- * Multiple client threads may share the same workload object.
- * When ClientService is to served as backend to a HTTP server, for example,
- * Workload can be extended to  
- */
-class Workload {
- public:
-  // return true if the request is processed successfully
-  virtual bool NextRequest(RequestHandler *reqhl) = 0;
-};
-
-class RandomWorkload {
- public:
-  RandomWorkload() {}
-  bool NextRequest(RequestHandler *reqhl);
-};
-
-class TestWorkload : public Workload {
- public:
-  TestWorkload(int nthreads, int nreqs);
-  bool NextRequest(RequestHandler *reqhl);
- private:
-  std::vector<int> req_idx_;
-  int nthreads_, nrequests_;
 };
 }  // namespace ustore
 

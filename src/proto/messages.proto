@@ -21,16 +21,10 @@ message UStoreMessage {
     GET_RESPONSE = 4; 
     BRANCH_REQUEST = 5; 
     BRANCH_RESPONSE = 6;
-    MOVE_REQUEST = 7;
-    MOVE_RESPONSE = 8;
+    RENAME_REQUEST = 7;
+    RENAME_RESPONSE = 8;
     MERGE_REQUEST = 9; 
     MERGE_RESPONSE = 10;
-  }
-
-  enum Status {
-    SUCCESS = 1;
-    FAILED = 2; // because of logical errors (e.g. out of memory)
-    INVALID_RANGE = 3; // because of changes in key ranges
   }
 
   /**
@@ -44,7 +38,7 @@ message UStoreMessage {
   // branch
   optional bytes branch = 4; 
   // status (only for RESPONSE messages)
-  optional Status status = 5; 
+  optional int32 status = 5; 
   // to identify the sending thread
   required int32 source = 15;
 
@@ -53,8 +47,6 @@ message UStoreMessage {
    */
   // PUT_REQUEST payload
   message PutRequestPayload {
-    optional bool forward = 1; 
-    optional bool force = 2; 
     required bytes value = 3; 
   }
 
@@ -84,24 +76,23 @@ message UStoreMessage {
   // Status field indicates success or failure
 
   // MOVE_REQUEST
-  message MoveRequestPayload {
+  message RenameRequestPayload {
     required bytes new_branch = 1;  
   }
 
   // MERGE_REQUEST
   message MergeRequestPayload {
-    required bytes target_branch = 1;
+    optional bytes target_branch = 1;
     optional bytes ref_branch = 2; 
+    optional bytes ref_version = 6;
     required bytes value = 3; 
-    optional bool forward = 4;
-    optional bool force = 5;
   }
 
   optional PutRequestPayload put_request_payload = 6; 
   optional PutResponsePayload put_response_payload = 7; 
   optional GetResponsePayload get_response_payload = 8; 
   optional BranchRequestPayload branch_request_payload = 9; 
-  optional MoveRequestPayload move_request_payload = 10; 
+  optional RenameRequestPayload rename_request_payload = 10; 
   optional MergeRequestPayload merge_request_payload = 11; 
   optional MergeResponsePayload merge_response_payload = 12; 
 }

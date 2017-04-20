@@ -111,7 +111,7 @@ class Worker : public DB, private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Get(const Slice& key, const Slice& branch,
-                Value* val) const override;
+                Value* val) override;
 
   /**
    * @brief Read data.
@@ -122,7 +122,7 @@ class Worker : public DB, private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Get(const Slice& key, const Hash& ver,
-                Value* val) const override;
+                Value* val) override;
 
   /**
    * @brief Write data.

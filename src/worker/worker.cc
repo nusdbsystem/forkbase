@@ -15,7 +15,7 @@ const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
   return ver_opt ? *ver_opt : Hash::kNull;
 }
 
-ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) const {
+ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) {
   auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
     LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
@@ -25,7 +25,7 @@ ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) const {
   return Get(key, *version_opt, val);
 }
 
-ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) const {
+ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) {
   DCHECK_NE(ver, Hash::kNull);
   UCell ucell(UCell::Load(ver));
   if (ucell.empty()) {

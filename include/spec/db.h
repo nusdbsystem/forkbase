@@ -21,7 +21,7 @@ class DB {
    * @return        Error code. (ErrorCode::ok for success)
    */
   virtual ErrorCode Get(const Slice& key, const Slice& branch,
-                        Value* value) const = 0;
+                        Value* value) = 0;
   /**
    * @brief Read the value of a version.
    *
@@ -31,7 +31,7 @@ class DB {
    * @return        Error code. (ErrorCode::ok for success)
    */
   virtual ErrorCode Get(const Slice& key, const Hash& version,
-                        Value* value) const = 0;
+                        Value* value) = 0;
   /**
    * @brief Write a new value as the head of a branch.
    *

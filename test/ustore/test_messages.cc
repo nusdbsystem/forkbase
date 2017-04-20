@@ -6,6 +6,7 @@
 
 using ustore::UStoreMessage;
 using ustore::byte_t;
+using ustore::ErrorCode;
 const size_t TEST_KEY_SIZE = 32;
 const size_t TEST_VERSION_SIZE = 32;
 const size_t TEST_BRANCH_SIZE = 32;
@@ -82,7 +83,7 @@ TEST(TestMessage, TestPutResponse) {
   populateHeader(&msg, UStoreMessage::PUT_RESPONSE);
 
   // add status
-  msg.set_status(UStoreMessage::SUCCESS);
+  msg.set_status((int)ErrorCode::kOK);
   // add payload
   UStoreMessage::PutResponsePayload *payload
     = msg.mutable_put_response_payload();
@@ -100,7 +101,7 @@ TEST(TestMessage, TestPutResponse) {
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::PUT_RESPONSE);
   EXPECT_EQ(recovered_msg.has_status(), true); 
-  EXPECT_EQ(recovered_msg.status(), UStoreMessage::SUCCESS);
+  EXPECT_EQ(recovered_msg.status(), (int)ErrorCode::kOK);
   EXPECT_EQ(recovered_msg.has_put_response_payload(), true);
   EXPECT_EQ(checkPayload(version, TEST_VERSION_SIZE,
      (const byte_t*)recovered_msg.put_response_payload().new_version().data(),
@@ -135,7 +136,7 @@ TEST(TestMessage, TestGetResponse) {
   populateHeader(&msg, UStoreMessage::GET_RESPONSE);
 
   // add status
-  msg.set_status(UStoreMessage::SUCCESS);
+  msg.set_status((int)ErrorCode::kOK);
   // add payload
   UStoreMessage::GetResponsePayload *payload
     = msg.mutable_get_response_payload();
@@ -154,7 +155,7 @@ TEST(TestMessage, TestGetResponse) {
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::GET_RESPONSE);
   EXPECT_EQ(recovered_msg.has_get_response_payload(), true);
   EXPECT_EQ(recovered_msg.has_status(), true);
-  EXPECT_EQ(recovered_msg.status(), UStoreMessage::SUCCESS);
+  EXPECT_EQ(recovered_msg.status(), (int)ErrorCode::kOK);
   EXPECT_EQ(checkPayload(value, TEST_VALUE_SIZE,
         (const byte_t*)recovered_msg.get_response_payload().value().data(),
         recovered_msg.get_response_payload().value().length()), true);
@@ -196,7 +197,7 @@ TEST(TestMessage, TestBranchResponse) {
   populateHeader(&msg, UStoreMessage::BRANCH_RESPONSE);
   
   // test another status other than SUCESS
-  msg.set_status(UStoreMessage::INVALID_RANGE);
+  msg.set_status((int)ErrorCode::kInvalidRange);
   // no payload
 
   // serialized
@@ -209,7 +210,7 @@ TEST(TestMessage, TestBranchResponse) {
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::BRANCH_RESPONSE);
   EXPECT_EQ(recovered_msg.has_status(), true);
-  EXPECT_EQ(recovered_msg.status(), UStoreMessage::INVALID_RANGE);
+  EXPECT_EQ(recovered_msg.status(), (int)ErrorCode::kInvalidRange);
 
   delete[] serialized;
 }
