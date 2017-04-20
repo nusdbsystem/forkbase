@@ -21,7 +21,7 @@ const Slice branch[] = {
   Slice("BranchThird"), Slice("BranchFourth")
 };
 
-const SliceFwdList data {
+const SliceFwdList slices {
   Slice("The quick brown fox jumps over the lazy dog"), //-- 0
   Slice("Edge of tomorrow"), //----------------------------- 1
   Slice("Pig can fly!"), //--------------------------------- 2
@@ -35,19 +35,20 @@ const SliceFwdList data {
   Slice("What goes around, comes around") //---------------- 10
 };
 
-const ValueVec ToValues(const SliceFwdList slices,
-                        const std::function<Value(Slice)>f_slice2val) {
+template<class T>
+const ValueVec ToValues(
+  const std::function<const T(const Slice&)>f_slice2val) {
   ValueVec val;
-  for (const auto& s : slices) val.push_back(f_slice2val(s));
+  for (const auto& s : slices) val.emplace_back(f_slice2val(s));
   return val;
 }
 
-const ValueVec val_str(ToValues(data, [](Slice s) {
-  return Value(s);
+const ValueVec val_str(ToValues<Slice>([](const Slice& s) {
+  return s;
 }));
 
-const ValueVec val_blob(ToValues(data, [](Slice s) {
-  return Value(Blob(reinterpret_cast<const byte_t*>(s.data()), s.len()));
+const ValueVec val_blob(ToValues<Blob>([](const Slice& s) {
+  return Blob(reinterpret_cast<const byte_t*>(s.data()), s.len());
 }));
 
 HashVec ver;
@@ -108,7 +109,7 @@ TEST(Worker, NamedBranch_Branch) {
   EXPECT_EQ(2, worker.GetLatestVersions(key[0]).size());
 }
 
-EST(Worker, NamedBranch_Rename) {
+TEST(Worker, NamedBranch_Rename) {
   const auto version = worker.GetBranchHead(key[0], branch[0]);
   EXPECT_EQ(ver[1], version);
   ec = worker.Rename(key[0], branch[0], branch[3]);

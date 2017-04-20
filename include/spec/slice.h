@@ -67,11 +67,6 @@ class Slice {
   size_t len_ = 0;
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
-  os << std::string(obj.data(), obj.len());
-  return os;
-}
-
 /* Slice variant to ensure always point to valid string when used in containers.
  * Copy a string when stored in containers, not copy when lookup.
  */
