@@ -26,8 +26,8 @@ void HeadVersion::PutBranch(const Slice& key, const Slice& branch,
   auto key_it = branch_ver_.find(key);
   // create key if not exists
   if (key_it == branch_ver_.end()) {
-    branch_ver_.insert({PSlice::Persist(key),
-                       std::unordered_map<PSlice, Hash>()});
+    branch_ver_.emplace(PSlice::Persist(key),
+                       std::unordered_map<PSlice, Hash>());
     key_it = branch_ver_.find(key);
     DCHECK(key_it != branch_ver_.end())
       << "fail to insert new key into head table";
@@ -36,7 +36,7 @@ void HeadVersion::PutBranch(const Slice& key, const Slice& branch,
   auto branch_it = branch_map.find(branch);
   // create branch if not exists
   if (branch_it == branch_map.end()) {
-    branch_map.insert({PSlice::Persist(branch), Hash()});
+    branch_map.emplace(PSlice::Persist(branch), Hash());
     branch_it = branch_map.find(branch);
     DCHECK(branch_it != branch_map.end())
       << "fail to insert new branch into head table";
@@ -50,7 +50,7 @@ void HeadVersion::PutLatest(const Slice& key, const Hash& prev_ver1,
   auto key_it = latest_ver_.find(key);
   // create key is not exists
   if (key_it == latest_ver_.end()) {
-    latest_ver_.insert({PSlice::Persist(key), std::unordered_set<Hash>()});
+    latest_ver_.emplace(PSlice::Persist(key), std::unordered_set<Hash>());
     key_it = latest_ver_.find(key);
     DCHECK(key_it != latest_ver_.end())
       << "fail to insert new key into latest version table";
@@ -81,7 +81,7 @@ void HeadVersion::RenameBranch(const Slice& key, const Slice& old_branch,
                                    << "\" for Key \"" << key
                                    << "\" already exists!";
   auto& bv_key = branch_ver_.at(key);
-  bv_key[PSlice::Persist(new_branch)] = std::move(bv_key.at(old_branch));
+  bv_key.emplace(PSlice::Persist(new_branch), std::move(bv_key.at(old_branch)));
   LogBranchUpdate(key, new_branch, bv_key.at(new_branch));
   bv_key.erase(old_branch);
   LogBranchUpdate(key, old_branch, Hash::kNull);
