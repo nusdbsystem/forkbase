@@ -3,6 +3,7 @@
 
 #include <gflags/gflags.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <string>
@@ -22,9 +23,11 @@ Env::Env() {
                  << FLAGS_config << "\" not found)";
     FLAGS_config = kDefaultConfigFile;
     fd = open(FLAGS_config.c_str(), O_RDONLY);
-    if (fd == -1)
-    LOG(FATAL) << "Fail to load default configuration (file \""
-               << FLAGS_config << "\" not found)";
+    if (fd == -1) {
+      LOG(FATAL) << "Fail to load default configuration (file \""
+                 << FLAGS_config << "\" not found)";
+      return;
+    }
   }
   LOG(INFO) << "Load configuration \"" << FLAGS_config << "\"";
   google::protobuf::TextFormat::Parse(
@@ -33,5 +36,8 @@ Env::Env() {
   LOG(INFO) << "clientservice_file = " << config_.clientservice_file();
   LOG(INFO) << "recv_threads: " << config_.recv_threads();
   LOG(INFO) << "service_threads = " << config_.service_threads();
+
+  // close the config file
+  close(fd);
 }
 }  // namespace ustore
