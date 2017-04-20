@@ -6,31 +6,10 @@
 #include "spec/slice.h"
 #include "spec/value.h"
 #include "types/type.h"
+#include "spec/db.h"
 #include "worker/worker.h"
 
 using namespace ustore;
-
-Worker worker {27};
-
-const Slice key1("KeyOne");
-const Slice key2("KeyTwo");
-
-const Slice branch1("BranchFirst");
-const Slice branch2("BranchSecond");
-const Slice branch3("BranchThird");
-const Slice branch4("BranchFourth");
-
-const Slice slice1("The quick brown fox jumps over the lazy dog");
-const Slice slice2("Edge of tomorrow");
-const Slice slice3("Pig can fly!");
-const Slice slice4("Have you ever seen the rain?");
-const Slice slice5("Once upon a time");
-const Slice slice6("Good good study, day day up!");
-
-const Blob blob1(reinterpret_cast<const byte_t*>(slice1.data()), slice1.len());
-const Blob blob2(reinterpret_cast<const byte_t*>(slice2.data()), slice2.len());
-const Blob blob3(reinterpret_cast<const byte_t*>(slice3.data()), slice3.len());
-const Blob blob4(reinterpret_cast<const byte_t*>(slice4.data()), slice4.len());
 
 static const char alphabet[] =
   "0123456789"
@@ -93,33 +72,42 @@ void GenerateNRandomString(std::vector<std::string> *strs,
   return;
 }
 
-void GenerateKey(std::vector<Slice> *keys, const int size) {
+void GenerateKey(std::vector<std::string> *keys, const int size) {
   (*keys).reserve(size);
   int k=0;
-  std::generate_n(std::back_inserter(*keys), (*keys).capacity(), [&] () {
-    std::string s = std::to_string(++k);
-    const Slice key(s);
-    return key; });
+  std::generate_n(std::back_inserter(*keys), (*keys).capacity(), [&k] () {
+    // return Slice(std::to_string(++k)); });
+    return std::to_string(++k); });
   return;
 }
 
-void SliceValidation(int n) {
-  int i;
+void SliceValidation(DB *worker, const int n) {
   std::vector<std::string> slices;
+  std::vector<std::string> keys;
   GenerateNRandomString(&slices, n, 1000);
-  for(auto s : slices) {
+  GenerateKey(&keys, n);
+  const Slice branch("Branch");
+  for(auto k = keys.begin(), s = slices.begin();
+      k != keys.end() && s != slices.end(); ++k, ++s) {
     Hash ver; 
-    // worker.Put(
+    const Slice s_a(*s);
+    Value v_b;
+    (*worker).Put(Slice(*k), Value(s_a), branch, &ver);
+    (*worker).Get(Slice(*k), branch, &v_b);
+    assert(s_a == v_b.slice());
+    v_b.Release();
   }
 }
 
-
 int main() {
-  // SliceValidation(100);
-  std::vector<Slice> keys;
+  Worker worker {27};
+  SliceValidation(&worker,10);
+  std::vector<std::string> keys;
   GenerateKey(&keys, 10);
   for(auto k : keys) {
-    std::cout << k << "\n";  
+  // std::cout << k << "\n";  
   }
+  std::cout << "done\n";
+  return 0;
 }
 

@@ -33,7 +33,7 @@ ADD_TEST(
 	COMMAND ${CMAKE_BINARY_DIR}/bin/test_ustore )
 	
 ADD_EXECUTABLE(toy_test "benchmark/worker_bench.cc")
-ADD_DEPENDENCIES(test_ustore copy_protobuf)
-ADD_DEPENDENCIES(test_ustore ustore)
-TARGET_LINK_LIBRARIES(test_ustore ustore)
-SET_TARGET_PROPERTIES(test_ustore PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+ADD_DEPENDENCIES(toy_test copy_protobuf)
+ADD_DEPENDENCIES(toy_test ustore)
+TARGET_LINK_LIBRARIES(toy_test ustore)
+SET_TARGET_PROPERTIES(toy_test PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
