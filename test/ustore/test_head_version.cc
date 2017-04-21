@@ -27,7 +27,7 @@ const Hash ver[] = {
 
 HeadVersion head_ver;
 
-TEST(Worker, HeadVersionPutBranch) {
+TEST(Worker, HeadVersion_PutBranch) {
   EXPECT_FALSE(head_ver.Exists(key[0], branch[0]));
   EXPECT_EQ(0, head_ver.ListBranch(key[0]).size());
 
@@ -49,14 +49,14 @@ TEST(Worker, HeadVersionPutBranch) {
   EXPECT_TRUE(head_ver.IsBranchHead(key[0], branch[2], ver[3]));
 }
 
-TEST(Worker, HeadVersionGetBranch) {
+TEST(Worker, HeadVersion_GetBranch) {
   EXPECT_EQ(3, head_ver.ListBranch(key[0]).size());
   EXPECT_EQ(ver[1], head_ver.GetBranch(key[0], branch[0]));
   EXPECT_EQ(ver[2], head_ver.GetBranch(key[0], branch[1]));
   EXPECT_EQ(ver[3], head_ver.GetBranch(key[0], branch[2]));
 }
 
-TEST(Worker, HeadVersionPutLatest) {
+TEST(Worker, HeadVersion_PutLatest) {
   head_ver.PutLatest(key[1], Hash::kNull, Hash::kNull, ver[4]);
   EXPECT_TRUE(head_ver.IsLatest(key[1], ver[4]));
 
@@ -71,23 +71,22 @@ TEST(Worker, HeadVersionPutLatest) {
   EXPECT_TRUE(head_ver.IsLatest(key[1], ver[7]));
 }
 
-TEST(Worker, HeadVersionGetLatest) {
+TEST(Worker, HeadVersion_GetLatest) {
   EXPECT_EQ(0, head_ver.GetLatest(key[0]).size());
   EXPECT_EQ(1, head_ver.GetLatest(key[1]).size());
 }
 
-TEST(Worker, HeadVersionRenameBranch) {
+TEST(Worker, HeadVersion_RenameBranch) {
   head_ver.RenameBranch(key[0], branch[1], branch[3]);
   EXPECT_FALSE(head_ver.Exists(key[0], branch[1]));
   EXPECT_TRUE(head_ver.Exists(key[0], branch[3]));
   EXPECT_EQ(ver[2], head_ver.GetBranch(key[0], branch[3]));
 }
 
-TEST(Worker, HeadVersionRemoveBranch) {
+TEST(Worker, HeadVersion_RemoveBranch) {
   EXPECT_EQ(3, head_ver.ListBranch(key[0]).size());
 
   head_ver.RemoveBranch(key[0], branch[2]);
   EXPECT_FALSE(head_ver.Exists(key[0], branch[2]));
   EXPECT_EQ(2, head_ver.ListBranch(key[0]).size());
 }
-

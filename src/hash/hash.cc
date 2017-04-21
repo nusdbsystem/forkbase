@@ -124,9 +124,4 @@ inline Hash& Hash::Compute(const std::string& data) {
   return Compute(reinterpret_cast<const byte_t*>(data.c_str()), data.size());
 }
 
-std::ostream& operator<<(std::ostream& os, const Hash & obj) {
-  os << obj.ToBase32();
-  return os;
-}
-
 }  // namespace ustore

@@ -4,6 +4,7 @@
 #define USTORE_SPEC_BLOB_H_
 
 #include <cstring>
+#include <iostream>
 #include <string>
 #include "types/type.h"
 
@@ -33,6 +34,11 @@ class Blob {
 
   inline size_t size() const { return size_; }
   inline const byte_t* data() const { return data_; }
+
+  friend inline std::ostream& operator<<(std::ostream& os, const Blob& obj) {
+    os << std::string(reinterpret_cast<const char*>(obj.data_), obj.size_);
+    return os;
+  }
 
  private:
   const byte_t* data_ = nullptr;

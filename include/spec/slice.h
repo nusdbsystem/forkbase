@@ -21,7 +21,7 @@ class Slice {
   Slice(const Slice& slice) : data_(slice.data_), len_(slice.len_) {}
   // share data from c++ string
   explicit Slice(const std::string& slice)
-      : data_(slice.data()), len_(slice.length()) {}
+    : data_(slice.data()), len_(slice.length()) {}
   // delete constructor that takes in rvalue std::string
   //   to avoid the memory space of parameter is released unawares.
   explicit Slice(std::string&& slice) = delete;
@@ -57,7 +57,10 @@ class Slice {
   inline size_t len() const { return len_; }
   inline const char* data() const { return data_; }
 
-  friend std::ostream& operator<<(std::ostream& os, const Slice& obj);
+  friend inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
+    os << std::string(obj.data_, obj.len_);
+    return os;
+  }
 
  private:
   const char* data_ = nullptr;
@@ -85,11 +88,11 @@ class PSlice {
   // Do not persist a slice
   PSlice(const Slice& slice) : slice_(slice) {}  // NOLINT
   PSlice(const PSlice& pslice)
-      : value_(pslice.value_), slice_(pslice.slice_) {
+    : value_(pslice.value_), slice_(pslice.slice_) {
     if (!value_.empty()) slice_ = Slice(value_);
   }
   PSlice(PSlice&& pslice)
-      : value_(std::move(pslice.value_)), slice_(pslice.slice_) {
+    : value_(std::move(pslice.value_)), slice_(pslice.slice_) {
     if (!value_.empty()) slice_ = Slice(value_);
   }
 

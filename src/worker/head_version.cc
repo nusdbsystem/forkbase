@@ -1,24 +1,32 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <utility>
 #include "worker/head_version.h"
-
 #include "utils/logging.h"
 
 namespace ustore {
 
-const HashOpt HeadVersion::GetBranch(const Slice& key, const Slice& branch)
-    const {
-  return Exists(key, branch) ?
-         boost::make_optional(branch_ver_.at(key).at(branch)) : boost::none;
+const boost::optional<Hash> HeadVersion::GetBranch(const Slice& key,
+    const Slice& branch) const {
+  return Exists(key, branch)
+         ? boost::make_optional(branch_ver_.at(key).at(branch))
+         : boost::none;
 }
 
-const std::unordered_set<Hash>& HeadVersion::GetLatest(const Slice& key) const {
+const std::vector<Hash> HeadVersion::GetLatest(const Slice& key) const {
   if (latest_ver_.find(key) == latest_ver_.end()) {
     DLOG(INFO) << "No data exists for Key \"" << key << "\"";
-    static const std::unordered_set<Hash> empty;
+    static const std::vector<Hash> empty;
     return empty;
+  } else {
+    const auto& lv_key = latest_ver_.at(key);
+    std::vector<Hash> latest;
+    for (const auto& v : lv_key) {
+      latest.push_back(v);
+    }
+    DCHECK_EQ(lv_key.size(), latest.size());
+    return latest;
   }
-  return latest_ver_.at(key);
 }
 
 void HeadVersion::PutBranch(const Slice& key, const Slice& branch,
@@ -27,19 +35,19 @@ void HeadVersion::PutBranch(const Slice& key, const Slice& branch,
   // create key if not exists
   if (key_it == branch_ver_.end()) {
     branch_ver_.emplace(PSlice::Persist(key),
-                       std::unordered_map<PSlice, Hash>());
+                        std::unordered_map<PSlice, Hash>());
     key_it = branch_ver_.find(key);
     DCHECK(key_it != branch_ver_.end())
-      << "fail to insert new key into head table";
+        << "fail to insert new key into head table";
   }
-  auto& branch_map = key_it->second; 
+  auto& branch_map = key_it->second;
   auto branch_it = branch_map.find(branch);
   // create branch if not exists
   if (branch_it == branch_map.end()) {
     branch_map.emplace(PSlice::Persist(branch), Hash());
     branch_it = branch_map.find(branch);
     DCHECK(branch_it != branch_map.end())
-      << "fail to insert new branch into head table";
+        << "fail to insert new branch into head table";
   }
   branch_it->second = ver.Clone();
   LogBranchUpdate(key, branch, ver);
@@ -53,7 +61,7 @@ void HeadVersion::PutLatest(const Slice& key, const Hash& prev_ver1,
     latest_ver_.emplace(PSlice::Persist(key), std::unordered_set<Hash>());
     key_it = latest_ver_.find(key);
     DCHECK(key_it != latest_ver_.end())
-      << "fail to insert new key into latest version table";
+        << "fail to insert new key into latest version table";
   }
   auto& lv_key = key_it->second;
   lv_key.erase(prev_ver1);
@@ -106,11 +114,11 @@ bool HeadVersion::IsBranchHead(const Slice& key, const Slice& branch,
   return Exists(key, branch) ? branch_ver_.at(key).at(branch) == ver : false;
 }
 
-std::unordered_set<Slice> HeadVersion::ListBranch(const Slice& key) const {
-  std::unordered_set<Slice> branchs;
+std::vector<Slice> HeadVersion::ListBranch(const Slice& key) const {
+  std::vector<Slice> branchs;
   if (branch_ver_.find(key) != branch_ver_.end()) {
     for (const auto& bv : branch_ver_.at(key)) {
-      branchs.insert(bv.first.slice());
+      branchs.push_back(bv.first.slice());
     }
   }
   return branchs;

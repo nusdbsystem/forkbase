@@ -88,7 +88,10 @@ class Hash {
   // get a copy that contains own bytes
   Hash Clone() const;
 
-  friend std::ostream& operator<<(std::ostream&, const Hash&);
+  friend inline std::ostream& operator<<(std::ostream& os, const Hash& obj) {
+    os << obj.ToBase32();
+    return os;
+  }
 
  private:
   static const byte_t kEmptyBytes[kByteLength];

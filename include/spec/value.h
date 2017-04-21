@@ -3,6 +3,8 @@
 #ifndef USTORE_SPEC_VALUE_H_
 #define USTORE_SPEC_VALUE_H_
 
+#include <iostream>
+#include <memory>
 #include "types/type.h"
 #include "spec/blob.h"
 #include "spec/slice.h"
@@ -22,10 +24,10 @@ class Value {
   Value(const Value& v) : type_(v.type_), data_(v.data_), size_(v.size_) {}
   // create value with type String
   explicit Value(const Slice& v)
-      : type_(UType::kString), data_(v.data()), size_(v.len()) {}
+    : type_(UType::kString), data_(v.data()), size_(v.len()) {}
   // create value with type Blob
   explicit Value(const Blob& v)
-      : type_(UType::kBlob), data_(v.data()), size_(v.size()) {}
+    : type_(UType::kBlob), data_(v.data()), size_(v.size()) {}
   ~Value() {}
 
   inline Value& operator=(const Value& v) {
@@ -58,6 +60,32 @@ class Value {
         break;
     }
     data_ = nullptr;
+  }
+
+  friend inline bool operator==(const Value& lhs, const Value& rhs) noexcept {
+    CHECK(lhs.data_ != nullptr && rhs.data_ != nullptr);
+    return lhs.type_ == rhs.type_ &&
+           lhs.size_ && rhs.size_ &&
+           std::memcmp(lhs.data_, rhs.data_, lhs.size_) == 0;
+  }
+
+  friend inline bool operator!=(const Value& lhs, const Value& rhs) noexcept {
+    return !operator==(lhs, rhs);
+  }
+
+  friend inline std::ostream& operator<<(std::ostream& os, const Value& obj) {
+    switch (obj.type_) {
+      case UType::kBlob:
+        os << obj.blob() << " <Blob>";
+        break;
+      case UType::kString:
+        os << obj.slice() << " <String>";
+        break;
+      default:
+        LOG(WARNING) << "Unsupported data type: "
+                     << static_cast<int>(obj.type_);
+    }
+    return os;
   }
 
  private:

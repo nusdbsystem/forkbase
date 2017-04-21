@@ -7,13 +7,12 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
-
-using HashOpt = boost::optional<Hash>;
 
 /**
  * @brief Table of head versions of data.
@@ -29,9 +28,10 @@ class HeadVersion : private Noncopyable {
   HeadVersion() {}
   ~HeadVersion() {}
 
-  const HashOpt GetBranch(const Slice& key, const Slice& branch) const;
+  const boost::optional<Hash> GetBranch(const Slice& key,
+                                        const Slice& branch) const;
 
-  const std::unordered_set<Hash>& GetLatest(const Slice& key) const;
+  const std::vector<Hash> GetLatest(const Slice& key) const;
 
   void PutBranch(const Slice& key, const Slice& branch, const Hash& ver);
 
@@ -50,7 +50,7 @@ class HeadVersion : private Noncopyable {
   bool IsBranchHead(const Slice& key, const Slice& branch,
                     const Hash& ver) const;
 
-  std::unordered_set<Slice> ListBranch(const Slice& key) const;
+  std::vector<Slice> ListBranch(const Slice& key) const;
 
  private:
   std::unordered_map<PSlice, std::unordered_map<PSlice, Hash>> branch_ver_;

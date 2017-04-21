@@ -4,6 +4,7 @@
 #define USTORE_WORKER_WORKER_H_
 
 #include <unordered_set>
+#include <vector>
 #include "hash/hash.h"
 #include "spec/db.h"
 #include "spec/slice.h"
@@ -25,7 +26,7 @@ class Worker : public DB, private Noncopyable {
   explicit Worker(const WorkerID& id) : id_(id) {}
   ~Worker() {}
 
-  inline WorkerID id() const { return id_; }
+  inline const WorkerID& id() const { return id_; }
 
   /**
    * @brief Obtain the head version of the specified branch.
@@ -43,11 +44,9 @@ class Worker : public DB, private Noncopyable {
    * @param key Data key.
    * @return A set of all the latest versions of data.
    */
-  // TODO(linqian): may need copy and return std::vector<std::string>, otherwise
-  //  it is not thead-safe.
   // TODO(linqian): later on, we may have filters on the returned versions, e.g,
   //  return last 10 latest versions
-  inline const std::unordered_set<Hash>& GetLatestVersions(const Slice& key)
+  inline const std::vector<Hash> GetLatestVersions(const Slice& key)
   const {
     return head_ver_.GetLatest(key);
   }
@@ -66,12 +65,21 @@ class Worker : public DB, private Noncopyable {
    * @brief List all the branchs of data.
    *
    * @param key Data key.
-   * @return A set of all the branches of data.
+   * @return A set of all the branches of the data.
    */
-  // TODO(linqian): may need copy and return std::vector<std::string>, otherwise
-  //  it is not thread-safe.
-  inline std::unordered_set<Slice> ListBranch(const Slice& key) const {
+  inline std::vector<Slice> ListBranch(const Slice& key) const {
     return head_ver_.ListBranch(key);
+  }
+
+  /**
+   * @brief Check for the existence of the specified branch.
+   * @param key Data key.
+   * @param branch The specified branch.
+   * @return True if the specified branch exists for the data;
+   *         otherwise false.
+   */
+  inline bool Exists(const Slice& key, const Slice& branch) const {
+    return head_ver_.Exists(key, branch);
   }
 
   /**
