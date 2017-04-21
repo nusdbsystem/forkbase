@@ -51,13 +51,7 @@ ErrorCode ClientDb::Put(const Slice& key, const Value& value,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *version = Hash((const byte_t *)(response->put_response_payload())
-                                  .new_version().data());
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetVersionResponse(version);
 }
 
 ErrorCode ClientDb::Put(const Slice& key, const Value& value,
@@ -70,13 +64,7 @@ ErrorCode ClientDb::Put(const Slice& key, const Value& value,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *version = Hash(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data()));
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetVersionResponse(version);
 }
 
 UStoreMessage *ClientDb::CreateGetRequest(const Slice &key) {
@@ -97,14 +85,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Slice& branch,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *value = Value(Blob(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data()),
-    response->get_response_payload().value().length()));
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetValueResponse(value);
 }
 
 ErrorCode ClientDb::Get(const Slice& key, const Hash& version,
@@ -116,14 +97,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Hash& version,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *value = Value(Blob(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data()),
-    response->get_response_payload().value().length()));
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetValueResponse(value);
 }
 
 UStoreMessage *ClientDb::CreateBranchRequest(const Slice &key,
@@ -148,11 +122,7 @@ ErrorCode ClientDb::Branch(const Slice& key, const Slice& old_branch,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetEmptyResponse();
 }
 
 ErrorCode ClientDb::Branch(const Slice& key, const Hash& version,
@@ -163,11 +133,7 @@ ErrorCode ClientDb::Branch(const Slice& key, const Hash& version,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetEmptyResponse();
 }
 
 ErrorCode ClientDb::Rename(const Slice& key, const Slice& old_branch,
@@ -188,11 +154,7 @@ ErrorCode ClientDb::Rename(const Slice& key, const Slice& old_branch,
 
   // send
   Send(&request, dest);
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetEmptyResponse();
 }
 
 UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
@@ -223,13 +185,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *version = Hash(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data()));
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetVersionResponse(version);
 }
 
 ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
@@ -241,13 +197,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *version = Hash(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data()));
-  ErrorCode err = static_cast<ErrorCode>(response->status());
-  delete response;
-  return err;
+  return GetVersionResponse(version);
 }
 
 ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
@@ -269,10 +219,33 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
+  return GetVersionResponse(version);
+}
+
+ErrorCode ClientDb::GetEmptyResponse() {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+  delete response;
+  return err;
+}
+
+ErrorCode ClientDb::GetVersionResponse(Hash* version) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
   *version = Hash(reinterpret_cast<const byte_t *>(
     response->put_response_payload().new_version().data()));
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+  delete response;
+  return err;
+}
+
+ErrorCode ClientDb::GetValueResponse(Value* value) {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+  *value = Value(Blob(reinterpret_cast<const byte_t *>(
+    response->put_response_payload().new_version().data()),
+    response->get_response_payload().value().length()));
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
   return err;

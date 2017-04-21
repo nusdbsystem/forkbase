@@ -128,17 +128,17 @@ void WorkerService::HandleRequest(const void *msg, int size,
     }
     case UStoreMessage::GET_REQUEST:
     {
-      Value *val = new Value();
+      Value val;
       error_code = ustore_msg->has_branch()
            ? worker_->Get(Slice(ustore_msg->key()),
-                          Slice(ustore_msg->branch()), val)
+                          Slice(ustore_msg->branch()), &val)
            : worker_->Get(Slice(ustore_msg->key()),
-              Hash((const byte_t*)((ustore_msg->version()).data())), val);
+              Hash((const byte_t*)((ustore_msg->version()).data())), &val);
 
       UStoreMessage::GetResponsePayload *payload =
               response->mutable_get_response_payload();
-      payload->set_value((val->blob()).data(), (val->blob()).size());
-      delete val;
+      payload->set_value((val.blob()).data(), (val.blob()).size());
+      val.Release();
       break;
     }
     case UStoreMessage::BRANCH_REQUEST:

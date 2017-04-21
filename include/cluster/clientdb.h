@@ -19,7 +19,7 @@ using google::protobuf::Message;
 class WorkerList;
 
 /**
- * A unit on the response queue. Each client request thread 
+ * A unit on the response queue. Each client request thread
  * waits on one of this object. The thread goes to sleep waiting for has_msg
  * condition to hold true. The has_msg variable will be set by the registered
  * callback method of the network thread
@@ -36,13 +36,13 @@ struct ResponseBlob {
 };
 
 /**
- * ClientDb object is created from RemoteClientService. 
- * 
+ * ClientDb object is created from RemoteClientService.
+ *
  * Main entrance to the storage. It interfaces with the client (same process),
  * the master and the worker. It has 3 main tasks:
  *
- * 1. Maintain a list of worker, which is synced with the master.  
- * 2. Contain storage APIs to be invoked by the client. For each method it 
+ * 1. Maintain a list of worker, which is synced with the master.
+ * 2. Contain storage APIs to be invoked by the client. For each method it
  * forwards the corresponding request to the appropriate worker, then waits
  * for a response.
  * 3. When the response indicates error (INVALID_RANGE, for example), it
@@ -101,14 +101,17 @@ class ClientDb : public DB {
   Message* WaitForResponse();
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
-
   // helper methods for creating messages
-  UStoreMessage *CreatePutRequest(const Slice &key, const Value &value);
-  UStoreMessage *CreateGetRequest(const Slice &key);
-  UStoreMessage *CreateBranchRequest(const Slice &key,
-                                     const Slice &new_branch);
-  UStoreMessage *CreateMergeRequest(const Slice &key, const Value &value,
+  UStoreMessage* CreatePutRequest(const Slice &key, const Value &value);
+  UStoreMessage* CreateGetRequest(const Slice &key);
+  UStoreMessage* CreateBranchRequest(const Slice &key,
+                                    const Slice &new_branch);
+  UStoreMessage* CreateMergeRequest(const Slice &key, const Value &value,
                                     const Slice &target_branch);
+  // helper methods for getting response
+  ErrorCode GetEmptyResponse();
+  ErrorCode GetVersionResponse(Hash* version);
+  ErrorCode GetValueResponse(Value* value);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
