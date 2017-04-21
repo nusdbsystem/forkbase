@@ -26,7 +26,7 @@ class Worker : public DB, private Noncopyable {
   explicit Worker(const WorkerID& id) : id_(id) {}
   ~Worker() {}
 
-  inline const WorkerID& id() const { return id_; }
+  inline WorkerID id() const { return id_; }
 
   /**
    * @brief Obtain the head version of the specified branch.
@@ -46,7 +46,7 @@ class Worker : public DB, private Noncopyable {
    */
   // TODO(linqian): later on, we may have filters on the returned versions, e.g,
   //  return last 10 latest versions
-  inline const std::vector<Hash> GetLatestVersions(const Slice& key)
+  inline std::vector<Hash> GetLatestVersions(const Slice& key)
   const {
     return head_ver_.GetLatest(key);
   }

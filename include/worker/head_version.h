@@ -31,7 +31,7 @@ class HeadVersion : private Noncopyable {
   const boost::optional<Hash> GetBranch(const Slice& key,
                                         const Slice& branch) const;
 
-  const std::vector<Hash> GetLatest(const Slice& key) const;
+  std::vector<Hash> GetLatest(const Slice& key) const;
 
   void PutBranch(const Slice& key, const Slice& branch, const Hash& ver);
 

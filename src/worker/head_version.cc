@@ -13,7 +13,7 @@ const boost::optional<Hash> HeadVersion::GetBranch(const Slice& key,
          : boost::none;
 }
 
-const std::vector<Hash> HeadVersion::GetLatest(const Slice& key) const {
+std::vector<Hash> HeadVersion::GetLatest(const Slice& key) const {
   if (latest_ver_.find(key) == latest_ver_.end()) {
     DLOG(INFO) << "No data exists for Key \"" << key << "\"";
     static const std::vector<Hash> empty;
