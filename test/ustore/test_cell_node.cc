@@ -2,10 +2,9 @@
 #include <cstring>
 #include <string>
 
-#include "chunk/chunk.h"
-#include "node/cell_node.h"
-#include "spec/slice.h"
 #include "gtest/gtest.h"
+
+#include "node/cell_node.h"
 
 TEST(CellNode, NewCellNode) {
   ustore::Hash h1;

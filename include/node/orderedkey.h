@@ -4,7 +4,7 @@
 #define USTORE_NODE_ORDEREDKEY_H_
 
 #include <cstddef>
-#include <cstdint>
+
 #include "types/type.h"
 #include "spec/slice.h"
 

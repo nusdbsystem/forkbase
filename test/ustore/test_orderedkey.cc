@@ -3,6 +3,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
+
 #include "node/orderedkey.h"
 
 TEST(OrderedKey, CompareValueKey) {

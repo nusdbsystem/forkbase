@@ -14,7 +14,6 @@ namespace ustore {
 
 class CellNode {
   /* CellNode contains a UCell
-
     Encoding Scheme:
     | type  | Merged |     Data Hash     |
     | Utype |  bool  | Hash::kByteLength |

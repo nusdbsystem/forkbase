@@ -2,13 +2,11 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
+
 #include "gtest/gtest.h"
 
-#include "chunk/chunker.h"
 #include "node/cursor.h"
 #include "node/map_node.h"
-#include "types/umap.h"
-#include "store/chunk_loader.h"
 
 TEST(NodeCursor, SingleNode) {
   // Construct a tree with only a root blob node

@@ -3,14 +3,10 @@
 #ifndef USTORE_NODE_NODE_BUILDER_H_
 #define USTORE_NODE_NODE_BUILDER_H_
 
-#include <cstddef>
 #include <memory>
 #include <vector>
-#include <utility>
 
-#include "chunk/chunk.h"
 #include "chunk/chunker.h"
-#include "hash/hash.h"
 #include "node/cursor.h"
 #include "node/rolling_hash.h"
 #include "store/chunk_loader.h"

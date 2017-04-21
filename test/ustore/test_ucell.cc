@@ -2,13 +2,11 @@
 #include <cstring>
 #include <string>
 
-#include "chunk/chunk.h"
 #include "gtest/gtest.h"
-#include "node/cell_node.h"
-#include "spec/slice.h"
-#include "store/chunk_store.h"
+
 #include "types/ucell.h"
-#include "utils/logging.h"
+#include "store/chunk_store.h"
+// #include "utils/logging.h"
 
 TEST(UCell, Load) {
   ustore::Hash h1;

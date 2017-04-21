@@ -3,7 +3,6 @@
 #ifndef USTORE_NODE_MAP_NODE_H_
 #define USTORE_NODE_MAP_NODE_H_
 
-#include <cstddef>
 #include <vector>
 
 #include "chunk/chunk.h"

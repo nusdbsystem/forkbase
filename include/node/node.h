@@ -3,8 +3,6 @@
 #ifndef USTORE_NODE_NODE_H_
 #define USTORE_NODE_NODE_H_
 
-#include <cstddef>
-#include <utility>
 #include <vector>
 
 #include "chunk/chunk.h"
@@ -14,16 +12,16 @@
 #include "utils/singleton.h"
 
 namespace ustore {
-class Node {
+class UNode {
  public:
-  explicit Node(const Chunk* chunk) : chunk_(chunk) {}
+  explicit UNode(const Chunk* chunk) : chunk_(chunk) {}
   inline const Hash hash() const { return chunk_->hash(); }
 
  protected:
   const Chunk* chunk_;
 };
 
-class SeqNode : public Node {
+class SeqNode : public UNode {
   /* SeqNode represents a general node in Prolly Tree.
 
      Its subclass is either be a internal node containing meta-data
@@ -31,7 +29,7 @@ class SeqNode : public Node {
   */
 
  public:
-  explicit SeqNode(const Chunk* chunk) : Node(chunk) {}
+  explicit SeqNode(const Chunk* chunk) : UNode(chunk) {}
   virtual ~SeqNode() {}  // NOT delete chunk!!
 
   // Whether this SeqNode is a leaf

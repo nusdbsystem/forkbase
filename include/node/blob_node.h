@@ -3,15 +3,12 @@
 #ifndef USTORE_NODE_BLOB_NODE_H_
 #define USTORE_NODE_BLOB_NODE_H_
 
-#include <cstddef>
 #include <vector>
 
-#include "chunk/chunk.h"
 #include "node/node.h"
 #include "utils/singleton.h"
 
 namespace ustore {
-
 class BlobChunker : public Singleton<BlobChunker>, public Chunker {
   friend class Singleton<BlobChunker>;
 

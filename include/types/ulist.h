@@ -3,19 +3,10 @@
 #ifndef USTORE_TYPES_ULIST_H_
 #define USTORE_TYPES_ULIST_H_
 
-#include <cstddef>
-#include <memory>
-#include <utility>
 #include <vector>
 
-#include "chunk/chunk.h"
-#include "hash/hash.h"
-#include "node/node.h"
-#include "store/chunk_loader.h"
 #include "types/base.h"
-#include "types/type.h"
 #include "types/iterator.h"
-#include "utils/noncopyable.h"
 
 namespace ustore {
 
@@ -36,16 +27,13 @@ class ListIterator : public Iterator {
 
 class UList : public ChunkableType {
  public:
-  // create an empty map
-  // construct chunk loader for server
-  explicit UList(std::shared_ptr<ChunkLoader> loader) :
-      ChunkableType(loader) {}
-  // construct chunk loader for server
-  virtual ~UList() = default;
-
   // For idx > total # of elements
   //    return empty slice
   const Slice Get(size_t idx) const;
+
+  // entry vector can be empty
+  virtual const Hash Splice(size_t start_idx, size_t num_to_delete,
+                            const std::vector<Slice>& entries) const = 0;
 
   // Return an iterator that scan from map start
   inline std::unique_ptr<ListIterator> iterator() const {
@@ -58,6 +46,13 @@ class UList : public ChunkableType {
   }
 
  protected:
+  // create an empty map
+  // construct chunk loader for server
+  explicit UList(std::shared_ptr<ChunkLoader> loader) noexcept :
+      ChunkableType(loader) {}
+  // construct chunk loader for server
+  virtual ~UList() = default;
+
   bool SetNodeForHash(const Hash& hash) override;
 
   // friend vector<size_t> diff(const UList& lhs, const UList& rhs);
@@ -69,11 +64,10 @@ class SList : public UList {
 // UMap for server side
  public:
   // Load an existing map using hash
-  SList(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader);
+  explicit SList(const Hash& root_hash) noexcept;
 
   // create an SList using the initial elements
-  SList(const std::vector<Slice>& elements,
-        std::shared_ptr<ChunkLoader> loader);
+  explicit SList(const std::vector<Slice>& elements) noexcept;
 
   // create an empty map
   // construct chunk loader for server
@@ -81,7 +75,7 @@ class SList : public UList {
 
   // entry vector can be empty
   const Hash Splice(size_t start_idx, size_t num_to_delete,
-                    const std::vector<Slice>& entries) const;
+                    const std::vector<Slice>& entries) const override;
 };
 }  // namespace ustore
 

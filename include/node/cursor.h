@@ -3,7 +3,6 @@
 #ifndef USTORE_NODE_CURSOR_H_
 #define USTORE_NODE_CURSOR_H_
 
-#include <cstddef>
 #include "node/orderedkey.h"
 #include "node/node.h"
 #include "store/chunk_loader.h"

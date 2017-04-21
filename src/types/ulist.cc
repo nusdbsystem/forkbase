@@ -38,15 +38,13 @@ bool UList::SetNodeForHash(const Hash& root_hash) {
   }
 }
 
-SList::SList(const Hash& root_hash,
-             std::shared_ptr<ChunkLoader> loader) :
-    UList(loader) {
+SList::SList(const Hash& root_hash) noexcept :
+    UList(std::make_shared<ChunkLoader>()) {
   SetNodeForHash(root_hash);
 }
 
-SList::SList(const std::vector<Slice>& elements,
-             std::shared_ptr<ChunkLoader> loader) :
-    UList(loader) {
+SList::SList(const std::vector<Slice>& elements) noexcept:
+    UList(std::make_shared<ChunkLoader>()) {
   CHECK_GT(elements.size(), 0);
 
   chunk_loader_ = std::move(std::make_shared<ChunkLoader>());
@@ -57,8 +55,9 @@ SList::SList(const std::vector<Slice>& elements,
   nb.SpliceElements(0, seg.get());
   SetNodeForHash(nb.Commit());
 }
+
 const Hash SList::Splice(size_t start_idx, size_t num_to_delete,
-                        const std::vector<Slice>& entries) const {
+                         const std::vector<Slice>& entries) const {
   CHECK(!empty());
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(hash(),
                                                        start_idx,

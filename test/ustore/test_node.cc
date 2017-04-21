@@ -6,12 +6,9 @@
 
 #include "gtest/gtest.h"
 
-#include "chunk/chunker.h"
-#include "hash/hash.h"
 #include "node/node.h"
-#include "node/orderedkey.h"
-#include "utils/debug.h"
-#include "utils/logging.h"
+// #include "utils/debug.h"
+// #include "utils/logging.h"
 
 TEST(MetaEntry, EncodeDecode) {
   uint32_t num_leaves = 5;

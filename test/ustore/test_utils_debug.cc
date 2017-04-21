@@ -1,7 +1,9 @@
 // Copyright (c) 2017 The Ustore Authors.
 #include <cstring>
 #include <string>
+
 #include "gtest/gtest.h"
+
 #include "utils/debug.h"
 
 TEST(UtilsDebug, SpliceBytes) {

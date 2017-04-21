@@ -4,7 +4,7 @@
 #define USTORE_NODE_ROLLING_HASH_H_
 
 #include <cstddef>
-#include <cstdint>
+
 #include "hash/buzhash.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"

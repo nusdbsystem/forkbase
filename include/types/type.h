@@ -59,8 +59,8 @@ enum class ErrorCode : byte_t {
   kTypeUnsupported = 8,
   kInvalidParameters = 9,
   kFailedCreateUCell = 10,
-  kFailedCreateUBlob = 11,
-  kFailedCreateUString = 12
+  kFailedCreateSBlob = 11,
+  kFailedCreateSString = 12
 };
 
 }  // namespace ustore

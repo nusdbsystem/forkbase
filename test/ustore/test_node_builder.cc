@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #ifdef TEST_NODEBUILDER
+
 #include <cstring>
 #include <sstream>
 #include <string>
@@ -8,13 +9,11 @@
 
 #include "gtest/gtest.h"
 
-#include "chunk/chunker.h"
 #include "node/blob_node.h"
 #include "node/node_builder.h"
-#include "node/cursor.h"
-#include "store/chunk_loader.h"
+
 #include "utils/debug.h"
-#include "utils/logging.h"
+// #include "utils/logging.h"
 
 class NodeBuilderEnv : public ::testing::Test {
  protected:

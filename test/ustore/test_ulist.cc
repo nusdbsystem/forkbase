@@ -4,8 +4,7 @@
 
 #include "types/ulist.h"
 
-
-// Check KVItems scannbed by iterator are all the same to that in vector
+// Check elements scannbed by iterator are all the same to that in vector
 inline void CheckIdenticalElements(
   const std::vector<ustore::Slice>& elements,
   ustore::ListIterator* it) {
@@ -26,8 +25,6 @@ inline void CheckIdenticalElements(
 
 
 TEST(SList, Small) {
-  auto loader = std::make_shared<ustore::ChunkLoader>();
-
   const ustore::Slice e1("e1", 2);
   const ustore::Slice e2("e22", 3);
   const ustore::Slice e3("e333", 4);
@@ -35,7 +32,7 @@ TEST(SList, Small) {
   const ustore::Slice e5("e55555", 6);
 
   // e3 and e4 to be spliced later
-  ustore::SList slist({e1, e2, e5}, loader);
+  ustore::SList slist({e1, e2, e5});
 
   size_t val_num_bytes = 0;
 
@@ -53,18 +50,17 @@ TEST(SList, Small) {
   CheckIdenticalElements({e1, e2, e5}, slist.iterator().get());
 
   // Splice in middle
-  ustore::SList new_slist1(slist.Splice(1, 1, {e3, e4}), loader);
+  ustore::SList new_slist1(slist.Splice(1, 1, {e3, e4}));
   CheckIdenticalElements({e1, e3, e4, e5},
                          new_slist1.iterator().get());
 
   // // Splice to the end
-  ustore::SList new_slist2(new_slist1.Splice(3, 2, {e2}), loader);
+  ustore::SList new_slist2(new_slist1.Splice(3, 2, {e2}));
   CheckIdenticalElements({e1, e3, e4, e2},
                          new_slist2.iterator().get());
 }
 
 TEST(SList, Huge) {
-  auto loader = std::make_shared<ustore::ChunkLoader>();
   std::vector<ustore::Slice> elements;
   size_t element_size = sizeof(uint32_t);
 
@@ -76,7 +72,7 @@ TEST(SList, Huge) {
     elements.push_back(ustore::Slice(element, element_size));
   }
 
-  ustore::SList slist(elements, loader);
+  ustore::SList slist(elements);
   CheckIdenticalElements(elements, slist.iterator().get());
 
   // Get
@@ -88,7 +84,7 @@ TEST(SList, Huge) {
 
   // Slice 3 elements after 35th one
   //   Insert element 40 at 35 place
-  ustore::SList slist1(slist.Splice(35, 3, {elements[40]}), loader);
+  ustore::SList slist1(slist.Splice(35, 3, {elements[40]}));
 
   auto new_element35 = slist1.Get(35);
   EXPECT_EQ(element_size, new_element35.len());

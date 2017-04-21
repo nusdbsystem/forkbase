@@ -74,14 +74,14 @@ bool UMap::SetNodeForHash(const Hash& root_hash) {
   }
 }
 
-SMap::SMap(const Hash& root_hash,
-           std::shared_ptr<ChunkLoader> loader) : UMap(loader) {
+SMap::SMap(const Hash& root_hash) noexcept :
+    UMap(std::make_shared<ChunkLoader>()) {
   SetNodeForHash(root_hash);
 }
 
 SMap::SMap(const std::vector<Slice>& keys,
-           const std::vector<Slice>& vals,
-           std::shared_ptr<ChunkLoader> loader) : UMap(loader) {
+           const std::vector<Slice>& vals) noexcept :
+    UMap(std::make_shared<ChunkLoader>()) {
   CHECK_GT(keys.size(), 0);
   CHECK_EQ(vals.size(), keys.size());
 

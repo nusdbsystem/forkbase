@@ -3,50 +3,54 @@
 #ifndef USTORE_TYPES_USTRING_H_
 #define USTORE_TYPES_USTRING_H_
 
-#include <cstddef>
-#include <memory>
-#include <utility>
-#include "chunk/chunk.h"
-#include "hash/hash.h"
 #include "node/string_node.h"
-#include "types/type.h"
-#include "utils/noncopyable.h"
+#include "types/base.h"
 
 namespace ustore {
-
-class UString : private Noncopyable {
+class UString : public BaseType {
  public:
-  // create the UString based on the data
-  //   dump the created chunk into storage
-  static UString Create(const byte_t* data, size_t num_bytes);
-  static UString Load(const Hash& hash);
 
-  UString() {}
-  UString(UString&& ustring) : node_(std::move(ustring.node_)) {}
-  ~UString() {}
-
-  UString& operator=(UString&& ustring) {
-    std::swap(node_, ustring.node_);
-    return *this;
+  inline bool empty() const override {
+    return this->node_.get() == nullptr;
   }
 
-  // TODO(pingcheng): when load a invalid hash, set empty true
-  inline bool empty() const { return false; }
+  inline const Hash hash() const override {
+    CHECK(!empty());
+    return node_->hash();
+  }
+
   inline size_t len() const { return node_->len(); }
   // copy string contents to buffer
   //   return string length
-  // TODO(pingcheng): only need to provide non-copy read api
   inline const size_t data(byte_t* buffer) const { return node_->Copy(buffer); }
-  // hash of this ucell
-  inline Hash hash() const { return node_->hash(); }
+
+  // pointer to orignal data
+  inline const byte_t* data() const { return node_->Read(); }
+
+ protected:
+  explicit UString(std::shared_ptr<ChunkLoader> loader) noexcept :
+      BaseType(loader) {}
+
+  ~UString() = default;
+
+  bool SetNodeForHash(const Hash& hash) override;
 
  private:
-  // Private construcstor to create an instance based on the root chunk data
-  // To be called by Load() and Init()
-  explicit UString(const Chunk* chunk);
-
   // Responsible to remove during destructing
   std::unique_ptr<const StringNode> node_;
+};
+
+class SString : public UString {
+ public:
+  // Load an existing sstring
+  explicit SString(const Hash& hash) noexcept;
+
+  // Creata a new sstring
+  explicit SString(const Slice& data) noexcept;
+
+  ~SString() = default;
+
+  SString& operator=(SString&& rhs) = default;
 };
 
 }  // namespace ustore

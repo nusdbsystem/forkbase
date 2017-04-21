@@ -53,21 +53,21 @@ ErrorCode Worker::Read(const UCell& ucell, Value* val) const {
 }
 
 ErrorCode Worker::ReadBlob(const UCell& ucell, Value* val) const {
-  UBlob ublob(UBlob::Load(ucell.dataHash()));
-  size_t n_bytes = ublob.size();
+  SBlob sblob(ucell.dataHash());
+  size_t n_bytes = sblob.size();
   byte_t* buffer = new byte_t[n_bytes];  // Note: potential memory leak
-  n_bytes = ublob.Read(0, n_bytes, buffer);
-  DCHECK_EQ(ublob.size(), n_bytes);
+  n_bytes = sblob.Read(0, n_bytes, buffer);
+  DCHECK_EQ(sblob.size(), n_bytes);
   *val = Value(Blob(buffer, n_bytes));
   return ErrorCode::kOK;
 }
 
 ErrorCode Worker::ReadString(const UCell& ucell, Value* val) const {
-  UString ustring(UString::Load(ucell.dataHash()));
-  size_t n_bytes = ustring.len();
+  SString sstring(ucell.dataHash());
+  size_t n_bytes = sstring.len();
   char* buffer = new char[n_bytes];  // Note: potential memory leak
-  n_bytes = ustring.data(reinterpret_cast<byte_t*>(buffer));
-  DCHECK_EQ(ustring.len(), n_bytes);
+  n_bytes = sstring.data(reinterpret_cast<byte_t*>(buffer));
+  DCHECK_EQ(sstring.len(), n_bytes);
   *val = Value(Slice(buffer, n_bytes));
   return ErrorCode::kOK;
 }
@@ -111,12 +111,16 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
                             const Hash& prev_ver1, const Hash& prev_ver2,
                             Hash* ver) {
   Blob blob = val.blob();
-  UBlob ublob(UBlob::Create(blob.data(), blob.size()));
-  if (ublob.empty()) {
-    LOG(ERROR) << "Failed to create UBlob for Key \"" << key << "\"";
-    return ErrorCode::kFailedCreateUBlob;
+
+  // TO change later
+  const Slice slice(reinterpret_cast<const char*>(blob.data()),
+                    blob.size());
+  SBlob sblob(slice);
+  if (sblob.empty()) {
+    LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
+    return ErrorCode::kFailedCreateSBlob;
   }
-  return CreateUCell(key, UType::kBlob, ublob.hash(), prev_ver1, prev_ver2,
+  return CreateUCell(key, UType::kBlob, sblob.hash(), prev_ver1, prev_ver2,
                      ver);
 }
 
@@ -124,13 +128,12 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                               const Hash& prev_ver1, const Hash& prev_ver2,
                               Hash* ver) {
   Slice slice = val.slice();
-  UString ustring(UString::Create(reinterpret_cast<const byte_t*>(slice.data()),
-                                  slice.len()));
-  if (ustring.empty()) {
-    LOG(ERROR) << "Failed to create UString for Key \"" << key << "\"";
-    return ErrorCode::kFailedCreateUString;
+  SString sstring(slice);
+  if (sstring.empty()) {
+    LOG(ERROR) << "Failed to create ustring for Key \"" << key << "\"";
+    return ErrorCode::kFailedCreateSString;
   }
-  return CreateUCell(key, UType::kString, ustring.hash(), prev_ver1, prev_ver2,
+  return CreateUCell(key, UType::kString, sstring.hash(), prev_ver1, prev_ver2,
                      ver);
 }
 

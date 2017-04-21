@@ -3,17 +3,16 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "chunk/chunk.h"
-#include "node/blob_node.h"
-#include "store/chunk_store.h"
+
 #include "types/ublob.h"
+
 #include "utils/debug.h"
 #include "utils/logging.h"
 
-class UBlobEnv : public ::testing::Test {
+class SBlobEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    const ustore::byte_t raw_data[] = {
+    const char raw_data[] = {
         "SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
         "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
         "this "
@@ -52,7 +51,7 @@ class UBlobEnv : public ::testing::Test {
     data_ = new ustore::byte_t[data_bytes_];
     std::memcpy(data_, raw_data, data_bytes_);
 
-    const ustore::byte_t raw_data_append[] = {
+    const char* raw_data_append[] = {
         "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
         "this "
         "a holiday? what! know you not, Being mechanical, you ought not walk "
@@ -68,8 +67,11 @@ class UBlobEnv : public ::testing::Test {
     append_data_ = new ustore::byte_t[append_data_bytes_];
     std::memcpy(append_data_, raw_data_append, append_data_bytes_);
 
-    ublob_ = ustore::UBlob::Create(data_, data_bytes_);
-    blob_hash_ = ublob_.hash();
+    const ustore::Slice data(reinterpret_cast<const char*>(data_),
+                             data_bytes_);
+
+    const ustore::SBlob sblob_(data);
+    blob_hash_.CopyFrom(sblob_.hash());
   }
 
   virtual void TearDown() {
@@ -83,21 +85,24 @@ class UBlobEnv : public ::testing::Test {
   ustore::byte_t* append_data_;
   size_t append_data_bytes_ = 0;
 
-  ustore::UBlob ublob_;
   ustore::Hash blob_hash_;
 };
 
-TEST_F(UBlobEnv, Splice) {
+TEST_F(SBlobEnv, Splice) {
+  const ustore::SBlob sblob(blob_hash_);
+
   size_t splice_idx = 666;
   size_t num_delete = 777;
-  ustore::UBlob new_ublob =
-      ublob_.Splice(splice_idx, num_delete, append_data_, append_data_bytes_);
+  ustore::SBlob new_sblob(
+      sblob.Splice(splice_idx, num_delete,
+                   append_data_,
+                   append_data_bytes_));
 
   size_t expected_len = data_bytes_ - num_delete + append_data_bytes_;
-  ASSERT_EQ(expected_len, new_ublob.size());
+  ASSERT_EQ(expected_len, new_sblob.size());
 
   ustore::byte_t* actual_bytes = new ustore::byte_t[expected_len];
-  EXPECT_EQ(expected_len, new_ublob.Read(0, expected_len, actual_bytes));
+  EXPECT_EQ(expected_len, new_sblob.Read(0, expected_len, actual_bytes));
 
   const ustore::byte_t* expected_bytes =
       ustore::SpliceBytes(data_, data_bytes_, splice_idx, num_delete,
@@ -110,19 +115,22 @@ TEST_F(UBlobEnv, Splice) {
 }
 
 // Number of elements to delete exceeds the blob end
-TEST_F(UBlobEnv, SpliceOverflow) {
+TEST_F(SBlobEnv, SpliceOverflow) {
+  const ustore::SBlob sblob(blob_hash_);
+
   size_t num_delete = 777;
   size_t real_delete = 400;
   size_t splice_idx = data_bytes_ - real_delete;
 
-  ustore::UBlob new_ublob =
-      ublob_.Splice(splice_idx, num_delete, append_data_, append_data_bytes_);
+  ustore::SBlob new_sblob(
+      sblob.Splice(splice_idx, num_delete,
+                   append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ - real_delete + append_data_bytes_;
-  ASSERT_EQ(expected_len, new_ublob.size());
+  ASSERT_EQ(expected_len, new_sblob.size());
 
   ustore::byte_t* actual_bytes = new ustore::byte_t[expected_len];
-  EXPECT_EQ(expected_len, new_ublob.Read(0, expected_len, actual_bytes));
+  EXPECT_EQ(expected_len, new_sblob.Read(0, expected_len, actual_bytes));
 
   const ustore::byte_t* expected_bytes =
       ustore::SpliceBytes(data_, data_bytes_, splice_idx, num_delete,
@@ -134,16 +142,19 @@ TEST_F(UBlobEnv, SpliceOverflow) {
   delete[] expected_bytes;
 }
 
-TEST_F(UBlobEnv, Insert) {
+TEST_F(SBlobEnv, Insert) {
+  const ustore::SBlob sblob(blob_hash_);
+
   size_t insert_idx = 888;
-  ustore::UBlob new_ublob =
-      ublob_.Insert(insert_idx, append_data_, append_data_bytes_);
+  ustore::SBlob new_sblob(
+      sblob.Insert(insert_idx, append_data_,
+                   append_data_bytes_));
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
-  ASSERT_EQ(expected_len, new_ublob.size());
+  ASSERT_EQ(expected_len, new_sblob.size());
 
   ustore::byte_t* actual_bytes = new ustore::byte_t[expected_len];
-  EXPECT_EQ(expected_len, new_ublob.Read(0, expected_len, actual_bytes));
+  EXPECT_EQ(expected_len, new_sblob.Read(0, expected_len, actual_bytes));
 
   const ustore::byte_t* expected_bytes = ustore::SpliceBytes(
       data_, data_bytes_, insert_idx, 0, append_data_, append_data_bytes_);
@@ -154,16 +165,18 @@ TEST_F(UBlobEnv, Insert) {
   delete[] expected_bytes;
 }
 
-TEST_F(UBlobEnv, Delete) {
+TEST_F(SBlobEnv, Delete) {
+  const ustore::SBlob sblob(blob_hash_);
+
   size_t delete_idx = 999;
   size_t num_delete = 500;
-  ustore::UBlob new_ublob = ublob_.Delete(delete_idx, num_delete);
+  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete));
 
   size_t expected_len = data_bytes_ - num_delete;
-  ASSERT_EQ(expected_len, new_ublob.size());
+  ASSERT_EQ(expected_len, new_sblob.size());
 
   ustore::byte_t* actual_bytes = new ustore::byte_t[expected_len];
-  EXPECT_EQ(expected_len, new_ublob.Read(0, expected_len, actual_bytes));
+  EXPECT_EQ(expected_len, new_sblob.Read(0, expected_len, actual_bytes));
 
   const ustore::byte_t* expected_bytes = ustore::SpliceBytes(
       data_, data_bytes_, delete_idx, num_delete, nullptr, 0);
@@ -175,18 +188,20 @@ TEST_F(UBlobEnv, Delete) {
 }
 
 // Number of elements to delete exceeds the blob end
-TEST_F(UBlobEnv, DeleteOverflow) {
+TEST_F(SBlobEnv, DeleteOverflow) {
+  const ustore::SBlob sblob(blob_hash_);
+
   size_t num_delete = 500;
   size_t real_delete = 300;
   size_t delete_idx = data_bytes_ - real_delete;
 
-  ustore::UBlob new_ublob = ublob_.Delete(delete_idx, num_delete);
+  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete));
 
   size_t expected_len = data_bytes_ - real_delete;
-  ASSERT_EQ(expected_len, new_ublob.size());
+  ASSERT_EQ(expected_len, new_sblob.size());
 
   ustore::byte_t* actual_bytes = new ustore::byte_t[expected_len];
-  EXPECT_EQ(expected_len, new_ublob.Read(0, expected_len, actual_bytes));
+  EXPECT_EQ(expected_len, new_sblob.Read(0, expected_len, actual_bytes));
 
   const ustore::byte_t* expected_bytes = ustore::SpliceBytes(
       data_, data_bytes_, delete_idx, num_delete, nullptr, 0);
@@ -197,14 +212,16 @@ TEST_F(UBlobEnv, DeleteOverflow) {
   delete[] expected_bytes;
 }
 
-TEST_F(UBlobEnv, Append) {
-  ustore::UBlob new_ublob = ublob_.Append(append_data_, append_data_bytes_);
+TEST_F(SBlobEnv, Append) {
+  const ustore::SBlob sblob(blob_hash_);
+
+  ustore::SBlob new_sblob(sblob.Append(append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
-  ASSERT_EQ(expected_len, new_ublob.size());
+  ASSERT_EQ(expected_len, new_sblob.size());
 
   ustore::byte_t* actual_bytes = new ustore::byte_t[expected_len];
-  EXPECT_EQ(expected_len, new_ublob.Read(0, expected_len, actual_bytes));
+  EXPECT_EQ(expected_len, new_sblob.Read(0, expected_len, actual_bytes));
 
   const ustore::byte_t* expected_bytes = ustore::SpliceBytes(
       data_, data_bytes_, data_bytes_, 0, append_data_, append_data_bytes_);
@@ -215,14 +232,15 @@ TEST_F(UBlobEnv, Append) {
   delete[] expected_bytes;
 }
 
-TEST_F(UBlobEnv, Read) {
-  EXPECT_EQ(ublob_.size(), data_bytes_);
+TEST_F(SBlobEnv, Read) {
+  const ustore::SBlob sblob(blob_hash_);
+  EXPECT_EQ(sblob.size(), data_bytes_);
 
   // Read from Middle
   size_t len = 1000;
   size_t pos = 100;
   ustore::byte_t* buffer = new ustore::byte_t[len];
-  EXPECT_EQ(len, ublob_.Read(pos, len, buffer));
+  EXPECT_EQ(len, sblob.Read(pos, len, buffer));
 
   EXPECT_EQ(ustore::byte2str(data_ + pos, len), ustore::byte2str(buffer, len));
 
@@ -230,7 +248,7 @@ TEST_F(UBlobEnv, Read) {
   len = data_bytes_;
   pos = 0;
   buffer = new ustore::byte_t[len];
-  EXPECT_EQ(ublob_.Read(pos, len, buffer), len);
+  EXPECT_EQ(sblob.Read(pos, len, buffer), len);
 
   EXPECT_EQ(ustore::byte2str(data_, len), ustore::byte2str(buffer, len));
 
@@ -238,7 +256,7 @@ TEST_F(UBlobEnv, Read) {
   len = 1000;
   // Leave only 700 remaining elements to read
   pos = data_bytes_ - 300;
-  size_t real_len = ublob_.Read(pos, len, buffer);
+  size_t real_len = sblob.Read(pos, len, buffer);
   EXPECT_EQ(300, real_len);
 
   EXPECT_EQ(ustore::byte2str(data_ + pos, real_len),
@@ -247,29 +265,7 @@ TEST_F(UBlobEnv, Read) {
   delete[] buffer;
 }
 
-// Check the loaded blob is identical to the created blob
-TEST_F(UBlobEnv, Load) {
-  ustore::UBlob loaded_blob = ustore::UBlob::Load(blob_hash_);
-  EXPECT_EQ(ublob_.size(), loaded_blob.size());
-
-  // Read ALL
-  size_t len = data_bytes_;
-  size_t pos = 0;
-
-  ustore::byte_t* loaded_data = new ustore::byte_t[len];
-  EXPECT_EQ(len, ublob_.Read(pos, len, loaded_data));
-
-  ustore::byte_t* created_data = new ustore::byte_t[len];
-  EXPECT_EQ(len, loaded_blob.Read(pos, len, created_data));
-
-  EXPECT_EQ(ustore::byte2str(created_data, len),
-            ustore::byte2str(loaded_data, len));
-
-  delete[] loaded_data;
-  delete[] created_data;
-}
-
-TEST(SimpleUBlob, Load) {
+TEST(SimpleSBlob, Load) {
   const ustore::byte_t raw_data[] =
       "The quick brown fox jumps over the lazy dog";
   size_t len = sizeof(raw_data);
@@ -283,15 +279,15 @@ TEST(SimpleUBlob, Load) {
   cs->Put(chunk.hash(), chunk);
   ///////////////////////////////////////
 
-  ustore::UBlob ublob = ustore::UBlob::Load(chunk.hash());
+  ustore::SBlob sblob(chunk.hash());
 
   // size()
-  EXPECT_EQ(len, ublob.size());
+  EXPECT_EQ(len, sblob.size());
 
   // Read
   size_t pos = 0;
   ustore::byte_t* buffer = new ustore::byte_t[len];
-  EXPECT_EQ(len, ublob.Read(pos, len, buffer));
+  EXPECT_EQ(len, sblob.Read(pos, len, buffer));
 
   EXPECT_EQ(ustore::byte2str(raw_data, len), ustore::byte2str(buffer, len));
 }
