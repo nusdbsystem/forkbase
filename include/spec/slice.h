@@ -52,13 +52,24 @@ class Slice {
     if (len_ != slice.len_) return false;
     return std::memcmp(data_, slice.data_, len_) == 0;
   }
+  inline bool operator==(const std::string& str) const {
+    if (len_ != str.size()) return false;
+    return std::memcmp(data_, str.c_str(), len_) == 0;
+  }
+  friend inline bool operator==(const std::string& str, const Slice& slice) {
+    return slice == str;
+  }
 
   inline bool empty() const { return len_ == 0; }
   inline size_t len() const { return len_; }
   inline const char* data() const { return data_; }
 
+  inline const std::string to_string() const {
+    return std::string(data_, len_);
+  }
+
   friend inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
-    os << std::string(obj.data_, obj.len_);
+    os << obj.to_string();
     return os;
   }
 
