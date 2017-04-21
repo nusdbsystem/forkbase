@@ -53,13 +53,8 @@ class HeadVersion : private Noncopyable {
   std::unordered_set<Slice> ListBranch(const Slice& key) const;
 
  private:
-  Slice Persist(const Slice& slice);
-
-  std::unordered_map<Slice, std::unordered_map<Slice, Hash>> branch_ver_;
-  std::unordered_map<Slice, std::unordered_set<Hash>> latest_ver_;
-  // ad-hoc fix for slice pointing to valid string
-  // TODO(linqian): make sure slice always point to valid memory
-  std::unordered_set<std::string> branch_str_;
+  std::unordered_map<PSlice, std::unordered_map<PSlice, Hash>> branch_ver_;
+  std::unordered_map<PSlice, std::unordered_set<Hash>> latest_ver_;
 };
 
 }  // namespace ustore

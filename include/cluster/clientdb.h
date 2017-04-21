@@ -1,16 +1,17 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_CLUSTER_REQUEST_HANDLER_H_
-#define USTORE_CLUSTER_REQUEST_HANDLER_H_
+#ifndef USTORE_CLUSTER_CLIENTDB_H_
+#define USTORE_CLUSTER_CLIENTDB_H_
 
 #include <condition_variable>
 #include <mutex>
 #include <vector>
 #include "net/net.h"
 #include "proto/messages.pb.h"
+#include "spec/db.h"
 #include "spec/slice.h"
 #include "hash/hash.h"
-#include "spec/db.h"
+
 namespace ustore {
 
 using google::protobuf::Message;
@@ -107,7 +108,7 @@ class ClientDb : public DB {
   UStoreMessage *CreateBranchRequest(const Slice &key,
                                      const Slice &new_branch);
   UStoreMessage *CreateMergeRequest(const Slice &key, const Value &value,
-                      const Slice &target_branch);
+                                    const Slice &target_branch);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
@@ -149,4 +150,4 @@ class WorkerList {
 };
 }  // namespace ustore
 
-#endif  // USTORE_CLUSTER_REQUEST_HANDLER_H_
+#endif  // USTORE_CLUSTER_CLIENTDB_H_

@@ -96,7 +96,7 @@ ClientDb* RemoteClientService::CreateClientDb() {
   // adding a new response blob
   ResponseBlob *resblob = new ResponseBlob();
   responses_.push_back(resblob);
-  return new ClientDb(master_, nclients_++, net_, resblob, workers_); 
+  return new ClientDb(master_, nclients_++, net_, resblob, workers_);
 }
 
 }  // namespace ustore

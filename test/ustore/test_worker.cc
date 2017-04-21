@@ -78,7 +78,7 @@ TEST(Worker, GetString) {
   EXPECT_EQ(ErrorCode::kOK, worker.Get(key1, head_key1_b2, &val_b2));
   EXPECT_EQ(slice1, val_b2.slice());
 
-  for (auto && ver : worker.GetLatestVersions(key1)) {
+  for (auto& ver : worker.GetLatestVersions(key1)) {
     Value val;
     EXPECT_EQ(ErrorCode::kOK, worker.Get(key1, ver, &val));
   }
@@ -129,7 +129,7 @@ TEST(Worker, GetBlob) {
   EXPECT_EQ(ErrorCode::kOK, worker.Get(key2, head_key2_b2, &val_b2));
   EXPECT_EQ(blob1, val_b2.blob());
 
-  for (auto && ver : worker.GetLatestVersions(key2)) {
+  for (auto& ver : worker.GetLatestVersions(key2)) {
     Value val;
     EXPECT_EQ(ErrorCode::kOK, worker.Get(key2, ver, &val));
   }
@@ -171,7 +171,7 @@ TEST(Worker, Merge) {
   EXPECT_EQ(4, worker.GetLatestVersions(key1).size());
 
   std::unordered_set<Hash> dangling_ver(worker.GetLatestVersions(key1));
-  for (auto && b : worker.ListBranch(key1)) {
+  for (auto& b : worker.ListBranch(key1)) {
     dangling_ver.erase(worker.GetBranchHead(key1, b));
   }
   EXPECT_EQ(2, dangling_ver.size());

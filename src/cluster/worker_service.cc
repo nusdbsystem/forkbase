@@ -176,9 +176,8 @@ void WorkerService::HandleRequest(const void *msg, int size,
                           (payload.value()).length())),
               Slice(payload.target_branch()), Slice(payload.ref_branch()),
               &new_version)
-        :  (payload.has_ref_version() 
-              ? 
-                worker_->Merge(Slice(ustore_msg->key()),
+        : (payload.has_ref_version()
+              ? worker_->Merge(Slice(ustore_msg->key()),
                 Value(Blob((const byte_t*)(payload.value().data()),
                           (payload.value()).length())),
                 Hash((const byte_t*)((ustore_msg->version())).data()),
@@ -200,7 +199,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       break;
   }
 
-  response->set_status((int)error_code); 
+  response->set_status(static_cast<int>(error_code));
   // send response back
   byte_t *serialized = new byte_t[response->ByteSize()];
   response->SerializeToArray(serialized, response->ByteSize());

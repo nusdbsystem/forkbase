@@ -7,6 +7,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <utility>
 #include "hash/murmurhash.h"
 
 namespace ustore {
@@ -68,15 +69,64 @@ inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
   return os;
 }
 
+/* Slice variant to ensure always point to valid string when used in containers.
+ * Copy a string when stored in containers, not copy when lookup.
+ */
+class PSlice {
+ public:
+  // Persist a slice
+  static PSlice Persist(const Slice& slice) {
+    PSlice ps(slice);
+    ps.value_ = std::string(slice.data(), slice.len());
+    ps.slice_ = Slice(ps.value_);
+    return ps;
+  }
+
+  // Do not persist a slice
+  PSlice(const Slice& slice) : slice_(slice) {}  // NOLINT
+  PSlice(const PSlice& pslice)
+      : value_(pslice.value_), slice_(pslice.slice_) {
+    if (!value_.empty()) slice_ = Slice(value_);
+  }
+  PSlice(PSlice&& pslice)
+      : value_(std::move(pslice.value_)), slice_(pslice.slice_) {
+    if (!value_.empty()) slice_ = Slice(value_);
+  }
+
+  inline PSlice& operator=(PSlice pslice) {
+    std::swap(value_, pslice.value_);
+    slice_ = value_.empty() ? pslice.slice_ : Slice(value_);
+    return *this;
+  }
+
+  inline bool operator==(const PSlice& pslice) const {
+    return slice_ == pslice.slice_;
+  }
+  inline const Slice& slice() const { return slice_; }
+
+ private:
+  Slice slice_;
+  std::string value_;
+};
+
 }  // namespace ustore
 
 namespace std {
+
 template<>
 struct hash<::ustore::Slice> {
   inline size_t operator()(const ::ustore::Slice& obj) const {
     return ::ustore::MurmurHash(obj.data(), obj.len());
   }
 };
+
+template<>
+struct hash<::ustore::PSlice> {
+  inline size_t operator()(const ::ustore::PSlice& obj) const {
+    return hash<::ustore::Slice>()(obj.slice());
+  }
+};
+
 }  // namespace std
 
 #endif  // USTORE_SPEC_SLICE_H_

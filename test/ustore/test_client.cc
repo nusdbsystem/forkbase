@@ -49,7 +49,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   HEAD_VERSION.Compute((const byte_t*)("head"), 4);
 
   // put
-  Hash version; 
+  Hash version;
   EXPECT_EQ(client->Put(Slice(keys[idx]),
         Value(Blob((const byte_t*)values[idx].data(),
         values[idx].length())), HEAD_VERSION, &version), ErrorCode::kOK);
@@ -57,7 +57,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   LOG(INFO) << "PUT version : " << version.ToBase32();
 
   // get it back
-  Value value; 
+  Value value;
   EXPECT_EQ(client->Get(Slice(keys[idx]), version, &value), ErrorCode::kOK);
 
   LOG(INFO) << "GET value : " << string((const char*)value.blob().data(),
@@ -69,7 +69,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
                               version, Slice(new_branch)), ErrorCode::kOK);
 
   // put on the new branch
-  Hash branch_version; 
+  Hash branch_version;
   EXPECT_EQ(client->Put(Slice(keys[idx]),
       Value(Blob((const byte_t *)values[idx].data(),
    values[idx].length())), Slice(new_branch), &branch_version), ErrorCode::kOK);
@@ -110,7 +110,8 @@ TEST(TestMessage, TestClient1Thread) {
   ifstream fin_client(Env::Instance()->config()->clientservice_file());
   string clientservice_addr;
   fin_client >> clientservice_addr;
-  RemoteClientService *service = new RemoteClientService(clientservice_addr, "");
+  RemoteClientService *service
+    = new RemoteClientService(clientservice_addr, "");
   service->Init();
   service->Start();
 
@@ -148,18 +149,19 @@ TEST(TestMessage, TestClient2Threads) {
   ifstream fin_client(Env::Instance()->config()->clientservice_file());
   string clientservice_addr;
   fin_client >> clientservice_addr;
-  RemoteClientService *service = new RemoteClientService(clientservice_addr, "");
+  RemoteClientService *service
+    = new RemoteClientService(clientservice_addr, "");
   service->Init();
   service->Start();
 
   // 2 clients thread
-  for (int i=0; i<2; i++) {
+  for (int i = 0; i < 2; i++) {
     ClientDb *client = service->CreateClientDb();
     client_threads.push_back(thread(
                         &TestClientRequest, client, i*2, NREQUESTS/2));
   }
   // wait for them to join
-  for (int i=0; i<2; i++)
+  for (int i = 0; i < 2; i++)
     client_threads[i].join();
 
   service->Stop();
