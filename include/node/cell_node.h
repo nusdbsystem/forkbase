@@ -52,16 +52,14 @@ class CellNode {
   // the request second prehash does not exist
   Hash preHash(bool second = false) const;
 
-  inline size_t cellKeyLen() const {
-    return static_cast<size_t>(
-        *reinterpret_cast<const cell_key_size_t*>(chunk_->data() +
-                                                  kCellKeyLenOffset(merged())));
+  inline size_t keyLength() const {
+    return static_cast<size_t>(*reinterpret_cast<const key_size_t*>(
+          chunk_->data() + kKeyLenOffset(merged())));
   }
 
-  inline Slice cellKey() const {
-    return Slice(reinterpret_cast<const char*>(chunk_->data() +
-                                               kCellKeyOffset(merged())),
-                 cellKeyLen());
+  inline Slice key() const {
+    return Slice(reinterpret_cast<const char*>(
+          chunk_->data() + kKeyOffset(merged())), keyLength());
   }
 
   // hash of this node
@@ -74,16 +72,16 @@ class CellNode {
   static constexpr size_t kPreHash1Offset = kDataHashOffset + Hash::kByteLength;
   static constexpr size_t kPreHash2Offset = kPreHash1Offset + Hash::kByteLength;
 
-  inline static size_t kCellKeyLenOffset(bool merged) {
+  inline static size_t kKeyLenOffset(bool merged) {
     return Hash::kByteLength + (merged ? kPreHash2Offset : kPreHash1Offset);
   }
 
-  inline static size_t kCellKeyOffset(bool merged) {
-    return kCellKeyLenOffset(merged) + sizeof(cell_key_size_t);
+  inline static size_t kKeyOffset(bool merged) {
+    return kKeyLenOffset(merged) + sizeof(key_size_t);
   }
 
-  inline static size_t kChunkLen(bool merged, size_t key_len) {
-    return kCellKeyOffset(merged) + key_len;
+  inline static size_t kChunkLength(bool merged, size_t key_len) {
+    return kKeyOffset(merged) + key_len;
   }
 
   std::unique_ptr<const Chunk> chunk_;

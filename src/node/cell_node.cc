@@ -19,7 +19,7 @@ const Chunk* CellNode::NewChunk(const UType type, const Slice& key,
   // Check the first hash can not be empty
   CHECK(!preHash1.empty());
   bool merged = !preHash2.empty();
-  size_t chunk_len = kChunkLen(merged, key.len());
+  size_t chunk_len = kChunkLength(merged, key.len());
   Chunk* chunk = new Chunk(ChunkType::kCell, chunk_len);
   *reinterpret_cast<UType*>(chunk->m_data() + kUTypeOffset) = type;
   std::memcpy(chunk->m_data() + kMergedOffset, &merged, sizeof(bool));
@@ -31,10 +31,10 @@ const Chunk* CellNode::NewChunk(const UType type, const Slice& key,
     std::memcpy(chunk->m_data() + kPreHash2Offset, preHash2.value(),
                 Hash::kByteLength);
   }
-  cell_key_size_t key_len = static_cast<cell_key_size_t>(key.len());
-  std::memcpy(chunk->m_data() + kCellKeyLenOffset(merged), &key_len,
-              sizeof(cell_key_size_t));
-  std::memcpy(chunk->m_data() + kCellKeyOffset(merged), key.data(), key.len());
+  key_size_t key_len = static_cast<key_size_t>(key.len());
+  std::memcpy(chunk->m_data() + kKeyLenOffset(merged), &key_len,
+              sizeof(key_size_t));
+  std::memcpy(chunk->m_data() + kKeyOffset(merged), key.data(), key.len());
   return chunk;
 }
 

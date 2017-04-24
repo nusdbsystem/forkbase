@@ -28,10 +28,10 @@ TEST(UCell, Load) {
   EXPECT_EQ(type, ucell.type());
   EXPECT_FALSE(ucell.merged());
   EXPECT_EQ(h1, ucell.dataHash());
-  EXPECT_EQ(ustore::Hash::kNull, ucell.preUCellHash());
-  EXPECT_EQ(key, ucell.UCellKey());
+  EXPECT_EQ(ustore::Hash::kNull, ucell.preHash());
+  EXPECT_EQ(key, ucell.key());
 
-  EXPECT_TRUE(ucell.preUCellHash(true).empty());
+  EXPECT_TRUE(ucell.preHash(true).empty());
 }
 
 TEST(UCell, Create) {
@@ -48,7 +48,7 @@ TEST(UCell, Create) {
   EXPECT_EQ(type, ucell.type());
   EXPECT_TRUE(ucell.merged());
   EXPECT_EQ(h1, ucell.dataHash());
-  EXPECT_EQ(h2, ucell.preUCellHash());
-  EXPECT_EQ(h3, ucell.preUCellHash(true));
-  EXPECT_EQ(key, ucell.UCellKey());
+  EXPECT_EQ(h2, ucell.preHash());
+  EXPECT_EQ(h3, ucell.preHash(true));
+  EXPECT_EQ(key, ucell.key());
 }

@@ -104,8 +104,8 @@ class Worker : public DB, private Noncopyable {
    * @param ucell The referring UCell object.
    */
   inline void UpdateLatestVersion(const Slice& key, const UCell& ucell) {
-    const auto& prev_ver1 = ucell.preUCellHash();
-    const auto& prev_ver2 = ucell.preUCellHash(true);
+    const auto& prev_ver1 = ucell.preHash();
+    const auto& prev_ver2 = ucell.preHash(true);
     const auto& ver = ucell.hash();
     head_ver_.PutLatest(key, prev_ver1, prev_ver2, ver);
   }

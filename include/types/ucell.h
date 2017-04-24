@@ -39,10 +39,10 @@ class UCell : private Noncopyable {
   inline Hash dataHash() const { return node_->dataHash(); }
   // return empty hash (Hash()) if
   // the request second prehash does not exist
-  inline Hash preUCellHash(bool second = false) const {
+  inline Hash preHash(bool second = false) const {
     return node_->preHash(second);
   }
-  inline Slice UCellKey() const { return node_->cellKey(); }
+  inline Slice key() const { return node_->key(); }
 
   // hash of this ucell
   inline Hash hash() const { return node_->hash(); }

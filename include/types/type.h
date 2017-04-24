@@ -7,7 +7,7 @@
 namespace ustore {
 
 typedef unsigned char byte_t;
-typedef uint16_t cell_key_size_t;
+typedef uint16_t key_size_t;
 
 /*
  * Supported data types
