@@ -5,10 +5,30 @@
 #include <cstring>  // for memcpy
 #include "hash/hash.h"
 #include "node/blob_node.h"
+#include "node/map_node.h"
+#include "node/list_node.h"
 #include "node/orderedkey.h"
 #include "utils/logging.h"
 
 namespace ustore {
+// utility function for cursor usage
+std::unique_ptr<const SeqNode>
+    SeqNode::CreateFromChunk(const Chunk* chunk) {
+  CHECK_NE(chunk, nullptr);
+  switch (chunk->type()) {
+    case ChunkType::kMeta:
+      return std::unique_ptr<SeqNode>(new MetaNode(chunk));
+    case ChunkType::kBlob:
+      return std::unique_ptr<SeqNode>(new BlobNode(chunk));
+    case ChunkType::kMap:
+      return std::unique_ptr<SeqNode>(new MapNode(chunk));
+    case ChunkType::kList:
+      return std::unique_ptr<SeqNode>(new ListNode(chunk));
+    default:
+      LOG(FATAL) << "Other Non-chunkable Node Not Supported!";
+      return nullptr;
+  }
+}
 
 ChunkInfo MetaChunker::make(const std::vector<const Segment*>& segments)
     const {
@@ -83,6 +103,10 @@ const byte_t* MetaNode::data(size_t idx) const {
   // Skip num_entries field (4 bytes) at MetaNode head
   size_t byte_offset = entryOffset(idx);
   return chunk_->data() + byte_offset;
+}
+const OrderedKey MetaNode::key(size_t idx) const {
+  MetaEntry me(data(idx));
+  return me.orderedKey();
 }
 
 size_t MetaNode::len(size_t idx) const {

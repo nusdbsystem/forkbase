@@ -11,35 +11,17 @@
 #include "utils/logging.h"
 
 namespace ustore {
-// utility function for cursor usage
-const SeqNode* CreateSeqNodeFromChunk(const Chunk* chunk) {
-  CHECK_NE(chunk, nullptr);
-  switch (chunk->type()) {
-    case ChunkType::kMeta:
-      return new MetaNode(chunk);
-    case ChunkType::kBlob:
-      return new BlobNode(chunk);
-    case ChunkType::kMap:
-      return new MapNode(chunk);
-    case ChunkType::kList:
-      return new ListNode(chunk);
-    default:
-      LOG(FATAL) << "Other Non-chunkable Node Not Supported!";
-      return nullptr;
-  }
-}
-
 NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, size_t idx,
                                          ChunkLoader* ch_loader) {
-  const SeqNode* seq_node = nullptr;
   NodeCursor* parent_cursor = nullptr;
   size_t element_idx = idx;
   size_t entry_idx = 0;
   const Chunk* chunk = ch_loader->Load(hash);
-  seq_node = CreateSeqNodeFromChunk(chunk);
+
+  std::shared_ptr<const SeqNode> seq_node(SeqNode::CreateFromChunk(chunk));
 
   while (!seq_node->isLeaf()) {
-    const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node);
+    const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node.get());
     Hash child_hash = mnode->GetChildHashByIndex(element_idx, &entry_idx);
     if (child_hash.empty()) {
       CHECK_EQ(entry_idx, mnode->numEntries());
@@ -53,12 +35,12 @@ NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, size_t idx,
         new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
     element_idx -= mnode->numElementsUntilEntry(entry_idx);
     chunk = ch_loader->Load(child_hash);
-    seq_node = CreateSeqNodeFromChunk(chunk);
+    seq_node = SeqNode::CreateFromChunk(chunk);
   }
   // if the element_idx > num of elements at leaf
   //   make cursor point to the end of leaf
   //   entry_idx = numEntries()
-  const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node);
+  const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node.get());
   if (element_idx > lnode->numEntries()) {
     entry_idx = lnode->numElements();
   } else {
@@ -69,14 +51,13 @@ NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, size_t idx,
 
 NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
                                        ChunkLoader* ch_loader, bool* found) {
-  const SeqNode* seq_node = nullptr;
   NodeCursor* parent_cursor = nullptr;
   size_t entry_idx = 0;
   const Chunk* chunk = ch_loader->Load(hash);
-  seq_node = CreateSeqNodeFromChunk(chunk);
+  std::shared_ptr<const SeqNode> seq_node(SeqNode::CreateFromChunk(chunk));
 
   while (!seq_node->isLeaf()) {
-    const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node);
+    const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node.get());
     Hash child_hash = mnode->GetChildHashByKey(key, &entry_idx);
     if (child_hash.empty()) {
       CHECK_EQ(entry_idx, mnode->numEntries());
@@ -89,13 +70,14 @@ NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
     parent_cursor =
         new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
     chunk = ch_loader->Load(child_hash);
-    seq_node = CreateSeqNodeFromChunk(chunk);
+    seq_node = SeqNode::CreateFromChunk(chunk);
   }
   // if the element_idx > num of elements at leaf
   //   make cursor point to the end of leaf
   //   entry_idx = numEntries()
-  const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node);
+  const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node.get());
   entry_idx = lnode->GetIdxForKey(key, found);
+
   return new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
 }
 // copy cosntructor
@@ -114,7 +96,7 @@ NodeCursor::~NodeCursor() {
   delete parent_cr_;
 }
 
-NodeCursor::NodeCursor(const SeqNode* seq_node, size_t idx,
+NodeCursor::NodeCursor(std::shared_ptr<const SeqNode> seq_node, size_t idx,
                        ChunkLoader* chunk_loader, NodeCursor* parent_cr)
     : parent_cr_(parent_cr),
       seq_node_(seq_node),
@@ -142,7 +124,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
   if (parent_cr_->Advance(true)) {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
-    seq_node_ = CreateSeqNodeFromChunk(chunk);
+    seq_node_ = SeqNode::CreateFromChunk(chunk);
     CHECK_GT(seq_node_->numEntries(), 0);
     idx_ = 0;  // point the first element
     return true;
@@ -166,7 +148,7 @@ bool NodeCursor::Retreat(bool cross_boundary) {
   if (parent_cr_->Retreat(true)) {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
-    seq_node_ = CreateSeqNodeFromChunk(chunk);
+    seq_node_ = SeqNode::CreateFromChunk(chunk);
     CHECK_GT(seq_node_->numEntries(), 0);
     idx_ = seq_node_->numEntries() - 1;  // point to the last element
     return true;

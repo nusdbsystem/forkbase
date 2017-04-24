@@ -29,6 +29,11 @@ ChunkInfo BlobChunker::make(const std::vector<const Segment*>& segments)
   return {std::move(chunk), std::move(meta_seg)};
 }
 
+const OrderedKey BlobNode::key(size_t idx) const {
+  LOG(FATAL) << "Not Supported";
+  return OrderedKey();
+}
+
 size_t BlobNode::GetIdxForKey(const OrderedKey& key, bool* found) const {
   LOG(FATAL) << "Not Supported to Get Blob Elemeny by Key. ";
   return 0;

@@ -75,12 +75,16 @@ class MapNode : public LeafNode {
   const byte_t* data(size_t idx) const override;
   // return the byte len of the idx-th entry
   size_t len(size_t idx) const override;
+
   size_t GetIdxForKey(const OrderedKey& key, bool* found) const override;
 
   size_t numEntries() const override;
 
   size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const override;
+
   size_t GetLength(size_t start, size_t end) const override;
+
+  const OrderedKey key(size_t idx) const override;
 
  private:
   void PrecomputeOffsets();

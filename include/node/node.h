@@ -29,6 +29,9 @@ class SeqNode : public UNode {
   */
 
  public:
+  static std::unique_ptr<const SeqNode>
+      CreateFromChunk(const Chunk* chunk);
+
   explicit SeqNode(const Chunk* chunk) : UNode(chunk) {}
   virtual ~SeqNode() {}  // NOT delete chunk!!
 
@@ -41,8 +44,10 @@ class SeqNode : public UNode {
   // number of elements at leaves rooted at this MetaSeq
   virtual uint64_t numElements() const = 0;
 
-  // return the byte pointer for the idx-th element in leaf
+  // return the byte pointer for the idx-th entry in this node
   virtual const byte_t* data(size_t idx) const = 0;
+
+  virtual const OrderedKey key(size_t idx) const = 0;
   // return the byte len of the idx-th entry
   virtual size_t len(size_t idx) const = 0;
 };
@@ -69,8 +74,11 @@ class MetaNode : public SeqNode {
   // Caller of this method has to make sure entry_idx is valid.
   uint64_t numElementsUntilEntry(size_t entry_idx) const;
 
-  // return the byte pointer for the idx-th element in leaf
+  // return the byte pointer for the idx-th entry in this node
   const byte_t* data(size_t idx) const override;
+
+  const OrderedKey key(size_t idx) const override;
+
   // return the byte len of the idx-th entry
   size_t len(size_t idx) const override;
 

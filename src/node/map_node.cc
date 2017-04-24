@@ -178,6 +178,9 @@ size_t MapNode::len(size_t idx) const {
 
   return preOffset - offsets_[idx];
 }
+const OrderedKey MapNode::key(size_t idx) const {
+  return MapNode::orderedKey(data(idx));
+}
 
 size_t MapNode::GetIdxForKey(const OrderedKey& key,
                              bool* found) const {

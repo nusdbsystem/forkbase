@@ -50,6 +50,10 @@ class NodeCursor {
   //   element
   bool Retreat(bool cross_boundary);
 
+  inline const OrderedKey currentKey() const {
+    return seq_node_->key(idx_);
+  }
+
   // return the data pointed by current cursor
   const byte_t* current() const;
   // return the number of bytes of pointed element
@@ -75,13 +79,15 @@ class NodeCursor {
  private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively
-  NodeCursor(const SeqNode* seq_node, size_t idx, ChunkLoader* chunk_loader,
+  NodeCursor(std::shared_ptr<const SeqNode> seq_node,
+             size_t idx, ChunkLoader* chunk_loader,
              NodeCursor* parent_cr);
 
   // responsible to delete during destruction
   NodeCursor* parent_cr_ = nullptr;
+
   // the pointed sequence
-  const SeqNode* seq_node_;
+  std::shared_ptr<const SeqNode> seq_node_;
   ChunkLoader* chunk_loader_;
   // the index of pointed elements
   // can be -1 when pointing to seq start

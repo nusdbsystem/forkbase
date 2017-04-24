@@ -127,6 +127,12 @@ void ListNode::PrecomputeOffsets() {
     byte_offset += entry_num_bytes;
   }
 }
+
+const OrderedKey ListNode::key(size_t idx) const {
+  LOG(FATAL) << "Not Supported";
+  return OrderedKey();
+}
+
 size_t ListNode::GetIdxForKey(const OrderedKey& key,
                              bool* found) const {
   LOG(FATAL) << "Not Supported Yet";
