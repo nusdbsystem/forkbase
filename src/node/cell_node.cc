@@ -8,21 +8,18 @@
 
 namespace ustore {
 
-const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
-                                const Hash& preHash) {
-  return NewChunk(type, dataHash, preHash, Hash());
+const Chunk* CellNode::NewChunk(const UType type, const Slice& key,
+                                const Hash& dataHash, const Hash& preHash) {
+  return NewChunk(type, key, dataHash, preHash, Hash());
 }
 
-const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
-                                const Hash& preHash1, const Hash& preHash2) {
+const Chunk* CellNode::NewChunk(const UType type, const Slice& key,
+                                const Hash& dataHash, const Hash& preHash1,
+                                const Hash& preHash2) {
   // Check the first hash can not be empty
   CHECK(!preHash1.empty());
-  size_t chunk_len = kChunkLength1PreHash;
-  bool merged = false;
-  if (!preHash2.empty()) {
-    chunk_len = kChunkLength2PreHash;
-    merged = true;
-  }
+  bool merged = !preHash2.empty();
+  size_t chunk_len = kChunkLen(merged, key.len());
   Chunk* chunk = new Chunk(ChunkType::kCell, chunk_len);
   *reinterpret_cast<UType*>(chunk->m_data() + kUTypeOffset) = type;
   std::memcpy(chunk->m_data() + kMergedOffset, &merged, sizeof(bool));
@@ -30,17 +27,20 @@ const Chunk* CellNode::NewChunk(const UType type, const Hash& dataHash,
               Hash::kByteLength);
   std::memcpy(chunk->m_data() + kPreHash1Offset, preHash1.value(),
               Hash::kByteLength);
-  if (!preHash2.empty()) {
+  if (merged) {
     std::memcpy(chunk->m_data() + kPreHash2Offset, preHash2.value(),
                 Hash::kByteLength);
   }
+  cell_key_size_t key_len = static_cast<cell_key_size_t>(key.len());
+  std::memcpy(chunk->m_data() + kCellKeyLenOffset(merged), &key_len,
+              sizeof(cell_key_size_t));
+  std::memcpy(chunk->m_data() + kCellKeyOffset(merged), key.data(), key.len());
   return chunk;
 }
 
 Hash CellNode::preHash(bool second) const {
   if (!second) return Hash(chunk_->data() + kPreHash1Offset);
   if (merged()) {
-    CHECK_EQ(chunk_->capacity(), kChunkLength2PreHash);
     return Hash(chunk_->data() + kPreHash2Offset);
   }
   return Hash();

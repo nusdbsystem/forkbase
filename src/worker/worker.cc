@@ -85,8 +85,8 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
   return ec;
 }
 
-ErrorCode Worker::Put(const Slice& key, const Value& val,
-                      const Hash& prev_ver, Hash* ver) {
+ErrorCode Worker::Put(const Slice& key, const Value& val, const Hash& prev_ver,
+                      Hash* ver) {
   return Write(key, val, prev_ver, Hash::kNull, ver);
 }
 
@@ -137,7 +137,7 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                               const Hash& utype_hash, const Hash& prev_ver1,
                               const Hash& prev_ver2, Hash* ver) {
-  UCell ucell(UCell::Create(utype, utype_hash, prev_ver1, prev_ver2));
+  UCell ucell(UCell::Create(utype, key, utype_hash, prev_ver1, prev_ver2));
   if (ucell.empty()) {
     LOG(ERROR) << "Failed to create UCell for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
@@ -212,8 +212,7 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
 }
 
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
-                        const Hash& ref_ver1, const Hash& ref_ver2,
-                        Hash* ver) {
+                        const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver) {
   return Write(key, val, ref_ver1, ref_ver2, ver);
 }
 

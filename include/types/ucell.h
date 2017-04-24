@@ -8,6 +8,7 @@
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "node/cell_node.h"
+#include "spec/slice.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
 
@@ -17,8 +18,9 @@ class UCell : private Noncopyable {
  public:
   // Create the chunk data and dump to storage
   // Return the UCell instance
-  static UCell Create(UType data_type, const Hash& data_root_hash,
-                      const Hash& preHash1, const Hash& preHash2);
+  static UCell Create(UType data_type, const Slice& key,
+                      const Hash& data_root_hash, const Hash& preHash1,
+                      const Hash& preHash2);
   static UCell Load(const Hash& unode_hash);
 
   UCell() {}
@@ -40,6 +42,7 @@ class UCell : private Noncopyable {
   inline Hash preUCellHash(bool second = false) const {
     return node_->preHash(second);
   }
+  inline Slice UCellKey() const { return node_->cellKey(); }
 
   // hash of this ucell
   inline Hash hash() const { return node_->hash(); }

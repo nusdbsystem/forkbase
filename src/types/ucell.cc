@@ -9,10 +9,11 @@
 
 namespace ustore {
 
-UCell UCell::Create(UType data_type, const Hash& data_root_hash,
-                    const Hash& preHash1, const Hash& preHash2) {
+UCell UCell::Create(UType data_type, const Slice& key,
+                    const Hash& data_root_hash, const Hash& preHash1,
+                    const Hash& preHash2) {
   const Chunk* chunk =
-      CellNode::NewChunk(data_type, data_root_hash, preHash1, preHash2);
+      CellNode::NewChunk(data_type, key, data_root_hash, preHash1, preHash2);
   store::GetChunkStore()->Put(chunk->hash(), *chunk);
   return UCell(chunk);
 }

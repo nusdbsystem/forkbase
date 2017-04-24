@@ -2,10 +2,12 @@
 
 #ifndef USTORE_TYPES_TYPE_H_
 #define USTORE_TYPES_TYPE_H_
+#include <cstdint>
 
 namespace ustore {
 
 typedef unsigned char byte_t;
+typedef uint16_t cell_key_size_t;
 
 /*
  * Supported data types
