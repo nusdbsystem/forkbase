@@ -70,40 +70,34 @@ class Slice {
 /* Slice variant to ensure always point to valid string when used in containers.
  * Copy a string when stored in containers, not copy when lookup.
  */
-class PSlice {
+class PSlice : public Slice {
  public:
   // Persist a slice
   static PSlice Persist(const Slice& slice) {
     PSlice ps(slice);
+    // create own string and point to it
     ps.value_ = std::string(slice.data(), slice.len());
-    ps.slice_ = Slice(ps.value_);
+    ps.Slice::operator=(Slice(ps.value_));
     return ps;
   }
 
   // Do not persist a slice
-  PSlice(const Slice& slice) : slice_(slice) {}  // NOLINT
-  PSlice(const PSlice& pslice)
-    : value_(pslice.value_), slice_(pslice.slice_) {
-    if (!value_.empty()) slice_ = Slice(value_);
+  PSlice(const Slice& slice) : Slice(slice) {}  // NOLINT
+  // Persist only when already point to own string
+  PSlice(const PSlice& pslice) : Slice(pslice), value_(pslice.value_) {
+    if (!value_.empty()) this->Slice::operator=(Slice(value_));
   }
-  PSlice(PSlice&& pslice)
-    : value_(std::move(pslice.value_)), slice_(pslice.slice_) {
-    if (!value_.empty()) slice_ = Slice(value_);
+  PSlice(PSlice&& pslice) : Slice(pslice), value_(std::move(pslice.value_)) {
+    if (!value_.empty()) this->Slice::operator=(Slice(value_));
   }
 
   inline PSlice& operator=(PSlice pslice) {
     std::swap(value_, pslice.value_);
-    slice_ = value_.empty() ? pslice.slice_ : Slice(value_);
+    this->Slice::operator=(value_.empty() ? pslice : Slice(value_));
     return *this;
   }
 
-  inline bool operator==(const PSlice& pslice) const {
-    return slice_ == pslice.slice_;
-  }
-  inline const Slice& slice() const { return slice_; }
-
  private:
-  Slice slice_;
   std::string value_;
 };
 
@@ -121,7 +115,7 @@ struct hash<::ustore::Slice> {
 template<>
 struct hash<::ustore::PSlice> {
   inline size_t operator()(const ::ustore::PSlice& obj) const {
-    return hash<::ustore::Slice>()(obj.slice());
+    return hash<::ustore::Slice>()(obj);
   }
 };
 

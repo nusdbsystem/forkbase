@@ -118,7 +118,7 @@ std::vector<Slice> HeadVersion::ListBranch(const Slice& key) const {
   std::vector<Slice> branchs;
   if (branch_ver_.find(key) != branch_ver_.end()) {
     for (const auto& bv : branch_ver_.at(key)) {
-      branchs.push_back(bv.first.slice());
+      branchs.push_back(bv.first);
     }
   }
   return branchs;
