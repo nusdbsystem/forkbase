@@ -4,6 +4,9 @@
 #define USTORE_NET_ZMQ_NET_H_
 
 #include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 #include "net/net.h"
 
 namespace ustore {
@@ -12,6 +15,7 @@ namespace ustore {
 class ZmqNet : public Net {
  public:
   explicit ZmqNet(const node_id_t& id, int nthreads = 1);
+  ~ZmqNet() {}
   NetContext* CreateNetContext(const node_id_t& id) override;
 
   /**
@@ -26,12 +30,13 @@ class ZmqNet : public Net {
 
   // process the received msg
   void Dispatch(const node_id_t& source, const void *msg, int size);
-
+  inline const std::string get_inproc_ep() { return inproc_ep_; }
  private:
   void *recv_sock_, *backend_sock_;  // router and backend socket
-  void *socket_ctx_;
   bool is_running_;
   int nthreads_;  // number of processing threads
+  std::string inproc_ep_;  // endpoint for ipc
+  std::vector<std::thread> backend_threads_;
 };
 
 class ZmqNetContext : public NetContext {
@@ -45,7 +50,7 @@ class ZmqNetContext : public NetContext {
  private:
   // std::mutex recv_lock_, send_lock_;
   std::mutex send_lock_;
-  void *send_sock_, *send_ctx_;
+  void *send_sock_;
 };
 
 }  // namespace ustore

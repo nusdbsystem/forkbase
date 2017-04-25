@@ -134,7 +134,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
                           Slice(ustore_msg->branch()), &val)
            : worker_->Get(Slice(ustore_msg->key()),
               Hash((const byte_t*)((ustore_msg->version()).data())), &val);
-
+      
       UStoreMessage::GetResponsePayload *payload =
               response->mutable_get_response_payload();
       payload->set_value((val.blob()).data(), (val.blob()).size());

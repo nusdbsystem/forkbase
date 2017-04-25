@@ -5,6 +5,7 @@
 #include <czmq.h>
 #include <gflags/gflags.h>
 #include <string>
+#include <thread>
 #include <set>
 #include "utils/logging.h"
 
@@ -13,7 +14,6 @@ namespace ustore {
 /**
  * Implementation of Network communication via ZeroMQ
  */
-DEFINE_string(inproc, "inproc://test", "");
 
 #define POLL_TIMEOUT 10
 
@@ -21,11 +21,11 @@ using std::string;
 using std::vector;
 
 // server thread to process messages
-void ServerThread(void *args, zctx_t *ctx, void *pipe);
+void ServerThread(void *args);
 
 Net::~Net() {
-  for (auto val = netmap_.begin(); val != netmap_.end(); val++)
-    delete val->second;
+  for (auto val : netmap_) 
+    delete val.second;
 }
 
 void Net::CreateNetContexts(const vector<node_id_t>& nodes) {
@@ -47,16 +47,15 @@ void Net::CreateNetContexts(const vector<node_id_t>& nodes) {
 ZmqNet::ZmqNet(const node_id_t& id, int nthreads)
     : Net(id), nthreads_(nthreads) {
   // start router socket
-  socket_ctx_ = zctx_new();
-  recv_sock_ = zsocket_new(static_cast<zctx_t*>(socket_ctx_), ZMQ_ROUTER);
+  recv_sock_ = zsock_new(ZMQ_ROUTER);
   string host = "tcp://" + id;
-  CHECK(zsocket_bind(recv_sock_, "%s", host.c_str()));
-  backend_sock_ = zsocket_new(static_cast<zctx_t*>(socket_ctx_), ZMQ_DEALER);
-  CHECK_EQ(zsocket_bind(backend_sock_, "%s", FLAGS_inproc.c_str()), 0);
-
+  inproc_ep_ = "inproc://" + id;
+  CHECK(zsock_bind((zsock_t *)recv_sock_, "%s", host.c_str()));
+  backend_sock_ = zsock_new(ZMQ_DEALER);
+  CHECK_EQ(zsock_bind((zsock_t *)backend_sock_, "%s", inproc_ep_.c_str()), 0);
   // start backend thread
   for (int i = 0; i < nthreads_; i++)
-    zthread_fork(static_cast<zctx_t*>(socket_ctx_), ServerThread, this);
+    backend_threads_.push_back(std::thread(ServerThread, this));
 
   is_running_ = true;
 }
@@ -73,74 +72,74 @@ NetContext* ZmqNet::CreateNetContext(const node_id_t& id) {
 
 // forwarding messages from router to dealer socket
 void ZmqNet::Start() {
+  zpoller_t *zpoller = zpoller_new(recv_sock_, NULL);
   while (is_running_) {
-    zmq_pollitem_t items[1];
-    items[0] = {recv_sock_, 0, ZMQ_POLLIN, 0};
-    int rc = zmq_poll(items, 1, POLL_TIMEOUT);
-    if (rc < 0) {
+    void *sock = zpoller_wait(zpoller, POLL_TIMEOUT);
+    if (!sock && !zpoller_expired(zpoller)) 
       break;
-    }
-
-    if (items[0].revents & ZMQ_POLLIN) {
-      zmsg_t *msg = zmsg_recv(recv_sock_);
-      if (!msg)
+    if (sock) {
+      zmsg_t *msg = zmsg_recv(sock);
+      if (!msg) 
         break;
       // send to backend
       zmsg_send(&msg, backend_sock_);
     }
   }
   // Stop when ^C
-  zsocket_destroy(static_cast<zctx_t*>(socket_ctx_), recv_sock_);
-  zsocket_destroy(static_cast<zctx_t*>(socket_ctx_), backend_sock_);
-  zctx_destroy(reinterpret_cast<zctx_t**>(&socket_ctx_));
+  zsock_destroy((zsock_t **)&recv_sock_);
+  zsock_destroy((zsock_t **)&backend_sock_);
+  zpoller_destroy(&zpoller);
+  for (int i=0; i < backend_threads_.size(); i++)
+    backend_threads_[i].join();
 }
 
 void ZmqNet::Stop() {
   is_running_ = false;
 }
 
-void ServerThread(void *args, zctx_t *ctx, void *pipe) {
+void ServerThread(void *args) {
   ZmqNet *net = static_cast<ZmqNet*>(args);
-
   // create and connect to the frontend's dealer socket
-  void *frontend = zsocket_new(ctx, ZMQ_DEALER);
-  CHECK_EQ(zsocket_connect(frontend, "%s", FLAGS_inproc.c_str()), 0);
-
+  void *frontend = zsock_new(ZMQ_DEALER);
+  CHECK_EQ(zsock_connect((zsock_t *)frontend, "%s", net->get_inproc_ep().c_str()), 0);
+  zpoller_t *zpoller = zpoller_new(frontend, NULL);
   while (net->IsRunning()) {
-    zmsg_t *msg = zmsg_recv(frontend);
-    if (!msg)
+    void *sock = zpoller_wait(zpoller, POLL_TIMEOUT);
+    if (!sock && !zpoller_expired(zpoller))
       break;
+    if (sock) {
+      zmsg_t *msg = zmsg_recv(sock);
+      if (!msg)
+        break;
 
-    // message processing
-    // first frame is the identity (from router)
-    // next contain connection ID
-    // final frame is the message itself
-    zframe_t *identity = zmsg_pop(msg);
-    char *connection_id = zmsg_popstr(msg);
+      // message processing
+      // first frame is the identity (from router)
+      // next contain connection ID
+      // final frame is the message itself
+      zframe_t *identity = zmsg_pop(msg);
+      char *connection_id = zmsg_popstr(msg);
 
-    zframe_t *content = zmsg_pop(msg);
-    net->Dispatch(string(connection_id),
-                  zframe_data(content), zframe_size(content));
-    zframe_destroy(&identity);
-    zframe_destroy(&content);
-    free(connection_id);
+      zframe_t *content = zmsg_pop(msg);
+      net->Dispatch(string(connection_id),
+          zframe_data(content), zframe_size(content));
+      zframe_destroy(&identity);
+      zframe_destroy(&content);
+      free(connection_id);
+    }
   }
-  zsocket_destroy(ctx, frontend);
+  zsock_destroy((zsock_t **)&frontend);
 }
 
 ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest)
     : NetContext(src, dest) {
   // start connection to the remote host
-  send_ctx_ = zctx_new();
-  send_sock_ = zsocket_new(static_cast<zctx_t*>(send_ctx_), ZMQ_DEALER);
+  send_sock_ = zsock_new(ZMQ_DEALER);
   string host = "tcp://" + dest_id_;
-  CHECK_EQ(zsocket_connect(send_sock_, "%s", host.c_str()), 0);
-  LOG(INFO)<< "Connected to " << host;
+  CHECK_EQ(zsock_connect((zsock_t *)send_sock_, "%s", host.c_str()), 0);
 }
 
 ZmqNetContext::~ZmqNetContext() {
-  zsocket_destroy(static_cast<zctx_t*>(send_ctx_), send_sock_);
-  zctx_destroy(reinterpret_cast<zctx_t**>(&send_ctx_));
+  zsock_destroy((zsock_t **)&send_sock_);
 }
 
 ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
@@ -152,7 +151,7 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
   zmsg_append(msg, &frame);
 
   send_lock_.lock();
-  int st = zmsg_send(&msg, send_sock_) == 0 ? len : -1;
+  int st = zmsg_send(&msg, (zsock_t *)send_sock_) == 0 ? len : -1;
   send_lock_.unlock();
   return st;
 }

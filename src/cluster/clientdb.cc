@@ -244,7 +244,7 @@ ErrorCode ClientDb::GetValueResponse(Value* value) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
   *value = Value(Blob(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data()),
+    response->get_response_payload().value().data()),
     response->get_response_payload().value().length()));
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;

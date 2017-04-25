@@ -53,7 +53,6 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   EXPECT_EQ(client->Put(Slice(keys[idx]),
         Value(Blob((const byte_t*)values[idx].data(),
         values[idx].length())), HEAD_VERSION, &version), ErrorCode::kOK);
-
   LOG(INFO) << "PUT version : " << version.ToBase32();
 
   // get it back
@@ -62,7 +61,6 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
 
   LOG(INFO) << "GET value : " << string((const char*)value.blob().data(),
                                             value.blob().size());
-
   // branch from head
   string new_branch = "branch_"+std::to_string(idx);
   EXPECT_EQ(client->Branch(Slice(keys[idx]),
@@ -114,7 +112,6 @@ TEST(TestMessage, TestClient1Thread) {
     = new RemoteClientService(clientservice_addr, "");
   service->Init();
   service->Start();
-
   // 1 thread
   ClientDb *client = service->CreateClientDb();
   TestClientRequest(client, 0, NREQUESTS);
@@ -126,8 +123,14 @@ TEST(TestMessage, TestClient1Thread) {
     ws->Stop();
   for (int i = 0; i < worker_threads.size(); i++)
     worker_threads[i].join();
+
+  // delete workers and client
+  for (int i=0; i< workers.size(); i++)
+    delete workers[i];
+  delete service;
 }
 
+/*
 TEST(TestMessage, TestClient2Threads) {
   ustore::SetStderrLogging(ustore::WARNING);
   // launch workers
@@ -153,7 +156,6 @@ TEST(TestMessage, TestClient2Threads) {
     = new RemoteClientService(clientservice_addr, "");
   service->Init();
   service->Start();
-
   // 2 clients thread
   for (int i = 0; i < 2; i++) {
     ClientDb *client = service->CreateClientDb();
@@ -165,10 +167,15 @@ TEST(TestMessage, TestClient2Threads) {
     client_threads[i].join();
 
   service->Stop();
-
   // then stop workers
   for (WorkerService *ws : workers)
     ws->Stop();
   for (int i = 0; i < worker_threads.size(); i++)
     worker_threads[i].join();
+
+  // clean up
+  for (int i=0; i< workers.size(); i++)
+    delete workers[i];
+  delete service;
 }
+*/

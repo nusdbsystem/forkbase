@@ -24,6 +24,7 @@ using node_id_t = std::string;
 class CallBack {
  public:
   explicit CallBack(void* handler): handler_(handler) {}
+  ~CallBack() {}
   virtual void operator()(const void* msg, int size,
                           const node_id_t& source) = 0;
 

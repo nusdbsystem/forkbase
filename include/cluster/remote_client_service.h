@@ -67,6 +67,7 @@ class RemoteClientService {
   WorkerList *workers_ = nullptr;  // worker list
   std::vector<node_id_t> addresses_;  // worker addresses
   CallBack* cb_ = nullptr;
+  std::thread *net_thread_;
 };
 
 }  // namespace ustore

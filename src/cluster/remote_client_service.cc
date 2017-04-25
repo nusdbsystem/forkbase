@@ -23,9 +23,9 @@ class CSCallBack : public CallBack {
 };
 
 RemoteClientService::~RemoteClientService() {
+  delete net_;
   delete cb_;
   delete workers_;
-  delete net_;
 }
 
 int RemoteClientService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
@@ -67,10 +67,10 @@ void RemoteClientService::Start() {
   cb_ = new CSCallBack(this);
   net_->RegisterRecv(cb_);
 #ifdef USE_RDMA
-  new thread(&RdmaNet::Start, reinterpret_cast<RdmaNet *>(net_));
+  net_thread_ = new thread(&RdmaNet::Start, reinterpret_cast<RdmaNet *>(net_));
   sleep(1.0);
 #else
-  new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
+  net_thread_ = new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
 #endif
   is_running_ = true;
 }
@@ -88,8 +88,9 @@ void RemoteClientService::HandleResponse(const void *msg, int size,
 }
 
 void RemoteClientService::Stop() {
-  net_->Stop();
   is_running_ = false;
+  net_->Stop();
+  net_thread_->join();
 }
 
 ClientDb* RemoteClientService::CreateClientDb() {
