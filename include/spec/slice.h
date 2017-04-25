@@ -19,6 +19,7 @@ namespace ustore {
 class Slice {
  public:
   Slice(const Slice& slice) : data_(slice.data_), len_(slice.len_) {}
+  Slice() {}
   // share data from c++ string
   explicit Slice(const std::string& slice)
     : data_(slice.data()), len_(slice.length()) {}

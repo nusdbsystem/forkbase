@@ -8,9 +8,12 @@
 #include "types/type.h"
 #include "spec/db.h"
 #include "worker/worker.h"
+#include "benchmark/random_generator.h"
+#include "benchmark/benchmark.h"
 
 using namespace ustore;
 
+/*
 static const char alphabet[] =
   "0123456789"
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -98,8 +101,10 @@ void SliceValidation(DB *worker, const int n) {
     v_b.Release();
   }
 }
+*/
 
 int main() {
+  /*
   Worker worker {27};
   SliceValidation(&worker,10);
   std::vector<std::string> keys;
@@ -108,6 +113,35 @@ int main() {
   // std::cout << k << "\n";  
   }
   std::cout << "done\n";
+  RandomGenerator rg;
+  
+  std::vector<std::string> keys;
+  rg.SequentialNumString(10, &keys);
+  for(auto k : keys) {
+   std::cout << k << "\n";  
+  }
+  keys.clear();
+  rg.NFixedString(10, 32, &keys);
+  for(auto k : keys) {
+   std::cout << k << "\n";  
+  }
+  keys.clear();
+  string str;
+  rg.FixedString(16, &str);
+  std::cout << str << "\n";
+  str = "";
+  rg.NRandomString(10, 32, &keys);
+  for(auto k : keys) {
+   std::cout << k << "\n";  
+  }
+  rg.RandomString(16, &str);
+  std::cout << str << "\n";
+  */
+ 
+  Worker worker {27};
+  Benchmark bm(&worker, 32, 16, 1000);
+  bm.SliceValidation(100);
+  bm.BlobValidation(10);
   return 0;
 }
 

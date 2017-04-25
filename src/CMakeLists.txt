@@ -72,6 +72,9 @@ LIST(APPEND ustore_srcs ${utils_source})
 AUX_SOURCE_DIRECTORY(worker worker_source)
 LIST(APPEND ustore_srcs ${worker_source})
 
+AUX_SOURCE_DIRECTORY(benchmark benchmark_source)
+LIST(APPEND ustore_srcs ${benchmark_source})
+
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 ADD_DEPENDENCIES(ustore_objs copy_protobuf)
 
