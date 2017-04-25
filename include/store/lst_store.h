@@ -53,7 +53,7 @@ namespace lst_store {
 
 const size_t kMetaLogSize = 4096;
 const size_t kSegmentSize = (1<<22);
-const size_t kNumSegments = 16;
+const size_t kNumSegments = 1024;
 const size_t kLogFileSize = kSegmentSize * kNumSegments+ kMetaLogSize;
 const size_t kMaxPendingSyncChunks = 1024;
 const uint64_t kMaxSyncTimeoutMilliseconds = 3000;
