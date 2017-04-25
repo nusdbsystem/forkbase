@@ -122,30 +122,43 @@ void NodeBuilder::AppendSegmentEntries(const Segment* entry_seg) {
 size_t NodeBuilder::SkipEntries(size_t num_elements) {
   commited_ = false;
   // possible if this node builder is created during build process
-  if (cursor_ == nullptr) return 0;
+  if (cursor_ == nullptr || cursor_->isEnd()) return 0;
   // DLOG(INFO) << "Level: " << level_ << " Before Skip Idx: " << cursor_->idx()
   //           << " Skip # Entry: " << num_elements;
-  for (size_t i = 0; i < num_elements; i++) {
-    if (cursor_->Advance(false)) continue;
-    // Here, cursor has already reached this chunk end
-    //   we need to skip and remove the parent metaentry
-    //     which points to current chunk
-    if (parent_builder_ == nullptr || parent_builder()->SkipEntries(1) == 0) {
-      // parent builder's cursor has also reached the seq end
-      // therefore, current builder's cursor has also reached the seq end
-      //   we can only skip i elements
-      // Attempt to advance cursor to check
-      // cursor indeed points the seq end and cannot advance
-      //   even allowing crossing the boundary
-      CHECK(!cursor_->Advance(true));
-      num_skip_entries_ += i;
-      return i;
-    } else {
-      // DLOG(INFO) << "Level: " << level_ << " Skipping Parent Recursive. "
-      //           << "  # Entry this chunk: " <<  cursor_->idx();
-      bool notEnd = cursor_->Advance(true);
-      CHECK(notEnd);
-    }  // end if parent_chunker
+  for (size_t i = 1; i <= num_elements ; i++) {
+    // whether the cursor points to the chunk end
+    bool advance2end = !cursor_->Advance(false);
+
+    if (advance2end)  {
+      // Here, cursor has already reached this chunk end
+      //   we need to skip and remove the parent metaentry
+      //     which points to current chunk
+
+     // Try to skip one entry in parent node builder
+      bool end_parent = parent_builder_ == nullptr;
+
+      if (!end_parent) {
+        parent_builder()->SkipEntries(1);
+        end_parent = parent_builder()->cursor_->isEnd();
+      }
+
+      if (end_parent) {
+        // parent builder's cursor has also ADVANCED and reached to the seq end
+        // therefore, current builder's cursor has also reached the seq end
+        //   we can only skip i elements
+        // Attempt to advance cursor to check
+        // cursor indeed points the seq end and cannot advance
+        //   even allowing crossing the boundary
+        CHECK(cursor_->isEnd());
+        num_skip_entries_ += i;
+        return i;
+      } else {
+        // DLOG(INFO) << "Level: " << level_ << " Skipping Parent Recursive. "
+        //           << "  # Entry this chunk: " <<  cursor_->idx();
+        bool notEnd = cursor_->Advance(true);
+        CHECK(notEnd);
+      }  // end if parent_chunker
+    }
   }    // end for
   num_skip_entries_ += num_elements;
   return num_elements;
