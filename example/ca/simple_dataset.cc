@@ -21,6 +21,7 @@ const ColumnType SimpleDataset::GenerateColumn(
 const TableType SimpleDataset::GenerateTable(
   const size_t n_columns, const size_t n_records) {
   TableType table;
+  table["Key"] = std::move(GenerateColumn("K", n_records));
   for (size_t i = 0; i < n_columns; ++i) {
     const std::string col_name = "C" + std::to_string(i);
     table[col_name] = std::move(GenerateColumn(col_name, n_records));

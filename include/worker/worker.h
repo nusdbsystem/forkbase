@@ -46,8 +46,7 @@ class Worker : public DB, private Noncopyable {
    */
   // TODO(linqian): later on, we may have filters on the returned versions, e.g,
   //  return last 10 latest versions
-  inline std::vector<Hash> GetLatestVersions(const Slice& key)
-  const {
+  inline std::vector<Hash> GetLatestVersions(const Slice& key) const {
     return head_ver_.GetLatest(key);
   }
 
@@ -118,8 +117,7 @@ class Worker : public DB, private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  ErrorCode Get(const Slice& key, const Slice& branch,
-                Value* val) override;
+  ErrorCode Get(const Slice& key, const Slice& branch, Value* val) override;
 
   /**
    * @brief Read data.
@@ -129,8 +127,7 @@ class Worker : public DB, private Noncopyable {
    * @param val Accommodator of the to-be-retrieved value.
    * @return Error code. (0 for success)
    */
-  ErrorCode Get(const Slice& key, const Hash& ver,
-                Value* val) override;
+  ErrorCode Get(const Slice& key, const Hash& ver, Value* val) override;
 
   /**
    * @brief Write data.
@@ -144,8 +141,25 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Put(const Slice& key, const Value& val,
-                const Slice& branch, Hash* ver) override;
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+                Hash* ver) override;
+
+  /**
+   * @brief Write data.
+   *
+   * Write data based on the branch head. If the branch does not exist, the
+   * write will be based on the Hash::kNull.
+   *
+   * @param key Data key.
+   * @param val Data val.
+   * @param branch The operating branch.
+   * @return Error code. (0 for success)
+   */
+  inline ErrorCode Put(const Slice& key, const Value& val,
+                       const Slice& branch) {
+    static Hash ver;
+    return Put(key, val, branch, &ver);
+  }
 
   /**
    * @brief Write data.
@@ -156,8 +170,22 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Put(const Slice& key, const Value& val,
-                const Hash& prev_ver, Hash* ver) override;
+  ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
+                Hash* ver) override;
+
+  /**
+   * @brief Write data.
+   *
+   * @param key Data key.
+   * @param val Data val.
+   * @param prev_ver The previous ver of data.
+   * @return Error code. (0 for success)
+   */
+  inline ErrorCode Put(const Slice& key, const Value& val,
+                       const Hash& prev_ver) {
+    static Hash ver;
+    return Put(key, val, prev_ver, &ver);
+  }
 
   /**
    * @brief Create a new branch for the data.
@@ -209,12 +237,42 @@ class Worker : public DB, private Noncopyable {
    * @param key Data key.
    * @param val Data value.
    * @param tgt_branch The target branch.
+   * @param ref_branch The referring branch.
+   * @return Error code. (0 for success)
+   */
+  inline ErrorCode Merge(const Slice& key, const Value& val,
+                         const Slice& tgt_branch, const Slice& ref_branch) {
+    static Hash ver;
+    return Merge(key, val, tgt_branch, ref_branch, &ver);
+  }
+
+  /**
+   * @brief Merge two branches of the data.
+   *
+   * @param key Data key.
+   * @param val Data value.
+   * @param tgt_branch The target branch.
    * @param ref_ver The referring version of data.
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
   ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
                   const Hash& ref_ver, Hash* ver) override;
+
+  /**
+   * @brief Merge two branches of the data.
+   *
+   * @param key Data key.
+   * @param val Data value.
+   * @param tgt_branch The target branch.
+   * @param ref_ver The referring version of data.
+   * @return Error code. (0 for success)
+   */
+  inline ErrorCode Merge(const Slice& key, const Value& val,
+                         const Slice& tgt_branch, const Hash& ref_ver) {
+    static Hash ver;
+    return Merge(key, val, tgt_branch, ref_ver, &ver);
+  }
 
   /**
    * @brief Merge two versions of the data.
@@ -228,6 +286,21 @@ class Worker : public DB, private Noncopyable {
    */
   ErrorCode Merge(const Slice& key, const Value& val, const Hash& ref_ver1,
                   const Hash& ref_ver2, Hash* ver) override;
+
+  /**
+   * @brief Merge two versions of the data.
+   *
+   * @param key Data key.
+   * @param val Data value.
+   * @param ref_ver1 The referring version of data.
+   * @param ref_ver2 The referring version of data.
+   * @return Error code. (0 for success)
+   */
+  inline ErrorCode Merge(const Slice& key, const Value& val,
+                         const Hash& ref_ver1, const Hash& ref_ver2) {
+    static Hash ver;
+    return Merge(key, val, ref_ver1, ref_ver2, &ver);
+  }
 
  private:
   ErrorCode Read(const UCell& ucell, Value* val) const;

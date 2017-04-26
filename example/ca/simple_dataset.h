@@ -12,13 +12,11 @@ namespace ca {
 
 class SimpleDataset {
  public:
-  static const ColumnType GenerateColumn(
-    const std::string& col_name,
-    const size_t n_records = Config::kNumSimpleRecords);
-
-  static const TableType GenerateTable(
-    const size_t n_columns = Config::kNumSimpleColumns,
-    const size_t n_records = Config::kNumSimpleRecords);
+  static const TableType GenerateTable(const size_t n_columns,
+                                       const size_t n_records);
+ private:
+  static const ColumnType GenerateColumn(const std::string& col_name,
+                                         const size_t n_records);
 };
 
 } // namespace ca

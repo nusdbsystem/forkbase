@@ -1,3 +1,5 @@
+// Copyright (c) 2017 The Ustore Authors.
+
 #include <utility>
 #include "hash/hash.h"
 #include "spec/slice.h"
@@ -6,6 +8,7 @@
 #include "utils/logging.h"
 #include "worker/worker.h"
 
+#include "analytics.h"
 #include "config.h"
 #include "simple_dataset.h"
 #include "utils.h"
@@ -14,13 +17,10 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-const auto data =
-  std::move(Utils::ToStringMap(SimpleDataset::GenerateTable()));
+MAP_TYPE<KeyType, std::string> data;
 
 Worker worker(Config::kWorkID);
 const Slice branch_master("master");
-const Slice branch_a("analytics-A");
-const Slice branch_b("analytics-B");
 
 void LoadDataset() {
   Hash version;
@@ -44,45 +44,44 @@ void ScanBranchMaster() {
   }
 }
 
-void PerformAnalyticsA() {
-  std::map<Slice, std::string> data_a;
-  Value col_value;
-  ErrorCode ec;
-  for (const auto& cv : data) {
-    const auto col_name = Slice(cv.first);
-    ec = worker.Branch(col_name, branch_master, branch_a);
-    CHECK(ec == ErrorCode::kOK);
-    ec = worker.Get(col_name, branch_a, &col_value);
-    CHECK(ec == ErrorCode::kOK);
-    CHECK(col_value.type() == UType::kString);
-    CHECK_EQ(cv.second, col_value.slice());
-    data_a[col_name] = std::move(col_value.slice().to_string());
+void RunPoissonAnalytics(const double mean) {
+  std::cout << std::endl
+            << "------------[ Poisson Analytics ]------------" << std::endl;
+  const std::string branch("poi_ana");
+  const auto aff_cols = PoissonAnalytics(branch, worker, mean).Compute();
+  std::cout << "[Affected Columns]" << std::endl;
+  for (const auto& c : aff_cols) {
+    Utils::Print(c, branch, worker);
   }
-
-  static const std::string rst_col_name("ana-A");
-  Hash version;
-  ec = worker.Put(Slice(rst_col_name), Value(Slice(Utils::ToString(
-                    SimpleDataset::GenerateColumn(rst_col_name)))),
-                  branch_a, &version);
-  CHECK(ec == ErrorCode::kOK);
+  std::cout << "---------< End of Poisson Analytics >--------" << std::endl;
 }
 
-void ScanAnalyticsA() {
-  ErrorCode ec;
-  Value col_value;
-  ec = worker.Get(Slice("ana-A"), branch_a, &col_value);
-  std::cout << "ana-A: " << col_value << std::endl;
+void RunBinomialAnalytics(const double p) {
+  std::cout << std::endl
+            << "-----------[ Binomial Analytics ]------------" << std::endl;
+  const std::string branch("bin_ana");
+  const auto aff_cols = BinomialAnalytics(branch, worker, p).Compute();
+  std::cout << "[Affected Columns]" << std::endl;
+  for (const auto& c : aff_cols) {
+    Utils::Print(c, branch, worker);
+  }
+  std::cout << "--------< End of Binomial Analytics >--------" << std::endl;
 }
-
-void PerformAnalyticsB() {}
 
 static int main(int argc, char* argv[]) {
-  LoadDataset();
-  ScanBranchMaster();
-  PerformAnalyticsA();
-  ScanAnalyticsA();
-  PerformAnalyticsB();
-  return 0;
+  if (Config::ParseCmdArgs(argc, argv)) {
+
+    data = Utils::ToStringMap(SimpleDataset::GenerateTable(
+                                Config::kDefaultNumColumns, Config::n_records));
+    LoadDataset();
+    ScanBranchMaster();
+
+    RunPoissonAnalytics(Config::p * Config::n_records);
+    RunBinomialAnalytics(Config::p);
+    return 0;
+  } else {
+    return 1;
+  }
 }
 
 } // namespace ca
