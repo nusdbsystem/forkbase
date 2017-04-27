@@ -190,8 +190,14 @@ class RdmaNet : public Net {
   ~RdmaNet();
 
   NetContext* CreateNetContext(const node_id_t& id) override;
-  void Start() override {}
-  void Stop() override {}
+  void Start() override {
+    is_running_ = true;
+    while(is_running_);
+  }
+  void Stop() override {
+    is_running_ = false;
+    aeStop(el_);
+  }
 
   // below are for internal use
   RdmaNetContext* CreateRdmaNetContext(const node_id_t& id, bool& exist);
