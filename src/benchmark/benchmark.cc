@@ -1,16 +1,12 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include "benchmark/benchmark.h"
-#include <assert.h>
 #include <vector>
 #include <iterator>
 #include <iostream>
+#include "benchmark/benchmark.h"
+#include "utils/logging.h"
 
-constexpr int kNumOfInstances = 10000;
-constexpr int kValidationStrLen = 32;
-constexpr int kValidationBlobSize = 4096;
-
-using namespace ustore;
+namespace ustore {
 
 void Benchmark::SliceValidation(int n) {
   std::cout << "Validating Slice put/get APIs......\n";
@@ -19,14 +15,13 @@ void Benchmark::SliceValidation(int n) {
   std::vector<std::string> keys = rg_.SequentialNumString(n);
 
   const Slice branch("Branch");
-  for (auto k = keys.begin(), s = slices.begin();
-      k != keys.end() && s != slices.end(); ++k, ++s) {
+  for (int i = 0; i < keys.size(); ++i) {
     Hash ver;
-    const Slice s_a(*s);
+    const Slice s_a(slices[i]);
     Value v_b;
-    (*db_).Put(Slice(*k), Value(s_a), branch, &ver);
-    (*db_).Get(Slice(*k), branch, &v_b);
-    assert(s_a == v_b.slice());
+    db_->Put(Slice(keys[i]), Value(s_a), branch, &ver);
+    db_->Get(Slice(keys[i]), branch, &v_b);
+    CHECK(s_a == v_b.slice());
     v_b.Release();
   }
 
@@ -40,15 +35,13 @@ void Benchmark::BlobValidation(int n) {
   std::vector<std::string> keys = rg_.SequentialNumString(n);
 
   const Slice branch("Branch");
-  for (auto k = keys.begin(), b = blobs.begin();
-      k != keys.end() && b != blobs.end(); ++k, ++b) {
+  for (int i = 0; i < keys.size(); ++i) {
     Hash ver;
-    const Slice s_a(*b);
-    const Blob b_a(reinterpret_cast<const byte_t*>(s_a.data()), s_a.len());
+    const Blob b_a(blobs[i]);
     Value v_b;
-    (*db_).Put(Slice(*k), Value(b_a), branch, &ver);
-    (*db_).Get(Slice(*k), branch, &v_b);
-    assert(b_a == v_b.blob());
+    db_->Put(Slice(keys[i]), Value(b_a), branch, &ver);
+    db_->Get(Slice(keys[i]), branch, &v_b);
+    CHECK(b_a == v_b.blob());
     v_b.Release();
   }
 
@@ -65,20 +58,16 @@ void Benchmark::FixedString(int length) {
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
-  for (auto k = keys.begin(), s = slices.begin();
-      k != keys.end() && s != slices.end(); ++k, ++s) {
+  for (int i = 0; i < keys.size(); ++i) {
     Hash ver;
-    const Slice s_a(*s);
-    (*db_).Put(Slice(*k), Value(s_a), branch, &ver);
+    db_->Put(Slice(keys[i]), Value(Slice(slices[i])), branch, &ver);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
-  for (auto k = keys.begin(), s = slices.begin();
-      k != keys.end() && s != slices.end(); ++k, ++s) {
-    const Slice s_a(*s);
+  for (int i = 0; i < keys.size(); ++i) {
     Value v_b;
-    (*db_).Get(Slice(*k), branch, &v_b);
+    db_->Get(Slice(keys[i]), branch, &v_b);
     v_b.Release();
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
@@ -94,21 +83,17 @@ void Benchmark::FixedBlob(int size) {
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
-  for (auto k = keys.begin(), b = blobs.begin();
-      k != keys.end() && b != blobs.end(); ++k, ++b) {
+  for (int i = 0; i < keys.size(); ++i) {
     Hash ver;
-    const Slice s_a(*b);
-    const Blob b_a(reinterpret_cast<const byte_t*>(s_a.data()), s_a.len());
     Value v_b;
-    (*db_).Put(Slice(*k), Value(b_a), branch, &ver);
+    db_->Put(Slice(keys[i]), Value(Blob(blobs[i])), branch, &ver);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
-  for (auto k = keys.begin(), b = blobs.begin();
-      k != keys.end() && b != blobs.end(); ++k, ++b) {
+  for (int i = 0; i < keys.size(); ++i) {
     Value v_b;
-    (*db_).Get(Slice(*k), branch, &v_b);
+    db_->Get(Slice(keys[i]), branch, &v_b);
     v_b.Release();
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
@@ -124,20 +109,16 @@ void Benchmark::RandomString(int length) {
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
-  for (auto k = keys.begin(), s = slices.begin();
-      k != keys.end() && s != slices.end(); ++k, ++s) {
+  for (int i = 0; i < keys.size(); ++i) {
     Hash ver;
-    const Slice s_a(*s);
-    (*db_).Put(Slice(*k), Value(s_a), branch, &ver);
+    db_->Put(Slice(keys[i]), Value(Slice(slices[i])), branch, &ver);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
-  for (auto k = keys.begin(), s = slices.begin();
-      k != keys.end() && s != slices.end(); ++k, ++s) {
-    const Slice s_a(*s);
+  for (int i = 0; i < keys.size(); ++i) {
     Value v_b;
-    (*db_).Get(Slice(*k), branch, &v_b);
+    db_->Get(Slice(keys[i]), branch, &v_b);
     v_b.Release();
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
@@ -153,22 +134,20 @@ void Benchmark::RandomBlob(int size) {
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
-  for (auto k = keys.begin(), b = blobs.begin();
-      k != keys.end() && b != blobs.end(); ++k, ++b) {
+  for (int i = 0; i < keys.size(); ++i) {
     Hash ver;
-    const Slice s_a(*b);
-    const Blob b_a(reinterpret_cast<const byte_t*>(s_a.data()), s_a.len());
     Value v_b;
-    (*db_).Put(Slice(*k), Value(b_a), branch, &ver);
+    db_->Put(Slice(keys[i]), Value(Blob(blobs[i])), branch, &ver);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
-  for (auto k = keys.begin(), b = blobs.begin();
-      k != keys.end() && b != blobs.end(); ++k, ++b) {
+  for (int i = 0; i < keys.size(); ++i) {
     Value v_b;
-    (*db_).Get(Slice(*k), branch, &v_b);
+    db_->Get(Slice(keys[i]), branch, &v_b);
     v_b.Release();
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
+
+}  // namespace ustore

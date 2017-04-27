@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_INCLUDE_UTILS_DEBUG_H_
-#define USTORE_INCLUDE_UTILS_DEBUG_H_
+#ifndef USTORE_UTILS_DEBUG_H_
+#define USTORE_UTILS_DEBUG_H_
 
 #include <cstring>
 #include <iomanip>  // std::setfill, std::setw

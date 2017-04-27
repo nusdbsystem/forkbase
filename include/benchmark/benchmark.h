@@ -4,18 +4,10 @@
 #define USTORE_BENCHMARK_BENCHMARK_H_
 
 #include <chrono>
+#include "benchmark/random_generator.h"
 #include "spec/db.h"
 #include "spec/slice.h"
 #include "spec/value.h"
-#include "benchmark/random_generator.h"
-
-static const char CASES_benchmark[] =
-    "stringvalidation,"
-    "blobvalidation,"
-    "fixedstring,"
-    "fixedblob,"
-    "randomstring,"
-    "randomblob,";
 
 namespace ustore {
 
@@ -42,10 +34,18 @@ class Timer {
   std::chrono::time_point<std::chrono::steady_clock> t_begin_;
 };
 
-class Benchmark{
+static const char CASES_benchmark[] =
+  "stringvalidation,"
+  "blobvalidation,"
+  "fixedstring,"
+  "fixedblob,"
+  "randomstring,"
+  "randomblob,";
+
+class Benchmark {
  public:
-  explicit Benchmark(DB *db, int mlength, int flength):
-    db_(db), str_max_length_(mlength), str_fix_length_(flength) {}
+  Benchmark(DB *db, int max_len, int fix_len)
+    : db_(db), str_max_length_(max_len), str_fix_length_(fix_len) {}
   ~Benchmark() {}
 
   void SliceValidation(int n);
@@ -56,6 +56,10 @@ class Benchmark{
   void RandomBlob(int size);
 
  private:
+  static constexpr int kNumOfInstances = 10000;
+  static constexpr int kValidationStrLen = 32;
+  static constexpr int kValidationBlobSize = 8192;  // ensure blob are chunked
+
   DB* db_;
   int str_max_length_;
   int str_fix_length_;

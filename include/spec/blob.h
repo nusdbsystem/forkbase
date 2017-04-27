@@ -19,6 +19,9 @@ class Blob {
   // share data from existing array
   Blob(const Blob& blob) : data_(blob.data_), size_(blob.size_) {}
   Blob(const byte_t* data, size_t size) : data_(data), size_(size) {}
+  Blob(const std::string& data)
+    : data_(reinterpret_cast<const byte_t*>(data.data())),
+      size_(data.length()) {}
   ~Blob() {}
 
   inline Blob& operator=(const Blob& blob) {

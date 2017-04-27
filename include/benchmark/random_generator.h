@@ -3,19 +3,19 @@
 #ifndef USTORE_BENCHMARK_RANDOM_GENERATOR_H_
 #define USTORE_BENCHMARK_RANDOM_GENERATOR_H_
 
-#include <iostream>
-#include <vector>
-#include <random>
 #include <algorithm>
+#include <iostream>
+#include <random>
 #include <string>
+#include <vector>
 #include "spec/slice.h"
+
+namespace ustore {
 
 static const char alphabet[] =
   "0123456789"
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   "abcdefghijklmnopqrstuvwxyz";
-
-namespace ustore {
 
 class RandomGenerator {
  public:
@@ -29,11 +29,10 @@ class RandomGenerator {
   std::vector<std::string> SequentialNumString(int size);
 
  private:
-  std::default_random_engine engine;
+  std::default_random_engine engine_;
   std::uniform_int_distribution<> alph_dist_;
 };
 
 }  // namespace ustore
 
 #endif  // USTORE_BENCHMARK_RANDOM_GENERATOR_H_
-
