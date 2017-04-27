@@ -4,6 +4,7 @@
 #include <vector>
 #include "spec/value.h"
 #include "types/type.h"
+#include "utils/logging.h"
 
 #include "analytics.h"
 #include "utils.h"
@@ -52,6 +53,32 @@ std::unordered_set<std::string> BinomialAnalytics::Compute() {
   worker_.Put(Slice(rst_col_name), Value(Slice(Utils::ToString(rst_col))),
               branch_);
   affected_cols.insert(std::move(rst_col_name));
+  return affected_cols;
+}
+
+std::unordered_set<std::string> MergeAnalytics::Compute() {
+  const Slice col_name("distr");
+  const Slice branch_poi("poi_ana");
+  const Slice branch_bin("bin_ana");
+
+  worker_.Branch(col_name, branch_poi, branch_);
+
+  Value col;
+  worker_.Get(col_name, branch_, &col);
+  auto master_vec = Utils::ToIntVector(col.slice().to_string());
+  worker_.Get(col_name, branch_bin, &col);
+  const auto bin_vec = Utils::ToIntVector(col.slice().to_string());
+
+  CHECK_EQ(master_vec.size(), bin_vec.size());
+  for (size_t i = 0; i < master_vec.size(); ++i) {
+    master_vec[i] = (master_vec[i] + bin_vec[i]) / 2;
+  }
+
+  worker_.Merge(col_name, Value(Slice(Utils::ToString(master_vec))),
+                branch_, branch_bin);
+
+  std::unordered_set<std::string> affected_cols;
+  affected_cols.insert(col_name.to_string());
   return affected_cols;
 }
 

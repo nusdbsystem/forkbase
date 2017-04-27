@@ -3,6 +3,7 @@
 #ifndef USTORE_EXAMPLE_CA_UTILS_H_
 #define USTORE_EXAMPLE_CA_UTILS_H_
 
+#include <boost/tokenizer.hpp>
 #include <iostream>
 #include <queue>
 #include <set>
@@ -89,14 +90,98 @@ class Utils {
     return str_map;
   }
 
+  static inline const std::vector<std::string> Tokenize(
+    const std::string& str, const char* sep_chars = " [],") {
+    using Tokenizer = boost::tokenizer<boost::char_separator<char>>;
+    using CharSep = boost::char_separator<char>;
+    std::vector<std::string> vec;
+    for (const auto& t : Tokenizer(str, CharSep(sep_chars))) {
+      vec.push_back(std::move(t));
+    }
+    return vec;
+  }
+
+  template<typename T>
+  static const std::vector<T> ToVector(
+    const std::string& str,
+    const std::function<T(const std::string&)>& f_str_to_val,
+    const char* sep_chars = " [],") {
+    std::vector<T> vec;
+    for (const auto& t : Tokenize(str, sep_chars)) {
+      vec.emplace_back(f_str_to_val(t));
+    }
+    return vec;
+  }
+
+  static const std::vector<int> ToIntVector(
+    const std::string& str, const char* sep_chars = " [],") {
+    static auto f = [](const std::string & str) { return std::stoi(str); };
+    return ToVector<int>(str, f, sep_chars);
+  }
+
+  static const std::vector<double> ToDoubleVector(
+    const std::string& str, const char* sep_chars = " [],") {
+    static auto f = [](const std::string & str) { return std::stod(str); };
+    return ToVector<double>(str, f, sep_chars);
+  }
+
+  static const std::vector<long> ToLongVector(
+    const std::string& str, const char* sep_chars = " [],") {
+    static auto f = [](const std::string & str) { return std::stol(str); };
+    return ToVector<long>(str, f, sep_chars);
+  }
+
   template<class T1, class T2>
   static inline void Print(const T1& key, const T2& branch, Worker& worker) {
     const Slice key_slice(key);
     const Slice branch_slice(branch);
-    Value val;
-    const auto ec = worker.Get(key_slice, branch_slice, &val);
-    CHECK(ec == ErrorCode::kOK);
-    std::cout << key << " @" << branch << ": " << val << std::endl;
+    std::cout << key << " @" << branch << ": ";
+    if (worker.Exists(key_slice, branch_slice)) {
+      Value val;
+      const auto ec = worker.Get(key_slice, branch_slice, &val);
+      CHECK(ec == ErrorCode::kOK);
+      std::cout << val;
+    } else {
+      std::cout << "<none>";
+    }
+    std::cout << std::endl;
+  }
+
+  template<class T1, class T2>
+  static inline void Print(const T1& key, const T2& begin, const T2& end,
+                           Worker& worker) {
+    for (auto it = begin; it != end; ++it) Print(key, *it, worker);
+  }
+
+  template<class T1, class T2>
+  static inline void Print(const T1& key, const std::list<T2>& branches,
+                           Worker& worker) {
+    Print(key, branches.cbegin(), branches.cend(), worker);
+  }
+
+  template<class T1, class T2>
+  static inline void Print(const T1& key, const std::queue<T2>& branches,
+                           Worker& worker) {
+    Print(key, branches.cbegin(), branches.cend(), worker);
+  }
+
+  template<class T1, class T2>
+  static inline void Print(const T1& key, const std::vector<T2>& branches,
+                           Worker& worker) {
+    Print(key, branches.cbegin(), branches.cend(), worker);
+  }
+
+  template<class T1, class T2>
+  static inline void Print(const T1& key,
+                           const std::unordered_set<T2>& branches,
+                           Worker& worker) {
+    Print(key, branches.cbegin(), branches.cend(), worker);
+  }
+
+  template<class T1, class T2>
+  static inline void Print(const T1& key, const std::set<T2>& branches,
+                           Worker& worker) {
+    Print(key, branches.cbegin(), branches.cend(), worker);
   }
 };
 
