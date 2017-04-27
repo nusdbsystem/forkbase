@@ -3,6 +3,7 @@
 #ifndef USTORE_EXAMPLE_CA_SIMPLE_DATASET_H_
 #define USTORE_EXAMPLE_CA_SIMPLE_DATASET_H_
 
+#include <map>
 #include <string>
 #include "config.h"
 
@@ -12,11 +13,12 @@ namespace ca {
 
 class SimpleDataset {
  public:
-  static const TableType GenerateTable(const size_t n_columns,
-                                       const size_t n_records);
+  static const MAP<std::string, StringList> GenerateTable(
+    const size_t n_columns, const size_t n_records);
+
  private:
-  static const ColumnType GenerateColumn(const std::string& col_name,
-                                         const size_t n_records);
+  static const StringList GenerateColumn(
+    const std::string& col_name, const size_t n_records);
 };
 
 } // namespace ca

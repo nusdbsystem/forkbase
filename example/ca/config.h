@@ -9,6 +9,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include "worker/worker.h"
 
 #include "utils.h"
@@ -17,13 +18,10 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-#define MAP_TYPE std::map
-#define LIST_TYPE std::list
+#define MAP std::map
 
-using KeyType = std::string;
-using DataType = std::string;
-using ColumnType = LIST_TYPE<DataType>;
-using TableType = MAP_TYPE<KeyType, ColumnType>;
+using StringList = std::list<std::string>;
+using StringSet = std::unordered_set<std::string>;
 
 namespace po = boost::program_options;
 

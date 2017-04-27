@@ -1,6 +1,5 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include <list>
 #include <utility>
 #include "hash/hash.h"
 #include "spec/slice.h"
@@ -18,31 +17,22 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-MAP_TYPE<KeyType, std::string> data;
-
 Worker worker(Config::kWorkID);
-const Slice branch_master("master");
 
 void LoadDataset() {
-  Hash version;
-  ErrorCode ec;
+  std::cout << std::endl
+            << "-------------[ Loading Dataset ]-------------" << std::endl;
+  const auto data = SimpleDataset::GenerateTable(
+                      Config::n_columns, Config::n_records);
+  const Slice branch("master");
   for (const auto& cv : data) {
     const auto col_name = Slice(cv.first);
-    const auto col_value = Value(Slice(cv.second));
-    ec = worker.Put(col_name, col_value, branch_master, &version);
-    CHECK(ec == ErrorCode::kOK);
+    const auto col_str = Utils::ToString(cv.second);
+    const auto col_value = Value(Slice(col_str));
+    worker.Put(col_name, col_value, branch);
+    Utils::Print(col_name, branch, worker);
   }
-}
-
-void ScanBranchMaster() {
-  ErrorCode ec;
-  Value col_value;
-  for (const auto& cv : data) {
-    const auto col_name = Slice(cv.first);
-    ec = worker.Get(col_name, branch_master, &col_value);
-    CHECK(col_value.type() == UType::kString);
-    CHECK_EQ(cv.second, col_value.slice());
-  }
+  std::cout << "---------------------------------------------" << std::endl;
 }
 
 void RunPoissonAnalytics(const double mean) {
@@ -52,7 +42,7 @@ void RunPoissonAnalytics(const double mean) {
   const auto aff_cols = PoissonAnalytics(branch, worker, mean).Compute();
   std::cout << ">>> Affected Columns <<<" << std::endl;
   for (const auto& c : aff_cols) Utils::Print(c, branch, worker);
-  std::cout << "---------< End of Poisson Analytics >--------" << std::endl;
+  std::cout << "---------------------------------------------" << std::endl;
 }
 
 void RunBinomialAnalytics(const double p) {
@@ -62,31 +52,26 @@ void RunBinomialAnalytics(const double p) {
   const auto aff_cols = BinomialAnalytics(branch, worker, p).Compute();
   std::cout << ">>> Affected Columns <<<" << std::endl;
   for (const auto& c : aff_cols) Utils::Print(c, branch, worker);
-  std::cout << "--------< End of Binomial Analytics >--------" << std::endl;
+  std::cout << "---------------------------------------------" << std::endl;
 }
 
 void MergeResults() {
   std::cout << std::endl
             << "-------------[ Merging Results ]-------------" << std::endl;
-  const auto f_print_state = [](const std::string & prep) {
-    using StringList = std::list<std::string>;
-    static const StringList branches = {"master", "poi_ana", "bin_ana"};
-    std::cout << ">>> " << prep << " Merging <<<" << std::endl;
-    Utils::Print("distr", branches, worker);
-  };
-  f_print_state("Before");
-  MergeAnalytics("master", worker).Compute();
-  f_print_state("After");
-  std::cout << "----------< End of Merging Results >---------" << std::endl;
+  auto ana = MergeAnalytics("master", worker);
+  std::cout << ">>> Before Merging <<<" << std::endl;
+  Utils::Print("distr", "master", worker);
+  ana.Compute();
+  std::cout << ">>> After Merging <<<" << std::endl;
+  Utils::Print("distr", "master", worker);
+  Utils::Print("distr", "poi_ana", worker);
+  Utils::Print("distr", "bin_ana", worker);
+  std::cout << "---------------------------------------------" << std::endl;
 }
 
 static int main(int argc, char* argv[]) {
   if (Config::ParseCmdArgs(argc, argv)) {
-
-    data = Utils::ToStringMap(SimpleDataset::GenerateTable(
-                                Config::n_columns, Config::n_records));
     LoadDataset();
-    ScanBranchMaster();
     RunPoissonAnalytics(Config::p * Config::n_records);
     RunBinomialAnalytics(Config::p);
     MergeResults();

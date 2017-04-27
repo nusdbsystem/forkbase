@@ -7,9 +7,9 @@ namespace example {
 namespace ca {
 
 const WorkerID Config::kWorkID = 43;
-const size_t Config::kDefaultNumColumns = 5;
-const size_t Config::kDefaultNumRecords = 15;
-const size_t Config::kDefaultNumIterations = 500000;
+const size_t Config::kDefaultNumColumns = 3;
+const size_t Config::kDefaultNumRecords = 10;
+const size_t Config::kDefaultNumIterations = 1000;
 const double Config::kDefaultProbability = 0.01;
 
 bool Config::is_help = false;

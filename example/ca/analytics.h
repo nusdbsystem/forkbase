@@ -4,11 +4,12 @@
 #define USTORE_EXAMPLE_CA_ANALYTICS_H_
 
 #include <ctime>
+#include <iostream>
 #include <random>
 #include <string>
-#include <unordered_set>
 #include "spec/slice.h"
 #include "spec/value.h"
+#include "utils/logging.h"
 #include "worker/worker.h"
 
 #include "config.h"
@@ -23,20 +24,26 @@ class Analytics {
   Analytics(const T& branch, Worker& worker);
 
   inline const Slice branch() { return branch_; }
-
-  virtual std::unordered_set<std::string> Compute() = 0;
+  virtual StringSet Compute() = 0;
 
  protected:
   const Slice branch_;
   Worker& worker_;
 
-  Value BranchAndLoad(const Slice& col_name, const Slice& base_branch);
-
-  inline Value BranchAndLoad(const std::string& col_name_str,
-                             const std::string& base_branch_str) {
-    return BranchAndLoad(Slice(col_name_str), Slice(base_branch_str));
-  }
+  template<class T1, class T2>
+  Value BranchAndLoad(const T1& col_name, const T2& base_branch);
 };
+
+template<class T1, class T2>
+Value Analytics::BranchAndLoad(const T1& col_name, const T2& base_branch) {
+  const Slice col_name_slice(col_name);
+  const Slice base_branch_slice(base_branch);
+  worker_.Branch(col_name_slice, base_branch_slice, branch_);
+  Value col;
+  worker_.Get(col_name_slice, branch_, &col);
+  DCHECK(col.type() == UType::kString);
+  return col;
+}
 
 template<class T>
 Analytics::Analytics(const T& branch, Worker& worker)
@@ -54,9 +61,13 @@ class PoissonAnalytics : public Analytics, private Random {
  public:
   template<class T>
   PoissonAnalytics(const T& branch, Worker& worker, const double mean)
-    : Analytics(branch, worker), distr_(mean) {}
+    : Analytics(branch, worker), distr_(mean) {
+    std::cout << "[Parameters]"
+              << " branch=\"" << branch_ << '\"'
+              << ", lambda=" << mean << std::endl;
+  }
 
-  std::unordered_set<std::string> Compute() override;
+  StringSet Compute() override;
 
  private:
   std::poisson_distribution<uint32_t> distr_;
@@ -67,9 +78,14 @@ class BinomialAnalytics : public Analytics, private Random {
  public:
   template<class T>
   BinomialAnalytics(const T& branch, Worker& worker, const double p)
-    : Analytics(branch, worker), distr_(Config::n_records - 1, p) {}
+    : Analytics(branch, worker), distr_(Config::n_records - 1, p) {
+    std::cout << "[Parameters]"
+              << " branch=\"" << branch_ << '\"'
+              << ", p=" << p
+              << ", n=" << Config::n_records << std::endl;
+  }
 
-  std::unordered_set<std::string> Compute() override;
+  StringSet Compute() override;
 
  private:
   std::binomial_distribution<uint32_t> distr_;
@@ -80,9 +96,12 @@ class MergeAnalytics : public Analytics {
  public:
   template<class T>
   MergeAnalytics(const T& branch, Worker& worker)
-    : Analytics(branch, worker) {}
+    : Analytics(branch, worker) {
+    std::cout << "[Parameters]"
+              << " branch=\"" << branch_ << '\"' << std::endl;
+  }
 
-  std::unordered_set<std::string> Compute() override;
+  StringSet Compute() override;
 };
 
 } // namespace ca
