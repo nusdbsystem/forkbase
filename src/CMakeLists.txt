@@ -22,7 +22,6 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 AUX_SOURCE_DIRECTORY(. sources)
 LIST(APPEND ustore_srcs ${sources})
 
-
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
 LIST(APPEND ustore_srcs ${proto_srcs} ${proto_hdrs})
@@ -37,12 +36,12 @@ ADD_CUSTOM_TARGET(
 )
 FOREACH(fil ${proto_hdrs})
   GET_FILENAME_COMPONENT(filename ${fil} NAME)
-    ADD_CUSTOM_COMMAND(
-        TARGET copy_protobuf POST_BUILD 
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
-                "${CMAKE_BINARY_DIR}/include/proto/${filename}"
-                    DEPENDS ${proto_files}
-                     )
+  ADD_CUSTOM_COMMAND(
+    TARGET copy_protobuf POST_BUILD 
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
+      "${CMAKE_BINARY_DIR}/include/proto/${filename}"
+    DEPENDS ${proto_files}
+  )
 ENDFOREACH()
 
 AUX_SOURCE_DIRECTORY(chunk chunk_source)
@@ -72,6 +71,9 @@ LIST(APPEND ustore_srcs ${utils_source})
 AUX_SOURCE_DIRECTORY(worker worker_source)
 LIST(APPEND ustore_srcs ${worker_source})
 
+AUX_SOURCE_DIRECTORY(benchmark benchmark_source)
+LIST(APPEND ustore_srcs ${benchmark_source})
+
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 ADD_DEPENDENCIES(ustore_objs copy_protobuf)
 
@@ -80,12 +82,13 @@ if(USE_RDMA)
   set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} boost_thread)
   set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} boost_system)
 endif()
-set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} czmq)
-set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} zmq)
-set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} rt)
-set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} gflags)
+#set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} czmq)
+#set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} zmq)
+#set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} rt)
+#set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} gflags)
 
 ADD_LIBRARY(ustore SHARED $<TARGET_OBJECTS:ustore_objs>)
 LIST(APPEND USTORE_LINKER_LIBS ${PROTOBUF_LIBRARY})
+MESSAGE(STATUS "LINKER LIBS ${USTORE_LINKER_LIBS}")
 TARGET_LINK_LIBRARIES(ustore ${USTORE_LINKER_LIBS})
-SET_TARGET_PROPERTIES(ustore PROPERTIES LINK_FLAGS "")
+#SET_TARGET_PROPERTIES(ustore PROPERTIES LINK_FLAGS "")

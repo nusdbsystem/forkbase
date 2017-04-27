@@ -30,5 +30,10 @@ SET_TARGET_PROPERTIES(test_ustore PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 
 ADD_TEST(
 	NAME test
-	COMMAND ${CMAKE_BINARY_DIR}/bin/test_ustore )
+  COMMAND ${CMAKE_BINARY_DIR}/bin/test_ustore )
 	
+ADD_EXECUTABLE(bench_bin "benchmark/bench_main.cc")
+ADD_DEPENDENCIES(bench_bin copy_protobuf)
+ADD_DEPENDENCIES(bench_bin ustore)
+TARGET_LINK_LIBRARIES(bench_bin ustore)
+SET_TARGET_PROPERTIES(bench_bin PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
