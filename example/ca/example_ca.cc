@@ -68,20 +68,26 @@ void RunBinomialAnalytics(const double p) {
   std::cout << "--------< End of Binomial Analytics >--------" << std::endl;
 }
 
+void MergeResults() {
+
+}
+
 static int main(int argc, char* argv[]) {
   if (Config::ParseCmdArgs(argc, argv)) {
 
     data = Utils::ToStringMap(SimpleDataset::GenerateTable(
-                                Config::kDefaultNumColumns, Config::n_records));
+                                Config::n_columns, Config::n_records));
     LoadDataset();
     ScanBranchMaster();
-
     RunPoissonAnalytics(Config::p * Config::n_records);
     RunBinomialAnalytics(Config::p);
-    return 0;
+  } else if (Config::is_help) {
+    DLOG(INFO) << "Help messages have been printed";
   } else {
+    LOG(ERROR) << "Invalid command option has been found";
     return 1;
   }
+  return 0;
 }
 
 } // namespace ca

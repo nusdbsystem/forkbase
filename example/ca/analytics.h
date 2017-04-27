@@ -23,6 +23,8 @@ class Analytics {
   template<class T>
   Analytics(const T& branch, Worker& worker);
 
+  inline const Slice branch() { return branch_; }
+
   virtual std::unordered_set<std::string> Compute() = 0;
 
  protected:

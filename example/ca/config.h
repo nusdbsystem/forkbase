@@ -35,6 +35,8 @@ class Config {
   static const size_t kDefaultNumIterations;
   static const double kDefaultProbability;
 
+  static bool is_help;
+  static size_t n_columns;
   static size_t n_records;
   static double p;
   static size_t iters;

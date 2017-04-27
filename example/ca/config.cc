@@ -12,6 +12,8 @@ const size_t Config::kDefaultNumRecords = 15;
 const size_t Config::kDefaultNumIterations = 500000;
 const double Config::kDefaultProbability = 0.01;
 
+bool Config::is_help = false;
+size_t Config::n_columns = Config::kDefaultNumColumns;
 size_t Config::n_records = Config::kDefaultNumRecords;
 double Config::p = Config::kDefaultProbability;
 size_t Config::iters = Config::kDefaultNumIterations;
@@ -19,6 +21,9 @@ size_t Config::iters = Config::kDefaultNumIterations;
 bool Config::ParseCmdArgs(const int& argc, char* argv[]) {
   po::variables_map vm;
   if (!ParseCmdArgs(argc, argv, vm)) return false;
+
+  n_columns = vm["columns"].as<size_t>();
+  if (!CheckArgGE(n_columns, 3, "Number of columns")) return false;
 
   n_records = vm["records"].as<size_t>();
   if (!CheckArgGT(n_records, 0, "Number of records")) return false;
@@ -37,7 +42,9 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
   try {
     po::options_description desc("Allowed options", 120);
     desc.add_options()
-    ("help,h", "print usage message")
+    ("help,?", "print usage message")
+    ("columns,c", po::value<size_t>()->default_value(kDefaultNumColumns),
+     "number of columns in a simple table")
     ("records,n", po::value<size_t>()->default_value(kDefaultNumRecords),
      "number of records in a simple table")
     ("probability,p", po::value<double>()->default_value(kDefaultProbability),
@@ -49,6 +56,7 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
     if (vm.count("help")) {
+      is_help = true;
       std::cout << desc << std::endl;
       return false;
     }
