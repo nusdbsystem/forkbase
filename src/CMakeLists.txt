@@ -22,7 +22,6 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 AUX_SOURCE_DIRECTORY(. sources)
 LIST(APPEND ustore_srcs ${sources})
 
-
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
 LIST(APPEND ustore_srcs ${proto_srcs} ${proto_hdrs})
@@ -37,12 +36,12 @@ ADD_CUSTOM_TARGET(
 )
 FOREACH(fil ${proto_hdrs})
   GET_FILENAME_COMPONENT(filename ${fil} NAME)
-    ADD_CUSTOM_COMMAND(
-        TARGET copy_protobuf POST_BUILD 
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
-                "${CMAKE_BINARY_DIR}/include/proto/${filename}"
-                    DEPENDS ${proto_files}
-                     )
+  ADD_CUSTOM_COMMAND(
+    TARGET copy_protobuf POST_BUILD 
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
+      "${CMAKE_BINARY_DIR}/include/proto/${filename}"
+    DEPENDS ${proto_files}
+  )
 ENDFOREACH()
 
 AUX_SOURCE_DIRECTORY(chunk chunk_source)

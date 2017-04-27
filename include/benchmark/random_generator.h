@@ -18,22 +18,19 @@ static const char alphabet[] =
 namespace ustore {
 
 class RandomGenerator {
- private:
-  std::default_random_engine engine;
-  std::uniform_int_distribution<> alph_dist_;
-
  public:
   RandomGenerator();
   ~RandomGenerator() {}
 
-  void FixedString(const int length, std::string *str);
-  void NFixedString(const int size, const int length,
-    std::vector<std::string> *strs);
-  void RandomString(const int maxLength, std::string *str);
-  void NRandomString(const int size, const int maxLength,
-    std::vector<std::string> *strs);
-  void SequentialNumString(const int size, std::vector<std::string> *keys);
-  void FixedSlice(const int length, Slice *sli);
+  std::string FixedString(int length);
+  std::vector<std::string> NFixedString(int size, int length);
+  std::string RandomString(int maxLength);
+  std::vector<std::string> NRandomString(int size, int maxLength);
+  std::vector<std::string> SequentialNumString(int size);
+
+ private:
+  std::default_random_engine engine;
+  std::uniform_int_distribution<> alph_dist_;
 };
 
 }  // namespace ustore

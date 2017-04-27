@@ -20,49 +20,47 @@ static const char CASES_benchmark[] =
 namespace ustore {
 
 class Timer {
- private:
-    std::chrono::time_point<std::chrono::steady_clock> t_begin_;
  public:
-    Timer() : t_begin_(std::chrono::steady_clock::now()) {}
-    ~Timer() {}
-    inline void Reset() {
-      t_begin_ = std::chrono::steady_clock::now();
-    }
-    inline int64_t Elapse() const {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(
-               std::chrono::steady_clock::now() - t_begin_).count();
-    }
-    inline int64_t ElapseMicro() const {
-      return std::chrono::duration_cast<std::chrono::microseconds>(
-               std::chrono::steady_clock::now() - t_begin_).count();
-    }
-    inline int64_t ElapseNano() const {
-      return std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::steady_clock::now() - t_begin_).count();
-    }
+  Timer() : t_begin_(std::chrono::steady_clock::now()) {}
+  ~Timer() {}
+  inline void Reset() {
+    t_begin_ = std::chrono::steady_clock::now();
+  }
+  inline int64_t Elapse() const {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::steady_clock::now() - t_begin_).count();
+  }
+  inline int64_t ElapseMicro() const {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+             std::chrono::steady_clock::now() - t_begin_).count();
+  }
+  inline int64_t ElapseNano() const {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::steady_clock::now() - t_begin_).count();
+  }
+ private:
+  std::chrono::time_point<std::chrono::steady_clock> t_begin_;
 };
 
 class Benchmark{
- private:
-    DB* db_;
-    int str_max_length_;
-    int str_fix_length_;
-    int test_size_;
-    Timer timer_;
-    RandomGenerator rg_;
-
  public:
-    explicit Benchmark(DB *db, int mlength, int flength, int size):
-      db_(db), str_max_length_(mlength), str_fix_length_(flength),
-      test_size_(size) { }
-    ~Benchmark() {}
+  explicit Benchmark(DB *db, int mlength, int flength):
+    db_(db), str_max_length_(mlength), str_fix_length_(flength) {}
+  ~Benchmark() {}
 
-    void SliceValidation(const int n);
-    void BlobValidation(const int n);
-    void FixedString(const int length);
-    void FixedBlob(const int size);
-    void RandomString(const int length);
-    void RandomBlob(const int size);
+  void SliceValidation(int n);
+  void BlobValidation(int n);
+  void FixedString(int length);
+  void FixedBlob(int size);
+  void RandomString(int length);
+  void RandomBlob(int size);
+
+ private:
+  DB* db_;
+  int str_max_length_;
+  int str_fix_length_;
+  Timer timer_;
+  RandomGenerator rg_;
 };
 }  // namespace ustore
 

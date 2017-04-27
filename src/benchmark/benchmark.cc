@@ -6,17 +6,18 @@
 #include <iterator>
 #include <iostream>
 
-#define NUM_OF_INSTANCES 100000
+constexpr int kNumOfInstances = 10000;
+constexpr int kValidationStrLen = 32;
+constexpr int kValidationBlobSize = 4096;
 
 using namespace ustore;
 
-void Benchmark::SliceValidation(const int n) {
+void Benchmark::SliceValidation(int n) {
   std::cout << "Validating Slice put/get APIs......\n";
 
-  std::vector<std::string> slices;
-  std::vector<std::string> keys;
-  rg_.NRandomString(n, 32, &slices);
-  rg_.SequentialNumString(n, &keys);
+  std::vector<std::string> slices = rg_.NRandomString(n, kValidationStrLen);
+  std::vector<std::string> keys = rg_.SequentialNumString(n);
+
   const Slice branch("Branch");
   for (auto k = keys.begin(), s = slices.begin();
       k != keys.end() && s != slices.end(); ++k, ++s) {
@@ -32,13 +33,12 @@ void Benchmark::SliceValidation(const int n) {
   std::cout << "Validated Slice put/get APIs on " << n << " instances!\n";
 }
 
-void Benchmark::BlobValidation(const int n) {
+void Benchmark::BlobValidation(int n) {
   std::cout << "Validating Blob put/get APIs......\n";
 
-  std::vector<std::string> blobs;
-  std::vector<std::string> keys;
-  rg_.NRandomString(n, 4096, &blobs);
-  rg_.SequentialNumString(n, &keys);
+  std::vector<std::string> blobs = rg_.NRandomString(n, kValidationBlobSize);
+  std::vector<std::string> keys = rg_.SequentialNumString(n);
+
   const Slice branch("Branch");
   for (auto k = keys.begin(), b = blobs.begin();
       k != keys.end() && b != blobs.end(); ++k, ++b) {
@@ -55,15 +55,13 @@ void Benchmark::BlobValidation(const int n) {
   std::cout << "Validated Blob put/get APIs on " << n << " instances!\n";
 }
 
-void Benchmark::FixedString(const int length) {
+void Benchmark::FixedString(int length) {
   std::cout << "Benchmarking put/get APIs with Fixed Length (" <<
     length << ") Strings\n";
 
-  int nins = NUM_OF_INSTANCES;
-  std::vector<std::string> slices;
-  std::vector<std::string> keys;
-  rg_.NFixedString(nins, length, &slices);
-  rg_.SequentialNumString(nins, &keys);
+  std::vector<std::string> slices = rg_.NFixedString(kNumOfInstances, length);
+  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
+
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
@@ -86,15 +84,13 @@ void Benchmark::FixedString(const int length) {
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
 
-void Benchmark::FixedBlob(const int size) {
+void Benchmark::FixedBlob(int size) {
   std::cout << "Benchmarking put/get APIs with Fixed Size (" <<
     size << " bytes) Blobs\n";
 
-  int nins = NUM_OF_INSTANCES;
-  std::vector<std::string> blobs;
-  std::vector<std::string> keys;
-  rg_.NFixedString(nins, size, &blobs);
-  rg_.SequentialNumString(nins, &keys);
+  std::vector<std::string> blobs = rg_.NFixedString(kNumOfInstances, size);
+  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
+
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
@@ -118,15 +114,13 @@ void Benchmark::FixedBlob(const int size) {
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
 
-void Benchmark::RandomString(const int length) {
+void Benchmark::RandomString(int length) {
   std::cout << "Benchmarking put/get APIs with Random Length (max=" <<
     length << ") Strings\n";
 
-  int nins = NUM_OF_INSTANCES;
-  std::vector<std::string> slices;
-  std::vector<std::string> keys;
-  rg_.NRandomString(nins, length, &slices);
-  rg_.SequentialNumString(nins, &keys);
+  std::vector<std::string> slices = rg_.NRandomString(kNumOfInstances, length);
+  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
+
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
@@ -149,15 +143,13 @@ void Benchmark::RandomString(const int length) {
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
 
-void Benchmark::RandomBlob(const int size) {
+void Benchmark::RandomBlob(int size) {
   std::cout << "Benchmarking put/get APIs with Random Size (max=" <<
     size << " bytes) Blobs\n";
 
-  int nins = NUM_OF_INSTANCES;
-  std::vector<std::string> blobs;
-  std::vector<std::string> keys;
-  rg_.NRandomString(nins, size, &blobs);
-  rg_.SequentialNumString(nins, &keys);
+  std::vector<std::string> blobs = rg_.NRandomString(kNumOfInstances, size);
+  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
+
   const Slice branch("Branch");
   Timer timer;
   timer.Reset();
