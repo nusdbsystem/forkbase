@@ -22,17 +22,21 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[]) {
   po::variables_map vm;
   if (!ParseCmdArgs(argc, argv, vm)) return false;
 
-  n_columns = vm["columns"].as<size_t>();
-  if (!CheckArgGE(n_columns, 3, "Number of columns")) return false;
+  const auto arg_columns = vm["columns"].as<int>();
+  RETURN_IF_FALSE(CheckArgGE(arg_columns, 3, "Number of columns"));
+  n_columns = arg_columns;
 
-  n_records = vm["records"].as<size_t>();
-  if (!CheckArgGT(n_records, 0, "Number of records")) return false;
+  const auto arg_records = vm["records"].as<int>();
+  RETURN_IF_FALSE(CheckArgGT(arg_records, 0, "Number of records"));
+  n_records = arg_records;
 
-  p = vm["probability"].as<double>();
-  if (!CheckArgInRange(p, 0, 1, "Probability")) return false;
+  const auto arg_probability = vm["probability"].as<double>();
+  RETURN_IF_FALSE(CheckArgInRange(arg_probability, 0, 1, "Probability"));
+  p = arg_probability;
 
-  iters = vm["iterations"].as<size_t>();
-  if (!CheckArgGT(iters, 0, "Number of iterations")) return false;
+  const auto arg_iterations = vm["iterations"].as<int>();
+  RETURN_IF_FALSE(CheckArgGT(arg_iterations, 0, "Number of iterations"));
+  iters = arg_iterations;
 
   return true;
 }
@@ -43,13 +47,13 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
     po::options_description desc("Allowed options", 120);
     desc.add_options()
     ("help,?", "print usage message")
-    ("columns,c", po::value<size_t>()->default_value(kDefaultNumColumns),
+    ("columns,c", po::value<int>()->default_value(kDefaultNumColumns),
      "number of columns in a simple table")
-    ("records,n", po::value<size_t>()->default_value(kDefaultNumRecords),
+    ("records,n", po::value<int>()->default_value(kDefaultNumRecords),
      "number of records in a simple table")
     ("probability,p", po::value<double>()->default_value(kDefaultProbability),
      "probability used in the analytical simulation")
-    ("iterations,i", po::value<size_t>()->default_value(kDefaultNumIterations),
+    ("iterations,i", po::value<int>()->default_value(kDefaultNumIterations),
      "number of iterations in the analytical simulation")
     ;
 

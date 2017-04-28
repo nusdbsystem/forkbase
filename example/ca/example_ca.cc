@@ -69,7 +69,7 @@ void MergeResults() {
   std::cout << "---------------------------------------------" << std::endl;
 }
 
-static int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   if (Config::ParseCmdArgs(argc, argv)) {
     LoadDataset();
     RunPoissonAnalytics(Config::p * Config::n_records);
@@ -78,7 +78,7 @@ static int main(int argc, char* argv[]) {
   } else if (Config::is_help) {
     DLOG(INFO) << "Help messages have been printed";
   } else {
-    LOG(ERROR) << "Invalid command option has been found";
+    std::cerr << "[FAILURE] Found invalid command-line option" << std::endl;
     return 1;
   }
   return 0;

@@ -24,6 +24,8 @@ namespace ustore {
 namespace example {
 namespace ca {
 
+#define RETURN_IF_FALSE(expr) do { if (!expr) return false; } while(0)
+
 class Utils {
  public:
   template<typename T>
