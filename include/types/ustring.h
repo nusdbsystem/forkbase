@@ -3,13 +3,14 @@
 #ifndef USTORE_TYPES_USTRING_H_
 #define USTORE_TYPES_USTRING_H_
 
+#include <memory>
+
 #include "node/string_node.h"
 #include "types/base.h"
 
 namespace ustore {
 class UString : public BaseType {
  public:
-
   inline bool empty() const override {
     return this->node_.get() == nullptr;
   }

@@ -271,7 +271,7 @@ class KeyComparatorSmallEnv : public ::testing::Test {
     ustore::KVItem kv7{k7, v7, 2, 2};
 
     std::unique_ptr<const ustore::Segment> seg =
-        ustore::MapNode::encode({kv1, kv2, kv3, kv4, kv5, kv6, kv7});
+        ustore::MapNode::Encode({kv1, kv2, kv3, kv4, kv5, kv6, kv7});
 
     ustore::NodeBuilder nb(ustore::MapChunker::Instance(), false);
 
@@ -338,7 +338,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ASSERT_TRUE(foundKey);
 
   std::unique_ptr<const ustore::Segment> seg1 =
-      ustore::MapNode::encode({new_kv2});
+      ustore::MapNode::Encode({new_kv2});
 
   nb1->SpliceElements(2, seg1.get());
   ustore::Hash lhs_t1 = nb1->Commit();
@@ -356,7 +356,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ASSERT_TRUE(foundKey);
 
   std::unique_ptr<const ustore::Segment> seg2 =
-      ustore::MapNode::encode({new_kv5});
+      ustore::MapNode::Encode({new_kv5});
 
   nb2->SpliceElements(1, seg2.get());
   ustore::Hash lhs_t2 = nb2->Commit();
@@ -373,7 +373,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ASSERT_TRUE(foundKey);
 
   std::unique_ptr<const ustore::Segment> seg3 =
-      ustore::MapNode::encode({kv8, kv9});
+      ustore::MapNode::Encode({kv8, kv9});
 
   nb3->SpliceElements(1, seg3.get());
   ustore::Hash lhs = nb3->Commit();
@@ -438,7 +438,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
     }  // end 2 fors
 
     std::unique_ptr<const ustore::Segment> seg =
-        ustore::MapNode::encode(kvs_);
+        ustore::MapNode::Encode(kvs_);
 
     ustore::NodeBuilder nb(ustore::MapChunker::Instance(), false);
 
@@ -487,7 +487,7 @@ TEST_F(KeyComparatorBigEnv, Basic) {
   for (size_t i = 400; i < 400 + 100; i++) {
     new_items.push_back({keys_[i], vals_[i+1], entry_size_, entry_size_});
   }
-  auto seg1 = ustore::MapNode::encode(new_items);
+  auto seg1 = ustore::MapNode::Encode(new_items);
 
   foundKey = false;
   ustore::NodeBuilder* nb1 = ustore::NodeBuilder::NewNodeBuilderAtKey(

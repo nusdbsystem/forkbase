@@ -5,8 +5,8 @@
 
 #include <cstddef>
 
-#include "types/type.h"
 #include "spec/slice.h"
+#include "types/type.h"
 
 namespace ustore {
 
@@ -18,7 +18,7 @@ class OrderedKey {
    0  -- variable size
  */
  public:
-  inline static const OrderedKey fromSlice(const Slice& key) {
+  inline static OrderedKey FromSlice(const Slice& key) {
     return OrderedKey(false,
                       reinterpret_cast<const byte_t*>(key.data()),
                       key.len());
@@ -29,9 +29,10 @@ class OrderedKey {
   explicit OrderedKey(uint64_t value);
   // Set the hash data for key
   OrderedKey(bool by_value, const byte_t* data, size_t num_bytes);
-  OrderedKey& operator=(const OrderedKey& key) = default;
   OrderedKey(const OrderedKey& key) = default;
   ~OrderedKey() {}
+
+  OrderedKey& operator=(const OrderedKey& key) = default;
 
   inline const byte_t* data() const { return data_; }
   inline size_t numBytes() const {
@@ -39,16 +40,16 @@ class OrderedKey {
   }
   // encode OrderedKey into buffer
   // given buffer capacity > numBytes
-  size_t encode(byte_t* buffer) const;
+  size_t Encode(byte_t* buffer) const;
   inline bool byValue() const { return by_value_; }
 
   bool operator>(const OrderedKey& otherKey) const;
   bool operator<(const OrderedKey& otherKey) const;
   bool operator==(const OrderedKey& otherKey) const;
-  bool operator<=(const OrderedKey& otherKey) const {
+  inline bool operator<=(const OrderedKey& otherKey) const {
     return *this < otherKey || *this == otherKey;
   }
-  bool operator>=(const OrderedKey& otherKey) const {
+  inline bool operator>=(const OrderedKey& otherKey) const {
     return *this > otherKey || *this == otherKey;
   }
 

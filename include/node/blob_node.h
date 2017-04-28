@@ -13,7 +13,7 @@ class BlobChunker : public Singleton<BlobChunker>, public Chunker {
   friend class Singleton<BlobChunker>;
 
  public:
-  ChunkInfo make(const std::vector<const Segment*>& segments) const
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
 
  private:
@@ -41,7 +41,7 @@ class BlobNode : public LeafNode {
   inline size_t GetLength(size_t start, size_t end) const override {
     return end - start;
   }
-  const OrderedKey key(size_t idx) const override;
+  OrderedKey key(size_t idx) const override;
   size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const override;
   size_t GetIdxForKey(const OrderedKey& key, bool* found) const override;
 };

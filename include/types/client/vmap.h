@@ -23,3 +23,5 @@ class VMap : public UMap, private Noncopyable {
   //          const byte_t* value, size_t value_size);
 };
 }  // namespace ustore
+
+#endif  // USTORE_TYPES_CLIENT_VMAP_H_

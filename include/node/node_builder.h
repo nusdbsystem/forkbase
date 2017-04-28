@@ -24,6 +24,7 @@ class NodeBuilder : Noncopyable {
                                             const Chunker* chunker,
                                             bool isFixedEntryLen);
 
+  // TODO(wangji/pingcheng): return nullptr instead of found flag
   // Perform operation at idx-th element at leaf rooted at root_hash
   static NodeBuilder* NewNodeBuilderAtKey(const Hash& root_hash,
                                           const OrderedKey& key,

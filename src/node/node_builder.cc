@@ -125,7 +125,7 @@ size_t NodeBuilder::SkipEntries(size_t num_elements) {
   if (cursor_ == nullptr || cursor_->isEnd()) return 0;
   // DLOG(INFO) << "Level: " << level_ << " Before Skip Idx: " << cursor_->idx()
   //           << " Skip # Entry: " << num_elements;
-  for (size_t i = 1; i <= num_elements ; i++) {
+  for (size_t i = 1; i <= num_elements; i++) {
     // whether the cursor points to the chunk end
     bool advance2end = !cursor_->Advance(false);
 
@@ -191,7 +191,7 @@ NodeBuilder* NodeBuilder::parent_builder() {
 std::unique_ptr<const Chunk> NodeBuilder::HandleBoundary(
     const std::vector<const Segment*>& segments) {
   // DLOG(INFO) << "Start Handing Boundary. ";
-  ChunkInfo chunk_info = chunker_->make(segments);
+  ChunkInfo chunk_info = chunker_->Make(segments);
 
   std::unique_ptr<const Chunk> chunk(std::move(chunk_info.chunk));
   // Dump chunk into storage here

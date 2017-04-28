@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_NODE_COMPARATOR_H_
-#define USTORE_NODE_COMPARATOR_H_
+#ifndef USTORE_NODE_NODE_COMPARATOR_H_
+#define USTORE_NODE_NODE_COMPARATOR_H_
 
 #include <functional>
 #include <memory>
@@ -24,51 +24,49 @@ struct IndexRange {
 // Compact continuous index ranges to single one, e.g,
 //  {start_idx, num_subsequent}
 //   {0, 3} + {3, 6} -> {0, 9}
-std::vector<IndexRange> CompactRanges(
-    const std::vector<IndexRange>& ranges);
-
+std::vector<IndexRange> CompactRanges(const std::vector<IndexRange>& ranges);
 
 // the following two traits dictate how to compute key
 //   from element, metaentry and seqnode for comparing and traversing
-struct index_trait {
+struct IndexTrait {
   // return the key of element pointed by the given cursor and that
   //   element index
-  static const OrderedKey key(const NodeCursor* cursor, uint64_t idx) {
+  static OrderedKey Key(const NodeCursor* cursor, uint64_t idx) {
     return OrderedKey(idx);
   }
 
   // return the max key of all elements rooted under the given metaentry
   //   idx is the index of first elemnet rooted under me
-  static const OrderedKey max_key(const MetaEntry* me, uint64_t idx) {
+  static OrderedKey MaxKey(const MetaEntry* me, uint64_t idx) {
     return OrderedKey(idx + me->numElements());
   }
 
   // return the max key of all elements rooted under the given seqnode
   //   idx is the index of first elemnet rooted under mn
-  static const OrderedKey max_key(const SeqNode* mn, uint64_t idx) {
+  static OrderedKey MaxKey(const SeqNode* mn, uint64_t idx) {
     return OrderedKey(idx + mn->numElements());
   }
 
   // The smallest key among all
-  static const OrderedKey MinKey() {
+  static OrderedKey MinKey() {
     return OrderedKey(0);
   }
 };
 
-struct ordered_key_trait {
-  static const OrderedKey key(const NodeCursor* cursor, uint64_t idx) {
+struct OrderedKeyTrait {
+  static OrderedKey Key(const NodeCursor* cursor, uint64_t idx) {
     return cursor->currentKey();
   }
 
-  static const OrderedKey max_key(const MetaEntry* me, uint64_t idx) {
+  static OrderedKey MaxKey(const MetaEntry* me, uint64_t idx) {
     return me->orderedKey();
   }
 
-  static const OrderedKey max_key(const SeqNode* mn, uint64_t idx) {
+  static OrderedKey MaxKey(const SeqNode* mn, uint64_t idx) {
     return mn->key(mn->numEntries() - 1);
   }
 
-  static const OrderedKey MinKey() {
+  static OrderedKey MinKey() {
     static constexpr byte_t kEMPTY[] = "\0";
     return OrderedKey(false, kEMPTY, 1);
   }
@@ -231,7 +229,7 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::Compare(
   uint64_t deepest_start_idx = 0;
   // share_ptr to seqnode
   auto rhs_deepest_node = SmallestOverlap(lhs_min_key,
-                                          KeyTrait::max_key(lhs, lhs_start_idx),
+                                          KeyTrait::MaxKey(lhs, lhs_start_idx),
                                           rhs_node,
                                           rhs_start_idx,
                                           &deepest_start_idx);
@@ -275,7 +273,7 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::Compare(
     results.insert(results.end(), child_results.begin(), child_results.end());
 
 // Prepare for next iteration
-    lhs_child_min_key = KeyTrait::max_key(lhs_child_node.get(),
+    lhs_child_min_key = KeyTrait::MaxKey(lhs_child_node.get(),
                                           lhs_child_start_idx);
 
     lhs_child_start_idx += lhs_me.numElements();
@@ -310,7 +308,7 @@ std::shared_ptr<const SeqNode> NodeComparator<KeyTrait>::SmallestOverlap(
       // no further meta_entry will contain this range
       if (i > 0 && rhs_me_lower > lhs_lower) break;
 
-      rhs_me_upper = KeyTrait::max_key(&rhs_me, rhs_me_start_idx);
+      rhs_me_upper = KeyTrait::MaxKey(&rhs_me, rhs_me_start_idx);
 
       if (i == numEntries - 1 || rhs_me_upper >= lhs_upper) {
         // Find a deeper overlap
@@ -352,8 +350,8 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateIntersect(
   IndexRange curr_cr{0, 0};
 
   while (!lhs_cursor->isEnd() && !rhs_cursor->isEnd()) {
-    const OrderedKey lhs_key = KeyTrait::key(lhs_cursor, lhs_idx);
-    const OrderedKey rhs_key = KeyTrait::key(rhs_cursor, rhs_idx);
+    OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
+    OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
 
     if (lhs_key > rhs_key) {
       ++rhs_idx;
@@ -430,8 +428,8 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
   IndexRange curr_cr{0, 0};
 
   while (!lhs_cursor->isEnd() && !rhs_cursor->isEnd()) {
-    const OrderedKey lhs_key = KeyTrait::key(lhs_cursor, lhs_idx);
-    const OrderedKey rhs_key = KeyTrait::key(rhs_cursor, rhs_idx);
+    const OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
+    const OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
 
     if (lhs_key > rhs_key) {
       ++rhs_idx;
@@ -510,9 +508,9 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
 }
 
 
-using IndexComparator = NodeComparator<index_trait>;
+using IndexComparator = NodeComparator<IndexTrait>;
 
-using KeyComparator = NodeComparator<ordered_key_trait>;
+using KeyComparator = NodeComparator<OrderedKeyTrait>;
 
 // class IndexComparator : public NodeComparator {
 //  public:
@@ -586,7 +584,7 @@ using KeyComparator = NodeComparator<ordered_key_trait>;
 //                                              std::shared_ptr<ChunkLoader>)>;
 
 //   std::vector<CursorRange> Compare(const SeqNode* lhs,
-//                                    /*a lambda to return CursorRange for the same hash*/
+//   /*a lambda to return CursorRange for the same hash*/
 //                                    const OrderedKey& lower,
 //                                    IterationProcedure procedure) const;
 
@@ -601,8 +599,6 @@ using KeyComparator = NodeComparator<ordered_key_trait>;
 //                                               std::shared_ptr<ChunkLoader>
 //                                                   loader);
 // };
-
-
 
 }  // namespace ustore
 

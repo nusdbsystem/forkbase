@@ -10,7 +10,7 @@
 
 namespace ustore {
 
-ChunkInfo MapChunker::make(const std::vector<const Segment*>& segments) const {
+ChunkInfo MapChunker::Make(const std::vector<const Segment*>& segments) const {
   // Caculate the total number of entries and bytes for all segments
   CHECK_GT(segments.size(), 0);
   size_t num_entries = 0;
@@ -99,13 +99,13 @@ const KVItem MapNode::kvitem(const byte_t* entry, size_t* item_num_bytes) {
   return {key_data, val_data, key_num_bytes, val_num_bytes};
 }
 
-size_t MapNode::encode(byte_t* buffer, const KVItem& kv_item) {
+size_t MapNode::Encode(byte_t* buffer, const KVItem& kv_item) {
   const size_t num_byte_offset = 0;
   const size_t key_byte_offset = num_byte_offset + sizeof(uint32_t);
   const size_t key_offset = key_byte_offset + sizeof(uint32_t);
   const size_t val_offset = key_offset + kv_item.key_num_bytes;
 
-  const size_t item_num_bytes = MapNode::encodeNumBytes(kv_item);
+  const size_t item_num_bytes = MapNode::EncodeNumBytes(kv_item);
 
   uint32_t uitem_num_bytes = static_cast<uint32_t>(item_num_bytes);
   uint32_t ukey_num_bytes = static_cast<uint32_t>(kv_item.key_num_bytes);
@@ -118,24 +118,24 @@ size_t MapNode::encode(byte_t* buffer, const KVItem& kv_item) {
   return item_num_bytes;
 }
 
-size_t MapNode::encodeNumBytes(const KVItem& kv_item) {
+size_t MapNode::EncodeNumBytes(const KVItem& kv_item) {
   return sizeof(uint32_t)  // 4 bytes for entry length
          + sizeof(uint32_t)  // 4 bytes for key size
          + kv_item.key_num_bytes
          + kv_item.val_num_bytes;
 }
 
-std::unique_ptr<const Segment> MapNode::encode(
+std::unique_ptr<const Segment> MapNode::Encode(
         const std::vector<KVItem>& items) {
   CHECK_GT(items.size(), 0);
   // Calcuate into number of bytes required
   // Meanwhile check key is in strict increasing order
   OrderedKey preKey(false, items[0].key, items[0].key_num_bytes);
-  size_t total_num_bytes = MapNode::encodeNumBytes(items[0]);
+  size_t total_num_bytes = MapNode::EncodeNumBytes(items[0]);
 
   for (size_t i = 1; i < items.size(); ++i) {
     OrderedKey currKey(false, items[i].key, items[i].key_num_bytes);
-    total_num_bytes += MapNode::encodeNumBytes(items[i]);
+    total_num_bytes += MapNode::EncodeNumBytes(items[i]);
     CHECK(preKey < currKey);
     preKey = currKey;
   }
@@ -147,7 +147,7 @@ std::unique_ptr<const Segment> MapNode::encode(
   std::vector<size_t> offsets;
   for (const auto& kv_item : items) {
     offsets.push_back(offset);
-    offset += MapNode::encode(buffer + offset, kv_item);
+    offset += MapNode::Encode(buffer + offset, kv_item);
   }
 
   std::unique_ptr<const byte_t[]> udata(buffer);
@@ -178,7 +178,8 @@ size_t MapNode::len(size_t idx) const {
 
   return preOffset - offsets_[idx];
 }
-const OrderedKey MapNode::key(size_t idx) const {
+
+OrderedKey MapNode::key(size_t idx) const {
   return MapNode::orderedKey(data(idx));
 }
 

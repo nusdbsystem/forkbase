@@ -7,7 +7,7 @@
 
 namespace ustore {
 
-ChunkInfo BlobChunker::make(const std::vector<const Segment*>& segments)
+ChunkInfo BlobChunker::Make(const std::vector<const Segment*>& segments)
     const {
   size_t chunk_num_bytes = 0;
   size_t num_entries = 0;
@@ -29,7 +29,7 @@ ChunkInfo BlobChunker::make(const std::vector<const Segment*>& segments)
   return {std::move(chunk), std::move(meta_seg)};
 }
 
-const OrderedKey BlobNode::key(size_t idx) const {
+OrderedKey BlobNode::key(size_t idx) const {
   LOG(FATAL) << "Not Supported";
   return OrderedKey();
 }

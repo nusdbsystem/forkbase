@@ -3,6 +3,7 @@
 #ifndef USTORE_TYPES_UMAP_H_
 #define USTORE_TYPES_UMAP_H_
 
+#include <memory>
 #include <vector>
 
 #include "types/base.h"

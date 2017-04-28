@@ -15,12 +15,12 @@ class ListNodeEnv : public ::testing::Test {
   // Make a chunk for ListNode
   virtual void SetUp() {
     // Create a Segment with Element 1 and 2
-    auto seg12 = ustore::ListNode::encode({element1, element2});
+    auto seg12 = ustore::ListNode::Encode({element1, element2});
 
     // Create a Segment with Entry 3
-    auto seg3 = ustore::ListNode::encode({element3});
+    auto seg3 = ustore::ListNode::Encode({element3});
 
-    chunk_info_ = ustore::ListChunker::Instance()->make({seg12.get(),
+    chunk_info_ = ustore::ListChunker::Instance()->Make({seg12.get(),
                                                          seg3.get()});
   }
 
@@ -45,12 +45,10 @@ TEST_F(ListNodeEnv, ListNode) {
   ustore::ListNode lnode(chunk_info_.chunk.get());
   EXPECT_EQ(3, lnode.numEntries());
   EXPECT_EQ(3, lnode.numElements());
-  const ustore::Slice actual_element2 = ustore::ListNode::decode(lnode.data(1));
+  const ustore::Slice actual_element2 = ustore::ListNode::Decode(lnode.data(1));
   EXPECT_EQ(element2.len(), actual_element2.len());
   EXPECT_EQ(0,
             std::memcmp(element2.data(),
                         actual_element2.data(),
                         element2.len()));
-
-
 }

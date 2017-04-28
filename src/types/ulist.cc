@@ -18,7 +18,7 @@ const Slice UList::Get(size_t idx) const {
   if (cursor->isEnd()) {
     return Slice(nullptr, 0);
   } else {
-    return ListNode::decode(cursor->current());
+    return ListNode::Decode(cursor->current());
   }
 }
 
@@ -51,7 +51,7 @@ SList::SList(const std::vector<Slice>& elements) noexcept:
 
   NodeBuilder nb(ListChunker::Instance(), false);
 
-  std::unique_ptr<const Segment> seg = ListNode::encode(elements);
+  std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
   nb.SpliceElements(0, seg.get());
   SetNodeForHash(nb.Commit());
 }
@@ -65,7 +65,7 @@ const Hash SList::Splice(size_t start_idx, size_t num_to_delete,
                                                        ListChunker::Instance(),
                                                        false);
 
-  std::unique_ptr<const Segment> seg = ListNode::encode({entries});
+  std::unique_ptr<const Segment> seg = ListNode::Encode({entries});
   nb->SpliceElements(num_to_delete, seg.get());
   Hash root_hash = nb->Commit();
   delete nb;

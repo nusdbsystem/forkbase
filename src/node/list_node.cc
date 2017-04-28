@@ -11,7 +11,7 @@
 
 namespace ustore {
 
-ChunkInfo ListChunker::make(const std::vector<const Segment*>& segments) const {
+ChunkInfo ListChunker::Make(const std::vector<const Segment*>& segments) const {
   // Caculate the total number of entries and bytes for all segments
   CHECK_GT(segments.size(), 0);
   size_t num_entries = 0;
@@ -45,7 +45,7 @@ ChunkInfo ListChunker::make(const std::vector<const Segment*>& segments) const {
   return {std::move(chunk), std::move(meta_seg)};
 }
 
-std::unique_ptr<const Segment> ListNode::encode(
+std::unique_ptr<const Segment> ListNode::Encode(
     const std::vector<Slice>& elements) {
   std::vector<size_t> offsets;
   size_t offset = 0;
@@ -79,7 +79,7 @@ std::unique_ptr<const Segment> ListNode::encode(
   return std::unique_ptr<const Segment>(seg);
 }
 
-const Slice ListNode::decode(const byte_t* data) {
+const Slice ListNode::Decode(const byte_t* data) {
   size_t element_size = static_cast<size_t>(
                             *reinterpret_cast<const uint32_t*>(data))
                         // does not count the first 4 bytes
@@ -128,7 +128,7 @@ void ListNode::PrecomputeOffsets() {
   }
 }
 
-const OrderedKey ListNode::key(size_t idx) const {
+OrderedKey ListNode::key(size_t idx) const {
   LOG(FATAL) << "Not Supported";
   return OrderedKey();
 }

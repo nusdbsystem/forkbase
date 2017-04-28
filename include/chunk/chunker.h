@@ -21,7 +21,7 @@ class Chunker {
   // An interface to make chunk from multiple segments.
   //   Each type, e.g, Blob, MetaNode shall have one.
  public:
-  virtual ChunkInfo make(
+  virtual ChunkInfo Make(
       const std::vector<const Segment*>& segments) const = 0;
   virtual ~Chunker() {}
 };

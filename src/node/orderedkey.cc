@@ -24,7 +24,7 @@ OrderedKey::OrderedKey(bool by_value, const byte_t* data, size_t num_bytes)
   }
 }
 
-size_t OrderedKey::encode(byte_t* buffer) const {
+size_t OrderedKey::Encode(byte_t* buffer) const {
   if (by_value_) {
     std::memcpy(buffer, &value_, sizeof(value_));
   } else {

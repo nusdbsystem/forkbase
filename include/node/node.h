@@ -3,6 +3,7 @@
 #ifndef USTORE_NODE_NODE_H_
 #define USTORE_NODE_NODE_H_
 
+#include <memory>
 #include <vector>
 
 #include "chunk/chunk.h"
@@ -29,8 +30,7 @@ class SeqNode : public UNode {
   */
 
  public:
-  static std::unique_ptr<const SeqNode>
-      CreateFromChunk(const Chunk* chunk);
+  static std::unique_ptr<const SeqNode> CreateFromChunk(const Chunk* chunk);
 
   explicit SeqNode(const Chunk* chunk) : UNode(chunk) {}
   virtual ~SeqNode() {}  // NOT delete chunk!!
@@ -47,7 +47,7 @@ class SeqNode : public UNode {
   // return the byte pointer for the idx-th entry in this node
   virtual const byte_t* data(size_t idx) const = 0;
 
-  virtual const OrderedKey key(size_t idx) const = 0;
+  virtual OrderedKey key(size_t idx) const = 0;
   // return the byte len of the idx-th entry
   virtual size_t len(size_t idx) const = 0;
 };
@@ -77,7 +77,7 @@ class MetaNode : public SeqNode {
   // return the byte pointer for the idx-th entry in this node
   const byte_t* data(size_t idx) const override;
 
-  const OrderedKey key(size_t idx) const override;
+  OrderedKey key(size_t idx) const override;
 
   // return the byte len of the idx-th entry
   size_t len(size_t idx) const override;
@@ -108,10 +108,10 @@ class MetaNode : public SeqNode {
 };
 
 class MetaChunker : public Singleton<MetaChunker>, public Chunker {
- friend class Singleton<MetaChunker>;
+  friend class Singleton<MetaChunker>;
 
  public:
-  ChunkInfo make(const std::vector<const Segment*>& segments) const
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
 
  private:

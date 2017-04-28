@@ -3,6 +3,7 @@
 #ifndef USTORE_NODE_MAP_NODE_H_
 #define USTORE_NODE_MAP_NODE_H_
 
+#include <memory>
 #include <vector>
 
 #include "chunk/chunk.h"
@@ -10,6 +11,8 @@
 #include "utils/singleton.h"
 
 namespace ustore {
+
+// TODO(pingcheng): can consider -> using KVItem = std::pair<Slice, Slice>
 struct KVItem {
   const byte_t* key;
   const byte_t* val;
@@ -18,10 +21,10 @@ struct KVItem {
 };
 
 class MapChunker : public Singleton<MapChunker>, public Chunker {
- friend class Singleton<MapChunker>;
+  friend class Singleton<MapChunker>;
 
  public:
-  ChunkInfo make(const std::vector<const Segment*>& segments) const
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
 
  private:
@@ -58,13 +61,13 @@ class MapNode : public LeafNode {
 
   // Encode the kvitem into buffer based on the above scheme
   //   return the number of bytes encoded
-  static size_t encode(byte_t* buffer, const KVItem& item);
+  static size_t Encode(byte_t* buffer, const KVItem& item);
 
   // Encode multiple items into a segment
-  static std::unique_ptr<const Segment> encode(
+  static std::unique_ptr<const Segment> Encode(
         const std::vector<KVItem>& items);
 
-  static size_t encodeNumBytes(const KVItem& kv_item);
+  static size_t EncodeNumBytes(const KVItem& kv_item);
 
 
   explicit MapNode(const Chunk* chunk) : LeafNode(chunk) {
@@ -84,7 +87,7 @@ class MapNode : public LeafNode {
 
   size_t GetLength(size_t start, size_t end) const override;
 
-  const OrderedKey key(size_t idx) const override;
+  OrderedKey key(size_t idx) const override;
 
  private:
   void PrecomputeOffsets();

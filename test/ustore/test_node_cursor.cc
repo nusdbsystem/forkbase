@@ -85,7 +85,7 @@ TEST(NodeCursor, Tree) {
   ustore::VarSegment seg_b(me_b, mtb_numBytes, {0});
   // Create MetaNode Chunk
   ustore::ChunkInfo cm_info =
-      ustore::MetaChunker::Instance()->make({&seg_a, &seg_b});
+      ustore::MetaChunker::Instance()->Make({&seg_a, &seg_b});
   // delete the useless MetaEntry bytes
 
   const ustore::Chunk* cm = cm_info.chunk.release();
@@ -201,10 +201,10 @@ TEST(NodeCursor, SingleNodeByKey) {
   ustore::byte_t* seg_data12 = new ustore::byte_t[100];
   ustore::byte_t* seg_data3 = new ustore::byte_t[100];
 
-  size_t kv1_num_bytes = ustore::MapNode::encode(seg_data12, kv1);
-  size_t kv2_num_bytes = ustore::MapNode::encode(seg_data12
+  size_t kv1_num_bytes = ustore::MapNode::Encode(seg_data12, kv1);
+  size_t kv2_num_bytes = ustore::MapNode::Encode(seg_data12
                                                  + kv1_num_bytes, kv2);
-  size_t kv3_num_bytes = ustore::MapNode::encode(seg_data3, kv3);
+  size_t kv3_num_bytes = ustore::MapNode::Encode(seg_data3, kv3);
 
   size_t seg12_num_bytes = kv1_num_bytes + kv2_num_bytes;
   ustore::VarSegment seg12(seg_data12, seg12_num_bytes, {0, kv1_num_bytes});
@@ -213,7 +213,7 @@ TEST(NodeCursor, SingleNodeByKey) {
   ustore::VarSegment seg3(seg_data3, seg3_num_bytes, {0});
 
   std::vector<const ustore::Segment*> segs {&seg12, &seg3};
-  ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->make(segs);
+  ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->Make(segs);
 
   const ustore::Chunk* chunk = chunk_info.chunk.get();
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
@@ -281,9 +281,9 @@ TEST(NodeCursor, TreeByKey) {
   ustore::byte_t* seg_data2 = new ustore::byte_t[100];
   ustore::byte_t* seg_data3 = new ustore::byte_t[100];
 
-  size_t kv1_num_bytes = ustore::MapNode::encode(seg_data1, kv1);
-  size_t kv2_num_bytes = ustore::MapNode::encode(seg_data2, kv2);
-  size_t kv3_num_bytes = ustore::MapNode::encode(seg_data3, kv3);
+  size_t kv1_num_bytes = ustore::MapNode::Encode(seg_data1, kv1);
+  size_t kv2_num_bytes = ustore::MapNode::Encode(seg_data2, kv2);
+  size_t kv3_num_bytes = ustore::MapNode::Encode(seg_data3, kv3);
 
   size_t seg1_num_bytes = kv1_num_bytes;
   ustore::VarSegment seg1(seg_data1, seg1_num_bytes, {0});
@@ -295,12 +295,12 @@ TEST(NodeCursor, TreeByKey) {
   ustore::VarSegment seg3(seg_data3, seg3_num_bytes, {0});
 
   ustore::ChunkInfo chunk_info12 = ustore::MapChunker::Instance()
-                                   ->make({&seg1, &seg2});
+                                   ->Make({&seg1, &seg2});
   ustore::ChunkInfo chunk_info3 = ustore::MapChunker::Instance()
-                                   ->make({&seg3});
+                                   ->Make({&seg3});
 
   ustore::ChunkInfo chunkinfo_meta = ustore::MetaChunker::Instance()
-                                     ->make({chunk_info12.meta_seg.get(),
+                                     ->Make({chunk_info12.meta_seg.get(),
                                                chunk_info12.meta_seg.get()});
 
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();

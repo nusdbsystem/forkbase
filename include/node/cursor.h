@@ -17,12 +17,15 @@ class NodeCursor {
   // rooted at SeqNode with Hash
   // if idx >= total_num elemnets,
   //   cursor points to the end of sequence.
+  // TODO(wangji/pingcheng): key may not found if idx is out of range
   static NodeCursor* GetCursorByIndex(const Hash& hash, size_t idx,
                                       ChunkLoader* ch_loader);
 
   // Init Cursor to point a element at leaf in a tree
   // The element has the smallest key larger than the parameter key
   // @return [args] whether this key is found
+  // TODO(wangji/pingcheng): may not need found flag, return nullptr if key not
+  //  found
   static NodeCursor* GetCursorByKey(const Hash& hash, const OrderedKey& key,
                                     ChunkLoader* ch_loader, bool* found);
 
@@ -50,9 +53,7 @@ class NodeCursor {
   //   element
   bool Retreat(bool cross_boundary);
 
-  inline const OrderedKey currentKey() const {
-    return seq_node_->key(idx_);
-  }
+  inline OrderedKey currentKey() const { return seq_node_->key(idx_); }
 
   // return the data pointed by current cursor
   const byte_t* current() const;
@@ -79,13 +80,12 @@ class NodeCursor {
  private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively
-  NodeCursor(std::shared_ptr<const SeqNode> seq_node,
-             size_t idx, ChunkLoader* chunk_loader,
-             NodeCursor* parent_cr);
+  // TODO(wangji/pingcheng): check if really need to share SeqNode
+  NodeCursor(std::shared_ptr<const SeqNode> seq_node, size_t idx,
+             ChunkLoader* chunk_loader, NodeCursor* parent_cr);
 
   // responsible to delete during destruction
   NodeCursor* parent_cr_ = nullptr;
-
   // the pointed sequence
   std::shared_ptr<const SeqNode> seq_node_;
   ChunkLoader* chunk_loader_;

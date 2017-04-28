@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 #include "node/node.h"
 #include "store/chunk_loader.h"

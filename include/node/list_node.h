@@ -3,18 +3,18 @@
 #ifndef USTORE_NODE_LIST_NODE_H_
 #define USTORE_NODE_LIST_NODE_H_
 
+#include <memory>
 #include <vector>
 
 #include "node/node.h"
 
 namespace ustore {
-struct KVItem;  // forward declare of KVItem in umap.cc
 
 class ListChunker : public Singleton<ListChunker>, public Chunker {
- friend class Singleton<ListChunker>;
+  friend class Singleton<ListChunker>;
 
  public:
-  ChunkInfo make(const std::vector<const Segment*>& segments) const
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
 
  private:
@@ -32,10 +32,9 @@ class ListNode : public LeafNode {
 // | ----------------------------4 ----var size ----- |
  public:
   // Make segments from multiple slice elements
-  static std::unique_ptr<const Segment> encode(
+  static std::unique_ptr<const Segment> Encode(
       const std::vector<Slice>& elements);
-
-  static const Slice decode(const byte_t* data);
+  static const Slice Decode(const byte_t* data);
 
   explicit ListNode(const Chunk* chunk) : LeafNode(chunk) {
     PrecomputeOffsets();
@@ -51,8 +50,9 @@ class ListNode : public LeafNode {
   // ListNode doesnot implement this API
   size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const override;
   size_t GetLength(size_t start, size_t end) const override;
+  // TODO(wangji/pingcheng): maybe return numEntries to indicate `not found`
   size_t GetIdxForKey(const OrderedKey& key, bool* found) const override;
-  const OrderedKey key(size_t idx) const override;
+  OrderedKey key(size_t idx) const override;
 
  private:
   void PrecomputeOffsets();

@@ -41,7 +41,7 @@ TEST(BlobChunker, Basic) {
   ustore::FixedSegment seg1(r1, 2, 1);
   ustore::FixedSegment seg2(r2, 3, 1);
   ustore::ChunkInfo chunk_info =
-    ustore::BlobChunker::Instance()->make({&seg1, &seg2});
+    ustore::BlobChunker::Instance()->Make({&seg1, &seg2});
 
   const ustore::byte_t r[] = "aabbb";
   EXPECT_EQ(0, memcmp(chunk_info.chunk->data(), r, 5));

@@ -11,10 +11,12 @@ class VList : public UList, private Noncopyable {
  public:
   // create an empty map
   // construct chunk loader for client
-  VList();
+  VList() {}
   ~VList() = default;
   // Send message to server
 
  private:
 };
 }  // namespace ustore
+
+#endif  // USTORE_TYPES_CLIENT_VLIST_H_

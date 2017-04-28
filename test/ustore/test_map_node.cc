@@ -19,7 +19,7 @@ TEST(MapNode, Codec) {
   ustore::byte_t* buffer = new ustore::byte_t[100];
 
 // Test for Encoding Scheme
-  size_t itemNumBytes = ustore::MapNode::encode(buffer, item);
+  size_t itemNumBytes = ustore::MapNode::Encode(buffer, item);
 
   EXPECT_EQ(key_num_bytes + val_num_bytes + 2 * sizeof(uint32_t),
             itemNumBytes);
@@ -82,13 +82,13 @@ TEST(MapNode, Basic) {
   ustore::KVItem kv3{k3, v3, 4, 4};
 
   std::unique_ptr<const ustore::Segment> seg12 =
-      ustore::MapNode::encode({kv1, kv2});
+      ustore::MapNode::Encode({kv1, kv2});
   std::unique_ptr<const ustore::Segment> seg3 =
-      ustore::MapNode::encode({kv3});
+      ustore::MapNode::Encode({kv3});
 
   std::vector<const ustore::Segment*> segs {seg12.get(), seg3.get()};
 
-  ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->make(segs);
+  ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->Make(segs);
 
   // First 4 bytes of chunk encode number of items
   EXPECT_EQ(3, *reinterpret_cast<const uint32_t*>(chunk_info.chunk->data()));
@@ -121,8 +121,8 @@ TEST(MapNode, Basic) {
   // Test on MetaNode
   ustore::MapNode mnode(chunk_info.chunk.get());
   ASSERT_EQ(3, mnode.numEntries());
-  EXPECT_EQ(ustore::MapNode::encodeNumBytes(kv1), mnode.len(0));
-  EXPECT_EQ(ustore::MapNode::encodeNumBytes(kv3), mnode.len(2));
+  EXPECT_EQ(ustore::MapNode::EncodeNumBytes(kv1), mnode.len(0));
+  EXPECT_EQ(ustore::MapNode::EncodeNumBytes(kv3), mnode.len(2));
 
   const ustore::byte_t* kv2_data = mnode.data(1);
   size_t item2_num_bytes;

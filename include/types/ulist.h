@@ -3,7 +3,9 @@
 #ifndef USTORE_TYPES_ULIST_H_
 #define USTORE_TYPES_ULIST_H_
 
+#include <memory>
 #include <vector>
+#include <utility>
 
 #include "types/base.h"
 #include "types/iterator.h"
@@ -15,6 +17,7 @@ class ListIterator : public Iterator {
   explicit ListIterator(std::unique_ptr<NodeCursor> cursor) :
       Iterator(std::move(cursor)) {}
 
+  // TODO(wangji/pingcheng): const on return value may not be necessary
   const Slice entry() const {
     // Exclude the first four bytes that encode entry len
     size_t len = cursor_->numCurrentBytes() - sizeof(uint32_t);

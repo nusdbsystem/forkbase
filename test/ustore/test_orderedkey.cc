@@ -41,7 +41,7 @@ TEST(OrderedKey, CompareByte) {
 TEST(OrderedKey, Encode) {
   ustore::byte_t* buffer = new ustore::byte_t[10];
   ustore::OrderedKey k1(10);
-  size_t len = k1.encode(buffer);
+  size_t len = k1.Encode(buffer);
 
   EXPECT_EQ(len, sizeof(uint64_t));
   uint64_t key = *(reinterpret_cast<uint64_t*>(buffer));
@@ -52,7 +52,7 @@ TEST(OrderedKey, Encode) {
   buffer = new ustore::byte_t[10];
   ustore::byte_t d[] = "efg";
   ustore::OrderedKey k2(false, d, 3);
-  len = k2.encode(buffer);
+  len = k2.Encode(buffer);
 
   EXPECT_EQ(3, len);
   EXPECT_EQ(0, std::memcmp(buffer, d, 3));

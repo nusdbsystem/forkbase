@@ -32,7 +32,7 @@ const Slice KVIterator::value() const {
 const Slice UMap::Get(const Slice& key) const {
   bool foundKey = false;
 
-  auto orderedkey = OrderedKey::fromSlice(key);
+  auto orderedkey = OrderedKey::FromSlice(key);
 
   NodeCursor* cursor = NodeCursor::GetCursorByKey(root_node_->hash(),
                                                   orderedkey,
@@ -97,7 +97,7 @@ SMap::SMap(const std::vector<Slice>& keys,
     kv_items.push_back(item);
   }
 
-  std::unique_ptr<const Segment> seg = MapNode::encode(kv_items);
+  std::unique_ptr<const Segment> seg = MapNode::Encode(kv_items);
   nb.SpliceElements(0, seg.get());
   SetNodeForHash(nb.Commit());
 }
@@ -107,7 +107,7 @@ const Hash SMap::Set(const Slice& key, const Slice& val) const {
 
   bool foundKey = false;
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtKey(hash(),
-                                                     OrderedKey::fromSlice(key),
+                                                     OrderedKey::FromSlice(key),
                                                      chunk_loader_.get(),
                                                      MapChunker::Instance(),
                                                      false,
@@ -120,7 +120,7 @@ const Hash SMap::Set(const Slice& key, const Slice& val) const {
                    val.len()};
 
   size_t num_splice = foundKey? 1: 0;
-  std::unique_ptr<const Segment> seg = MapNode::encode({kv_item});
+  std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
   nb->SpliceElements(num_splice, seg.get());
   Hash root_hash = nb->Commit();
   delete nb;
@@ -138,7 +138,7 @@ const Hash SMap::Remove(const Slice& key) const {
                  0, {});
 
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtKey(hash(),
-                                                     OrderedKey::fromSlice(key),
+                                                     OrderedKey::FromSlice(key),
                                                      chunk_loader_.get(),
                                                      MapChunker::Instance(),
                                                      false,

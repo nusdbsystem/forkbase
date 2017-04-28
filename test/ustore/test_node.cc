@@ -106,7 +106,7 @@ TEST(MetaNode, Basic) {
   ustore::VarSegment seg2(seg_data2, seg2_num_bytes, {0});
 
   ustore::ChunkInfo chunk_info =
-    ustore::MetaChunker::Instance()->make({&seg1, &seg2});
+    ustore::MetaChunker::Instance()->Make({&seg1, &seg2});
 
   // test on the created chunk
   ustore::MetaNode mnode(chunk_info.chunk.get());

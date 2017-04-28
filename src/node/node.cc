@@ -30,7 +30,7 @@ std::unique_ptr<const SeqNode>
   }
 }
 
-ChunkInfo MetaChunker::make(const std::vector<const Segment*>& segments)
+ChunkInfo MetaChunker::Make(const std::vector<const Segment*>& segments)
     const {
   size_t chunk_num_bytes = sizeof(uint32_t);
   size_t num_entries = 0;
@@ -104,7 +104,8 @@ const byte_t* MetaNode::data(size_t idx) const {
   size_t byte_offset = entryOffset(idx);
   return chunk_->data() + byte_offset;
 }
-const OrderedKey MetaNode::key(size_t idx) const {
+
+OrderedKey MetaNode::key(size_t idx) const {
   MetaEntry me(data(idx));
   return me.orderedKey();
 }
@@ -194,7 +195,7 @@ const byte_t* MetaEntry::Encode(uint32_t num_leaves, uint64_t num_elements,
   std::memcpy(data + kNumElementsOffset, &num_elements, sizeof(uint64_t));
   std::memcpy(data + kHashOffset, data_hash.value(), Hash::kByteLength);
   *(data + kKeyOffset) = static_cast<byte_t>(key.byValue());
-  key.encode(data + kKeyOffset + sizeof(bool));
+  key.Encode(data + kKeyOffset + sizeof(bool));
 
   *encode_len = num_bytes;
   return data;

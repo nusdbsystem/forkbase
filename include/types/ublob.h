@@ -3,6 +3,7 @@
 #ifndef USTORE_TYPES_UBLOB_H_
 #define USTORE_TYPES_UBLOB_H_
 
+#include <memory>
 #include <utility>
 
 #include "types/base.h"
@@ -75,8 +76,7 @@ class SBlob : public UBlob {
   // Create a new SBlob
   explicit SBlob(const Slice& slice) noexcept;
 
-  SBlob() noexcept :
-      UBlob(std::make_shared<ChunkLoader>()) {}
+  SBlob() noexcept : UBlob(std::make_shared<ChunkLoader>()) {}
 
   ~SBlob() = default;
 
