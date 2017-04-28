@@ -114,7 +114,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
   //  Hence, add extra test on idx_ == -1
   if (idx_ == -1 || idx_ < seq_node_->numEntries()) ++idx_;
   if (idx_ < seq_node_->numEntries()) return true;
-  CHECK_EQ(idx_, seq_node_->numEntries());
+  DCHECK_EQ(idx_, seq_node_->numEntries());
   // not allow to cross boundary,
   //   remain idx = numEntries()
   if (!cross_boundary) return false;
@@ -125,7 +125,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
     seq_node_ = SeqNode::CreateFromChunk(chunk);
-    CHECK_GT(seq_node_->numEntries(), 0);
+    DCHECK_GT(seq_node_->numEntries(), 0);
     idx_ = 0;  // point the first element
     return true;
   } else {
@@ -139,7 +139,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
 bool NodeCursor::Retreat(bool cross_boundary) {
   if (idx_ >= 0) --idx_;
   if (idx_ >= 0) return true;
-  CHECK_EQ(idx_, -1);
+  DCHECK_EQ(idx_, -1);
   // not allow to cross boundary,
   //   remain idx = -1
   if (!cross_boundary) return false;
@@ -149,7 +149,7 @@ bool NodeCursor::Retreat(bool cross_boundary) {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
     seq_node_ = SeqNode::CreateFromChunk(chunk);
-    CHECK_GT(seq_node_->numEntries(), 0);
+    DCHECK_GT(seq_node_->numEntries(), 0);
     idx_ = seq_node_->numEntries() - 1;  // point to the last element
     return true;
   } else {
@@ -158,6 +158,231 @@ bool NodeCursor::Retreat(bool cross_boundary) {
     parent_cr_->Advance(false);
     return false;
   }
+}
+
+uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
+  uint64_t acc_step = 0;
+  DLOG(INFO) << "\n";
+  DLOG(INFO) << "Parameter Step: " << step;
+  DLOG(INFO) << "!Before Parent: "
+             << (seq_node_->isLeaf() ? "Leaf" : "Meta");
+  DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
+
+  DLOG(INFO) << "  Before Index: " << idx_;
+  if (seq_node_->isLeaf()) {
+    uint64_t max_step = static_cast<uint64_t>(
+                          static_cast<int32_t>(seq_node_->numEntries()) - idx_);
+
+    // Only advance cursor within leaf node is enough
+    if (step < max_step) {
+      idx_ += static_cast<int32_t>(step);
+      return step;
+    } else {
+      acc_step = max_step;
+      idx_ = static_cast<int32_t>(seq_node_->numEntries());
+    }
+  } else {
+    // internal node must point to a valid entry
+    DCHECK(!isBegin() && !isEnd());
+
+    uint64_t entry_num_elements = 0;
+    ++idx_;
+    while (!isEnd()) {
+      MetaEntry meta_entry(current());
+      entry_num_elements = meta_entry.numElements();
+      if (acc_step + entry_num_elements > step) break;
+      acc_step += entry_num_elements;
+      ++idx_;
+    }  // end while
+    // DLOG(INFO) << "Meta Acc1 Step: "
+    //            << acc_step;
+
+    if (!isEnd()) {
+      DCHECK_LT(step, acc_step + entry_num_elements);
+      DCHECK_LE(acc_step, step);
+
+      DLOG(INFO) << "Not End.  After Index: " << idx_;
+      DLOG(INFO) << "Acc Step: " << acc_step;
+      return acc_step;
+    }  // end isEnd
+  }  // end if
+
+  DLOG(INFO) << "  After Index: " << idx_;
+  DLOG(INFO) << "Acc Step: " << acc_step;
+
+  DCHECK_LE(acc_step, step);
+  DCHECK(isEnd());
+  // Ask upper cursor for advance
+
+  if (parent_cr_ == nullptr) {return acc_step; }
+
+  uint64_t parent_step = parent_cr_->AdvanceSteps(step - acc_step);
+  DLOG(INFO) << "\nAfter Parent: ";
+  DLOG(INFO) << "  Parent Step: " << parent_step;
+
+  DCHECK_LE(parent_step, step - acc_step);
+
+  bool endParent = parent_cr_->isEnd();
+  if (endParent) {
+    // Make parent cursor points to last valid metaentry
+    bool notBegin = parent_cr_->Retreat(false);
+    DCHECK(notBegin);
+  }
+
+  // Load this cursor seqnode from the entry pointed by parent cursor
+  MetaEntry me(parent_cr_->current());
+  seq_node_ = SeqNode::CreateFromChunk(chunk_loader_->Load(me.targetHash()));
+  DCHECK_GT(seq_node_->numEntries(), 0);
+
+  if (endParent) {
+    // Place this cursor to seq end
+    idx_ = static_cast<int32_t>(seq_node_->numEntries());
+
+    return acc_step + parent_step;
+  }
+
+  DCHECK_LE(acc_step + parent_step, step);
+  uint64_t remain_step = step - acc_step - parent_step;
+
+  uint64_t acc2_step = 0;
+
+  if (seq_node_->isLeaf()) {
+    DCHECK_LT(remain_step, seq_node_->numEntries());
+    idx_ = static_cast<int32_t>(remain_step);
+    DLOG(INFO) << "Leaf Final Cursor Position: " << idx_;
+    acc2_step = remain_step;
+  } else {
+    idx_ = 0;
+    while (!isEnd()) {
+      MetaEntry meta_entry(current());
+      uint64_t entry_num_elements = meta_entry.numElements();
+      if (acc2_step + entry_num_elements > remain_step) break;
+      acc2_step += entry_num_elements;
+      ++idx_;
+    }  // end while
+    DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
+
+    DCHECK(!isEnd());
+    DCHECK_LE(acc2_step, remain_step);
+  }  // end if
+  DLOG(INFO) << "acc2_step: " << acc2_step
+             << "remain_step: " << remain_step;
+
+  DLOG(INFO) << "Total Step: " << acc_step + parent_step + acc2_step;
+
+  return acc_step + parent_step + acc2_step;
+}
+
+uint64_t NodeCursor::RetreatSteps(uint64_t step) {
+  uint64_t acc_step = 0;
+  DLOG(INFO) << "\n";
+  DLOG(INFO) << "Parameter Step: " << step;
+  DLOG(INFO) << "!Before Parent: "
+             << (seq_node_->isLeaf() ? "Leaf" : "Meta");
+  DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
+
+  DLOG(INFO) << "  Before Index: " << idx_;
+  if (seq_node_->isLeaf()) {
+    // Max step to advance to node start
+    uint64_t max_step = static_cast<uint64_t>(idx_ + 1);
+
+    // Only advance cursor within leaf node is enough
+    if (step < max_step) {
+      idx_ -= static_cast<int32_t>(step);
+      return step;
+    } else {
+      acc_step = max_step;
+      idx_ = -1;
+    }
+  } else {
+    // internal node must point to a valid entry
+    DCHECK(!isBegin() && !isEnd());
+
+    uint64_t entry_num_elements = 0;
+    --idx_;
+    while (!isBegin()) {
+      MetaEntry meta_entry(current());
+      entry_num_elements = meta_entry.numElements();
+      if (acc_step + entry_num_elements > step) break;
+      acc_step += entry_num_elements;
+      --idx_;
+    }  // end while
+
+    if (!isBegin()) {
+      DCHECK_LT(step, acc_step + entry_num_elements);
+      DCHECK_LE(acc_step, step);
+
+      DLOG(INFO) << "Not Begin.  After Index: " << idx_;
+      DLOG(INFO) << "Acc Step: " << acc_step;
+      return acc_step;
+    }  // end isEnd
+  }  // end if
+
+  DLOG(INFO) << "  After Index: " << idx_;
+  DLOG(INFO) << "Acc Step: " << acc_step;
+
+  DCHECK_LE(acc_step, step);
+  DCHECK(isBegin());
+  // Ask upper cursor for advance
+
+  if (parent_cr_ == nullptr) {return acc_step; }
+
+  uint64_t parent_step = parent_cr_->RetreatSteps(step - acc_step);
+  DLOG(INFO) << "\nAfter Parent: ";
+  DLOG(INFO) << "  Parent Step: " << parent_step;
+
+  DCHECK_LE(parent_step, step - acc_step);
+
+  bool headParent = parent_cr_->isBegin();
+  if (headParent) {
+    // Make parent cursor points to first valid metaentry
+    bool notEnd = parent_cr_->Advance(false);
+    DCHECK(notEnd);
+  }
+
+  // Load this cursor seqnode from the entry pointed by parent cursor
+  MetaEntry me(parent_cr_->current());
+  seq_node_ = SeqNode::CreateFromChunk(chunk_loader_->Load(me.targetHash()));
+  DCHECK_GT(seq_node_->numEntries(), 0);
+
+  if (headParent) {
+    // Place this cursor to seq head
+    idx_ = -1;
+
+    return acc_step + parent_step;
+  }
+
+  DCHECK_LE(acc_step + parent_step, step);
+  uint64_t remain_step = step - acc_step - parent_step;
+
+  uint64_t acc2_step = 0;
+
+  if (seq_node_->isLeaf()) {
+    DCHECK_LT(remain_step, seq_node_->numEntries());
+    idx_ = static_cast<int32_t>(seq_node_->numEntries()) - 1
+           - static_cast<int32_t>(remain_step);
+    DLOG(INFO) << "Leaf Final Cursor Position: " << idx_;
+    acc2_step = remain_step;
+  } else {
+    idx_ = static_cast<int32_t>(seq_node_->numEntries()) - 1;
+    while (!isBegin()) {
+      MetaEntry meta_entry(current());
+      uint64_t entry_num_elements = meta_entry.numElements();
+      if (acc2_step + entry_num_elements > remain_step) break;
+      acc2_step += entry_num_elements;
+      --idx_;
+    }  // end while
+    DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
+
+    DCHECK(!isEnd());
+    DCHECK_LE(acc2_step, remain_step);
+  }  // end if
+  DLOG(INFO) << "acc2_step: " << acc2_step
+             << "remain_step: " << remain_step;
+
+  DLOG(INFO) << "Total Step: " << acc_step + parent_step + acc2_step;
+
+  return acc_step + parent_step + acc2_step;
 }
 
 const byte_t* NodeCursor::current() const {

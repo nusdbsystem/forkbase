@@ -259,10 +259,10 @@ class NodeBuilderComplex : public NodeBuilderEnv {
   }
 
   /* Setup a normal Prolley tree as followed:
-                      1                      (# of Entry in MetaChunk)
+                      2                       (# of Entry in MetaChunk)
   |---------------------------------------|
-   1                  8                   1   (# of Entry in MetaChunk)
-  |-| | ------------------------------|  |-|
+    2                   8                     (# of Entry in MetaChunk)
+  |--- |  |-------------------------------|
   67  38  193  183  512  320  53  55  74  256 (# of Byte in BlobChunk)
   */
   virtual void SetupNormalTree() {
@@ -399,6 +399,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
 };
 
 TEST_F(NodeBuilderComplex, InitTree) {
+  // verbose = true;
   Test_Tree_Integrity(root_chunk_->hash(), loader_);
   Test_Same_Content(root_chunk_->hash(), loader_, original_content_);
 }

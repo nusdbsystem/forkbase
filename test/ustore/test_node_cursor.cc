@@ -6,7 +6,9 @@
 #include "gtest/gtest.h"
 
 #include "node/cursor.h"
+#include "node/blob_node.h"
 #include "node/map_node.h"
+#include "node/node_builder.h"
 
 TEST(NodeCursor, SingleNode) {
   // Construct a tree with only a root blob node
@@ -54,12 +56,64 @@ TEST(NodeCursor, SingleNode) {
 
   cr->seek(1);
   EXPECT_EQ(1, cr->idx());
+  delete cr;
+
+
+  // Check for multi-step advancing
+  ustore::NodeCursor* multi_cr =
+      ustore::NodeCursor::GetCursorByIndex(ca.hash(), 0, &loader);
+
+  EXPECT_EQ(2, multi_cr->AdvanceSteps(2));
+  ASSERT_EQ('c', *(cr->current()));
+
+  // Advance to seq end
+  EXPECT_EQ(1, multi_cr->AdvanceSteps(2));
+  ASSERT_TRUE(multi_cr->isEnd());
+  delete multi_cr;
+
+  // Check Advance from Seq Start
+  ustore::NodeCursor* multi_cr1 =
+      ustore::NodeCursor::GetCursorByIndex(ca.hash(), 0, &loader);
+
+  ASSERT_FALSE(multi_cr1->Retreat(false));
+  ASSERT_TRUE(multi_cr1->isBegin());
+
+  // Advance to seq end
+  EXPECT_EQ(4, multi_cr1->AdvanceSteps(5));
+  ASSERT_TRUE(multi_cr1->isEnd());
+
+  delete multi_cr1;
+
+  // Check for multi-step retreating
+  ustore::NodeCursor* multi_cr2 =
+      ustore::NodeCursor::GetCursorByIndex(ca.hash(), 2, &loader);
+
+  EXPECT_EQ(2, multi_cr2->RetreatSteps(2));
+  ASSERT_EQ('a', *(cr->current()));
+
+  // Retreat to seq end
+  EXPECT_EQ(1, multi_cr2->RetreatSteps(2));
+  ASSERT_TRUE(multi_cr2->isBegin());
+  delete multi_cr2;
+
+  // Check Advance from Seq End
+  ustore::NodeCursor* multi_cr3 =
+      ustore::NodeCursor::GetCursorByIndex(ca.hash(), 2, &loader);
+
+  ASSERT_FALSE(multi_cr3->Advance(false));
+  ASSERT_TRUE(multi_cr3->isEnd());
+
+  // Advance to seq end
+  EXPECT_EQ(4, multi_cr3->RetreatSteps(5));
+  ASSERT_TRUE(multi_cr3->isBegin());
+
+  delete multi_cr3;
 }
 
 TEST(NodeCursor, Tree) {
   // Construct a tree with two blob nodes as leaves.
-  //   first blob node contains "aa"
-  //   second blob node contains "bbb"
+  //   first blob node contains "ab"
+  //   second blob node contains "cde"
   const ustore::byte_t ra[] = "ab";
 
   size_t ra_num_bytes = sizeof(ra) - 1;  // excluding trailing \0
@@ -370,4 +424,169 @@ TEST(NodeCursor, TreeByKey) {
   EXPECT_EQ(2, cursor->idx());
   EXPECT_FALSE(found);
   delete cursor;
+}
+
+TEST(NodeCursor, MultiStep) {
+  const ustore::byte_t raw_data[] = {
+        "SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
+        "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
+        "this "
+        "a holiday? what! know you not, Being mechanical, you ought not walk "
+        "Upon a labouring day without the sign Of your profession? Speak, what "
+        "trade art thou?  First Commoner Why, sir, a carpenter.  MARULLUS "
+        "Where "
+        "is thy leather apron and thy rule?  What dost thou with thy best "
+        "apparel on?  You, sir, what trade are you?  Second Commoner Truly, "
+        "sir, "
+        "in respect of a fine workman, I am but, as you would say, a cobbler.  "
+        "MARULLUS But what trade art thou? answer me directly.  Second "
+        "Commoner "
+        "I am, indeed, sir, a surgeon to old shoes; when they are in great "
+        "danger, I recover them. As proper men as ever trod upon neat's "
+        "leather "
+        "have gone upon my handiwork.  FLAVIUS But wherefore art not in thy "
+        "shop "
+        "today?  Why dost thou lead these men about the streets?  Second "
+        "Commoner Truly, sir, to wear out their shoes, to get myself into more "
+        "work. But, indeed, sir, we make holiday, to see Caesar and to rejoice "
+        "in his triumph.  MARULLUS Wherefore rejoice? What conquest brings he "
+        "home?  What tributaries follow him to Rome, To grace in captive bonds "
+        "his chariot-wheels?  You blocks, you stones, you worse than senseless "
+        "things!  O you hard hearts, you cruel men of Rome, Knew you not "
+        "Pompey? "
+        "Many a time and oft Have you climb'd up to walls and battlements, To "
+        "towers and windows, yea, to chimney-tops, Your infants in your arms, "
+        "Caesar's trophies. I'll about, And drive away the vulgar from the "
+        "streets: So do you too, where you perceive them thick.  These growing "
+        "feathers pluck'd from Caesar's wing Will make him fly an ordinary "
+        "pitch, Who else would soar above the view of men And keep us all in "
+        "servile fearfulness. Exeunt"};
+
+  size_t num_bytes = sizeof(raw_data) - 1;
+  ustore::byte_t* content = new ustore::byte_t[num_bytes];
+  std::memcpy(content, raw_data, num_bytes);
+
+  const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
+  ustore::NodeBuilder builder(chunker, true);
+
+  ustore::FixedSegment seg(content, num_bytes, 1);
+
+  builder.SpliceElements(0, &seg);
+  const ustore::Hash root = builder.Commit();
+
+  /* Setup a normal Prolley tree as followed:
+                      2                       (# of Entry in MetaChunk)
+  |---------------------------------------|
+    2                   8                     (# of Entry in MetaChunk)
+  |--- |  |-------------------------------|
+  67  38  193  183  512  320  53  55  74  256 (# of Byte in BlobChunk)
+  */
+
+  ustore::ChunkLoader loader;
+
+
+/////////////////////////////////////////
+// Test on Advancing
+  ustore::NodeCursor* cr1 =
+      ustore::NodeCursor::GetCursorByIndex(root, 0, &loader);
+
+  // Advance to the third leaf chunk first element
+  ASSERT_EQ(67 + 38, cr1->AdvanceSteps(67 + 38));
+  ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38,
+                           cr1->current(),
+                           193));
+  delete cr1;
+
+  ustore::NodeCursor* cr2 =
+      ustore::NodeCursor::GetCursorByIndex(root, 0, &loader);
+
+  // Advance to the third leaf chunk last element
+  size_t step = 67 + 38 + 192;
+  ASSERT_EQ(step, cr2->AdvanceSteps(step));
+  ASSERT_EQ(raw_data[step], *cr2->current());
+  delete cr2;
+
+  // Advance 1 step across chunk boundary
+  ustore::NodeCursor* cr3 =
+      ustore::NodeCursor::GetCursorByIndex(root, 67 + 37, &loader);
+
+  // Advance to the third leaf chunk first element
+  ASSERT_EQ(1, cr3->AdvanceSteps(1));
+  ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38,
+                           cr3->current(),
+                           193));
+  delete cr3;
+
+  // Advance from first to the last element
+  ustore::NodeCursor* cr4 =
+      ustore::NodeCursor::GetCursorByIndex(root, 0, &loader);
+
+  ASSERT_EQ(num_bytes - 1, cr4->AdvanceSteps(num_bytes - 1));
+  ASSERT_EQ(raw_data[num_bytes - 1], *cr4->current());
+  delete cr4;
+
+  // Advance from first to the seq end with overflow
+  ustore::NodeCursor* cr5 =
+      ustore::NodeCursor::GetCursorByIndex(root, 0, &loader);
+
+  ASSERT_EQ(num_bytes, cr5->AdvanceSteps(num_bytes + 5));
+  ASSERT_TRUE(cr5->isEnd());
+  delete cr5;
+
+  // Advance from seq head to end
+  ustore::NodeCursor* cr6 =
+      ustore::NodeCursor::GetCursorByIndex(root, 0, &loader);
+  ASSERT_FALSE(cr6->Retreat(false));
+
+  ASSERT_EQ(num_bytes + 1, cr6->AdvanceSteps(num_bytes + 5));
+  ASSERT_TRUE(cr6->isEnd());
+  delete cr6;
+
+///////////////////////////////////////
+// Check for Retreating
+  // Place cursor at first element of third leaf chunk
+  ustore::NodeCursor* cr7 =
+      ustore::NodeCursor::GetCursorByIndex(root, 67 + 38, &loader);
+
+  // Retreat 1 step to last element of the second chunk
+  ASSERT_EQ(1, cr7->RetreatSteps(1));
+  ASSERT_EQ(raw_data[67 + 37], *cr7->current());
+  delete cr7;
+
+  // Place cursor at first element of third leaf chunk
+  ustore::NodeCursor* cr8 =
+      ustore::NodeCursor::GetCursorByIndex(root, 67 + 38, &loader);
+
+  // Retreat 38 step to first element of the second chunk
+  ASSERT_EQ(38, cr8->RetreatSteps(38));
+  ASSERT_EQ(0, std::memcmp(raw_data + 67,
+                           cr8->current(),
+                           38));
+  delete cr8;
+
+
+  // Place cursor at seq end
+  ustore::NodeCursor* cr9 =
+      ustore::NodeCursor::GetCursorByIndex(root, num_bytes, &loader);
+  ASSERT_TRUE(cr9->isEnd());
+
+  // Retreat to first element of the first chunk
+  ASSERT_EQ(num_bytes, cr9->RetreatSteps(num_bytes));
+  ASSERT_EQ(0, std::memcmp(raw_data,
+                           cr9->current(),
+                           67));
+  delete cr9;
+
+
+  // Place cursor at seq end
+  ustore::NodeCursor* cr10 =
+      ustore::NodeCursor::GetCursorByIndex(root, num_bytes, &loader);
+  ASSERT_TRUE(cr10->isEnd());
+
+  // Retreat to head of the first chunk
+  ASSERT_EQ(num_bytes + 1, cr10->RetreatSteps(num_bytes + 5));
+  ASSERT_TRUE(cr10->isBegin());
+  delete cr10;
+
+
 }

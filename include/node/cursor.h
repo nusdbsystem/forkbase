@@ -54,6 +54,19 @@ class NodeCursor {
   bool Retreat(bool cross_boundary);
 
   inline OrderedKey currentKey() const { return seq_node_->key(idx_); }
+  // Advance skip multiple elements.
+  // Possible to cross boundary for advancement
+  // return the number of actual advancement
+  uint64_t AdvanceSteps(uint64_t step);
+
+  // Retreat skip multiple elements.
+  // Possible to cross boundary for retreating
+  // return the number of actual retreat
+  uint64_t RetreatSteps(uint64_t step);
+
+  inline const OrderedKey currentKey() const {
+    return seq_node_->key(idx_);
+  }
 
   // return the data pointed by current cursor
   const byte_t* current() const;
