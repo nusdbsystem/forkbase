@@ -5,8 +5,8 @@
 #include <czmq.h>
 #include <gflags/gflags.h>
 #include <string>
-#include <thread>
 #include <set>
+#include <thread>
 #include "utils/logging.h"
 
 namespace ustore {
@@ -15,7 +15,7 @@ namespace ustore {
  * Implementation of Network communication via ZeroMQ
  */
 
-#define POLL_TIMEOUT 10
+constexpr int kPoolTimeout = 10;
 
 using std::string;
 using std::vector;
@@ -24,7 +24,7 @@ using std::vector;
 void ServerThread(void *args);
 
 Net::~Net() {
-  for (auto val : netmap_) 
+  for (auto val : netmap_)
     delete val.second;
 }
 
@@ -74,12 +74,12 @@ NetContext* ZmqNet::CreateNetContext(const node_id_t& id) {
 void ZmqNet::Start() {
   zpoller_t *zpoller = zpoller_new(recv_sock_, NULL);
   while (is_running_) {
-    void *sock = zpoller_wait(zpoller, POLL_TIMEOUT);
-    if (!sock && !zpoller_expired(zpoller)) 
+    void *sock = zpoller_wait(zpoller, kPoolTimeout);
+    if (!sock && !zpoller_expired(zpoller))
       break;
     if (sock) {
       zmsg_t *msg = zmsg_recv(sock);
-      if (!msg) 
+      if (!msg)
         break;
       // send to backend
       zmsg_send(&msg, backend_sock_);
@@ -101,10 +101,11 @@ void ServerThread(void *args) {
   ZmqNet *net = static_cast<ZmqNet*>(args);
   // create and connect to the frontend's dealer socket
   void *frontend = zsock_new(ZMQ_DEALER);
-  CHECK_EQ(zsock_connect((zsock_t *)frontend, "%s", net->get_inproc_ep().c_str()), 0);
+  CHECK_EQ(zsock_connect((zsock_t *)frontend,
+           "%s", net->get_inproc_ep().c_str()), 0);
   zpoller_t *zpoller = zpoller_new(frontend, NULL);
   while (net->IsRunning()) {
-    void *sock = zpoller_wait(zpoller, POLL_TIMEOUT);
+    void *sock = zpoller_wait(zpoller, kPoolTimeout);
     if (!sock && !zpoller_expired(zpoller))
       break;
     if (sock) {

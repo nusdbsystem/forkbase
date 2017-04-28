@@ -30,7 +30,7 @@ class ZmqNet : public Net {
 
   // process the received msg
   void Dispatch(const node_id_t& source, const void *msg, int size);
-  inline const std::string get_inproc_ep() { return inproc_ep_; }
+  inline const std::string& get_inproc_ep() { return inproc_ep_; }
  private:
   void *recv_sock_, *backend_sock_;  // router and backend socket
   bool is_running_;
