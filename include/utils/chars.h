@@ -13,7 +13,7 @@ static inline size_t ReadInteger(const char* buf) { return 0; }
 
 template<typename Type1, typename ... Types,
     typename = typename ::ustore::is_integral_t<Type1> >
-static size_t AppendInteger(char* buf, Type1 value, Types ... values) noexcept {
+static size_t AppendInteger(char* buf, Type1 value, Types ... values) {
   // make sure alignment
   CHECK_EQ((uintptr_t)buf % sizeof(Type1), 0);
   *(reinterpret_cast<Type1*>(buf)) = value;
@@ -23,7 +23,7 @@ static size_t AppendInteger(char* buf, Type1 value, Types ... values) noexcept {
 template<typename Type1, typename ... Types,
     typename = typename ::ustore::is_integral_t<Type1> >
 static size_t ReadInteger(const char* buf, Type1& value, Types&... values)
-    noexcept {
+    {
   // make sure alignment
   CHECK_EQ((uintptr_t)buf % sizeof(Type1), 0);
   value = *reinterpret_cast<Type1*>(const_cast<char*>(buf));
@@ -32,26 +32,26 @@ static size_t ReadInteger(const char* buf, Type1& value, Types&... values)
 }
 
 template<typename T, int N>
-static size_t ReadInteger(const char* buf, T* array) noexcept;
+static size_t ReadInteger(const char* buf, T* array);
 
 template<typename T, int N>
-static size_t ReadInteger(const char* buf, T (&array)[N] ) noexcept {
+static size_t ReadInteger(const char* buf, T (&array)[N] ) {
   return ReadInteger<T, N>(buf, reinterpret_cast<T*>(array));
 }
 
 template<typename T, int N>
-static size_t ReadInteger(const char* buf, T* array, std::true_type) noexcept {
+static size_t ReadInteger(const char* buf, T* array, std::true_type) {
   return ReadInteger<T, 1>(buf, array)
          + ReadInteger<T, N-1>(buf + sizeof(T), array + 1);
 }
 
 template<typename T, int N>
-static size_t ReadInteger(const char* buf, T* array, std::false_type) noexcept {
+static size_t ReadInteger(const char* buf, T* array, std::false_type) {
   return ReadInteger(buf, *array);
 }
 
 template<typename T, int N>
-static size_t ReadInteger(const char* buf, T* array) noexcept {
+static size_t ReadInteger(const char* buf, T* array) {
   return ReadInteger<T, N>(buf, array, std::integral_constant<bool, (N>1)>());
 }
 

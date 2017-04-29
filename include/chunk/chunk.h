@@ -30,6 +30,13 @@ class Chunk : private Noncopyable {
   explicit inline Chunk(const byte_t* head) noexcept : head_(head) {}
   // create chunk and let it own the data
   explicit Chunk(std::unique_ptr<byte_t[]> head) noexcept;
+
+  // this is required for chunk store iterator
+  Chunk(Chunk&& other) noexcept : own_(std::move(other.own_)),
+    hash_(std::move(other.hash_)), head_(other.head_) {
+    other.head_ = nullptr;
+  }
+
   ~Chunk() {}
 
   // total number of bytes

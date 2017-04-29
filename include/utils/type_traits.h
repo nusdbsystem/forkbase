@@ -32,7 +32,7 @@ struct is_char<unsigned char>{
     constexpr static bool value = true;
 };
 
-template <bool B, typename T>
+template <bool B, typename T = void>
   using enable_if_t = typename std::enable_if<B, T>::type;
 
 template <typename T>
