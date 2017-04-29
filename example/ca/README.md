@@ -57,6 +57,7 @@ A sample execution with default parameter settings is demonstrated as follows:
     [ARG] Number of iterations: 1000
 
     -------------[ Loading Dataset ]-------------
+    [Parameters] branch="master"
     C0       @master    : [C0-0, C0-1, C0-2, C0-3, C0-4, C0-5, C0-6, C0-7, C0-8, C0-9] <String>
     C1       @master    : [C1-0, C1-1, C1-2, C1-3, C1-4, C1-5, C1-6, C1-7, C1-8, C1-9] <String>
     C2       @master    : [C2-0, C2-1, C2-2, C2-3, C2-4, C2-5, C2-6, C2-7, C2-8, C2-9] <String>

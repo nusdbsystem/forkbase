@@ -10,76 +10,91 @@
 
 #include "analytics.h"
 #include "config.h"
-#include "simple_dataset.h"
 #include "utils.h"
 
 namespace ustore {
 namespace example {
 namespace ca {
 
-Worker worker(Config::kWorkID);
+Worker db(Config::kWorkID);
 
-void LoadDataset() {
+int LoadDataset() {
   std::cout << std::endl
             << "-------------[ Loading Dataset ]-------------" << std::endl;
-  const auto data = SimpleDataset::GenerateTable(
-                      Config::n_columns, Config::n_records);
-  const Slice branch("master");
-  for (const auto& cv : data) {
-    const auto col_name = Slice(cv.first);
-    const auto col_str = Utils::ToString(cv.second);
-    const auto col_value = Value(Slice(col_str));
-    worker.Put(col_name, col_value, branch);
-    Utils::Print(col_name, branch, worker);
-  }
+  auto ana = DataLoading("master", db, Config::n_columns, Config::n_records);
+  StringSet aff_cols;
+  GUARD_INT(ana.Compute(&aff_cols));
+  for (const auto& c : aff_cols)
+    for (const auto& b : db.ListBranch(Slice(c)))
+      USTORE_GUARD_INT(Utils::Print(c, b, db));
   std::cout << "---------------------------------------------" << std::endl;
+  return 0;
 }
 
-void RunPoissonAnalytics(const double mean) {
+int RunPoissonAnalytics(const double mean) {
   std::cout << std::endl
             << "------------[ Poisson Analytics ]------------" << std::endl;
   const std::string branch("poi_ana");
-  const auto aff_cols = PoissonAnalytics(branch, worker, mean).Compute();
+  StringSet aff_cols;
+  GUARD_INT(PoissonAnalytics(branch, db, mean).Compute(&aff_cols));
   std::cout << ">>> Affected Columns <<<" << std::endl;
-  for (const auto& c : aff_cols) Utils::Print(c, branch, worker);
+  for (const auto& c : aff_cols) {
+    USTORE_GUARD_INT(Utils::Print(c, branch, db));
+  }
   std::cout << "---------------------------------------------" << std::endl;
+  return 0;
 }
 
-void RunBinomialAnalytics(const double p) {
+int RunBinomialAnalytics(const double p) {
   std::cout << std::endl
             << "-----------[ Binomial Analytics ]------------" << std::endl;
   const std::string branch("bin_ana");
-  const auto aff_cols = BinomialAnalytics(branch, worker, p).Compute();
+  StringSet aff_cols;
+  GUARD_INT(BinomialAnalytics(branch, db, p).Compute(&aff_cols));
   std::cout << ">>> Affected Columns <<<" << std::endl;
-  for (const auto& c : aff_cols) Utils::Print(c, branch, worker);
+  for (const auto& c : aff_cols) {
+    USTORE_GUARD_INT(Utils::Print(c, branch, db));
+  }
   std::cout << "---------------------------------------------" << std::endl;
+  return 0;
 }
 
-void MergeResults() {
+int MergeResults() {
   std::cout << std::endl
             << "-------------[ Merging Results ]-------------" << std::endl;
-  auto ana = MergeAnalytics("master", worker);
+  auto ana = MergeAnalytics("master", db);
+  const Slice col_name("distr");
   std::cout << ">>> Before Merging <<<" << std::endl;
-  Utils::Print("distr", "master", worker);
-  ana.Compute();
+  USTORE_GUARD_INT(Utils::Print(col_name, "master", db));
+  StringSet aff_cols;
+  GUARD_INT(ana.Compute(nullptr));
   std::cout << ">>> After Merging <<<" << std::endl;
-  Utils::Print("distr", "master", worker);
-  Utils::Print("distr", "poi_ana", worker);
-  Utils::Print("distr", "bin_ana", worker);
+  for (const auto& branch : db.ListBranch(col_name)) {
+    USTORE_GUARD_INT(Utils::Print(col_name, branch, db));
+  }
   std::cout << "---------------------------------------------" << std::endl;
+  return 0;
 }
+
+#define MAIN_GUARD(op) do { \
+  auto ec = op; \
+  if (ec != 0) { \
+    std::cerr << "[FAILURE] Error code: " << ec << std::endl; \
+    return ec; \
+  } \
+} while (0)
 
 int main(int argc, char* argv[]) {
   if (Config::ParseCmdArgs(argc, argv)) {
-    LoadDataset();
-    RunPoissonAnalytics(Config::p * Config::n_records);
-    RunBinomialAnalytics(Config::p);
-    MergeResults();
+    MAIN_GUARD(LoadDataset());
+    MAIN_GUARD(RunPoissonAnalytics(Config::p * Config::n_records));
+    MAIN_GUARD(RunBinomialAnalytics(Config::p));
+    MAIN_GUARD(MergeResults());
   } else if (Config::is_help) {
     DLOG(INFO) << "Help messages have been printed";
   } else {
     std::cerr << "[FAILURE] Found invalid command-line option" << std::endl;
-    return 1;
+    return -1;
   }
   return 0;
 }

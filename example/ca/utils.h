@@ -24,7 +24,22 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-#define RETURN_IF_FALSE(expr) do { if (!expr) return false; } while(0)
+#define EQUAL_OR_ELSE_RETURN(expr, expected) do { \
+  auto v = expr; \
+  if (v != expected) return v; } while(0)
+
+#define EQUAL_OR_ELSE_RETURN_CAST(expr, expected, cast_t) do { \
+  auto v = expr; \
+  if (v != expected) return static_cast<cast_t>(v); } while(0)
+
+#define GUARD(op) EQUAL_OR_ELSE_RETURN(op, true)
+
+#define GUARD_INT(op) EQUAL_OR_ELSE_RETURN(op, 0)
+
+#define USTORE_GUARD(op) EQUAL_OR_ELSE_RETURN(op, ::ustore::ErrorCode::kOK)
+
+#define USTORE_GUARD_INT(op) \
+  EQUAL_OR_ELSE_RETURN_CAST(op, ::ustore::ErrorCode::kOK, int)
 
 class Utils {
  public:
@@ -89,43 +104,50 @@ class Utils {
     const std::string& str, const char* sep_chars = " [],");
 
   template<class T1, class T2>
-  static void Print(const T1& key, const T2& branch, Worker& worker);
+  static ErrorCode Print(const T1& key, const T2& branch, Worker& worker);
 
   template<class T1, class T2>
-  static inline void Print(const T1& key, const T2& begin, const T2& end,
-                           Worker& worker) {
-    for (auto it = begin; it != end; ++it) Print(key, *it, worker);
+  static inline ErrorCode Print(const T1& key, const T2& begin,
+                                const T2& end, Worker& worker) {
+    for (auto it = begin; it != end; ++it) {
+      WORKER_GUARD(Print(key, *it, worker));
+    }
+    return ErrorCode::kOK;
   }
 
   template<class T1, class T2>
-  static inline void Print(const T1& key, const std::list<T2>& branches,
-                           Worker& worker) {
-    Print(key, branches.cbegin(), branches.cend(), worker);
+  static inline ErrorCode Print(const T1& key,
+                                const std::list<T2>& branches,
+                                Worker& worker) {
+    return Print(key, branches.cbegin(), branches.cend(), worker);
   }
 
   template<class T1, class T2>
-  static inline void Print(const T1& key, const std::queue<T2>& branches,
-                           Worker& worker) {
-    Print(key, branches.cbegin(), branches.cend(), worker);
+  static inline ErrorCode Print(const T1& key,
+                                const std::queue<T2>& branches,
+                                Worker& worker) {
+    return Print(key, branches.cbegin(), branches.cend(), worker);
   }
 
   template<class T1, class T2>
-  static inline void Print(const T1& key, const std::vector<T2>& branches,
-                           Worker& worker) {
-    Print(key, branches.cbegin(), branches.cend(), worker);
+  static inline ErrorCode Print(const T1& key,
+                                const std::vector<T2>& branches,
+                                Worker& worker) {
+    return Print(key, branches.cbegin(), branches.cend(), worker);
   }
 
   template<class T1, class T2>
-  static inline void Print(const T1& key, const std::set<T2>& branches,
-                           Worker& worker) {
-    Print(key, branches.cbegin(), branches.cend(), worker);
+  static inline ErrorCode Print(const T1& key,
+                                const std::set<T2>& branches,
+                                Worker& worker) {
+    return Print(key, branches.cbegin(), branches.cend(), worker);
   }
 
   template<class T1, class T2>
-  static inline void Print(const T1& key,
-                           const std::unordered_set<T2>& branches,
-                           Worker& worker) {
-    Print(key, branches.cbegin(), branches.cend(), worker);
+  static inline ErrorCode Print(const T1& key,
+                                const std::unordered_set<T2>& branches,
+                                Worker& worker) {
+    return Print(key, branches.cbegin(), branches.cend(), worker);
   }
 
  private:
@@ -189,7 +211,8 @@ const std::vector<T> Utils::ToVector(
 }
 
 template<class T1, class T2>
-void Utils::Print(const T1& key, const T2& branch, Worker& worker) {
+ErrorCode Utils::Print(const T1& key, const T2& branch,
+                       Worker& worker) {
   const Slice key_slice(key);
   const Slice branch_slice(branch);
   std::cout << std::left << std::setw(kKeyPrintWidth) << key
@@ -197,12 +220,17 @@ void Utils::Print(const T1& key, const T2& branch, Worker& worker) {
   if (worker.Exists(key_slice, branch_slice)) {
     Value val;
     const auto ec = worker.Get(key_slice, branch_slice, &val);
-    CHECK(ec == ErrorCode::kOK);
-    std::cout << val;
+    if (ec == ErrorCode::kOK) {
+      std::cout << val;
+    } else {
+      std::cout << "<failed>" << std::endl;
+      return ec;
+    }
   } else {
     std::cout << "<none>";
   }
   std::cout << std::endl;
+  return ErrorCode::kOK;
 }
 
 } // namespace ca

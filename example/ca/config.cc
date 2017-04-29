@@ -23,19 +23,19 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[]) {
   if (!ParseCmdArgs(argc, argv, vm)) return false;
 
   const auto arg_columns = vm["columns"].as<int>();
-  RETURN_IF_FALSE(CheckArgGE(arg_columns, 3, "Number of columns"));
+  GUARD(CheckArgGE(arg_columns, 3, "Number of columns"));
   n_columns = arg_columns;
 
   const auto arg_records = vm["records"].as<int>();
-  RETURN_IF_FALSE(CheckArgGT(arg_records, 0, "Number of records"));
+  GUARD(CheckArgGT(arg_records, 0, "Number of records"));
   n_records = arg_records;
 
   const auto arg_probability = vm["probability"].as<double>();
-  RETURN_IF_FALSE(CheckArgInRange(arg_probability, 0, 1, "Probability"));
+  GUARD(CheckArgInRange(arg_probability, 0, 1, "Probability"));
   p = arg_probability;
 
   const auto arg_iterations = vm["iterations"].as<int>();
-  RETURN_IF_FALSE(CheckArgGT(arg_iterations, 0, "Number of iterations"));
+  GUARD(CheckArgGT(arg_iterations, 0, "Number of iterations"));
   iters = arg_iterations;
 
   return true;
