@@ -2,33 +2,13 @@
 
 #include "node/cursor.h"
 #include "node/orderedkey.h"
-#include "node/map_node.h"
 #include "node/node_builder.h"
+#include "node/node_comparator.h"
 #include "types/umap.h"
 #include "utils/logging.h"
 #include "utils/debug.h"
 
 namespace ustore {
-
-KVIterator::KVIterator(std::unique_ptr<NodeCursor> cursor):
-    Iterator(std::move(cursor)) {}
-
-const Slice KVIterator::key() const {
-  CHECK(!end());
-  size_t len;
-  const char* data =  reinterpret_cast<const char*>(
-                          MapNode::key(cursor_->current(), &len));
-  return Slice(data, len);
-}
-
-const Slice KVIterator::value() const {
-  CHECK(!end());
-  size_t len;
-
-  const char* data =  reinterpret_cast<const char*>(
-                          MapNode::value(cursor_->current(), &len));
-  return Slice(data, len);
-}
 
 Slice UMap::Get(const Slice& key) const {
   auto orderedkey = OrderedKey::FromSlice(key);
@@ -48,14 +28,31 @@ Slice UMap::Get(const Slice& key) const {
   }
 }
 
-std::unique_ptr<KVIterator> UMap::iterator() const {
-  CHECK(!empty());
-  std::unique_ptr<NodeCursor> cursor(
-    NodeCursor::GetCursorByIndex(root_node_->hash(),
-                                 0, chunk_loader_.get()));
+std::unique_ptr<UIterator> UMap::Scan() const {
+  IndexRange all_range{0, numElements()};
 
-  return std::unique_ptr<KVIterator>(new KVIterator(std::move(cursor)));
+  return std::unique_ptr<UIterator>(
+      new MapIterator(hash(), {all_range}, chunk_loader_.get()));
 }
+
+std::unique_ptr<UIterator> UMap::Diff(const UMap& rhs) const {
+  // Assume this and rhs both uses this chunk_loader_
+  KeyComparator cmptor(rhs.hash(), chunk_loader_);
+
+  return std::unique_ptr<UIterator>(
+      new MapIterator(hash(), cmptor.Diff(hash()), chunk_loader_.get()));
+}
+
+std::unique_ptr<UIterator> UMap::Intersect(const UMap& rhs) const {
+  // Assume this and rhs both uses this chunk_loader_
+  KeyComparator cmptor(rhs.hash(), chunk_loader_);
+
+  return std::unique_ptr<UIterator>(
+      new MapIterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get()));
+}
+
+
+
 
 bool UMap::SetNodeForHash(const Hash& root_hash) {
   const Chunk* chunk = chunk_loader_->Load(root_hash);

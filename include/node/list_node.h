@@ -34,7 +34,7 @@ class ListNode : public LeafNode {
   // Make segments from multiple slice elements
   static std::unique_ptr<const Segment> Encode(
       const std::vector<Slice>& elements);
-  static const Slice Decode(const byte_t* data);
+  static Slice Decode(const byte_t* data);
 
   explicit ListNode(const Chunk* chunk) : LeafNode(chunk) {
     PrecomputeOffsets();

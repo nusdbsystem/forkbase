@@ -6,19 +6,21 @@
 
 // Check elements scannbed by iterator are all the same to that in vector
 inline void CheckIdenticalElements(
-  const std::vector<ustore::Slice>& elements,
-  ustore::ListIterator* it) {
-  for (size_t i = 0; i < elements.size(); i++) {
-    auto expected_element = elements[i];
+  const std::vector<uint64_t>& expected_idxs,
+  const std::vector<ustore::Slice>& expected_elements,
+  ustore::UIterator* it) {
+  for (size_t i = 0; i < expected_elements.size(); i++) {
+    auto expected_element = expected_elements[i];
+    auto actual_element = it->value();
 
-    auto actual_element = it->entry();
+    ASSERT_EQ(expected_idxs[i], it->index());
 
     ASSERT_EQ(expected_element.len(), actual_element.len());
 
     ASSERT_EQ(0, memcmp(expected_element.data(),
                         actual_element.data(),
                         actual_element.len()));
-    it->Advance();
+    it->next();
   }
   ASSERT_TRUE(it->end());
 }
@@ -47,56 +49,249 @@ TEST(SList, Small) {
   EXPECT_TRUE(nonexist_v5.empty());
 
   // Test on Iterator
-  CheckIdenticalElements({e1, e2, e5}, slist.iterator().get());
+  CheckIdenticalElements({0, 1, 2}, {e1, e2, e5}, slist.Scan().get());
 
   // Splice in middle
   ustore::SList new_slist1(slist.Splice(1, 1, {e3, e4}));
-  CheckIdenticalElements({e1, e3, e4, e5},
-                         new_slist1.iterator().get());
+  CheckIdenticalElements({0, 1, 2, 3},
+                         {e1, e3, e4, e5},
+                         new_slist1.Scan().get());
 
   // // Splice to the end
   ustore::SList new_slist2(new_slist1.Splice(3, 2, {e2}));
-  CheckIdenticalElements({e1, e3, e4, e2},
-                         new_slist2.iterator().get());
+  CheckIdenticalElements({0, 1, 2, 3},
+                         {e1, e3, e4, e2},
+                         new_slist2.Scan().get());
 }
 
-TEST(SList, Huge) {
-  std::vector<ustore::Slice> elements;
-  size_t element_size = sizeof(uint32_t);
+class SListHugeEnv : public ::testing::Test {
+ protected:
+  virtual void SetUp() {
+    element_size_ = sizeof(uint32_t);
 
-  for (uint32_t i = 0; i < 1 << 10; i++) {
-    char* element = new char[element_size];
+    for (uint32_t i = 0; i < 1 << 10; i++) {
+      char* element = new char[element_size_];
 
-    std::memcpy(element, &i, element_size);
+      std::memcpy(element, &i, element_size_);
 
-    elements.push_back(ustore::Slice(element, element_size));
+      elements_.push_back(ustore::Slice(element, element_size_));
+    }
   }
 
-  ustore::SList slist(elements);
-  CheckIdenticalElements(elements, slist.iterator().get());
+  // a utility method to generate a vector of [0, 1 ,2 ... upper - 1]
+  std::vector<uint64_t> idxs(uint64_t upper) {
+    std::vector<uint64_t> v;
+    for (uint64_t i = 0; i < upper; ++i) {
+      v.push_back(i);
+    }
+    return v;
+  }
+
+  virtual void TearDown() {
+    for (const auto& element : elements_) {
+      delete[] element.data();
+    }
+  }
+
+  std::vector<ustore::Slice> elements_;
+  size_t element_size_;
+};
+
+
+TEST_F(SListHugeEnv, Access) {
+  ustore::SList slist(elements_);
+  CheckIdenticalElements(idxs(elements_.size()),
+                         elements_,
+                         slist.Scan().get());
 
   // Get
   auto actual_element23 = slist.Get(23);
-  EXPECT_EQ(element_size, actual_element23.len());
-  EXPECT_EQ(0, std::memcmp(elements[23].data(),
+  EXPECT_EQ(element_size_, actual_element23.len());
+  EXPECT_EQ(0, std::memcmp(elements_[23].data(),
                            actual_element23.data(),
-                           element_size));
+                           element_size_));
+}
 
-  // Slice 3 elements after 35th one
+TEST_F(SListHugeEnv, Splice) {
+  ustore::SList slist(elements_);
+  // Slice 3 elements after 35th one on slist
   //   Insert element 40 at 35 place
-  ustore::SList slist1(slist.Splice(35, 3, {elements[40]}));
+  ustore::SList slist1(slist.Splice(35, 3, {elements_[40]}));
 
   auto new_element35 = slist1.Get(35);
-  EXPECT_EQ(element_size, new_element35.len());
-  EXPECT_EQ(0, std::memcmp(elements[40].data(),
+  EXPECT_EQ(element_size_, new_element35.len());
+  EXPECT_EQ(0, std::memcmp(elements_[40].data(),
                            new_element35.data(),
-                           element_size));
+                           element_size_));
 
   auto new_element36 = slist1.Get(36);
-  EXPECT_EQ(element_size, new_element35.len());
-  EXPECT_EQ(0, std::memcmp(elements[38].data(),
+  EXPECT_EQ(element_size_, new_element35.len());
+  EXPECT_EQ(0, std::memcmp(elements_[38].data(),
                            new_element36.data(),
-                           element_size));
+                           element_size_));
 
-  for (const auto& element : elements) {delete[] element.data(); }
+  // Construct the expected slist1
+  std::vector<ustore::Slice> expected_slist1;
+  expected_slist1.insert(expected_slist1.end(),
+                         elements_.begin(),
+                         elements_.begin() + 35);
+
+  expected_slist1.push_back(elements_[40]);
+  expected_slist1.insert(expected_slist1.end(),
+                         elements_.begin() + 38,
+                         elements_.end());
+
+
+  CheckIdenticalElements(idxs(expected_slist1.size()),
+                         expected_slist1,
+                         slist1.Scan().get());
+}
+
+TEST_F(SListHugeEnv, Remove) {
+  ustore::SList slist(elements_);
+  // Remove 10 elements after 50th element on slist
+  ustore::SList slist2(slist.Delete(50, 10));
+
+  std::vector<ustore::Slice> expected_slist2;
+  expected_slist2.insert(expected_slist2.end(),
+                         elements_.begin(),
+                         elements_.begin() + 50);
+
+  expected_slist2.insert(expected_slist2.end(),
+                         elements_.begin() + 60,
+                         elements_.end());
+
+  CheckIdenticalElements(idxs(expected_slist2.size()),
+                         expected_slist2,
+                         slist2.Scan().get());
+}
+
+TEST_F(SListHugeEnv, Insert) {
+  ustore::SList slist(elements_);
+
+  // Insert e[100] to e[119] (20 elements) at 500th position
+  std::vector<ustore::Slice> inserted_elements;
+  inserted_elements.insert(inserted_elements.end(),
+                           elements_.begin() + 100,
+                           elements_.begin() + 120);
+
+  ustore::SList slist3(slist.Insert(500, inserted_elements));
+
+  std::vector<ustore::Slice> expected_slist3;
+  expected_slist3.insert(expected_slist3.end(),
+                         elements_.begin(),
+                         elements_.begin() + 500);
+
+  expected_slist3.insert(expected_slist3.end(),
+                         inserted_elements.begin(),
+                         inserted_elements.end());
+
+  expected_slist3.insert(expected_slist3.end(),
+                         elements_.begin() + 500,
+                         elements_.end());
+
+  CheckIdenticalElements(idxs(expected_slist3.size()),
+                         expected_slist3,
+                         slist3.Scan().get());
+}
+
+TEST_F(SListHugeEnv, Append) {
+  ustore::SList slist(elements_);
+
+  // Append e[500] to e[599] (20 elements) at list end
+  std::vector<ustore::Slice> appended_elements;
+  appended_elements.insert(appended_elements.end(),
+                           elements_.begin() + 500,
+                           elements_.begin() + 600);
+
+  ustore::SList slist4(slist.Append(appended_elements));
+
+  std::vector<ustore::Slice> expected_slist4;
+  expected_slist4.insert(expected_slist4.end(),
+                         elements_.begin(),
+                         elements_.end());
+
+  expected_slist4.insert(expected_slist4.end(),
+                         appended_elements.begin(),
+                         appended_elements.end());
+
+  CheckIdenticalElements(idxs(expected_slist4.size()),
+                         expected_slist4,
+                         slist4.Scan().get());
+}
+
+TEST_F(SListHugeEnv, Compare) {
+  /* rhs elements are constructed as follows:
+  index:     0 ---------- 00    100 ------ 199  200 -- (end-100) --- (end-99) -- (end-89)
+  element:   e[0] ------e[99] e[200] --- e[299] e[200] -- e[end-100] -- e[0] -- e[10]
+  */
+
+  std::vector<ustore::Slice> rhs_elements;
+  rhs_elements.insert(rhs_elements.end(),
+                      elements_.begin(),
+                      elements_.begin() + 100);
+
+  rhs_elements.insert(rhs_elements.end(),
+                      elements_.begin() + 200,
+                      elements_.begin() + 300);
+
+  rhs_elements.insert(rhs_elements.end(),
+                      elements_.begin() + 200,
+                      elements_.begin() + 300);
+
+  rhs_elements.insert(rhs_elements.end(),
+                      elements_.begin() + 300,
+                      elements_.end() - 100);
+
+  rhs_elements.insert(rhs_elements.end(),
+                      elements_.begin(),
+                      elements_.begin() + 10);
+
+  ustore::SList lhs(elements_);
+  ustore::SList rhs(rhs_elements);
+
+// For diff operation
+  std::vector<uint64_t> diff_idx;
+  for (uint64_t i = 100; i < 200; ++i) {
+    diff_idx.push_back(i);
+  }
+
+  for (uint64_t i = elements_.size() - 100; i < elements_.size(); ++i) {
+    diff_idx.push_back(i);
+  }
+
+  std::vector<ustore::Slice> diff_elements;
+
+  diff_elements.insert(diff_elements.end(),
+                       elements_.begin() + 100,
+                       elements_.begin() + 200);
+
+  diff_elements.insert(diff_elements.end(),
+                       elements_.end() - 100,
+                       elements_.end());
+
+  CheckIdenticalElements(diff_idx, diff_elements, lhs.Diff(rhs).get());
+
+// For Intersect operation
+  std::vector<uint64_t> intersect_idx;
+  for (uint64_t i = 0; i < 100; ++i) {
+    intersect_idx.push_back(i);
+  }
+
+  for (uint64_t i = 200; i < elements_.size() - 100; ++i) {
+    intersect_idx.push_back(i);
+  }
+
+  std::vector<ustore::Slice> intersect_elements;
+
+  intersect_elements.insert(intersect_elements.end(),
+                            elements_.begin(),
+                            elements_.begin() + 100);
+
+  intersect_elements.insert(intersect_elements.end(),
+                            elements_.begin() + 200,
+                            elements_.end() - 100);
+
+  CheckIdenticalElements(intersect_idx, intersect_elements,
+                         lhs.Intersect(rhs).get());
 }

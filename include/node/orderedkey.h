@@ -7,6 +7,7 @@
 
 #include "spec/slice.h"
 #include "types/type.h"
+#include "utils/logging.h"
 
 namespace ustore {
 
@@ -51,6 +52,12 @@ class OrderedKey {
   }
   inline bool operator>=(const OrderedKey& otherKey) const {
     return *this > otherKey || *this == otherKey;
+  }
+
+  inline Slice ToSlice() const {
+    CHECK(!by_value_);
+    return Slice(reinterpret_cast<const char*>(data_),
+                 num_bytes_);
   }
 
  private:

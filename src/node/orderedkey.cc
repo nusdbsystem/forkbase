@@ -3,7 +3,6 @@
 #include "node/orderedkey.h"
 
 #include <cstring>  // for memcpy
-#include "utils/logging.h"
 
 namespace ustore {
 

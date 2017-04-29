@@ -31,7 +31,7 @@ class NodeCursor {
   //   cursor points to the end of sequence.
   // if idx > total_num_elements
   //   return nullptr
-  static NodeCursor* GetCursorByIndex(const Hash& hash, size_t idx,
+  static NodeCursor* GetCursorByIndex(const Hash& hash, size_t uint64_t,
                                       ChunkLoader* ch_loader);
 
   // Init Cursor to point a element at leaf in a tree

@@ -7,46 +7,36 @@
 #include <vector>
 #include <utility>
 
+#include "node/list_node.h"
 #include "types/base.h"
-#include "types/iterator.h"
+#include "types/uiterator.h"
 
 namespace ustore {
-
-class ListIterator : public Iterator {
- public:
-  explicit ListIterator(std::unique_ptr<NodeCursor> cursor) :
-      Iterator(std::move(cursor)) {}
-
-  // TODO(wangji/pingcheng): const on return value may not be necessary
-  const Slice entry() const {
-    // Exclude the first four bytes that encode entry len
-    size_t len = cursor_->numCurrentBytes() - sizeof(uint32_t);
-    auto data = reinterpret_cast<const char*>(cursor_->current()
-                                              // Skip the first 4 bytes
-                                              + sizeof(uint32_t));
-    return Slice(data, len);
-  }
-};
-
 class UList : public ChunkableType {
  public:
   // For idx > total # of elements
   //    return empty slice
-  Slice Get(size_t idx) const;
+  Slice Get(uint64_t idx) const;
 
   // entry vector can be empty
-  virtual Hash Splice(size_t start_idx, size_t num_to_delete,
+  virtual Hash Splice(uint64_t start_idx, uint64_t num_to_delete,
                       const std::vector<Slice>& entries) const = 0;
 
-  // Return an iterator that scan from map start
-  inline std::unique_ptr<ListIterator> iterator() const {
-    CHECK(!empty());
-    std::unique_ptr<NodeCursor> cursor(
-        NodeCursor::GetCursorByIndex(root_node_->hash(),
-                                     0, chunk_loader_.get()));
+  Hash Delete(uint64_t start_idx, uint64_t num_to_delete) const;
 
-    return std::unique_ptr<ListIterator>(new ListIterator(std::move(cursor)));
-  }
+  Hash Insert(uint64_t start_idx, const std::vector<Slice>& entries) const;
+
+  Hash Append(const std::vector<Slice>& entries) const;
+
+  // Return an iterator that scan from List Start
+  std::unique_ptr<UIterator> Scan() const;
+
+  // Return an iterator that scan elements that exist in this Ulist
+  //   and NOT in rhs
+  std::unique_ptr<UIterator> Diff(const UList& rhs) const;
+
+  // Return an iterator that scan elements that both exist in this Ulist and rhs
+  std::unique_ptr<UIterator> Intersect(const UList& rhs) const;
 
  protected:
   // create an empty map
@@ -58,9 +48,29 @@ class UList : public ChunkableType {
 
   bool SetNodeForHash(const Hash& hash) override;
 
-  // friend vector<size_t> diff(const UList& lhs, const UList& rhs);
+ private:
+  class ListIterator : public UIterator {
+   public:
+    ListIterator(const Hash& root,
+                 const std::vector<IndexRange>& ranges,
+                 ChunkLoader* loader) noexcept :
+        UIterator(root, ranges, loader) {}
 
-  // friend vector<size_t> intersect(const UList& lhs, const UList& rhs);
+    ListIterator(const Hash& root,
+                 std::vector<IndexRange>&& ranges,
+                 ChunkLoader* loader) noexcept :
+        UIterator(root, std::move(ranges), loader) {}
+
+    inline Slice key() const override {
+      LOG(WARNING) << "Key not supported for list";
+      return Slice(nullptr, 0);
+    }
+
+  private:
+    inline Slice RealValue() const override {
+      return ListNode::Decode(data());
+    }
+  };
 };
 
 class SList : public UList {
@@ -77,7 +87,7 @@ class SList : public UList {
   ~SList() = default;
 
   // entry vector can be empty
-  Hash Splice(size_t start_idx, size_t num_to_delete,
+  Hash Splice(uint64_t start_idx, uint64_t num_to_delete,
               const std::vector<Slice>& entries) const override;
 };
 }  // namespace ustore

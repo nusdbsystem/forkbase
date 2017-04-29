@@ -6,18 +6,12 @@
 #include <memory>
 #include <vector>
 
+#include "node/map_node.h"
+
 #include "types/base.h"
-#include "types/iterator.h"
+#include "types/uiterator.h"
 
 namespace ustore {
-
-class KVIterator : public Iterator {
- public:
-  explicit KVIterator(std::unique_ptr<NodeCursor> cursor);
-
-  const Slice key() const;
-  const Slice value() const;
-};
 
 class UMap : public ChunkableType {
  public:
@@ -31,8 +25,16 @@ class UMap : public ChunkableType {
 
   virtual Hash Remove(const Slice& key) const = 0;
 
-  // Return an iterator that scan from map start
-  std::unique_ptr<KVIterator> iterator() const;
+
+  // Return an iterator that scan from List Start
+  std::unique_ptr<UIterator> Scan() const;
+
+  // Return an iterator that scan elements that exist in this UMap
+  //   and NOT in rhs
+  std::unique_ptr<UIterator> Diff(const UMap& rhs) const;
+
+  // Return an iterator that scan elements that both exist in this UMap and rhs
+  std::unique_ptr<UIterator> Intersect(const UMap& rhs) const;
 
  protected:
   explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept  :
@@ -41,6 +43,33 @@ class UMap : public ChunkableType {
   virtual ~UMap() = default;
 
   bool SetNodeForHash(const Hash& hash) override;
+
+ private:
+  class MapIterator : public UIterator {
+   public:
+    MapIterator(const Hash& root,
+                const std::vector<IndexRange>& ranges,
+                ChunkLoader* loader) noexcept :
+        UIterator(root, ranges, loader) {}
+
+    MapIterator(const Hash& root,
+                std::vector<IndexRange>&& ranges,
+                ChunkLoader* loader) noexcept :
+        UIterator(root, std::move(ranges), loader) {}
+
+    inline uint64_t index() const override {
+      LOG(WARNING) << "Index not supported for key";
+      return 0;
+    }
+
+  private:
+    inline Slice RealValue() const override {
+      size_t value_num_bytes = 0;
+      const char* value = reinterpret_cast<const char*>(
+                              MapNode::value(data(), &value_num_bytes));
+      return Slice(value, value_num_bytes);
+    }
+  };
 };
 
 class SMap : public UMap {

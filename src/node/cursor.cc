@@ -38,9 +38,8 @@ std::vector<IndexRange> IndexRange::Compact(
   result.push_back(curr_cr);
   return result;
 }
-NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, size_t idx,
+NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, uint64_t idx,
                                          ChunkLoader* ch_loader) {
-
   NodeCursor* parent_cursor = nullptr;
   size_t element_idx = idx;
   size_t entry_idx = 0;

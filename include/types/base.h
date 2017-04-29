@@ -45,6 +45,11 @@ class ChunkableType : public BaseType {
     return root_node_->hash();
   }
 
+  inline uint64_t numElements() const {
+    CHECK(!empty());
+    return root_node_->numElements();
+  }
+
  protected:
   explicit ChunkableType(std::shared_ptr<ChunkLoader> loader) noexcept :
       BaseType(loader) {}

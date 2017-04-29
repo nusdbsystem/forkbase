@@ -79,7 +79,7 @@ std::unique_ptr<const Segment> ListNode::Encode(
   return std::unique_ptr<const Segment>(seg);
 }
 
-const Slice ListNode::Decode(const byte_t* data) {
+Slice ListNode::Decode(const byte_t* data) {
   size_t element_size = static_cast<size_t>(
                             *reinterpret_cast<const uint32_t*>(data))
                         // does not count the first 4 bytes
