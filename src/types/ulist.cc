@@ -9,13 +9,13 @@
 
 namespace ustore {
 
-const Slice UList::Get(size_t idx) const {
+Slice UList::Get(size_t idx) const {
   CHECK(!empty());
   auto cursor = std::unique_ptr<NodeCursor>
                     (NodeCursor::GetCursorByIndex(root_node_->hash(),
                     idx, chunk_loader_.get()));
 
-  if (cursor->isEnd()) {
+  if (cursor == nullptr || cursor->isEnd()) {
     return Slice(nullptr, 0);
   } else {
     return ListNode::Decode(cursor->current());
@@ -56,7 +56,7 @@ SList::SList(const std::vector<Slice>& elements) noexcept:
   SetNodeForHash(nb.Commit());
 }
 
-const Hash SList::Splice(size_t start_idx, size_t num_to_delete,
+Hash SList::Splice(size_t start_idx, size_t num_to_delete,
                          const std::vector<Slice>& entries) const {
   CHECK(!empty());
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(hash(),

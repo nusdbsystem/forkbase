@@ -135,21 +135,15 @@ TEST(MapNode, Basic) {
 
   // Find the exact key
   ustore::OrderedKey key1(false, k1, 2);
-  bool found = false;
-  EXPECT_EQ(0, mnode.GetIdxForKey(key1, &found));
-  EXPECT_TRUE(found);
+  EXPECT_EQ(0, mnode.GetIdxForKey(key1));
 
   // Find not the exact key
   constexpr ustore::byte_t k12[] = "k12";
   ustore::OrderedKey key2(false, k12, 3);
-  found = true;
-  EXPECT_EQ(1, mnode.GetIdxForKey(key2, &found));
-  EXPECT_FALSE(found);
+  EXPECT_EQ(1, mnode.GetIdxForKey(key2));
 
   // Search to the end
   constexpr ustore::byte_t k4[] = "k4";
   ustore::OrderedKey key4(false, k4, 2);
-  found = true;
-  EXPECT_EQ(3, mnode.GetIdxForKey(key4, &found));
-  EXPECT_FALSE(found);
+  EXPECT_EQ(3, mnode.GetIdxForKey(key4));
 }

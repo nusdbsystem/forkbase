@@ -49,9 +49,10 @@ class ListNode : public LeafNode {
 
   // ListNode doesnot implement this API
   size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const override;
+
   size_t GetLength(size_t start, size_t end) const override;
-  // TODO(wangji/pingcheng): maybe return numEntries to indicate `not found`
-  size_t GetIdxForKey(const OrderedKey& key, bool* found) const override;
+
+  size_t GetIdxForKey(const OrderedKey& key) const override;
   OrderedKey key(size_t idx) const override;
 
  private:

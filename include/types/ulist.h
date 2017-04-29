@@ -32,11 +32,11 @@ class UList : public ChunkableType {
  public:
   // For idx > total # of elements
   //    return empty slice
-  const Slice Get(size_t idx) const;
+  Slice Get(size_t idx) const;
 
   // entry vector can be empty
-  virtual const Hash Splice(size_t start_idx, size_t num_to_delete,
-                            const std::vector<Slice>& entries) const = 0;
+  virtual Hash Splice(size_t start_idx, size_t num_to_delete,
+                      const std::vector<Slice>& entries) const = 0;
 
   // Return an iterator that scan from map start
   inline std::unique_ptr<ListIterator> iterator() const {
@@ -77,8 +77,8 @@ class SList : public UList {
   ~SList() = default;
 
   // entry vector can be empty
-  const Hash Splice(size_t start_idx, size_t num_to_delete,
-                    const std::vector<Slice>& entries) const override;
+  Hash Splice(size_t start_idx, size_t num_to_delete,
+              const std::vector<Slice>& entries) const override;
 };
 }  // namespace ustore
 

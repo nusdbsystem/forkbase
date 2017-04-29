@@ -25,18 +25,16 @@ bool UBlob::SetNodeForHash(const Hash& root_hash) {
   return false;
 }
 
-// TODO(wangji/pingcheng): remove const from return types
-// TODO(wangji/pingcheng): return a const Hash may cause errors from moving
-const Hash UBlob::Insert(size_t pos, const byte_t* data,
+Hash UBlob::Insert(size_t pos, const byte_t* data,
                          size_t num_insert) const {
   return Splice(pos, 0, data, num_insert);
 }
 
-const Hash UBlob::Delete(size_t pos, size_t num_delete) const {
+Hash UBlob::Delete(size_t pos, size_t num_delete) const {
   return Splice(pos, num_delete, nullptr, 0);
 }
 
-const Hash UBlob::Append(byte_t* data, size_t num_append) const {
+Hash UBlob::Append(byte_t* data, size_t num_append) const {
   return Splice(size(), 0, data, num_append);
 }
 
@@ -82,9 +80,9 @@ SBlob::SBlob(const Slice& data) noexcept :
   SetNodeForHash(root_hash);
 }
 
-const Hash SBlob::Splice(size_t pos, size_t num_delete,
-                         const byte_t* data,
-                         size_t num_append) const {
+Hash SBlob::Splice(size_t pos, size_t num_delete,
+                   const byte_t* data,
+                   size_t num_append) const {
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(
       root_node_->hash(), pos, chunk_loader_.get(), BlobChunker::Instance(),
       true);

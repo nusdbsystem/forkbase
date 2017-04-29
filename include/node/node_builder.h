@@ -30,8 +30,7 @@ class NodeBuilder : Noncopyable {
                                           const OrderedKey& key,
                                           ChunkLoader* chunk_loader,
                                           const Chunker* chunker,
-                                          bool isFixedEntryLen,
-                                          bool* found);
+                                          bool isFixedEntryLen);
   // Construct a node builder to construct a fresh new Prolly Tree
   explicit NodeBuilder(const Chunker* chunker, bool isFixedEntryLen);
 

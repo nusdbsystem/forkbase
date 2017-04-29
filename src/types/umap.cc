@@ -6,6 +6,7 @@
 #include "node/node_builder.h"
 #include "types/umap.h"
 #include "utils/logging.h"
+#include "utils/debug.h"
 
 namespace ustore {
 
@@ -29,17 +30,14 @@ const Slice KVIterator::value() const {
   return Slice(data, len);
 }
 
-const Slice UMap::Get(const Slice& key) const {
-  bool foundKey = false;
-
+Slice UMap::Get(const Slice& key) const {
   auto orderedkey = OrderedKey::FromSlice(key);
 
   NodeCursor* cursor = NodeCursor::GetCursorByKey(root_node_->hash(),
                                                   orderedkey,
-                                                  chunk_loader_.get(),
-                                                  &foundKey);
+                                                  chunk_loader_.get());
 
-  if (foundKey) {
+  if (!cursor->isEnd() && orderedkey == cursor->currentKey()) {
     size_t value_size;
     auto value_data =
         reinterpret_cast<const char*>(MapNode::value(cursor->current(),
@@ -102,16 +100,26 @@ SMap::SMap(const std::vector<Slice>& keys,
   SetNodeForHash(nb.Commit());
 }
 
-const Hash SMap::Set(const Slice& key, const Slice& val) const {
+Hash SMap::Set(const Slice& key, const Slice& val) const {
   CHECK(!empty());
-
-  bool foundKey = false;
+  const OrderedKey orderedKey = OrderedKey::FromSlice(key);
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtKey(hash(),
-                                                     OrderedKey::FromSlice(key),
+                                                     orderedKey,
                                                      chunk_loader_.get(),
                                                      MapChunker::Instance(),
-                                                     false,
-                                                     &foundKey);
+                                                     false);
+
+
+  // Try to find whether this key already exists
+  NodeCursor *cursor = NodeCursor::GetCursorByKey(hash(),
+                                                  orderedKey,
+                                                  chunk_loader_.get());
+
+  bool foundKey = (!cursor->isEnd() && orderedKey == cursor->currentKey());
+
+  delete cursor;
+  size_t num_splice = foundKey? 1: 0;
+
   // If the item with identical key exists,
   //   remove it to replace
   KVItem kv_item = {reinterpret_cast<const byte_t*>(key.data()),
@@ -119,7 +127,7 @@ const Hash SMap::Set(const Slice& key, const Slice& val) const {
                    key.len(),
                    val.len()};
 
-  size_t num_splice = foundKey? 1: 0;
+
   std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
   nb->SpliceElements(num_splice, seg.get());
   Hash root_hash = nb->Commit();
@@ -128,29 +136,42 @@ const Hash SMap::Set(const Slice& key, const Slice& val) const {
   return root_hash;
 }
 
-const Hash SMap::Remove(const Slice& key) const {
+Hash SMap::Remove(const Slice& key) const {
   CHECK(!empty());
+  const OrderedKey orderedKey = OrderedKey::FromSlice(key);
+
   // Use cursor to find whether that key exists
-  bool foundKey = false;
+  NodeCursor *cursor = NodeCursor::GetCursorByKey(hash(),
+                                                  orderedKey,
+                                                  chunk_loader_.get());
+
+  bool foundKey = (!cursor->isEnd() && orderedKey == cursor->currentKey());
+
+  delete cursor;
+
+  if (!foundKey) {
+    LOG(WARNING) << "Try to remove a non-existent key "
+                 << "(" << byte2str(orderedKey.data(),
+                                    orderedKey.numBytes()) << ")"
+                 << " From Map " << hash().ToBase32();
+    return hash();
+  }
+
 
   // Create an empty segment
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr),
                  0, {});
 
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtKey(hash(),
-                                                     OrderedKey::FromSlice(key),
+                                                     orderedKey,
                                                      chunk_loader_.get(),
                                                      MapChunker::Instance(),
-                                                     false,
-                                                     &foundKey);
-  if (foundKey) {
-    nb->SpliceElements(1, &seg);
-    Hash hash = nb->Commit();
-    delete nb;
-    return hash;
-  }
+                                                     false);
 
-  // return self hash if not found
-  return hash();
+  nb->SpliceElements(1, &seg);
+  Hash hash = nb->Commit();
+  delete nb;
+  return hash;
+
 }
 }  // namespace ustore

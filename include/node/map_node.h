@@ -79,7 +79,7 @@ class MapNode : public LeafNode {
   // return the byte len of the idx-th entry
   size_t len(size_t idx) const override;
 
-  size_t GetIdxForKey(const OrderedKey& key, bool* found) const override;
+  size_t GetIdxForKey(const OrderedKey& key) const override;
 
   size_t numEntries() const override;
 

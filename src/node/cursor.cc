@@ -11,14 +11,46 @@
 #include "utils/logging.h"
 
 namespace ustore {
+std::vector<IndexRange> IndexRange::Compact(
+    const std::vector<IndexRange>& ranges) {
+  if (ranges.size() == 0) return ranges;
+
+  std::vector<IndexRange> result;
+
+  IndexRange curr_cr = ranges[0];
+  uint64_t pre_upper = curr_cr.start_idx + curr_cr.num_subsequent;
+
+  for (size_t i = 1; i < ranges.size(); ++i) {
+    CHECK_NE(ranges[i].num_subsequent, 0);
+    if (pre_upper < ranges[i].start_idx) {
+      result.push_back(curr_cr);
+      curr_cr = ranges[i];
+    } else if (pre_upper == ranges[i].start_idx) {
+      curr_cr.num_subsequent += ranges[i].num_subsequent;
+    } else {
+      LOG(FATAL) << "The upper bound of last Index Range"
+                 << " is greater than the lower bound of current Index Range.";
+    }
+
+    pre_upper = ranges[i].start_idx + ranges[i].num_subsequent;
+  }
+
+  result.push_back(curr_cr);
+  return result;
+}
 NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, size_t idx,
                                          ChunkLoader* ch_loader) {
+
   NodeCursor* parent_cursor = nullptr;
   size_t element_idx = idx;
   size_t entry_idx = 0;
   const Chunk* chunk = ch_loader->Load(hash);
 
   std::shared_ptr<const SeqNode> seq_node(SeqNode::CreateFromChunk(chunk));
+
+  if (seq_node->numElements() < idx) return nullptr;
+
+
 
   while (!seq_node->isLeaf()) {
     const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node.get());
@@ -50,7 +82,7 @@ NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, size_t idx,
 }
 
 NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
-                                       ChunkLoader* ch_loader, bool* found) {
+                                       ChunkLoader* ch_loader) {
   NodeCursor* parent_cursor = nullptr;
   size_t entry_idx = 0;
   const Chunk* chunk = ch_loader->Load(hash);
@@ -76,7 +108,7 @@ NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
   //   make cursor point to the end of leaf
   //   entry_idx = numEntries()
   const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node.get());
-  entry_idx = lnode->GetIdxForKey(key, found);
+  entry_idx = lnode->GetIdxForKey(key);
 
   return new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
 }

@@ -183,24 +183,20 @@ OrderedKey MapNode::key(size_t idx) const {
   return MapNode::orderedKey(data(idx));
 }
 
-size_t MapNode::GetIdxForKey(const OrderedKey& key,
-                             bool* found) const {
+size_t MapNode::GetIdxForKey(const OrderedKey& key) const {
   size_t idx = 0;
   for (const size_t offset : offsets_) {
     size_t keyNumBytes = 0;
     const byte_t* keyData = MapNode::key(chunk_->data() + offset, &keyNumBytes);
     OrderedKey currKey(false, keyData, keyNumBytes);
     if (currKey == key) {
-      *found = true;
       return idx;
     } else if (currKey > key) {
-      *found = false;
       return idx;
     }
     ++idx;
   }
 
-  *found = false;
   return idx;
 }
 

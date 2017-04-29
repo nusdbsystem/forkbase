@@ -28,11 +28,9 @@ NodeBuilder* NodeBuilder::NewNodeBuilderAtKey(const Hash& root_hash,
                                               const OrderedKey& key,
                                               ChunkLoader* chunk_loader,
                                               const Chunker* chunker,
-                                              bool isFixedEntryLen,
-                                              bool* found) {
+                                              bool isFixedEntryLen) {
   NodeCursor* cursor = NodeCursor::GetCursorByKey(root_hash, key,
-                                                  chunk_loader,
-                                                  found);
+                                                  chunk_loader);
   // cursor now points to the leaf node
   NodeBuilder* builder = new NodeBuilder(cursor, 0, chunker, isFixedEntryLen);
   return builder;

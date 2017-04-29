@@ -133,8 +133,7 @@ OrderedKey ListNode::key(size_t idx) const {
   return OrderedKey();
 }
 
-size_t ListNode::GetIdxForKey(const OrderedKey& key,
-                             bool* found) const {
+size_t ListNode::GetIdxForKey(const OrderedKey& key) const {
   LOG(FATAL) << "Not Supported Yet";
   return 0;
 }

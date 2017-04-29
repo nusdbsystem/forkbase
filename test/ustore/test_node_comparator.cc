@@ -328,14 +328,13 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   const ustore::OrderedKey key5(false, k5, 3);
   const ustore::OrderedKey key7(false, k7, 2);
 
-  bool foundKey = false;
 
 // replacing k2 with new v2, remove kv3
   ustore::NodeBuilder* nb1 = ustore::NodeBuilder::NewNodeBuilderAtKey(
       rhs_root_, key2, loader_.get(), ustore::MapChunker::Instance(),
-      false, &foundKey);
+      false);
 
-  ASSERT_TRUE(foundKey);
+
 
   std::unique_ptr<const ustore::Segment> seg1 =
       ustore::MapNode::Encode({new_kv2});
@@ -347,13 +346,12 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   delete nb1;
 
 
-  foundKey = false;
 // replace kv5 with new_kv5
   ustore::NodeBuilder* nb2 = ustore::NodeBuilder::NewNodeBuilderAtKey(
       lhs_t1, key5, loader_.get(), ustore::MapChunker::Instance(),
-      false, &foundKey);
+      false);
 
-  ASSERT_TRUE(foundKey);
+
 
   std::unique_ptr<const ustore::Segment> seg2 =
       ustore::MapNode::Encode({new_kv5});
@@ -364,13 +362,12 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ASSERT_EQ(6, numElements(lhs_t2));
 
 
-  foundKey = false;
 // remove k6 and append kv7 and kv8
   ustore::NodeBuilder* nb3 = ustore::NodeBuilder::NewNodeBuilderAtKey(
       lhs_t2, key7, loader_.get(), ustore::MapChunker::Instance(),
-      false, &foundKey);
+      false);
 
-  ASSERT_TRUE(foundKey);
+
 
   std::unique_ptr<const ustore::Segment> seg3 =
       ustore::MapNode::Encode({kv8, kv9});
@@ -480,7 +477,6 @@ TEST_F(KeyComparatorBigEnv, Basic) {
   //   replacing 100 kvitems from the 400th
   //   removing 200 kvitems from the 100th item
 
-  bool foundKey = false;
   const ustore::OrderedKey key400{false, keys_[400], entry_size_};
 
   std::vector<ustore::KVItem> new_items;
@@ -489,12 +485,11 @@ TEST_F(KeyComparatorBigEnv, Basic) {
   }
   auto seg1 = ustore::MapNode::Encode(new_items);
 
-  foundKey = false;
   ustore::NodeBuilder* nb1 = ustore::NodeBuilder::NewNodeBuilderAtKey(
       rhs_root_, key400, loader_.get(), ustore::MapChunker::Instance(),
-      false, &foundKey);
+      false);
 
-  ASSERT_TRUE(foundKey);
+
   nb1->SpliceElements(100, seg1.get());
   ustore::Hash lhs_t = nb1->Commit();
   delete nb1;
@@ -506,9 +501,9 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
   ustore::NodeBuilder* nb2 = ustore::NodeBuilder::NewNodeBuilderAtKey(
       lhs_t, key100, loader_.get(), ustore::MapChunker::Instance(),
-      false, &foundKey);
+      false);
 
-  ASSERT_TRUE(foundKey);
+
   ustore::VarSegment seg2(nullptr, 0, {});
 
   nb2->SpliceElements(200, &seg2);

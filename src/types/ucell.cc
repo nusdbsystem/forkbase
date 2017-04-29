@@ -25,7 +25,9 @@ UCell UCell::Load(const Hash& hash) {
 }
 
 UCell::UCell(const Chunk* chunk) {
-  if (chunk->type() == ChunkType::kCell) {
+  if (chunk == nullptr) {
+    LOG(WARNING) << "Empty Chunk. Loading Failed. ";
+  } else if (chunk->type() == ChunkType::kCell) {
     node_.reset(new CellNode(chunk));
   } else {
     LOG(FATAL) << "Cannot be other chunk type for UCell";

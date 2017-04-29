@@ -16,6 +16,7 @@ class Iterator : private Noncopyable {
  public:
   explicit Iterator(std::unique_ptr<NodeCursor> cursor) :
       cursor_(std::move(cursor)) {}
+
   inline bool Advance() { return cursor_->Advance(true); }
   inline bool Retreat() { return cursor_->Retreat(true); }
   inline bool end() const { return cursor_->isEnd(); }

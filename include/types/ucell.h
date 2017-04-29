@@ -32,8 +32,7 @@ class UCell : private Noncopyable {
     return *this;
   }
 
-  // TODO(pingcheng): when load a invalid hash, set empty true
-  inline bool empty() const { return false; }
+  inline bool empty() const { return node_.get() == nullptr; }
   inline UType type() const { return node_->type(); }
   inline bool merged() const { return node_->merged(); }
   inline Hash dataHash() const { return node_->dataHash(); }

@@ -68,7 +68,7 @@ TEST(SMap, Small) {
   CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3}, it.get());
   EXPECT_TRUE(it->end());
 
-  // // Set with an non-existent key
+  // Set with an non-existent key
   ustore::SMap new_smap1(smap.Set(k4, v4));
   EXPECT_EQ(v4.len(), new_smap1.Get(k4).len());
   EXPECT_EQ(0,

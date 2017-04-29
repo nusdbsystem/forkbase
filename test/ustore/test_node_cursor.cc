@@ -229,7 +229,7 @@ TEST(NodeCursor, Tree) {
 
   ustore::NodeCursor* cur5 =
       ustore::NodeCursor::GetCursorByIndex(cm->hash(), 6, &loader);
-  EXPECT_TRUE(cur5->isEnd());
+  EXPECT_TRUE(cur5 == nullptr);
 
   delete leaf_cursor;
   delete cr_copy;
@@ -280,9 +280,8 @@ TEST(NodeCursor, SingleNodeByKey) {
   const ustore::OrderedKey key0(false, k0, 2);
   ustore::NodeCursor* cursor = ustore::NodeCursor::GetCursorByKey(
                                   chunk->hash(), key0,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(0, cursor->idx());
-  EXPECT_FALSE(found);
   delete cursor;
 
   // Find the exact key
@@ -290,9 +289,8 @@ TEST(NodeCursor, SingleNodeByKey) {
   const ustore::OrderedKey key1(false, k1, 2);
   cursor = ustore::NodeCursor::GetCursorByKey(
                                   chunk->hash(), key1,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(0, cursor->idx());
-  EXPECT_TRUE(found);
   delete cursor;
 
   // Find the non-exact key
@@ -301,9 +299,8 @@ TEST(NodeCursor, SingleNodeByKey) {
   const ustore::OrderedKey key12(false, k12, 3);
   cursor = ustore::NodeCursor::GetCursorByKey(
                                   chunk->hash(), key12,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(1, cursor->idx());
-  EXPECT_FALSE(found);
   delete cursor;
 
   // Find the non-exact key
@@ -312,9 +309,8 @@ TEST(NodeCursor, SingleNodeByKey) {
   const ustore::OrderedKey key4(false, k4, 2);
   cursor = ustore::NodeCursor::GetCursorByKey(
                                   chunk->hash(), key4,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(3, cursor->idx());
-  EXPECT_FALSE(found);
   delete cursor;
 }
 
@@ -373,56 +369,46 @@ TEST(NodeCursor, TreeByKey) {
   ustore::ChunkLoader loader;
 
   // Find the smallest key
-  bool found = true;
   constexpr ustore::byte_t k0[] = "k0";
   const ustore::OrderedKey key0(false, k0, 2);
   ustore::NodeCursor* cursor = ustore::NodeCursor::GetCursorByKey(
                                   root_hash, key0,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(0, cursor->idx());
-  EXPECT_FALSE(found);
   delete cursor;
 
   // Find the first exact key
-  found = false;
   const ustore::OrderedKey key1(false, k1, 2);
   cursor = ustore::NodeCursor::GetCursorByKey(
                                   root_hash, key1,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(0, cursor->idx());
-  EXPECT_TRUE(found);
   delete cursor;
 
   // Find the last exact key in a chunk
-  found = false;
   const ustore::OrderedKey key2(false, k2, 3);
   cursor = ustore::NodeCursor::GetCursorByKey(
                                   root_hash, key2,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(1, cursor->idx());
-  EXPECT_TRUE(found);
   delete cursor;
 
   // Find the non-exact key at start of chunk
-  found = true;
   constexpr ustore::byte_t k23[] = "k23";
   const ustore::OrderedKey key23(false, k23, 3);
   cursor = ustore::NodeCursor::GetCursorByKey(
                                   root_hash, key23,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(2, cursor->idx());
-  EXPECT_FALSE(found);
   delete cursor;
 
   // Search until the last key
-  found = true;
   constexpr ustore::byte_t k4[] = "k4";
   const ustore::OrderedKey key4(false, k4, 2);
   cursor = ustore::NodeCursor::GetCursorByKey(
                                   root_hash, key4,
-                                  &loader, &found);
+                                  &loader);
   EXPECT_EQ(2, cursor->idx());
-  EXPECT_FALSE(found);
   delete cursor;
 }
 

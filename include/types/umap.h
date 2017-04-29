@@ -23,13 +23,13 @@ class UMap : public ChunkableType {
  public:
   // Use chunk loader to load chunk and read value
   // return empty slice if key not found
-  const Slice Get(const Slice& key) const;
+  Slice Get(const Slice& key) const;
 
   // Both Use chunk builder to do splice
   // this kv_items must be sorted in descending order before
-  virtual const Hash Set(const Slice& key, const Slice& val) const = 0;
+  virtual Hash Set(const Slice& key, const Slice& val) const = 0;
 
-  virtual const Hash Remove(const Slice& key) const = 0;
+  virtual Hash Remove(const Slice& key) const = 0;
 
   // Return an iterator that scan from map start
   std::unique_ptr<KVIterator> iterator() const;
@@ -58,9 +58,9 @@ class SMap : public UMap {
 
   // Both Use chunk builder to do splice
   // this kv_items must be sorted in descending order before
-  const Hash Set(const Slice& key, const Slice& val) const override;
+  Hash Set(const Slice& key, const Slice& val) const override;
 
-  const Hash Remove(const Slice& key) const override;
+  Hash Remove(const Slice& key) const override;
 };
 }  // namespace ustore
 

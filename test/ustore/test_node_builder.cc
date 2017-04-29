@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Ustore Authors.
+
 
 #ifdef TEST_NODEBUILDER
 
@@ -230,13 +230,13 @@ TEST_F(NodeBuilderSimple, SpliceFromEnd) {
   ustore::byte_t insert_slice[] = "xy";
   // insert only
   // "abcdefghijklmn" ==> "abcdefghijklmnxy";
-  Test_Splice(20, insert_slice, 3, 0);
+  Test_Splice(14, insert_slice, 3, 0);
   // delete 1 byte and insert
   // "abcdefghijklmn" ==> "abcdefghijklmnxy";
-  Test_Splice(20, insert_slice, 3, 1);
+  Test_Splice(14, insert_slice, 3, 1);
   // delete 3 bytes
   // "abcdefghijklmn" ==> "abcdefghijklmn";
-  Test_Splice(20, nullptr, 0, 3);
+  Test_Splice(14, nullptr, 0, 3);
 }
 
 TEST_F(NodeBuilderSimple, SpliceToEnd) {
@@ -413,7 +413,7 @@ TEST_F(NodeBuilderComplex, SpliceSeqMiddle) {
 }
 
 TEST_F(NodeBuilderComplex, SpliceSeqEnd) {
-  Test_Splice(root_chunk_->hash(), 5000);
+  Test_Splice(root_chunk_->hash(), original_num_bytes_);
 }
 
 TEST_F(NodeBuilderComplex, SpliceChunkStart) {

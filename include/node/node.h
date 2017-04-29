@@ -16,7 +16,7 @@ namespace ustore {
 class UNode {
  public:
   explicit UNode(const Chunk* chunk) : chunk_(chunk) {}
-  inline const Hash hash() const { return chunk_->hash(); }
+  inline Hash hash() const { return chunk_->hash(); }
 
  protected:
   const Chunk* chunk_;
@@ -178,10 +178,9 @@ class LeafNode : public SeqNode {
 
   // get the idx of element with the smallest key
   //   no smaller than the parameter key
-  // found = true if they are equal, false otherwise
   // If key of all elements < parameter key,
   //  return the number of entries.
-  virtual size_t GetIdxForKey(const OrderedKey& key, bool* found) const = 0;
+  virtual size_t GetIdxForKey(const OrderedKey& key) const = 0;
 };
 
 }  // namespace ustore

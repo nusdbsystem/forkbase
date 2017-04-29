@@ -15,17 +15,6 @@
 #include "utils/noncopyable.h"
 
 namespace ustore {
-
-struct IndexRange {
-  uint64_t start_idx;
-  uint64_t num_subsequent;
-};
-
-// Compact continuous index ranges to single one, e.g,
-//  {start_idx, num_subsequent}
-//   {0, 3} + {3, 6} -> {0, 9}
-std::vector<IndexRange> CompactRanges(const std::vector<IndexRange>& ranges);
-
 // the following two traits dictate how to compute key
 //   from element, metaentry and seqnode for comparing and traversing
 struct IndexTrait {
@@ -170,13 +159,13 @@ std::vector<IndexRange> NodeComparator<KeyTrait>
   IterateProcedure iterate_intersect =
       NodeComparator<KeyTrait>::IterateIntersect;
 
-  return CompactRanges(Compare(lhs_root.get(),
-                               lhs_start_idx,
-                               KeyTrait::MinKey(),
-                               rhs_root_,
-                               rhs_start_idx,
-                               identical_intersect,
-                               iterate_intersect));
+  return IndexRange::Compact(Compare(lhs_root.get(),
+                             lhs_start_idx,
+                             KeyTrait::MinKey(),
+                             rhs_root_,
+                             rhs_start_idx,
+                             identical_intersect,
+                             iterate_intersect));
 }
 
 template <class KeyTrait>
@@ -198,13 +187,13 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::Diff(const Hash& lhs) const {
 //   return empty index ranges for diff
   IterateProcedure iterate_diff = NodeComparator<KeyTrait>::IterateDiff;
 
-  return CompactRanges(Compare(lhs_root.get(),
-                               lhs_start_idx,
-                               KeyTrait::MinKey(),
-                               rhs_root_,
-                               rhs_start_idx,
-                               identical_diff,
-                               iterate_diff));
+  return IndexRange::Compact(Compare(lhs_root.get(),
+                            lhs_start_idx,
+                            KeyTrait::MinKey(),
+                            rhs_root_,
+                            rhs_start_idx,
+                            identical_diff,
+                            iterate_diff));
 }
 
 template <class KeyTrait>

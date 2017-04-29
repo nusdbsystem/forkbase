@@ -3,6 +3,8 @@
 #ifndef USTORE_NODE_CURSOR_H_
 #define USTORE_NODE_CURSOR_H_
 
+#include <vector>
+
 #include "node/orderedkey.h"
 #include "node/node.h"
 #include "store/chunk_loader.h"
@@ -11,23 +13,31 @@
 
 namespace ustore {
 
+struct IndexRange {
+  uint64_t start_idx;
+  uint64_t num_subsequent;
+
+// Compact continuous index ranges to single one, e.g,
+//  {start_idx, num_subsequent}
+//   {0, 3} + {3, 6} -> {0, 9}
+  static std::vector<IndexRange> Compact(const std::vector<IndexRange>& ranges);
+};
+
 class NodeCursor {
  public:
   // Init Cursor to point at idx element at leaf in a tree
   // rooted at SeqNode with Hash
-  // if idx >= total_num elemnets,
+  // if idx == total_num elemnets,
   //   cursor points to the end of sequence.
-  // TODO(wangji/pingcheng): key may not found if idx is out of range
+  // if idx > total_num_elements
+  //   return nullptr
   static NodeCursor* GetCursorByIndex(const Hash& hash, size_t idx,
                                       ChunkLoader* ch_loader);
 
   // Init Cursor to point a element at leaf in a tree
-  // The element has the smallest key larger than the parameter key
-  // @return [args] whether this key is found
-  // TODO(wangji/pingcheng): may not need found flag, return nullptr if key not
-  //  found
+  // The element has the smallest key no smaller than the parameter key
   static NodeCursor* GetCursorByKey(const Hash& hash, const OrderedKey& key,
-                                    ChunkLoader* ch_loader, bool* found);
+                                    ChunkLoader* ch_loader);
 
   // Copy constructor used to clone a NodeCursor
   // Need to recursively copy the parent NodeCursor
@@ -64,10 +74,6 @@ class NodeCursor {
   // return the number of actual retreat
   uint64_t RetreatSteps(uint64_t step);
 
-  inline const OrderedKey currentKey() const {
-    return seq_node_->key(idx_);
-  }
-
   // return the data pointed by current cursor
   const byte_t* current() const;
   // return the number of bytes of pointed element
@@ -90,7 +96,7 @@ class NodeCursor {
     idx_ = idx;
   }
 
- private:
+private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively
   // TODO(wangji/pingcheng): check if really need to share SeqNode

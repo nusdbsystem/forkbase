@@ -37,27 +37,27 @@ class UBlob : public ChunkableType {
    *    the new Blob reflecting the operation
    */
 
-  virtual const Hash Splice(size_t pos, size_t num_delete,
-                            const byte_t* data,
-                            size_t num_insert) const = 0;
+  virtual Hash Splice(size_t pos, size_t num_delete,
+                      const byte_t* data,
+                      size_t num_insert) const = 0;
 
   // * Insert bytes given a position
 
   //  *  Use Splice internally
-  const Hash Insert(size_t pos, const byte_t* data,
-                    size_t num_insert) const;
+  Hash Insert(size_t pos, const byte_t* data,
+              size_t num_insert) const;
 
   /** Delete bytes from a given position
    *
    *  Use Splice internally
    */
-  const Hash Delete(size_t pos, size_t num_delete) const;
+  Hash Delete(size_t pos, size_t num_delete) const;
 
   /** Append bytes from the last position of Blob
    *
    *  Use Splice internally
    */
-  const Hash Append(byte_t* data, size_t num_insert) const;
+  Hash Append(byte_t* data, size_t num_insert) const;
 
  protected:
   explicit UBlob(std::shared_ptr<ChunkLoader> loader) noexcept :
@@ -80,9 +80,8 @@ class SBlob : public UBlob {
 
   ~SBlob() = default;
 
-  const Hash Splice(size_t pos, size_t num_delete,
-                    const byte_t* data,
-                    size_t num_insert) const override;
+  Hash Splice(size_t pos, size_t num_delete,
+              const byte_t* data, size_t num_insert) const override;
 };
 
 }  // namespace ustore
