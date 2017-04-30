@@ -82,15 +82,6 @@ struct LSTSegment {
   inline explicit LSTSegment(void* segment) noexcept : segment_(segment) {}
 };
 
-static inline bool IsChunkValid(ChunkType type) noexcept {
-  return type == ChunkType::kNull
-         || type == ChunkType::kCell
-         || type == ChunkType::kMeta
-         || type == ChunkType::kBlob
-         || type == ChunkType::kString
-         || type == ChunkType::kInvalid;
-}
-
 static inline bool IsEndChunk(ChunkType type) noexcept {
   return type == ChunkType::kNull;
 }
