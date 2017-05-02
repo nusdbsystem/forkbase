@@ -60,7 +60,7 @@ ZmqNet::ZmqNet(const node_id_t& id, int nthreads)
   while ((status = zsock_bind((zsock_t *)recv_sock_, "%s", host.c_str())) < 0
           && ntries--)
     sleep(kSocketBindTimeout);
-  CHECK(status > 0);
+  CHECK_GT(status, 0);
 
   // make sure that the ipc socket binds successfully
   backend_sock_ = zsock_new(ZMQ_DEALER);
