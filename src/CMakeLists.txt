@@ -19,8 +19,8 @@
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
-AUX_SOURCE_DIRECTORY(. sources)
-LIST(APPEND ustore_srcs ${sources})
+#AUX_SOURCE_DIRECTORY(. sources)
+#LIST(APPEND ustore_srcs ${sources})
 
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
@@ -93,7 +93,7 @@ MESSAGE(STATUS "LINKER LIBS ${USTORE_LINKER_LIBS}")
 TARGET_LINK_LIBRARIES(ustore ${USTORE_LINKER_LIBS})
 #SET_TARGET_PROPERTIES(ustore PROPERTIES LINK_FLAGS "")
 
-ADD_EXECUTABLE(ustored ${ustore_srcs})
+ADD_EXECUTABLE(ustored "main.cc")
 ADD_DEPENDENCIES(ustored copy_protobuf)
 ADD_DEPENDENCIES(ustored ustore)
 TARGET_LINK_LIBRARIES(ustored ustore)
