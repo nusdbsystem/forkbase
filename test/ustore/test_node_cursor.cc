@@ -64,7 +64,7 @@ TEST(NodeCursor, SingleNode) {
       ustore::NodeCursor::GetCursorByIndex(ca.hash(), 0, &loader);
 
   EXPECT_EQ(2, multi_cr->AdvanceSteps(2));
-  ASSERT_EQ('c', *(cr->current()));
+  ASSERT_EQ('c', *(multi_cr->current()));
 
   // Advance to seq end
   EXPECT_EQ(1, multi_cr->AdvanceSteps(2));
@@ -89,7 +89,7 @@ TEST(NodeCursor, SingleNode) {
       ustore::NodeCursor::GetCursorByIndex(ca.hash(), 2, &loader);
 
   EXPECT_EQ(2, multi_cr2->RetreatSteps(2));
-  ASSERT_EQ('a', *(cr->current()));
+  ASSERT_EQ('a', *(multi_cr2->current()));
 
   // Retreat to seq end
   EXPECT_EQ(1, multi_cr2->RetreatSteps(2));
