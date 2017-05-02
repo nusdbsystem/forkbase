@@ -115,6 +115,8 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
                          protected CheckPolicy<MapType>
 {
   public:
+    using BaseIterator = LSTStoreIterator;
+
     explicit LSTStoreIterator(const MapType& map,
         const LSTSegment* first,
         const byte_t* ptr) noexcept : map_(map), segment_(first), ptr_(ptr) {}
@@ -157,9 +159,16 @@ template <typename MapType, typename ChunkType, ChunkType T,
 class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy> 
 {
   public:
-    using TypeIterator = LSTStoreTypeIterator;
     using parent = LSTStoreIterator<MapType, CheckPolicy>;
+    using BaseIterator = parent;
+
     static constexpr ChunkType type_ = T;
+
+    LSTStoreTypeIterator(parent iterator) : parent(iterator) {
+      ChunkType type = PtrToChunkType(parent::ptr_);
+      if (type != type_ && !IsEndChunk(type))
+        operator++();
+    }
 
     explicit LSTStoreTypeIterator(const MapType& map,
         const LSTSegment* segment,

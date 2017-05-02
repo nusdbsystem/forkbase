@@ -109,7 +109,7 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
     fd = ::open(path.c_str(), O_RDWR, S_IRWXU);
   } else {
     // init the log
-    fd = ::open(path.c_str(), O_RDWR | O_CREAT, S_IRWXU);
+    fd = ::open(path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     size_t* buf1 = new size_t[kMetaLogSize/sizeof(size_t)];
     size_t* buf2 = new size_t[kSegmentSize/sizeof(size_t)];
     char* meta = reinterpret_cast<char*>(buf1);
