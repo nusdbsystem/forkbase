@@ -1,4 +1,4 @@
 worker_file: "conf/workers"
 clientservice_file: "conf/client_services"
-recv_threads: 2
+recv_threads: 1
 service_threads: 1

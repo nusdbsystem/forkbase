@@ -15,7 +15,7 @@ const std::string kConfigArg = std::string("--config=")
                                + Env::kDefaultConfigFile;
 const std::string kDefaultWorkerFile = "conf/workers";
 const std::string kDefaultClientServiceFile = "conf/client_services";
-const int kDefaultRecvThreads = 2;
+const int kDefaultRecvThreads = 1;
 const int kDefaultServiceThreads = 1;
 
 TEST(ConfigTest, ConfigFile) {

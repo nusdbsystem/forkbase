@@ -836,12 +836,15 @@ int RdmaNetContext::ExchConnParam(node_id_t cur_node, const char* ip,
                                   int port) {
   // open the socket to exch rdma resouces
   char neterr[ANET_ERR_LEN];
-  int sockfd = anetTcpConnect(neterr, const_cast<char *>(ip), port);
-  if (sockfd < 0) {
-    LOG(WARNING) << "Connecting to " << ip << ":" << port << ":" << neterr;
-    exit(1);
-    // return -1;
-  }
+  int sockfd;
+  // trying to connect until succeed
+  while ((sockfd = anetTcpConnect(neterr, const_cast<char *>(ip), port)) < 0)
+  {};
+//  if (sockfd < 0) {
+//    LOG(WARNING) << "Connecting to " << ip << ":" << port << ":" << neterr;
+//    exit(1);
+//    // return -1;
+//  }
 
   std::string conn;
   conn.append(cur_node);

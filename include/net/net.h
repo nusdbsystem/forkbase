@@ -48,6 +48,7 @@ class Net : private Noncopyable {
   void CreateNetContexts(const std::vector<node_id_t>& nodes);
   virtual void Start() = 0;  // start the listening service
   virtual void Stop() = 0;  // stop the listening service
+  inline bool IsRunning() const noexcept { return is_running_; }
 
   // get the NetContext of the idth node
   inline const node_id_t& GetNodeID() const { return cur_node_; }
@@ -76,6 +77,7 @@ class Net : private Noncopyable {
   node_id_t cur_node_;
   std::unordered_map<node_id_t, NetContext*> netmap_;
   CallBack* cb_ = nullptr;
+  volatile bool is_running_;
 };
 
 /**
