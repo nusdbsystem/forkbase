@@ -94,9 +94,9 @@ int MergeAnalytics::Compute(StringSet* aff_cols) {
 
   Value col;
   USTORE_GUARD_INT(db_.Get(col_name, branch_, &col));
-  auto master_vec = Utils::ToIntVector(col.slice().to_string());
+  auto master_vec = Utils::ToIntVector(col.slice().ToString());
   USTORE_GUARD_INT(db_.Get(col_name, branch_bin, &col));
-  const auto bin_vec = Utils::ToIntVector(col.slice().to_string());
+  const auto bin_vec = Utils::ToIntVector(col.slice().ToString());
 
   CHECK_EQ(master_vec.size(), bin_vec.size());
   for (size_t i = 0; i < master_vec.size(); ++i) {
@@ -106,10 +106,10 @@ int MergeAnalytics::Compute(StringSet* aff_cols) {
   const auto col_str = Utils::ToString(master_vec);
   USTORE_GUARD_INT(
     db_.Merge(col_name, Value(Slice(col_str)), branch_, branch_bin));
-  if (aff_cols != nullptr) aff_cols->insert(col_name.to_string());
+  if (aff_cols != nullptr) aff_cols->insert(col_name.ToString());
   return 0;
 }
 
-} // namespace ca
-} // namespace example
-} // namespace ustore
+}  // namespace ca
+}  // namespace example
+}  // namespace ustore

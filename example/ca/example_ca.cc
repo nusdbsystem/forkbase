@@ -99,9 +99,9 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 
-} // namespace ca
-} // namespace example
-} // namespace ustore
+}  // namespace ca
+}  // namespace example
+}  // namespace ustore
 
 int main(int argc, char* argv[]) {
   return ustore::example::ca::main(argc, argv);

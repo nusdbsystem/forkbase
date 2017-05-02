@@ -132,8 +132,8 @@ bool Config::CheckArg(const T& var, const bool expr,
   return expr;
 }
 
-} // namespace ca
-} // namespace example
-} // namespace ustore
+}  // namespace ca
+}  // namespace example
+}  // namespace ustore
 
-#endif // USTORE_EXAMPLE_CA_CONFIG_H_
+#endif  // USTORE_EXAMPLE_CA_CONFIG_H_

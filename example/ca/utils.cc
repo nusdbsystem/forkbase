@@ -38,6 +38,6 @@ const std::vector<long> Utils::ToLongVector(
   return ToVector<long>(str, f, sep_chars);
 }
 
-} // namespace ca
-} // namespace example
-} // namespace ustore
+}  // namespace ca
+}  // namespace example
+}  // namespace ustore

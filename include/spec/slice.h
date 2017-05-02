@@ -64,12 +64,12 @@ class Slice {
   inline size_t len() const { return len_; }
   inline const char* data() const { return data_; }
 
-  inline const std::string to_string() const {
+  inline const std::string ToString() const {
     return std::string(data_, len_);
   }
 
   friend inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
-    os << obj.to_string();
+    os << obj.ToString();
     return os;
   }
 

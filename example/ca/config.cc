@@ -54,8 +54,7 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
     ("probability,p", po::value<double>()->default_value(kDefaultProbability),
      "probability used in the analytical simulation")
     ("iterations,i", po::value<int>()->default_value(kDefaultNumIterations),
-     "number of iterations in the analytical simulation")
-    ;
+     "number of iterations in the analytical simulation");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -71,6 +70,6 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
   return true;
 }
 
-} // namespace ca
-} // namespace example
-} // namespace ustore
+}  // namespace ca
+}  // namespace example
+}  // namespace ustore

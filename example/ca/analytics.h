@@ -26,7 +26,7 @@ class Analytics {
   Analytics(const T& branch, Worker& db)
     : branch_(Slice(branch)), db_(db) {}
 
-  inline const Slice branch() { return branch_; }
+  inline const Slice& branch() { return branch_; }
   virtual int Compute(StringSet* aff_cols) = 0;
 
  protected:
@@ -41,8 +41,8 @@ class Analytics {
 template<class T1, class T2>
 ErrorCode Analytics::BranchAndLoad(const T1& col_name, const T2& base_branch,
                                    Value* col) {
-  const Slice col_name_slice(col_name);
-  const Slice base_branch_slice(base_branch);
+  Slice col_name_slice(col_name);
+  Slice base_branch_slice(base_branch);
   USTORE_GUARD(db_.Branch(col_name_slice, base_branch_slice, branch_));
   USTORE_GUARD(db_.Get(col_name_slice, branch_, col));
   return ErrorCode::kOK;
@@ -53,14 +53,14 @@ class Random {
   Random() : rand_gen_(std::time(0)) {}
  protected:
   std::mt19937 rand_gen_;
-  virtual const uint32_t NextRandom() = 0;
+  virtual uint32_t NextRandom() = 0;
 };
 
 class DataLoading : public Analytics {
  public:
   template<class T>
   DataLoading(const T& branch, Worker& db,
-              const size_t n_columns, const size_t n_records)
+              size_t n_columns, size_t n_records)
     : Analytics(branch, db), n_columns_(n_columns), n_records_(n_records) {
     std::cout << "[Parameters]"
               << " branch=\"" << branch_ << '\"' << std::endl;
@@ -76,7 +76,7 @@ class DataLoading : public Analytics {
 class PoissonAnalytics : public Analytics, private Random {
  public:
   template<class T>
-  PoissonAnalytics(const T& branch, Worker& db, const double mean)
+  PoissonAnalytics(const T& branch, Worker& db, double mean)
     : Analytics(branch, db), distr_(mean) {
     std::cout << "[Parameters]"
               << " branch=\"" << branch_ << '\"'
@@ -87,13 +87,13 @@ class PoissonAnalytics : public Analytics, private Random {
 
  private:
   std::poisson_distribution<uint32_t> distr_;
-  inline const uint32_t NextRandom() override { return distr_(rand_gen_); }
+  inline uint32_t NextRandom() override { return distr_(rand_gen_); }
 };
 
 class BinomialAnalytics : public Analytics, private Random {
  public:
   template<class T>
-  BinomialAnalytics(const T& branch, Worker& db, const double p)
+  BinomialAnalytics(const T& branch, Worker& db, double p)
     : Analytics(branch, db), distr_(Config::n_records - 1, p) {
     std::cout << "[Parameters]"
               << " branch=\"" << branch_ << '\"'
@@ -105,7 +105,7 @@ class BinomialAnalytics : public Analytics, private Random {
 
  private:
   std::binomial_distribution<uint32_t> distr_;
-  inline const uint32_t NextRandom() override { return distr_(rand_gen_); }
+  inline uint32_t NextRandom() override { return distr_(rand_gen_); }
 };
 
 class MergeAnalytics : public Analytics {
@@ -120,8 +120,8 @@ class MergeAnalytics : public Analytics {
   int Compute(StringSet* aff_cols) override;
 };
 
-} // namespace ca
-} // namespace example
-} // namespace ustore
+}  // namespace ca
+}  // namespace example
+}  // namespace ustore
 
-#endif // USTORE_EXAMPLE_CA_ANALYTICS_H_
+#endif  // USTORE_EXAMPLE_CA_ANALYTICS_H_
