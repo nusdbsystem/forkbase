@@ -16,6 +16,8 @@ namespace ustore {
  */
 
 constexpr int kPoolTimeout = 10;
+constexpr int kSocketBindTimeout = 1;
+constexpr int kSocketTrials = 5;
 
 using std::string;
 using std::vector;
@@ -46,13 +48,28 @@ void Net::CreateNetContexts(const vector<node_id_t>& nodes) {
 
 ZmqNet::ZmqNet(const node_id_t& id, int nthreads)
     : Net(id), nthreads_(nthreads) {
+  int status;
+  int ntries = kSocketTrials;
+
   // start router socket
   recv_sock_ = zsock_new(ZMQ_ROUTER);
   string host = "tcp://" + id;
   inproc_ep_ = "inproc://" + id;
-  CHECK(zsock_bind((zsock_t *)recv_sock_, "%s", host.c_str()));
+
+  // make sure that recv socket binds successfully
+  while ((status = zsock_bind((zsock_t *)recv_sock_, "%s", host.c_str())) < 0
+          && ntries--)
+    sleep(kSocketBindTimeout);
+  CHECK(status > 0);
+
+  // make sure that the ipc socket binds successfully
   backend_sock_ = zsock_new(ZMQ_DEALER);
-  CHECK_EQ(zsock_bind((zsock_t *)backend_sock_, "%s", inproc_ep_.c_str()), 0);
+  ntries = kSocketTrials;
+  while ((status = zsock_bind((zsock_t *)backend_sock_, "%s",
+          inproc_ep_.c_str())) && ntries--)
+    sleep(kSocketBindTimeout);
+  CHECK_EQ(status, 0);
+
   // start backend thread
   for (int i = 0; i < nthreads_; i++)
     backend_threads_.push_back(std::thread(ServerThread, this));
