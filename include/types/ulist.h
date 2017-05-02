@@ -14,6 +14,8 @@
 namespace ustore {
 class UList : public ChunkableType {
  public:
+  static std::unique_ptr<DuallyDiffIndexIterator> DuallyDiff(
+      const UList& lhs, const UList& rhs);
   // For idx > total # of elements
   //    return empty slice
   Slice Get(uint64_t idx) const;

@@ -98,7 +98,76 @@ TEST(SMap, Small) {
   ustore::SMap new_smap4(smap.Remove(k4));
   CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
                       new_smap4.Scan().get());
+
+
+  // Use new_smap3 with smap to perform duallydiff
+  // lhs: k1->v1, k2->v2, k3->v3
+  // rhs:         k2->v2, k3->v4, k4->v4
+  auto dually_diff_it = ustore::UMap::DuallyDiff(smap, new_smap3);
+
+  ASSERT_EQ(k1, dually_diff_it->key());
+  ASSERT_EQ(v1, dually_diff_it->lhs_value());
+  ASSERT_TRUE(dually_diff_it->rhs_value().empty());
+
+  ASSERT_TRUE(dually_diff_it->next());
+
+  ASSERT_EQ(k3, dually_diff_it->key());
+  ASSERT_EQ(v3, dually_diff_it->lhs_value());
+  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+
+  ASSERT_TRUE(dually_diff_it->next());
+
+  ASSERT_EQ(k4, dually_diff_it->key());
+  ASSERT_TRUE(dually_diff_it->lhs_value().empty());
+  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+
+  ASSERT_FALSE(dually_diff_it->next());
+  ASSERT_TRUE(dually_diff_it->end());
+
+  // ensure can not advance using next since it is end already
+  ASSERT_FALSE(dually_diff_it->next());
+  ASSERT_TRUE(dually_diff_it->end());
+
+  // start to retreat
+  ASSERT_TRUE(dually_diff_it->previous());
+
+  ASSERT_EQ(k4, dually_diff_it->key());
+  ASSERT_TRUE(dually_diff_it->lhs_value().empty());
+  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+
+  ASSERT_TRUE(dually_diff_it->previous());
+
+  ASSERT_EQ(k3, dually_diff_it->key());
+  ASSERT_EQ(v3, dually_diff_it->lhs_value());
+  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+
+  ASSERT_TRUE(dually_diff_it->previous());
+
+  ASSERT_EQ(k1, dually_diff_it->key());
+  ASSERT_EQ(v1, dually_diff_it->lhs_value());
+  ASSERT_TRUE(dually_diff_it->rhs_value().empty());
+
+  ASSERT_FALSE(dually_diff_it->previous());
+  ASSERT_TRUE(dually_diff_it->head());
+
+  // ensure can not retreat using previous since it is at head already
+  ASSERT_FALSE(dually_diff_it->previous());
+  ASSERT_TRUE(dually_diff_it->head());
+
+  // Test on altenative advance and retreat
+  ASSERT_TRUE(dually_diff_it->next());
+  ASSERT_FALSE(dually_diff_it->previous());
+  ASSERT_TRUE(dually_diff_it->head());
+
+  ASSERT_TRUE(dually_diff_it->next());
+  ASSERT_TRUE(dually_diff_it->next());
+  ASSERT_TRUE(dually_diff_it->previous());
+
+  ASSERT_EQ(k1, dually_diff_it->key());
+  ASSERT_EQ(v1, dually_diff_it->lhs_value());
+  ASSERT_TRUE(dually_diff_it->rhs_value().empty());
 }
+
 class SMapHugeEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {

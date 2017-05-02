@@ -10,6 +10,21 @@
 
 namespace ustore {
 
+std::unique_ptr<DuallyDiffKeyIterator> UMap::DuallyDiff(
+    const UMap& lhs, const UMap& rhs) {
+  std::unique_ptr<UIterator> lhs_diff_it = lhs.Diff(rhs);
+  std::unique_ptr<UIterator> rhs_diff_it = rhs.Diff(lhs);
+
+  lhs_diff_it->previous();
+  rhs_diff_it->previous();
+
+  DCHECK(lhs_diff_it->head() && rhs_diff_it->head());
+
+  return std::unique_ptr<DuallyDiffKeyIterator>(
+      new DuallyDiffKeyIterator(std::move(lhs_diff_it),
+                                std::move(rhs_diff_it)));
+}
+
 Slice UMap::Get(const Slice& key) const {
   auto orderedkey = OrderedKey::FromSlice(key);
 
@@ -50,9 +65,6 @@ std::unique_ptr<UIterator> UMap::Intersect(const UMap& rhs) const {
   return std::unique_ptr<UIterator>(
       new MapIterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get()));
 }
-
-
-
 
 bool UMap::SetNodeForHash(const Hash& root_hash) {
   const Chunk* chunk = chunk_loader_->Load(root_hash);
@@ -169,6 +181,5 @@ Hash SMap::Remove(const Slice& key) const {
   Hash hash = nb->Commit();
   delete nb;
   return hash;
-
 }
 }  // namespace ustore

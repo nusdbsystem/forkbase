@@ -9,6 +9,20 @@
 #include "utils/logging.h"
 
 namespace ustore {
+std::unique_ptr<DuallyDiffIndexIterator> UList::DuallyDiff(
+    const UList& lhs, const UList& rhs) {
+  std::unique_ptr<UIterator> lhs_diff_it = lhs.Diff(rhs);
+  std::unique_ptr<UIterator> rhs_diff_it = rhs.Diff(lhs);
+
+  lhs_diff_it->previous();
+  rhs_diff_it->previous();
+
+  DCHECK(lhs_diff_it->head() && rhs_diff_it->head());
+
+  return std::unique_ptr<DuallyDiffIndexIterator>(
+      new DuallyDiffIndexIterator(std::move(lhs_diff_it),
+                                  std::move(rhs_diff_it)));
+}
 
 Slice UList::Get(uint64_t idx) const {
   CHECK(!empty());

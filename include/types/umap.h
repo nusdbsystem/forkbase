@@ -12,9 +12,10 @@
 #include "types/uiterator.h"
 
 namespace ustore {
-
 class UMap : public ChunkableType {
  public:
+  static std::unique_ptr<DuallyDiffKeyIterator> DuallyDiff(
+      const UMap& lhs, const UMap& rhs);
   // Use chunk loader to load chunk and read value
   // return empty slice if key not found
   Slice Get(const Slice& key) const;
@@ -58,7 +59,7 @@ class UMap : public ChunkableType {
         UIterator(root, std::move(ranges), loader) {}
 
     inline uint64_t index() const override {
-      LOG(WARNING) << "Index not supported for key";
+      LOG(WARNING) << "Index not supported for Map";
       return 0;
     }
 
@@ -92,5 +93,4 @@ class SMap : public UMap {
   Hash Remove(const Slice& key) const override;
 };
 }  // namespace ustore
-
 #endif  // USTORE_TYPES_UMAP_H_

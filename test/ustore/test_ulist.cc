@@ -57,11 +57,76 @@ TEST(SList, Small) {
                          {e1, e3, e4, e5},
                          new_slist1.Scan().get());
 
-  // // Splice to the end
+  // Splice to the end
   ustore::SList new_slist2(new_slist1.Splice(3, 2, {e2}));
   CheckIdenticalElements({0, 1, 2, 3},
                          {e1, e3, e4, e2},
                          new_slist2.Scan().get());
+
+  auto diff_it = ustore::UList::DuallyDiff(slist, new_slist2);
+
+  ASSERT_EQ(1, diff_it->index());
+  ASSERT_EQ(e2, diff_it->lhs_value());
+  ASSERT_EQ(e3, diff_it->rhs_value());
+
+  ASSERT_TRUE(diff_it->next());
+
+  ASSERT_EQ(2, diff_it->index());
+  ASSERT_EQ(e5, diff_it->lhs_value());
+  ASSERT_EQ(e4, diff_it->rhs_value());
+
+  ASSERT_TRUE(diff_it->next());
+
+  ASSERT_EQ(3, diff_it->index());
+  ASSERT_TRUE(diff_it->lhs_value().empty());
+  ASSERT_EQ(e2, diff_it->rhs_value());
+
+  ASSERT_FALSE(diff_it->next());
+  ASSERT_TRUE(diff_it->end());
+
+  // try to advance one more steps
+  ASSERT_FALSE(diff_it->next());
+  ASSERT_TRUE(diff_it->end());
+
+  // start to retreat
+  ASSERT_TRUE(diff_it->previous());
+
+  ASSERT_EQ(3, diff_it->index());
+  ASSERT_TRUE(diff_it->lhs_value().empty());
+  ASSERT_EQ(e2, diff_it->rhs_value());
+
+  ASSERT_TRUE(diff_it->previous());
+
+  ASSERT_EQ(2, diff_it->index());
+  ASSERT_EQ(e5, diff_it->lhs_value());
+  ASSERT_EQ(e4, diff_it->rhs_value());
+
+  ASSERT_TRUE(diff_it->previous());
+
+  ASSERT_EQ(1, diff_it->index());
+  ASSERT_EQ(e2, diff_it->lhs_value());
+  ASSERT_EQ(e3, diff_it->rhs_value());
+
+  ASSERT_FALSE(diff_it->previous());
+  ASSERT_TRUE(diff_it->head());
+
+  // try to retreat one more steps
+  ASSERT_FALSE(diff_it->previous());
+  ASSERT_TRUE(diff_it->head());
+
+  ASSERT_TRUE(diff_it->next());
+
+  ASSERT_EQ(1, diff_it->index());
+  ASSERT_EQ(e2, diff_it->lhs_value());
+  ASSERT_EQ(e3, diff_it->rhs_value());
+
+  // test on alternative next() and previous()
+  ASSERT_TRUE(diff_it->next());
+  ASSERT_TRUE(diff_it->previous());
+
+  ASSERT_EQ(1, diff_it->index());
+  ASSERT_EQ(e2, diff_it->lhs_value());
+  ASSERT_EQ(e3, diff_it->rhs_value());
 }
 
 class SListHugeEnv : public ::testing::Test {
