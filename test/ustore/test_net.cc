@@ -36,7 +36,7 @@ class TestCallBack : public CallBack {
     ((char*) msg)[size] = '\0';
     EXPECT_TRUE(!strcmp(static_cast<const char*>(msg),
                 static_cast<const char*>(source.c_str())));
-    LOG(WARNING) << "msg = " << static_cast<const char*>(msg);
+    DLOG(WARNING) << "msg = " << static_cast<const char*>(msg);
   }
 };
 
