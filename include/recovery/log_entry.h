@@ -22,9 +22,6 @@ enum LogCommand : uint8_t {
  * */
 class LogEntry {
  public:
-  /*
-   * @brief Return the record header size
-   * */
   static constexpr uint16_t kLogVersion = 1;
 
   LogEntry() {

@@ -8,7 +8,6 @@
 namespace ustore {
 namespace recovery {
 
-// TODO(yaochang): need to define a FIleAppender
 
 /*
  * Log Writer class, can be inherited by others
@@ -24,7 +23,7 @@ class LogWriter {
    * check the log cursor and and do all the checking works before writing
    * the logs out
    * */
-  int StartLog(const LogCursor& log_cursor);
+  int StartLog(const LogCursor* log_cursor);
   /*
    * Before write the log out, it needs to check the states, do parsing, etc.
    * */
@@ -36,11 +35,16 @@ class LogWriter {
   int FlushLogToDisk();
 
  protected:
-  int CheckState() const;
-  int CheckInit() const;
-  char* log_dir_;
-  int64_t align_mask_;
+  char* log_dir_; // log directory
+  /*
+   * Synchronization type:
+   * 0 => default value, log writer flush the logs out when the buffer is full
+   *      or the time is out.
+   * 1 => before each operation to finish, log writer flush the log records out
+   *      to provide strong consistency
+   * */
   int64_t log_sync_type_;
+  int64_t log_sync_time; // ms
   LogCursor log_cursor_;
   FileAppender file_;
 };  // LogWriter

@@ -14,47 +14,6 @@ namespace recovery {
  * */
 class RecordHeader {
  public:
-  /*
-   * check record after being read
-   * @param string buffer to store the bytes string
-   * @param total length of record and record header
-   * @param magic number
-   * */
-  static int CheckRecord(const char* buf, uint64_t length, int16_t magic);
-  /*
-   * check the record after reading the header
-   * @param record header
-   * @param string buffer after the record header
-   * @param length the of buffer
-   * @param magic number that is used to check the correctness
-   * */
-  static int CheckRecord(const RecordHeader& record_header,
-                         const char* payload_buf, uint64_t payload_length,
-                         int16_t magic);
-  /*
-   * check the record buffer and do the extraction
-   * @param raw data buffer address
-   * @param size of the raw data buffer
-   * @param magic number that is used to do the checking
-   * @param [out] record header
-   * @param [out] content address
-   * @param [out] content size
-   * */
-  static int CheckRecord(const char* rawdata, uint64_t rawdata_size,
-                         int16_t magic, RecordHeader* header,
-                         const char** payload_ptr, uint64_t* payload_size);
-  /*
-   * do not check and directly extract header and payload address
-   * @param raw data buffer address
-   * @param size of the raw data buffer
-   * @param [out] record header
-   * @param [out] content address
-   * @param [out] content size
-   * */
-  static int GetRecordHeader(const char* rawdata, uint64_t rawdata_size,
-                             RecordHeader* header, const char** payload_ptr,
-                             uint64_t* payload_size);
-
   // TODO(yaochang): replace magic number
   static constexpr int16_t kLogMagicNumber = static_cast<int16_t>(0xFFFF);
   static constexpr int kRecordHeaderLength = sizeof(UStoreRecordHeader);
@@ -107,6 +66,46 @@ class RecordHeader {
   int64_t  data_checksum_;
 };  // RecordHeader
 
+/*
+ * check record after being read
+ * @param string buffer to store the bytes string
+ * @param total length of record and record header
+ * @param magic number
+ * */
+static int CheckRecord(const char* buf, uint64_t length, int16_t magic);
+/*
+ * check the record after reading the header
+ * @param record header
+ * @param string buffer after the record header
+ * @param length the of buffer
+ * @param magic number that is used to check the correctness
+ * */
+static int CheckRecord(const RecordHeader& record_header,
+                       const char* payload_buf, uint64_t payload_length,
+                       int16_t magic);
+/*
+ * check the record buffer and do the extraction
+ * @param raw data buffer address
+ * @param size of the raw data buffer
+ * @param magic number that is used to do the checking
+ * @param [out] record header
+ * @param [out] content address
+ * @param [out] content size
+ * */
+static int CheckRecord(const char* rawdata, uint64_t rawdata_size,
+                         int16_t magic, RecordHeader* header,
+                         const char** payload_ptr, uint64_t* payload_size);
+/*
+ * do not check and directly extract header and payload address
+ * @param raw data buffer address
+ * @param size of the raw data buffer
+ * @param [out] record header
+ * @param [out] content address
+ * @param [out] content size
+ * */
+static int GetRecordHeader(const char* rawdata, uint64_t rawdata_size,
+                             RecordHeader* header, const char** payload_ptr,
+                             uint64_t* payload_size);
 }  // namespace recovery
 }  // namespace ustore
 

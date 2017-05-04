@@ -15,19 +15,28 @@ class LogCursor {
   ~LogCursor();
 
   /*
-   * make sure all the fields are >= 0
+   * @brief make sure all the fields are >= 0
    * */
   bool IsValid() const;
+  /*
+   * @brief reset all the fields to be zero
+   * */
   void Reset();
+  /*
+   * @brief set the field content, all the parameters are input parameters
+   * */
   void Set(uint64_t file_id, uint64_t log_id, uint64_t offset);
   /*
-   * put the cursor content to buffer
+   * @biref put the cursor content to buffer
+   * @param [in,out] buf
+   * @param [in] buf_length
+   * @param [in] pos: where the put the data in the buffer
    * */
-  int Serialize(char* buf, uint64_t length, uint64_t pos) const;
+  int Serialize(char* buf, uint64_t buf_length, uint64_t pos) const;
   /*
-   * deserialize the cursor from the buffer 
+   * @brief deserialize the cursor from the buffer 
    * */
-  int Deserialize(const char* buf, uint64_t length, uint64_t pos);
+  int Deserialize(const char* buf, uint64_t buf_length, uint64_t pos);
   std::string ToString() const;
   uint64_t ToString(char* buf, uint64_t length) const;
   /*
@@ -39,7 +48,7 @@ class LogCursor {
    * @brief forward the curpos forward
    * */
   int Advance(LogCommand cmd, uint64_t seq_id, uint64_t data_length);
-  int Advance(const LogEntry& entry);
+  int Advance(const LogEntry* entry);
   /*
    * compare the age of the cursor
    * */
@@ -48,9 +57,9 @@ class LogCursor {
   bool operator==(const LogCursor& other) const;
 
  private:
-  uint64_t file_id_;
-  uint64_t log_id_;
-  uint64_t offset_;
+  uint64_t file_id_;  // log file id
+  uint64_t log_id_;   // log sequence id
+  uint64_t offset_; 
 };  // LogCursor
 
 // TODO(yaochang): add atomic log cursor
