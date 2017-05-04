@@ -4,6 +4,8 @@
 
 #include <czmq.h>
 #include <gflags/gflags.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <string>
 #include <set>
 #include <thread>
@@ -53,8 +55,20 @@ ZmqNet::ZmqNet(const node_id_t& id, int nthreads)
 
   // start router socket
   recv_sock_ = zsock_new(ZMQ_ROUTER);
-  string host = "tcp://" + id;
-  inproc_ep_ = "inproc://" + id;
+
+  int split = id.find(':');
+  string hostname = id.substr(0, split);
+  string port = id.substr(split+1);
+  hostent* record = gethostbyname(hostname.c_str());
+  if (record == nullptr) {
+    LOG(ERROR) << hostname <<  " is unavailable\n";
+    exit(1);
+  }
+  in_addr* address = reinterpret_cast<in_addr*>(record->h_addr);
+  string ip_address = inet_ntoa(*address);
+
+  string host = "tcp://" + ip_address + ":" + port;
+  inproc_ep_ = "inproc://" + ip_address + ":" + port;
 
   // make sure that recv socket binds successfully
   while ((status = zsock_bind((zsock_t *)recv_sock_, "%s", host.c_str())) < 0

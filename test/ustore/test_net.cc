@@ -36,6 +36,7 @@ class TestCallBack : public CallBack {
     ((char*) msg)[size] = '\0';
     EXPECT_TRUE(!strcmp(static_cast<const char*>(msg),
                 static_cast<const char*>(source.c_str())));
+    LOG(WARNING) << "msg = " << static_cast<const char*>(msg);
   }
 };
 
@@ -43,13 +44,13 @@ void Start(Net* net) {
   net->Start();
 }
 
+string id0 = "localhost:1235";
+string id1 = "localhost:1236";
+string id2 = "localhost:1237";
+
 // test putting two value from node0 to node1 and node2
 TEST(NetTest, MsgTest) {
   ustore::SetStderrLogging(ustore::WARNING);
-
-  string id0 = "127.0.0.1:1235";
-  string id1 = "127.0.0.1:1236";
-  string id2 = "127.0.0.1:1237";
 
 #ifdef USE_RDMA
   Net* net0 = new RdmaNet(id0);
@@ -131,9 +132,6 @@ TEST(NetTest, MsgTest) {
 TEST(NetTest, CreateContexts) {
   ustore::SetStderrLogging(ustore::WARNING);
 
-  string id0 = "127.0.0.1:1235";
-  string id1 = "127.0.0.1:1236";
-  string id2 = "127.0.0.1:1237";
   vector<node_id_t> nodes = {id0, id1, id2};
 
 #ifdef USE_RDMA
