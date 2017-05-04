@@ -26,14 +26,12 @@ class ZmqNet : public Net {
    */
   void Start() override;
   void Stop() override;
-  inline bool IsRunning() const noexcept { return is_running_; }
 
   // process the received msg
   void Dispatch(const node_id_t& source, const void *msg, int size);
   inline const std::string& get_inproc_ep() { return inproc_ep_; }
  private:
   void *recv_sock_, *backend_sock_;  // router and backend socket
-  bool is_running_;
   int nthreads_;  // number of processing threads
   std::string inproc_ep_;  // endpoint for ipc
   std::vector<std::thread> backend_threads_;

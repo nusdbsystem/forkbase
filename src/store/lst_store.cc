@@ -14,14 +14,21 @@
 #include "utils/chars.h"
 #include "utils/logging.h"
 
+#define LOG_LST_STORE_FATAL_ERROR_IF(condition, errmsg) \
+  do { \
+    if (condition) { \
+      LOG(FATAL) << (errmsg) << std::strerror(errno); \
+    } \
+  } while (false)
+
 namespace ustore {
 namespace lst_store {
 
-void* LSTSegment::base_addr_ = 0;
+void* LSTSegment::base_addr_ = nullptr;
 
 namespace fs = boost::filesystem;
 
-void DestroySegmentList(LSTSegment* head) {
+static void DestroySegmentList(LSTSegment* head) {
   while (head != nullptr) {
     auto next = head->next_;
     delete head;
@@ -44,56 +51,29 @@ static void FdWriteThenSync(int fd, const void* buf, size_t length) {
     CHECK_GE(nb, 0);
     bytes += nb;
   }
-  int ret = fsync(fd);  // sync to disk
-  CHECK_NE(ret, -1);
+  LOG_LST_STORE_FATAL_ERROR_IF(-1 == fsync(fd), "MSYNC ERROR");
 }
 
 static void SyncToDisk(void* addr, size_t len) {
-  int ret = msync(addr, len, MS_SYNC);
-  if (ret == -1)
-    LOG(FATAL) << "MSYNC ERROR: " << std::strerror(errno);
+  LOG_LST_STORE_FATAL_ERROR_IF(-1 == msync(addr, len, MS_SYNC), "MSYNC ERROR");
 }
 
-constexpr static inline bool IsChunkValid(ChunkType type) noexcept {
-  return type == ChunkType::kNull
-         || type == ChunkType::kCell
-         || type == ChunkType::kMeta
-         || type == ChunkType::kBlob
-         || type == ChunkType::kList
-         || type == ChunkType::kMap
-         || type == ChunkType::kString
-         || type == ChunkType::kInvalid;
-}
-
-constexpr static inline bool IsEndChunk(ChunkType type) noexcept {
-  return type == ChunkType::kNull;
-}
-
-constexpr static inline LSTSegment* OffsetToLstSegmentPtr(size_t offset)
-    noexcept {
+static inline LSTSegment* OffsetToLstSegmentPtr(size_t offset) {
   return (offset == 0) ? nullptr :
     new LSTSegment(reinterpret_cast<char*>(LSTSegment::base_addr_) + offset);
 }
 
-constexpr static inline size_t SegmentPtrToOffset(const LSTSegment* ptr)
-    noexcept {
+static inline size_t SegmentPtrToOffset(const LSTSegment* ptr) {
   return ptr == nullptr ? 0 :
     ((uintptr_t)ptr->segment_ - (uintptr_t)LSTSegment::base_addr_);
 }
 
-constexpr static inline byte_t* GetValidateHashPtr(const LSTSegment* segment)
-    noexcept {
+static inline byte_t* GetValidateHashPtr(const LSTSegment* segment) {
   return reinterpret_cast<byte_t*>(segment->segment_) + kSegmentSize
     - Hash::kByteLength;
 }
 
-constexpr static inline byte_t* GetFirstHashPtr(const LSTSegment* segment)
-  noexcept {
-  return reinterpret_cast<byte_t*>(const_cast<void*>(segment->segment_))
-    + 2 * sizeof(size_t);
-}
-
-static void LinkSegmentList(LSTSegment* begin) noexcept {
+static void LinkSegmentList(LSTSegment* begin) {
   LSTSegment *iter = begin;
   LSTSegment *last = nullptr;
   while (iter != nullptr) {
@@ -129,7 +109,7 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
     fd = ::open(path.c_str(), O_RDWR, S_IRWXU);
   } else {
     // init the log
-    fd = ::open(path.c_str(), O_RDWR | O_CREAT, S_IRWXU);
+    fd = ::open(path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     size_t* buf1 = new size_t[kMetaLogSize/sizeof(size_t)];
     size_t* buf2 = new size_t[kSegmentSize/sizeof(size_t)];
     char* meta = reinterpret_cast<char*>(buf1);
@@ -160,9 +140,9 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
   CHECK_GE(fd, 0);
   void* address = ::mmap(nullptr, kLogFileSize, PROT_READ | PROT_WRITE,
                          MAP_SHARED, fd, 0);
-  if (address == reinterpret_cast<void*>(-1)) {
-    LOG(FATAL) << "MMAP ERROR: " << std::strerror(errno);
-  }
+  LOG_LST_STORE_FATAL_ERROR_IF(address == reinterpret_cast<void*>(-1),
+                               "NMAP ERROR: ");
+
   // lock the mmap'ed memory to guarantee in-memory access
   ::mlock(address, kLogFileSize);
   LSTSegment::base_addr_ = address;
@@ -171,7 +151,10 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
 }
 
 LSTSegment* LSTStore::AllocateMajor() {
-  current_major_segment_ = Allocate(current_major_segment_);
+  LSTSegment* newSegment = Allocate(current_major_segment_);
+  if (current_major_segment_ != nullptr)
+    current_major_segment_->next_ = newSegment;
+  current_major_segment_ = newSegment;
   if (major_list_ == nullptr)
     major_list_ = current_major_segment_;
   // persist the log meta block
@@ -187,7 +170,10 @@ LSTSegment* LSTStore::AllocateMajor() {
 }
 
 LSTSegment* LSTStore::AllocateMinor() {
-  current_minor_segment_ = Allocate(current_minor_segment_);
+  LSTSegment* newSegment = Allocate(current_minor_segment_);
+  if (current_minor_segment_ != nullptr)
+    current_minor_segment_->next_ = newSegment;
+  current_minor_segment_ = newSegment;
   if (minor_list_ == nullptr)
     minor_list_ = current_minor_segment_;
   // persist the log meta block
@@ -239,6 +225,8 @@ size_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
 
   bool need_sync = false;
   if (next_segment_offset != 0) {
+    // since the next segment is empty and included in the free list,
+    // it is safe to erase the respective offset
     AppendInteger(reinterpret_cast<char*>(segment->segment_) + sizeof(size_t),
                   (size_t)0);
     CHECK_EQ((uintptr_t)free_list_->segment_,
@@ -246,10 +234,9 @@ size_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
     need_sync = true;
   }
 
-  byte_t* offset = reinterpret_cast<byte_t*>(segment->segment_)
-                   + 2 * sizeof(size_t);
+  byte_t* offset = GetFirstHashPtr(segment);
   while (true) {
-    Chunk chunk(offset + ::ustore::Hash::kByteLength);
+    Chunk chunk(offset + Hash::kByteLength);
     if (!IsChunkValid(chunk.type()) || Hash(offset) != chunk.hash()) {
       // check failed; exit
       std::memset(offset, kSegmentSize + (uintptr_t)(segment->segment_)
@@ -257,16 +244,19 @@ size_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
       need_sync = true;
       break;
     }
+
     if (IsEndChunk(chunk.type()))
       break;
     if (chunk.type() == ChunkType::kInvalid)
       this->chunk_map_.erase(offset);
     else
       chunk_map_.emplace(offset, chunk.head());
-    offset += chunk.numBytes() + ::ustore::Hash::kByteLength;
+    offset = GetPtrToNextChunk(offset);
   }
+
   if (need_sync)
     SyncToDisk(segment->segment_, kSegmentSize);
+
   return reinterpret_cast<size_t>(uintptr_t(offset)
                                   - uintptr_t(segment->segment_));
 }
@@ -274,27 +264,28 @@ size_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
 size_t LSTStore::LoadFromValidSegment(LSTSegment* segment) {
   // TODO(qingchao): take alignment into consideration
   CHECK_NE(segment, nullptr);
-  byte_t* offset = GetFirstHashPtr(segment);
-  byte_t* end_offset = GetValidateHashPtr(segment) - Hash::kByteLength
-                       - Chunk::kMetaLength;
+  const byte_t* offset = GetFirstHashPtr(segment);
   CHECK(Hash(offset) == Hash(GetValidateHashPtr(segment)));
+
   while (true) {
-    byte_t *hash_offset = offset;
-    byte_t *chunk_offset = hash_offset + ustore::Hash::kByteLength;
-    Chunk chunk(chunk_offset);
+    const byte_t *hash_offset = offset;
+
+    ChunkType type = PtrToChunkType(offset);
 
     // check whether all chunks have been loaded or not
-    if (IsEndChunk(chunk.type()))
+    if (IsEndChunk(type))
       break;
-    CHECK(IsChunkValid(chunk.type()));
-    if (chunk.type() == ChunkType::kInvalid)
+
+    CHECK(IsChunkValid(type));
+
+    if (type == ChunkType::kInvalid)
       this->chunk_map_.erase(hash_offset);
     else
-      chunk_map_.emplace(hash_offset, chunk_offset);
-    offset = chunk_offset + chunk.numBytes();
-    if (offset >= end_offset)
-      break;
+      chunk_map_.emplace(hash_offset, hash_offset + Hash::kByteLength);
+
+    offset = GetPtrToNextChunk(offset);
   }
+
   return reinterpret_cast<size_t>(uintptr_t(offset)
                                   - uintptr_t(segment->segment_));
 }
@@ -387,7 +378,7 @@ void LSTStore::Sync() {
     SyncToDisk(current_minor_segment_->segment_, kSegmentSize);
 }
 
-LSTStore::~LSTStore() {
+LSTStore::~LSTStore() noexcept(false) {
   Sync();
   DestroySegmentList(free_list_);
   DestroySegmentList(major_list_);

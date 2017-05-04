@@ -1787,7 +1787,8 @@ def GetHeaderGuardCPPVariable(filename):
   # wangsheng1001@USTORE: change INCLUDE to USTORE
   # return re.sub(r'[^a-zA-Z0-9]', '_', file_path_from_root).upper() + '_'
   ustore_path = re.sub(r'[^a-zA-Z0-9]', '_', file_path_from_root).upper() + '_'
-  return ustore_path.replace("INCLUDE_", "USTORE_")
+  ustore_path = "USTORE_" + ustore_path
+  return ustore_path.replace("INCLUDE_", "")
 
 
 def CheckForHeaderGuard(filename, clean_lines, error):

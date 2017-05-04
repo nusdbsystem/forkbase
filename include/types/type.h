@@ -44,6 +44,18 @@ enum class ChunkType : byte_t {
   kInvalid = 99,
 };
 
+
+static inline bool IsChunkValid(ChunkType type) noexcept {
+  return type == ChunkType::kNull
+         || type == ChunkType::kCell
+         || type == ChunkType::kMeta
+         || type == ChunkType::kBlob
+         || type == ChunkType::kString
+         || type == ChunkType::kMap
+         || type == ChunkType::kList
+         || type == ChunkType::kInvalid;
+}
+
 /*
  * Worker error code returned to user
  */

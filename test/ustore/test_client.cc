@@ -111,16 +111,21 @@ TEST(TestMessage, TestClient1Thread) {
   RemoteClientService *service
     = new RemoteClientService(clientservice_addr, "");
   service->Init();
-  service->Start();
+  // service->Start();
+  thread client_service_thread(&RemoteClientService::Start, service);
+  sleep(1);
+
   // 1 thread
   ClientDb *client = service->CreateClientDb();
   TestClientRequest(client, 0, NREQUESTS);
 
   service->Stop();
+  client_service_thread.join();
 
   // then stop workers
-  for (WorkerService *ws : workers)
+  for (WorkerService *ws : workers) {
     ws->Stop();
+  }
   for (int i = 0; i < worker_threads.size(); i++)
     worker_threads[i].join();
 
@@ -155,21 +160,28 @@ TEST(TestMessage, TestClient2Threads) {
   RemoteClientService *service
     = new RemoteClientService(clientservice_addr, "");
   service->Init();
-  service->Start();
+  // service->Start();
+  thread client_service_thread(&RemoteClientService::Start, service);
+  sleep(1);
+
   // 2 clients thread
   for (int i = 0; i < 2; i++) {
     ClientDb *client = service->CreateClientDb();
     client_threads.push_back(thread(
                         &TestClientRequest, client, i*2, NREQUESTS/2));
   }
+
   // wait for them to join
   for (int i = 0; i < 2; i++)
     client_threads[i].join();
 
   service->Stop();
+  client_service_thread.join();
+
   // then stop workers
-  for (WorkerService *ws : workers)
+  for (WorkerService *ws : workers) {
     ws->Stop();
+  }
   for (int i = 0; i < worker_threads.size(); i++)
     worker_threads[i].join();
 

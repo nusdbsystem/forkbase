@@ -234,7 +234,7 @@ ErrorCode ClientDb::GetVersionResponse(Hash* version) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
   *version = Hash(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data()));
+    response->put_response_payload().new_version().data())).Clone();
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
   return err;
@@ -243,9 +243,9 @@ ErrorCode ClientDb::GetVersionResponse(Hash* version) {
 ErrorCode ClientDb::GetValueResponse(Value* value) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+  std::string *tmp = new string(response->get_response_payload().value());
   *value = Value(Blob(reinterpret_cast<const byte_t *>(
-    response->get_response_payload().value().data()),
-    response->get_response_payload().value().length()));
+    tmp->data()), response->get_response_payload().value().length()));
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
   return err;
