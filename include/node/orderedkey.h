@@ -10,8 +10,7 @@
 #include "utils/logging.h"
 
 namespace ustore {
-// TODO (pingcheng)
-// Later make OrdreedKey contain a slice as member
+// TODO(pingcheng): Later make OrdreedKey contain a slice as member
 //   and use slice for comparison if not by value
 class OrderedKey {
   /* OrderedKey can either be a hash value (byte array) or an uint64_t integer

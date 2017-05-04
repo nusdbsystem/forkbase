@@ -53,8 +53,7 @@ bool UList::SetNodeForHash(const Hash& root_hash) {
   }
 }
 
-Hash UList::Delete(uint64_t start_idx,
-                   uint64_t num_to_delete) const {
+Hash UList::Delete(uint64_t start_idx, uint64_t num_to_delete) const {
   return Splice(start_idx, num_to_delete, {});
 }
 
@@ -69,7 +68,6 @@ Hash UList::Append(const std::vector<Slice>& entries) const {
 
 std::unique_ptr<UIterator> UList::Scan() const {
   IndexRange all_range{0, numElements()};
-
   return std::unique_ptr<UIterator>(
       new ListIterator(hash(), {all_range}, chunk_loader_.get()));
 }
@@ -77,7 +75,6 @@ std::unique_ptr<UIterator> UList::Scan() const {
 std::unique_ptr<UIterator> UList::Diff(const UList& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
   IndexComparator cmptor(rhs.hash(), chunk_loader_);
-
   return std::unique_ptr<UIterator>(
       new ListIterator(hash(), cmptor.Diff(hash()), chunk_loader_.get()));
 }
@@ -85,7 +82,6 @@ std::unique_ptr<UIterator> UList::Diff(const UList& rhs) const {
 std::unique_ptr<UIterator> UList::Intersect(const UList& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
   IndexComparator cmptor(rhs.hash(), chunk_loader_);
-
   return std::unique_ptr<UIterator>(
       new ListIterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get()));
 }
@@ -101,11 +97,8 @@ SList::SList(const Hash& root_hash) noexcept :
 SList::SList(const std::vector<Slice>& elements) noexcept:
     UList(std::make_shared<ChunkLoader>()) {
   CHECK_GT(elements.size(), 0);
-
   chunk_loader_ = std::move(std::make_shared<ChunkLoader>());
-
   NodeBuilder nb(ListChunker::Instance(), false);
-
   std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
   nb.SpliceElements(0, seg.get());
   SetNodeForHash(nb.Commit());
@@ -114,12 +107,8 @@ SList::SList(const std::vector<Slice>& elements) noexcept:
 Hash SList::Splice(size_t start_idx, size_t num_to_delete,
                          const std::vector<Slice>& entries) const {
   CHECK(!empty());
-  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(hash(),
-                                                       start_idx,
-                                                       chunk_loader_.get(),
-                                                       ListChunker::Instance(),
-                                                       false);
-
+  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(hash(), start_idx,
+    chunk_loader_.get(), ListChunker::Instance(), false);
   std::unique_ptr<const Segment> seg = ListNode::Encode({entries});
   nb->SpliceElements(num_to_delete, seg.get());
   Hash root_hash = nb->Commit();

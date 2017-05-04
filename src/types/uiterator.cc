@@ -3,19 +3,18 @@
 #include "types/uiterator.h"
 
 namespace ustore {
+
 bool UIterator::next() {
   if (end()) {
     LOG(WARNING) << "Can not move forward as already at seq head. ";
     return false;
   }
-
   if (head()) {
     curr_idx_in_range_ = 0;
     curr_range_idx_ = 0;
     cursor_->Advance(true);
     return true;
   }
-
 
   ++curr_idx_in_range_;
 
@@ -27,12 +26,10 @@ bool UIterator::next() {
     // Need to advance to next IndexRange
     curr_idx_in_range_ = 0;
     ++curr_range_idx_;
-
     auto pre_range = ranges_[curr_range_idx_ - 1];
     if (curr_range_idx_ < ranges_.size()) {
       uint64_t pre_range_end_idx =
           pre_range.start_idx + pre_range.num_subsequent - 1;
-
       uint64_t steps = ranges_[curr_range_idx_].start_idx
                        - pre_range_end_idx;
       cursor_->AdvanceSteps(steps);
@@ -55,7 +52,6 @@ bool UIterator::previous() {
     LOG(WARNING) << "Can not move backward as already at seq head. ";
     return false;
   }
-
   if (end()) {
     curr_range_idx_ = ranges_.size() - 1;
     auto last_range = ranges_[curr_range_idx_];
@@ -64,9 +60,7 @@ bool UIterator::previous() {
     return true;
   }
 
-
   uint64_t curr_range_len = ranges_[curr_range_idx_].num_subsequent;
-
   if (curr_idx_in_range_ > 0) {
     --curr_idx_in_range_;
     cursor_->Retreat(true);
@@ -76,12 +70,9 @@ bool UIterator::previous() {
     if (curr_range_idx_ >= 0) {
       auto next_range = ranges_[curr_range_idx_ + 1];
       auto curr_range_end_idx = ranges_[curr_range_idx_].start_idx
-                                + ranges_[curr_range_idx_].num_subsequent
-                                - 1;
-
+                                + ranges_[curr_range_idx_].num_subsequent - 1;
       uint64_t steps = next_range.start_idx - curr_range_end_idx;
       curr_idx_in_range_ = ranges_[curr_range_idx_].num_subsequent - 1;
-
       cursor_->RetreatSteps(steps);
     } else if (curr_range_idx_ == -1) {
       // Already at the head of all index ranges

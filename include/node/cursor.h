@@ -3,6 +3,7 @@
 #ifndef USTORE_NODE_CURSOR_H_
 #define USTORE_NODE_CURSOR_H_
 
+#include <memory>
 #include <vector>
 
 #include "node/orderedkey.h"
@@ -31,7 +32,7 @@ class NodeCursor {
   //   cursor points to the end of sequence.
   // if idx > total_num_elements
   //   return nullptr
-  static NodeCursor* GetCursorByIndex(const Hash& hash, size_t uint64_t,
+  static NodeCursor* GetCursorByIndex(const Hash& hash, size_t idx,
                                       ChunkLoader* ch_loader);
 
   // Init Cursor to point a element at leaf in a tree
@@ -96,7 +97,7 @@ class NodeCursor {
     idx_ = idx;
   }
 
-private:
+ private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively
   // TODO(wangji/pingcheng): check if really need to share SeqNode

@@ -16,21 +16,17 @@ namespace ustore {
 
 class UIterator : private Noncopyable {
  public:
-  UIterator(const Hash& root,
-            const std::vector<IndexRange>& ranges,
-            ChunkLoader* loader) noexcept :
-      ranges_(ranges), curr_range_idx_(0),
-      curr_idx_in_range_(0) {
+  UIterator(const Hash& root, const std::vector<IndexRange>& ranges,
+            ChunkLoader* loader) noexcept
+      : ranges_(ranges), curr_range_idx_(0), curr_idx_in_range_(0) {
     CHECK_LT(0, ranges_.size());
     cursor_ = std::unique_ptr<NodeCursor>(
                   NodeCursor::GetCursorByIndex(root, index(), loader));
   }
 
-  UIterator(const Hash& root,
-            std::vector<IndexRange>&& ranges,
-            ChunkLoader* loader) noexcept :
-      ranges_(std::move(ranges)), curr_range_idx_(0),
-      curr_idx_in_range_(0) {
+  UIterator(const Hash& root, std::vector<IndexRange>&& ranges,
+            ChunkLoader* loader) noexcept
+      : ranges_(std::move(ranges)), curr_range_idx_(0), curr_idx_in_range_(0) {
     CHECK_LT(0, ranges_.size());
     cursor_ = std::unique_ptr<NodeCursor>(
                   NodeCursor::GetCursorByIndex(root, index(), loader));
@@ -96,6 +92,10 @@ class UIterator : private Noncopyable {
 };
 
 
+// TODO(pingcheng): why not derive from UIterator, or both derive from a base
+//  type containing next, begin, end, etc.
+// TODO(pingcheng, qingchao): can we have a base iterator abstract for both
+//  utypes and chunk store?
 template <class iterator_trait>
 class DuallyDiffIterator {
   // a special iterator that iterate on the dual diff

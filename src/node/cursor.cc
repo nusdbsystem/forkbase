@@ -14,9 +14,7 @@ namespace ustore {
 std::vector<IndexRange> IndexRange::Compact(
     const std::vector<IndexRange>& ranges) {
   if (ranges.size() == 0) return ranges;
-
   std::vector<IndexRange> result;
-
   IndexRange curr_cr = ranges[0];
   uint64_t pre_upper = curr_cr.start_idx + curr_cr.num_subsequent;
 
@@ -38,6 +36,7 @@ std::vector<IndexRange> IndexRange::Compact(
   result.push_back(curr_cr);
   return result;
 }
+
 NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, uint64_t idx,
                                          ChunkLoader* ch_loader) {
   NodeCursor* parent_cursor = nullptr;
@@ -46,10 +45,7 @@ NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, uint64_t idx,
   const Chunk* chunk = ch_loader->Load(hash);
 
   std::shared_ptr<const SeqNode> seq_node(SeqNode::CreateFromChunk(chunk));
-
   if (seq_node->numElements() < idx) return nullptr;
-
-
 
   while (!seq_node->isLeaf()) {
     const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node.get());
@@ -198,7 +194,6 @@ uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
   DLOG(INFO) << "!Before Parent: "
              << (seq_node_->isLeaf() ? "Leaf" : "Meta");
   DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
-
   DLOG(INFO) << "  Before Index: " << idx_;
   if (seq_node_->isLeaf()) {
     uint64_t max_step = static_cast<uint64_t>(
@@ -240,7 +235,6 @@ uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
 
   DLOG(INFO) << "  After Index: " << idx_;
   DLOG(INFO) << "Acc Step: " << acc_step;
-
   DCHECK_LE(acc_step, step);
   DCHECK(isEnd());
   // Ask upper cursor for advance
@@ -311,7 +305,6 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
   DLOG(INFO) << "!Before Parent: "
              << (seq_node_->isLeaf() ? "Leaf" : "Meta");
   DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
-
   DLOG(INFO) << "  Before Index: " << idx_;
   if (seq_node_->isLeaf()) {
     // Max step to advance to node start
@@ -351,7 +344,6 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
 
   DLOG(INFO) << "  After Index: " << idx_;
   DLOG(INFO) << "Acc Step: " << acc_step;
-
   DCHECK_LE(acc_step, step);
   DCHECK(isBegin());
   // Ask upper cursor for advance
@@ -361,7 +353,6 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
   uint64_t parent_step = parent_cr_->RetreatSteps(step - acc_step);
   DLOG(INFO) << "\nAfter Parent: ";
   DLOG(INFO) << "  Parent Step: " << parent_step;
-
   DCHECK_LE(parent_step, step - acc_step);
 
   bool headParent = parent_cr_->isBegin();
@@ -379,13 +370,11 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
   if (headParent) {
     // Place this cursor to seq head
     idx_ = -1;
-
     return acc_step + parent_step;
   }
 
   DCHECK_LE(acc_step + parent_step, step);
   uint64_t remain_step = step - acc_step - parent_step;
-
   uint64_t acc2_step = 0;
 
   if (seq_node_->isLeaf()) {
@@ -404,13 +393,11 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
       --idx_;
     }  // end while
     DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
-
     DCHECK(!isEnd());
     DCHECK_LE(acc2_step, remain_step);
   }  // end if
   DLOG(INFO) << "acc2_step: " << acc2_step
              << "remain_step: " << remain_step;
-
   DLOG(INFO) << "Total Step: " << acc_step + parent_step + acc2_step;
 
   return acc_step + parent_step + acc2_step;

@@ -53,13 +53,11 @@ class UList : public ChunkableType {
  private:
   class ListIterator : public UIterator {
    public:
-    ListIterator(const Hash& root,
-                 const std::vector<IndexRange>& ranges,
+    ListIterator(const Hash& root, const std::vector<IndexRange>& ranges,
                  ChunkLoader* loader) noexcept :
         UIterator(root, ranges, loader) {}
 
-    ListIterator(const Hash& root,
-                 std::vector<IndexRange>&& ranges,
+    ListIterator(const Hash& root, std::vector<IndexRange>&& ranges,
                  ChunkLoader* loader) noexcept :
         UIterator(root, std::move(ranges), loader) {}
 
@@ -68,7 +66,7 @@ class UList : public ChunkableType {
       return Slice(nullptr, 0);
     }
 
-  private:
+   private:
     inline Slice RealValue() const override {
       return ListNode::Decode(data());
     }

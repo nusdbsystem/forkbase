@@ -48,13 +48,11 @@ class UMap : public ChunkableType {
  private:
   class MapIterator : public UIterator {
    public:
-    MapIterator(const Hash& root,
-                const std::vector<IndexRange>& ranges,
+    MapIterator(const Hash& root, const std::vector<IndexRange>& ranges,
                 ChunkLoader* loader) noexcept :
         UIterator(root, ranges, loader) {}
 
-    MapIterator(const Hash& root,
-                std::vector<IndexRange>&& ranges,
+    MapIterator(const Hash& root, std::vector<IndexRange>&& ranges,
                 ChunkLoader* loader) noexcept :
         UIterator(root, std::move(ranges), loader) {}
 
@@ -63,7 +61,7 @@ class UMap : public ChunkableType {
       return 0;
     }
 
-  private:
+   private:
     inline Slice RealValue() const override {
       size_t value_num_bytes = 0;
       const char* value = reinterpret_cast<const char*>(
