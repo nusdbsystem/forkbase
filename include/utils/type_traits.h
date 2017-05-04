@@ -1,13 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPE_TRAITS_H_
-#define USTORE_TYPE_TRAITS_H_
+#ifndef USTORE_UTILS_TYPE_TRAITS_H_
+#define USTORE_UTILS_TYPE_TRAITS_H_
 
 #include <type_traits>
 
 namespace ustore {
 
-template <int N> 
+template <int N>
 struct Int2Type{
     enum {value = N};
 };
@@ -42,16 +42,21 @@ template <typename T>
   using remove_cv_t = typename ::std::remove_cv<T>::type;
 
 template <typename T>
-  using is_integral_t = typename ::ustore::enable_if_t<std::is_integral<T>::value, T>;
+  using is_integral_t
+    = typename ::ustore::enable_if_t<std::is_integral<T>::value, T>;
 
 template <typename T>
-  using not_integral_t = typename ::ustore::enable_if_t<!std::is_integral<T>::value, T>;
+  using not_integral_t
+    = typename ::ustore::enable_if_t<!std::is_integral<T>::value, T>;
 
 template <typename T>
-  using is_char_t = typename ::ustore::enable_if_t<::ustore::is_char<T>::value, T>;
+  using is_char_t
+    = typename ::ustore::enable_if_t<::ustore::is_char<T>::value, T>;
 
 template <typename T>
-  using not_char_t = typename ::ustore::enable_if_t<!::ustore::is_char<T>::value, T>;
+  using not_char_t
+    = typename ::ustore::enable_if_t<!::ustore::is_char<T>::value, T>;
 
-}
-#endif
+}  // namespace ustore
+
+#endif  // USTORE_UTILS_TYPE_TRAITS_H_

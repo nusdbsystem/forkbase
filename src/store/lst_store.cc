@@ -140,7 +140,8 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
   CHECK_GE(fd, 0);
   void* address = ::mmap(nullptr, kLogFileSize, PROT_READ | PROT_WRITE,
                          MAP_SHARED, fd, 0);
-  LOG_LST_STORE_FATAL_ERROR_IF(address == reinterpret_cast<void*>(-1), "NMAP ERROR: ");
+  LOG_LST_STORE_FATAL_ERROR_IF(address == reinterpret_cast<void*>(-1),
+                               "NMAP ERROR: ");
 
   // lock the mmap'ed memory to guarantee in-memory access
   ::mlock(address, kLogFileSize);
@@ -225,7 +226,7 @@ size_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
   bool need_sync = false;
   if (next_segment_offset != 0) {
     // since the next segment is empty and included in the free list,
-    // it is safe to erase the respective offset 
+    // it is safe to erase the respective offset
     AppendInteger(reinterpret_cast<char*>(segment->segment_) + sizeof(size_t),
                   (size_t)0);
     CHECK_EQ((uintptr_t)free_list_->segment_,

@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
+
 #include "hash/hash.h"
 #include "types/type.h"
 #include "utils/logging.h"

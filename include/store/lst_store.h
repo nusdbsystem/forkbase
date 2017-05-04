@@ -105,97 +105,99 @@ static inline ChunkType PtrToChunkType(const byte_t* byte) {
       byte + Hash::kByteLength + Chunk::kChunkTypeOffset);
 }
 
-template <typename MapType, 
+template <typename MapType,
          template<typename> class CheckPolicy = NoCheckPolicy>
 class LSTStoreIterator : public std::iterator<std::input_iterator_tag
                          , Chunk
                          , std::ptrdiff_t
                          , const Chunk*
                          , Chunk>,
-                         protected CheckPolicy<MapType>
-{
-  public:
-    using BaseIterator = LSTStoreIterator;
+                         protected CheckPolicy<MapType> {
+ public:
+  using BaseIterator = LSTStoreIterator;
 
-    explicit LSTStoreIterator(const MapType& map,
-        const LSTSegment* first,
-        const byte_t* ptr) noexcept : map_(map), segment_(first), ptr_(ptr) {}
+  explicit LSTStoreIterator(const MapType& map,
+      const LSTSegment* first,
+      const byte_t* ptr) noexcept : map_(map), segment_(first), ptr_(ptr) {}
 
-    LSTStoreIterator(const LSTStoreIterator&) noexcept = default;
-    LSTStoreIterator& operator=(const LSTStoreIterator&) noexcept = default;
+  LSTStoreIterator(const LSTStoreIterator&) noexcept = default;
+  LSTStoreIterator& operator=(const LSTStoreIterator&) noexcept = default;
 
-    LSTStoreIterator& operator++() {
-      do {
-        ptr_ = GetPtrToNextChunk(ptr_);
-        if (IsEndChunk(PtrToChunkType(ptr_)) && segment_->next_ != nullptr) {
-          segment_ = segment_->next_;
-          ptr_ = GetFirstHashPtr(segment_);
-        }
-      } while (!CheckPolicy<MapType>::check(map_, ptr_) && !IsEndChunk(PtrToChunkType(ptr_)));
-      CHECK(IsChunkValid(PtrToChunkType(ptr_)));
-      return *this;
-    }
+  LSTStoreIterator& operator++() {
+    do {
+      ptr_ = GetPtrToNextChunk(ptr_);
+      if (IsEndChunk(PtrToChunkType(ptr_)) && segment_->next_ != nullptr) {
+        segment_ = segment_->next_;
+        ptr_ = GetFirstHashPtr(segment_);
+      }
+    } while (!CheckPolicy<MapType>::check(map_, ptr_)
+             && !IsEndChunk(PtrToChunkType(ptr_)));
+    CHECK(IsChunkValid(PtrToChunkType(ptr_)));
+    return *this;
+  }
 
-    LSTStoreIterator operator++(int) {
-      LSTStoreIterator ret = *this; ++(*this); return ret;
-    }
+  LSTStoreIterator operator++(int) {
+    LSTStoreIterator ret = *this; ++(*this); return ret;
+  }
 
-    bool operator==(LSTStoreIterator other) const { return ptr_ == other.ptr_; }
-    bool operator!=(LSTStoreIterator other) const { return !(*this == other); }
+  inline bool operator==(const LSTStoreIterator& other) const {
+    return ptr_ == other.ptr_;
+  }
+  inline bool operator!=(const LSTStoreIterator& other) const {
+    return !(*this == other);
+  }
 
-    reference operator*() const {
-      CHECK(CheckPolicy<MapType>::check(map_, ptr_));
-      return Chunk(ptr_ + Hash::kByteLength);
-    }
+  reference operator*() const {
+    CHECK(CheckPolicy<MapType>::check(map_, ptr_));
+    return Chunk(ptr_ + Hash::kByteLength);
+  }
 
-  protected:
-    const MapType& map_;
-    const byte_t* ptr_;
-    const LSTSegment* segment_;
+ protected:
+  const MapType& map_;
+  const byte_t* ptr_;
+  const LSTSegment* segment_;
 };
 
 template <typename MapType, typename ChunkType, ChunkType T,
          template<typename> class CheckPolicy = NoCheckPolicy>
-class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy> 
-{
-  public:
-    using parent = LSTStoreIterator<MapType, CheckPolicy>;
-    using BaseIterator = parent;
+class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
+ public:
+  using parent = LSTStoreIterator<MapType, CheckPolicy>;
+  using BaseIterator = parent;
 
-    static constexpr ChunkType type_ = T;
+  static constexpr ChunkType type_ = T;
 
-    LSTStoreTypeIterator(parent iterator) : parent(iterator) {
+  LSTStoreTypeIterator(parent iterator) : parent(iterator) {  // NOLINT
+    ChunkType type = PtrToChunkType(parent::ptr_);
+    if (type != type_ && !IsEndChunk(type))
+      operator++();
+  }
+
+  explicit LSTStoreTypeIterator(const MapType& map,
+      const LSTSegment* segment,
+      const byte_t* ptr) : parent(map, segment, ptr) {
       ChunkType type = PtrToChunkType(parent::ptr_);
       if (type != type_ && !IsEndChunk(type))
         operator++();
     }
 
-    explicit LSTStoreTypeIterator(const MapType& map,
-        const LSTSegment* segment,
-        const byte_t* ptr) : parent(map, segment, ptr) {
-        ChunkType type = PtrToChunkType(parent::ptr_);
-        if (type != type_ && !IsEndChunk(type))
-          operator++();
-      }
+  LSTStoreTypeIterator& operator++() {
+    ChunkType type;
+    do {
+      parent::operator++();
+      type = PtrToChunkType(parent::ptr_);
+    } while (type != type_ && !IsEndChunk(type));
+    return *this;
+  }
 
-    LSTStoreTypeIterator& operator++() {
-      ChunkType type;
-      do {
-        parent::operator++();
-        type = PtrToChunkType(parent::ptr_);
-      } while (type != type_ && !IsEndChunk(type));
-      return *this;
-    }
-
-    LSTStoreTypeIterator operator++(int) {
-      LSTStoreTypeIterator ret = *this; ++(*this); return ret;
-    }
+  LSTStoreTypeIterator operator++(int) {
+    LSTStoreTypeIterator ret = *this; ++(*this); return ret;
+  }
 };
 
 class LSTStore
     : private Noncopyable, public Singleton<LSTStore>, public ChunkStore {
-
- friend class Singleton<LSTStore>;
+  friend class Singleton<LSTStore>;
 
  public:
   using MapType = std::unordered_map<LSTHash, LSTChunk>;
@@ -208,13 +210,17 @@ class LSTStore
 
   // type iterators
   template <typename ChunkType, ChunkType T>
-    using type_iterator = LSTStoreTypeIterator<MapType, ChunkType, T, CheckExistPolicy>;
+    using type_iterator = LSTStoreTypeIterator<MapType, ChunkType, T,
+                                               CheckExistPolicy>;
   template <typename ChunkType, ChunkType T>
-    using const_type_iterator = LSTStoreTypeIterator<MapType, ChunkType, T, CheckExistPolicy>;
+    using const_type_iterator = LSTStoreTypeIterator<MapType, ChunkType, T,
+                                                     CheckExistPolicy>;
   template <typename ChunkType, ChunkType T>
-    using unsafe_type_iterator = LSTStoreTypeIterator<MapType, ChunkType, T, NoCheckPolicy>;
+    using unsafe_type_iterator = LSTStoreTypeIterator<MapType, ChunkType, T,
+                                                      NoCheckPolicy>;
   template <typename ChunkType, ChunkType T>
-    using unsafe_const_type_iterator = LSTStoreTypeIterator<MapType, ChunkType, T, NoCheckPolicy>;
+    using unsafe_const_type_iterator = LSTStoreTypeIterator<MapType, ChunkType,
+                                                            T, NoCheckPolicy>;
 
   void Sync();
   virtual const Chunk* Get(const Hash& key);
@@ -233,7 +239,7 @@ class LSTStore
   template <typename Iterator = iterator>
   Iterator end() {
     return Iterator(chunk_map_, current_major_segment_,
-        (const byte_t*)current_major_segment_->segment_ + major_segment_offset_); 
+      (const byte_t*)current_major_segment_->segment_ + major_segment_offset_);
   }
 
   template <typename Iterator = iterator>
@@ -280,40 +286,40 @@ class LSTStore
 }  // namespace lst_store
 }  // namespace ustore
 
-//namespace std {
-//template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//         typename = typename ustore::enable_if_t<
-//            std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                typename ustore::lst_store::LSTStore::iterator>::value,
-//            Iterator> >
-//Iterator begin(const ustore::lst_store::LSTStore& store) {
-//  return store.begin<Iterator>();
-//}
+// namespace std {
+// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
+//          typename = typename ustore::enable_if_t<
+//             std::is_convertible< ustore::remove_cv_t<Iterator>,
+//                 typename ustore::lst_store::LSTStore::iterator>::value,
+//             Iterator> >
+// Iterator begin(const ustore::lst_store::LSTStore& store) {
+//   return store.begin<Iterator>();
+// }
 //
-//template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//         typename = typename ustore::enable_if_t<
-//            std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                typename ustore::lst_store::LSTStore::iterator>::value,
-//            Iterator> >
-//Iterator cbegin(const ustore::lst_store::LSTStore& store) {
-//  return begin<Iterator>(store);
-//}
+// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
+//          typename = typename ustore::enable_if_t<
+//             std::is_convertible< ustore::remove_cv_t<Iterator>,
+//                 typename ustore::lst_store::LSTStore::iterator>::value,
+//             Iterator> >
+// Iterator cbegin(const ustore::lst_store::LSTStore& store) {
+//   return begin<Iterator>(store);
+// }
 //
-//template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//         typename = typename ustore::enable_if_t<
-//            std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                typename ustore::lst_store::LSTStore::iterator>::value,
-//            Iterator> >
-//Iterator end(const ustore::lst_store::LSTStore& store) {
-//  return store.end<Iterator>();
-//}
-//}
-//template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//         typename = typename ustore::enable_if_t<
-//            std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                typename ustore::lst_store::LSTStore::iterator>::value,
-//            Iterator> >
-//Iterator cend(const ustore::lst_store::LSTStore& store) {
-//  return cend<Iterator>(store);
-//}
+// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
+//          typename = typename ustore::enable_if_t<
+//             std::is_convertible< ustore::remove_cv_t<Iterator>,
+//                 typename ustore::lst_store::LSTStore::iterator>::value,
+//             Iterator> >
+// Iterator end(const ustore::lst_store::LSTStore& store) {
+//   return store.end<Iterator>();
+// }
+// }
+// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
+//          typename = typename ustore::enable_if_t<
+//             std::is_convertible< ustore::remove_cv_t<Iterator>,
+//                 typename ustore::lst_store::LSTStore::iterator>::value,
+//             Iterator> >
+// Iterator cend(const ustore::lst_store::LSTStore& store) {
+//   return cend<Iterator>(store);
+// }
 #endif  // USTORE_STORE_LST_STORE_H_
