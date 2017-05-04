@@ -26,10 +26,12 @@ include(cmake/Utils.cmake)
 # --- [ Options
 OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
 OPTION(USE_LEVELDB "Use LevelDB as chunk storage" OFF)
+OPTION(ENABLE_TEST "Compile test module" ON)
 OPTION(TEST_NODEBUILDER "Test node builder" ON)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
 OPTION(MOCK_TEST "Use MockWorker" OFF)
 OPTION(USE_RDMA "Use RDMA" OFF)
+OPTION(ENABLE_EXAMPLE "Compile example module" OFF)
 
 if(TEST_NODEBUILDER)
   message(STATUS "Test Node Builder with Specific Rolling Hasher")
@@ -54,6 +56,11 @@ if(USE_RDMA)
   add_definitions(-DUSE_RDMA)
 endif()
 
+SET(BOOST_COMPONENT "filesystem")
+IF(ENABLE_EXAMPLE)
+  LIST(APPEND BOOST_COMPONENT "program_options")
+ENDIF()
+
 # ---[ Dependencies
 include(cmake/Dependencies.cmake)
 
@@ -74,8 +81,19 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 # copy the conf directory
-FILE(COPY conf DESTINATION ${PROJECT_BINARY_DIR}) 
+FILE(COPY conf DESTINATION ${PROJECT_BINARY_DIR})
 MESSAGE(STATUS "copy directory: conf")
 
-ADD_SUBDIRECTORY(test)
+# copy the bin directory
+FILE(COPY bin DESTINATION ${PROJECT_BINARY_DIR})
+MESSAGE(STATUS "copy directory: bin")
+
+IF(ENABLE_TEST)
+  ADD_SUBDIRECTORY(test)
+ENDIF()
+
+IF(ENABLE_EXAMPLE)
+  ADD_SUBDIRECTORY(example)
+ENDIF()
+
 ADD_SUBDIRECTORY(src)

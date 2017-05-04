@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 #include "gtest/gtest.h"
+#include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"
 #include "types/type.h"

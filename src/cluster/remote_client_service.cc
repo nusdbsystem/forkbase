@@ -66,13 +66,15 @@ void RemoteClientService::Start() {
   net_->CreateNetContexts(addresses_);
   cb_ = new CSCallBack(this);
   net_->RegisterRecv(cb_);
-#ifdef USE_RDMA
-  net_thread_ = new thread(&RdmaNet::Start, reinterpret_cast<RdmaNet *>(net_));
-  sleep(1.0);
-#else
-  net_thread_ = new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
-#endif
+  // zh: make the start behavior consistent with the worker service
   is_running_ = true;
+  net_->Start();
+// #ifdef USE_RDMA
+//   new thread(&RdmaNet::Start, reinterpret_cast<RdmaNet *>(net_));
+//   sleep(1.0);
+// #else
+//   new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
+// #endif
 }
 
 void RemoteClientService::HandleResponse(const void *msg, int size,
@@ -90,7 +92,7 @@ void RemoteClientService::HandleResponse(const void *msg, int size,
 void RemoteClientService::Stop() {
   is_running_ = false;
   net_->Stop();
-  net_thread_->join();
+  // net_thread_->join();
 }
 
 ClientDb* RemoteClientService::CreateClientDb() {
