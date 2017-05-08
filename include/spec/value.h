@@ -26,10 +26,10 @@ class Value {
   Value(const Value& v) : type_(v.type_), data_(v.data_), size_(v.size_) {}
   // create value with type String
   explicit Value(const Slice& v)
-    : type_(UType::kString), data_(v.data()), size_(v.len()) {}
+      : type_(UType::kString), data_(v.data()), size_(v.len()) {}
   // create value with type Blob
   explicit Value(const Blob& v)
-    : type_(UType::kBlob), data_(v.data()), size_(v.size()) {}
+      : type_(UType::kBlob), data_(v.data()), size_(v.size()) {}
   ~Value() {}
 
   inline Value& operator=(const Value& v) {
@@ -66,8 +66,7 @@ class Value {
 
   friend inline bool operator==(const Value& lhs, const Value& rhs) noexcept {
     CHECK(lhs.data_ != nullptr && rhs.data_ != nullptr);
-    return lhs.type_ == rhs.type_ &&
-           lhs.size_ && rhs.size_ &&
+    return lhs.type_ == rhs.type_ && lhs.size_ && rhs.size_ &&
            std::memcmp(lhs.data_, rhs.data_, lhs.size_) == 0;
   }
 
@@ -107,6 +106,8 @@ struct Value2 {
   size_t dels;
   // size = 1 for Blob/String, size > 1 for Map/List
   std::vector<Slice> vals;
+  // for Map
+  std::vector<Slice> keys;
 };
 
 }  // namespace ustore
