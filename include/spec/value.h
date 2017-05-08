@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <memory>
+#include "hash/hash.h"
 #include "types/type.h"
 #include "spec/blob.h"
 #include "spec/slice.h"
@@ -16,6 +17,7 @@ namespace ustore {
  * Value is just a wrapper for different types of data.
  * It does not copy data content when initialize.
  */
+// Value is deprecated in v0.2
 class Value {
  public:
   // create empty value
@@ -93,6 +95,20 @@ class Value {
   const void* data_ = nullptr;
   size_t size_;
 };
+
+// This struct is generalized to inserts/updates any UTypes
+struct Value2 {
+  // Type of the value
+  UType type;
+  // Hash::kNull if it is a new insertion
+  Hash base;
+  // only used for a update
+  size_t pos;
+  size_t dels;
+  // size = 1 for Blob/String, size > 1 for Map/List
+  std::vector<Slice> vals;
+};
+
 }  // namespace ustore
 
 #endif  // USTORE_SPEC_VALUE_H_

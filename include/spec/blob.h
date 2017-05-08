@@ -14,6 +14,7 @@ namespace ustore {
  * blob is for a sequence of binray values.
  * it only pointer to the head of original data, does not copy the content
  */
+// Blob is deprecated in v0.2
 class Blob {
  public:
   // share data from existing array
