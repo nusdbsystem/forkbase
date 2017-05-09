@@ -9,9 +9,9 @@ namespace ustore {
 namespace recovery {
 
 enum LogCommand {
-		LOG_UPDATE = 111;  // Update(branch_name, version)
-		LOG_RENAME = 112;  // Rename(branch_name, new_branch_name)
-		LOG_REMOVE = 113;		// Remove(branch_name)
+		LOG_UPDATE = 111,  // Update(branch_name, version)
+		LOG_RENAME = 112,  // Rename(branch_name, new_branch_name)
+		LOG_REMOVE = 113		// Remove(branch_name)
 };
 	/*
 		* the structure of one log record is:
@@ -23,7 +23,7 @@ class LogRecord {
 		~LogRecord() {};
 		char* ToString(); // generate all the content to a string
 		int64_t GetLength();  //return the string length from ToString()
-		void ComputeChecksum();  // Compute the checksum according to the content
+		int64_t ComputeChecksum();  // Compute the checksum according to the content
 	public:
 		int64_t checksum; 	// compute the checksum after the other fields are filled
 		int16_t version;  // by default

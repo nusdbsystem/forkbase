@@ -21,7 +21,7 @@ class LogWorker : public LogThread {
  public:
   LogWorker();
   ~LogWorker();
-  bool Init(const char* log_dir, char* log_filename);
+  bool Init(const char* log_dir, const char* log_filename);
 
   /*
    * @brief: get the defined timeout

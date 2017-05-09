@@ -44,6 +44,9 @@ FOREACH(fil ${proto_hdrs})
   )
 ENDFOREACH()
 
+AUX_SOURCE_DIRECTORY(benchmark benchmark_source)
+LIST(APPEND ustore_srcs ${benchmark_source})
+
 AUX_SOURCE_DIRECTORY(chunk chunk_source)
 LIST(APPEND ustore_srcs ${chunk_source})
 
@@ -59,6 +62,9 @@ LIST(APPEND ustore_srcs ${net_source})
 AUX_SOURCE_DIRECTORY(node node_source)
 LIST(APPEND ustore_srcs ${node_source})
 
+AUX_SOURCE_DIRECTORY(recovery recovery_source)
+LIST(APPEND ustore_srcs ${recovery_source})
+
 AUX_SOURCE_DIRECTORY(store store_source)
 LIST(APPEND ustore_srcs ${store_source})
 
@@ -70,9 +76,6 @@ LIST(APPEND ustore_srcs ${utils_source})
 
 AUX_SOURCE_DIRECTORY(worker worker_source)
 LIST(APPEND ustore_srcs ${worker_source})
-
-AUX_SOURCE_DIRECTORY(benchmark benchmark_source)
-LIST(APPEND ustore_srcs ${benchmark_source})
 
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 ADD_DEPENDENCIES(ustore_objs copy_protobuf)

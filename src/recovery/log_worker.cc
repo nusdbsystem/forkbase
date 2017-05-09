@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <chrono>
+#include <iostream>
 
 #include "utils/logging.h"
 
@@ -23,7 +24,7 @@ LogWorker::LogWorker() {
   buffer_indice_ = 0;
   buffer_ = new char[buffer_size_];
   log_dir_ = NULL;
-  log_filename_ = NULL:
+  log_filename_ = NULL;
   fd_ = -1;
   log_sync_type_ = 0;  // by default weak consistency is adopted
 		log_sequence_number_ = 0;  // LSN
@@ -53,8 +54,9 @@ bool LogWorker::Init(const char* log_dir, const char* log_filename) {
   snprintf(absoluate_path + written_char, sizeof(absoluate_path), "/");
   written_char = written_char + 1;
   snprintf(absoluate_path + written_char, sizeof(absoluate_path), "%s", log_filename_);
-  fd_ = open(absoluate_path, O_RDWR);
+  fd_ = open(absoluate_path, O_RDWR|O_CREAT, 00666);
   if (fd_ < 0) {
+				LOG(INFO) << "Log File Path: " << absoluate_path;
     LOG(FATAL) << "UStore::Recovery::LogWorker Init: open log file fails!";
     return false;
   }
@@ -65,7 +67,7 @@ int64_t LogWorker::GetTimeout() {
   return timeout_;
 }
 
-void SetTimeout(int64_t timeout_ms) {
+void LogWorker::SetTimeout(int64_t timeout_ms) {
   timeout_ = timeout_ms;
 }
 
@@ -75,7 +77,7 @@ int64_t LogWorker::GetBufferSize() {
 
 bool LogWorker::SetBufferSize(int64_t buf_size) {
   if (buf_size <= 0) {
-    Log(WARNING) << "UStore::Recovery::LogWorker SetBufferSize: new size < 0";
+    LOG(WARNING) << "UStore::Recovery::LogWorker SetBufferSize: new size < 0";
     return false;
   }
   if (buf_size < buffer_size_) {
@@ -106,10 +108,10 @@ int LogWorker::GetSyncType() {
 
 bool LogWorker::SetSyncType(int type) {
   if (type != 0 && type != 1) {
-    LOG(WARNING) << "UStore::Recovery::LogWorker SetSyncType: input is illegal!"
+    LOG(WARNING) << "UStore::Recovery::LogWorker SetSyncType: input is illegal!";
     return false;
   }
-  log_sync_type_ == type;
+  log_sync_type_ = type;
   return true;
 }
 
@@ -133,7 +135,7 @@ bool LogWorker::WriteLog(char* data, uint64_t data_length) {
         //buffer_lock_->unlock();
         return false;
       }
-      flush_cv->notify_all();  // update the loop in log worker
+      flush_cv_->notify_all();  // update the loop in log worker
     }
     memcpy(buffer_ + buffer_indice_, data, (size_t) data_length);
   }
@@ -163,17 +165,18 @@ void* LogWorker::Run() {
        buffer_lock_->unlock();
     }
   }
+		return nullptr;
 }
 
 int64_t LogWorker::Update(Slice branch_name, Hash new_version) {
-		LogRecord record = new LogRecord();
+		LogRecord* record = new LogRecord();
 		record->key_length = (int64_t) branch_name.len();
 		record->value_length = (int64_t) Hash::kByteLength;
-		record->key = branch_name.data();
-		record->value = reinterpret<char*>(new_version.value());
+		record->key = const_cast<char*>(branch_name.data());
+	 record->value = const_cast<char*>(reinterpret_cast<const char*>(new_version.value()));
 		record->logcmd = LOG_UPDATE;
 	 buffer_lock_->lock();
-		int64_t ret_lsn = _sync_fetch_and_add(&log_sequence_number_, 1);
+		int64_t ret_lsn = log_sequence_number_ + 1;
 		record->log_sequence_number = ret_lsn;
 		record->ComputeChecksum();
 		char* log_data = record->ToString();
@@ -182,18 +185,19 @@ int64_t LogWorker::Update(Slice branch_name, Hash new_version) {
 		if(write_ret == false) {
 			ret_lsn = -1;
 		}
+		log_sequence_number_ = ret_lsn;
 		buffer_lock_->unlock();
 		return ret_lsn;
 }
 int64_t LogWorker::Update(Slice* branch_name, Hash* new_version) {
-		LogRecord record = new LogRecord();
+		LogRecord* record = new LogRecord();
 		record->key_length = (int64_t) branch_name->len();
 		record->value_length = (int16_t) Hash::kByteLength;
-		record->key = branch_name->data();
-		record->value = reinterpret<char*>(new_version->value());
+		record->key = const_cast<char*>(branch_name->data());
+		record->value = const_cast<char*>(reinterpret_cast<const char*>(new_version->value()));
 		record->logcmd = LOG_UPDATE;
 	 buffer_lock_->lock();  // enter the critical section 
-		int64_t ret_lsn = _sync_fetch_and_add(&log_sequence_number_, 1);
+		int64_t ret_lsn = log_sequence_number_ + 1;
 		record->log_sequence_number = ret_lsn;
 		record->ComputeChecksum();
 		char* log_data = record->ToString();
@@ -202,19 +206,20 @@ int64_t LogWorker::Update(Slice* branch_name, Hash* new_version) {
 		if(write_ret == false) {
 			ret_lsn = -1;
 		}
+		log_sequence_number_ = ret_lsn;
 		buffer_lock_->unlock();
 		return ret_lsn;
 }
 
 int64_t LogWorker::Rename(Slice branch_name, Slice new_branch_name) {
-	 LogRecord record = new LogRecord();
+	 LogRecord* record = new LogRecord();
 		record->key_length = (int64_t) branch_name.len();
 		record->value_length = (int16_t) new_branch_name.len();
-		record->key = branch_name.data();
-		record->value = new_branch_name.data();
+		record->key = const_cast<char*>(branch_name.data());
+		record->value = const_cast<char*>(new_branch_name.data());
 		record->logcmd = LOG_RENAME;
 		buffer_lock_->lock();
-		int64_t ret_lsn = _sync_fetch_and_add(&log_sequence_number_, 1);
+		int64_t ret_lsn = log_sequence_number_ + 1;
 		record->log_sequence_number = ret_lsn;
 		record->ComputeChecksum();
 		char* log_data = record->ToString();
@@ -223,19 +228,20 @@ int64_t LogWorker::Rename(Slice branch_name, Slice new_branch_name) {
 		if(write_ret == false) {
 			ret_lsn = -1;
 		}
+		log_sequence_number_ = ret_lsn;
 		buffer_lock_->unlock();
 		return ret_lsn;
 }
 
 int64_t LogWorker::Rename(Slice* branch_name, Slice* new_branch_name) {
-	 LogRecord record = new LogRecord();
+	 LogRecord* record = new LogRecord();
 		record->key_length = (int64_t) branch_name->len();
 		record->value_length = (int16_t) new_branch_name->len();
-		record->key = branch_name->data();
-		record->value = new_branch_name->data();
+		record->key = const_cast<char*>(branch_name->data());
+		record->value = const_cast<char*>(new_branch_name->data());
 		record->logcmd = LOG_RENAME;
 		buffer_lock_->lock();
-		int64_t ret_lsn = _sync_fetch_and_add(&log_sequence_number_, 1);
+		int64_t ret_lsn = log_sequence_number_ + 1;
 		record->log_sequence_number = ret_lsn;
 		record->ComputeChecksum();
 		char* log_data = record->ToString();
@@ -245,18 +251,19 @@ int64_t LogWorker::Rename(Slice* branch_name, Slice* new_branch_name) {
 			ret_lsn = -1;
 		}
 		buffer_lock_->unlock();
+		log_sequence_number_ = ret_lsn;
 		return ret_lsn;
 }
 
 int64_t LogWorker::Remove(Slice branch_name) {
-		LogRecord record = new LogRecord();
+		LogRecord* record = new LogRecord();
 		record->key_length = (int64_t) branch_name.len();
 		record->value_length = 0;
-		record->key = branch_name.data();
+		record->key = const_cast<char*>(branch_name.data());
 		record->value = nullptr;
 		record->logcmd = LOG_REMOVE;
 		buffer_lock_->lock();
-		int64_t ret_lsn = _sync_fetch_and_add(&log_sequence_number_, 1);
+		int64_t ret_lsn = log_sequence_number_ + 1;
 		record->ComputeChecksum();
 		char* log_data = record->ToString();
 		int64_t log_data_length = record->GetLength();
@@ -265,18 +272,19 @@ int64_t LogWorker::Remove(Slice branch_name) {
 			ret_lsn = -1;
 		}
 		buffer_lock_->unlock();
+		log_sequence_number_ = ret_lsn;
 		return ret_lsn;	
 }
 
 int64_t LogWorker::Remove(Slice* branch_name) {
-		LogRecord record = new LogRecord();
+		LogRecord* record = new LogRecord();
 		record->key_length = (int64_t) branch_name->len();
 		record->value_length = 0;
-		record->key = branch_name->data();
+		record->key = const_cast<char*>(branch_name->data());
 		record->value = nullptr;
 		record->logcmd = LOG_REMOVE;
 		buffer_lock_->lock();
-		int64_t ret_lsn = _sync_fetch_and_add(&log_sequence_number_, 1);
+		int64_t ret_lsn = log_sequence_number_ + 1;
 		record->ComputeChecksum();
 		char* log_data = record->ToString();
 		int64_t log_data_length = record->GetLength();
@@ -284,6 +292,7 @@ int64_t LogWorker::Remove(Slice* branch_name) {
 		if(write_ret == false) {
 			ret_lsn = -1;
 		}
+		log_sequence_number_ = ret_lsn;
 		buffer_lock_->unlock();
 		return ret_lsn;	
 }
