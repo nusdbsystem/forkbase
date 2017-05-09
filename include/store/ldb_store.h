@@ -17,7 +17,7 @@ namespace ustore {
 
 class LDBStore
     : private Noncopyable, public Singleton<LDBStore>, public ChunkStore {
-  friend class Singleton<LDBStore>;  
+  friend class Singleton<LDBStore>;
 
  public:
   ~LDBStore();
@@ -25,7 +25,7 @@ class LDBStore
    * store allocates the returned chunck,
    * caller need to release memory after use.
    */
-  const Chunk* Get(const Hash& key) override;
+  Chunk Get(const Hash& key) override;
   bool Put(const Hash& key, const Chunk& chunk) override;
 
  private:

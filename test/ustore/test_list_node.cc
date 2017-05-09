@@ -34,15 +34,14 @@ TEST_F(ListNodeEnv, Chunker) {
   const ustore::byte_t* me_data = chunk_info_.meta_seg->entry(0);
   ustore::MetaEntry me(me_data);
 
-  EXPECT_EQ(chunk_info_.chunk->hash(), me.targetHash());
+  EXPECT_EQ(chunk_info_.chunk.hash(), me.targetHash());
   EXPECT_EQ(chunk_info_.meta_seg->numBytes(), me.numBytes());
   EXPECT_EQ(3, me.numElements());
   EXPECT_EQ(1, me.numLeaves());
 }
 
 TEST_F(ListNodeEnv, ListNode) {
-  chunk_info_.chunk.get()->hash();
-  ustore::ListNode lnode(chunk_info_.chunk.get());
+  ustore::ListNode lnode(&chunk_info_.chunk);
   EXPECT_EQ(3, lnode.numEntries());
   EXPECT_EQ(3, lnode.numElements());
   const ustore::Slice actual_element2 = ustore::ListNode::Decode(lnode.data(1));

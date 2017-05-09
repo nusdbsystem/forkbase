@@ -63,8 +63,8 @@ constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;
 struct LSTChunk {
   const byte_t* chunk_;
   LSTChunk(const byte_t* ptr) noexcept: chunk_(ptr) {}  // NOLINT
-  const Chunk* toChunk() {
-    return new Chunk(chunk_);
+  Chunk toChunk() {
+    return Chunk(chunk_);
   }
 };
 
@@ -223,7 +223,7 @@ class LSTStore
                                                             T, NoCheckPolicy>;
 
   void Sync();
-  virtual const Chunk* Get(const Hash& key);
+  virtual Chunk Get(const Hash& key);
   virtual bool Put(const Hash& key, const Chunk& chunk);
 
   template <typename Iterator = iterator>

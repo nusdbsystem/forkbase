@@ -12,7 +12,7 @@
 namespace ustore {
 
 struct ChunkInfo {
-  std::unique_ptr<const Chunk> chunk;
+  Chunk chunk;
   // a Segment that holding a single MetaEntry bytes
   std::unique_ptr<const Segment> meta_seg;
 };

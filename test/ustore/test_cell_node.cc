@@ -12,9 +12,9 @@ TEST(CellNode, NewCellNode) {
   ustore::UType type = ustore::UType::kBlob;
   std::string cell_key("cell_key");
   ustore::Slice key(cell_key);
-  const ustore::Chunk* chunk =
-      ustore::CellNode::NewChunk(type, key, h1, ustore::Hash::kNull);
-  ustore::CellNode cnode(chunk);
+  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, h1,
+                                                   ustore::Hash::kNull);
+  ustore::CellNode cnode(std::move(chunk));
   EXPECT_EQ(type, cnode.type());
   EXPECT_FALSE(cnode.merged());
   EXPECT_EQ(h1, cnode.dataHash());
@@ -32,10 +32,8 @@ TEST(CellNode, SinglePreHash) {
   ustore::UType type = ustore::UType::kBlob;
   std::string cell_key("cell_key");
   ustore::Slice key(cell_key);
-  const ustore::Chunk* chunk =
-      ustore::CellNode::NewChunk(type, key, h1, h2, h3);
-
-  ustore::CellNode cnode(chunk);
+  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, h1, h2, h3);
+  ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
   EXPECT_FALSE(cnode.merged());
@@ -55,10 +53,8 @@ TEST(CellNode, DoublePreHash) {
   std::string cell_key("cell_key");
   ustore::Slice key(cell_key);
   ustore::UType type = ustore::UType::kBlob;
-  const ustore::Chunk* chunk =
-      ustore::CellNode::NewChunk(type, key, h1, h2, h3);
-
-  ustore::CellNode cnode(chunk);
+  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, h1, h2, h3);
+  ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
   EXPECT_TRUE(cnode.merged());

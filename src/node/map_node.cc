@@ -21,9 +21,9 @@ ChunkInfo MapChunker::Make(const std::vector<const Segment*>& segments) const {
     chunk_num_bytes += seg->numBytes();
   }
 
-  std::unique_ptr<Chunk> chunk(new Chunk(ChunkType::kMap, chunk_num_bytes));
+  Chunk chunk(ChunkType::kMap, chunk_num_bytes);
   uint32_t unum_entries = static_cast<uint32_t>(num_entries);
-  std::memcpy(chunk->m_data(), &unum_entries, sizeof(uint32_t));
+  std::memcpy(chunk.m_data(), &unum_entries, sizeof(uint32_t));
   size_t seg_offset = sizeof(uint32_t);
 
   OrderedKey preKey;
@@ -40,13 +40,13 @@ ChunkInfo MapChunker::Make(const std::vector<const Segment*>& segments) const {
       }
       preKey = currKey;
     }  // end for
-    seg->AppendForChunk(chunk->m_data() + seg_offset);
+    seg->AppendForChunk(chunk.m_data() + seg_offset);
     seg_offset += seg->numBytes();
   }
 
   size_t me_num_bytes;
   std::unique_ptr<const byte_t[]> meta_data(MetaEntry::Encode(
-      1, num_entries, chunk->hash(), preKey, &me_num_bytes));
+      1, num_entries, chunk.hash(), preKey, &me_num_bytes));
 
   std::unique_ptr<const Segment> meta_seg(
       new VarSegment(std::move(meta_data), me_num_bytes, {0}));

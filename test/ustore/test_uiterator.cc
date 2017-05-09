@@ -15,8 +15,8 @@ TEST(UIterator, Basic) {
   ustore::ChunkInfo chunk_info =
     ustore::BlobChunker::Instance()->Make({&seg});
 
-  const ustore::Chunk* chunk = chunk_info.chunk.get();
-  const ustore::Hash hash = chunk_info.chunk->hash();
+  const ustore::Chunk* chunk = &chunk_info.chunk;
+  const ustore::Hash hash = chunk_info.chunk.hash();
 
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
   // Write the constructed chunk to storage

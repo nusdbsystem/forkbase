@@ -109,7 +109,7 @@ TEST(MetaNode, Basic) {
     ustore::MetaChunker::Instance()->Make({&seg1, &seg2});
 
   // test on the created chunk
-  ustore::MetaNode mnode(chunk_info.chunk.get());
+  ustore::MetaNode mnode(&chunk_info.chunk);
 
   EXPECT_FALSE(mnode.isLeaf());
   EXPECT_EQ(3, mnode.numEntries());

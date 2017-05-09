@@ -23,7 +23,7 @@ class ChunkLoader {
   const Chunk* Load(const Hash& key);
 
  private:
-  std::map<Hash, const Chunk*> cache_;
+  std::map<Hash, Chunk> cache_;
   ChunkStore* cs_;
 };
 }  // namespace ustore

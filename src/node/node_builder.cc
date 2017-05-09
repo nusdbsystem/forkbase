@@ -186,19 +186,19 @@ NodeBuilder* NodeBuilder::parent_builder() {
   return parent_builder_;
 }
 
-std::unique_ptr<const Chunk> NodeBuilder::HandleBoundary(
+Chunk NodeBuilder::HandleBoundary(
     const std::vector<const Segment*>& segments) {
   // DLOG(INFO) << "Start Handing Boundary. ";
   ChunkInfo chunk_info = chunker_->Make(segments);
 
-  std::unique_ptr<const Chunk> chunk(std::move(chunk_info.chunk));
+  Chunk& chunk = chunk_info.chunk;
   // Dump chunk into storage here
-  store::GetChunkStore()->Put(chunk->hash(), *chunk);
+  store::GetChunkStore()->Put(chunk.hash(), chunk);
 
   parent_builder()->AppendSegmentEntries(chunk_info.meta_seg.get());
   created_segs_.push_back(std::move(chunk_info.meta_seg));
   rhasher_->ClearLastBoundary();
-  return chunk;
+  return std::move(chunk);
 }
 
 Hash NodeBuilder::Commit() {
@@ -218,7 +218,7 @@ Hash NodeBuilder::Commit() {
   // First thing to do:
   // Detect Boundary and Make Chunk
   //   Pass the MetaEntry to upper level builder
-  std::unique_ptr<const Chunk> last_created_chunk;
+  Chunk last_created_chunk;
   // iterate newly appended entries for making chunk
   //   only detecing a boundary, make a chunk
   // DLOG(INFO) << "\n\nCommit Level: " << level_
@@ -356,11 +356,11 @@ Hash NodeBuilder::Commit() {
   //   because current NodeBuilder is allowed to commit for once.
   // commited_ = true;
 
-  CHECK(last_created_chunk);
+  CHECK(!last_created_chunk.empty());
   // upper node builder would build a tree node with a single metaentry
   //   This node will be excluded from final prolley tree
   // DLOG(INFO) << "Finish one level commiting.\n";
-  Hash root_key(last_created_chunk->hash().Clone());
+  Hash root_key(last_created_chunk.hash().Clone());
   if (!parent_builder()->isInvalidNode()) {
     root_key = parent_builder()->Commit();
   }

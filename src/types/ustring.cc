@@ -24,11 +24,10 @@ bool UString::SetNodeForHash(const Hash& hash) {
 
 SString::SString(const Slice& data) noexcept :
     UString(std::make_shared<ChunkLoader>()) {
-  const Chunk* chunk = StringNode::NewChunk(
-                           reinterpret_cast<const byte_t*>(data.data()),
-                           data.len());
-  store::GetChunkStore()->Put(chunk->hash(), *chunk);
-  SetNodeForHash(chunk->hash());
+  Chunk chunk = StringNode::NewChunk(
+                reinterpret_cast<const byte_t*>(data.data()), data.len());
+  store::GetChunkStore()->Put(chunk.hash(), chunk);
+  SetNodeForHash(chunk.hash());
 }
 
 SString::SString(const Hash& hash) noexcept :

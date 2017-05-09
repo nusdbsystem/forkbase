@@ -64,8 +64,7 @@ class NodeBuilder : Noncopyable {
   //   to upper builders to append
   // reset the rolling hasher
   // return the created chunk
-  std::unique_ptr<const Chunk> HandleBoundary(
-      const std::vector<const Segment*>& segments);
+  Chunk HandleBoundary(const std::vector<const Segment*>& segments);
   // Two things to do:
   //  * Populate the rolling hash with preceding elements before cursor point
   //      until its window size filled up

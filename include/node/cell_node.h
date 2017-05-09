@@ -25,27 +25,27 @@ class CellNode {
  public:
   // Create new chunk contains a new cell,
   // preHash2 is empty hash (Hash()) in this cell.
-  static const Chunk* NewChunk(const UType type, const Slice& key,
-                               const Hash& dataHash, const Hash& preHash);
+  static Chunk NewChunk(const UType type, const Slice& key,
+                        const Hash& dataHash, const Hash& preHash);
   // Create new chunk contains a new cell based on
   // two previous versions, both previous versions are not empty.
   // Used for merge operation.
-  static const Chunk* NewChunk(const UType type, const Slice& key,
-                               const Hash& dataHash, const Hash& preHash1,
-                               const Hash& preHash2);
+  static Chunk NewChunk(const UType type, const Slice& key,
+                        const Hash& dataHash, const Hash& preHash1,
+                        const Hash& preHash2);
 
-  explicit CellNode(const Chunk* chunk) : chunk_(chunk) {}
+  explicit CellNode(Chunk&& chunk) : chunk_(std::move(chunk)) {}
   // cell node does not have chunkloader, need to delete chunk
   ~CellNode() {}
 
   inline UType type() const {
-    return *reinterpret_cast<const UType*>(chunk_->data() + kUTypeOffset);
+    return *reinterpret_cast<const UType*>(chunk_.data() + kUTypeOffset);
   }
   inline bool merged() const {
-    return *reinterpret_cast<const bool*>(chunk_->data() + kMergedOffset);
+    return *reinterpret_cast<const bool*>(chunk_.data() + kMergedOffset);
   }
   inline Hash dataHash() const {
-    return Hash(chunk_->data() + kDataHashOffset);
+    return Hash(chunk_.data() + kDataHashOffset);
   }
   // return empty hash (Hash()) if
   // the request second prehash does not exist
@@ -53,16 +53,16 @@ class CellNode {
 
   inline size_t keyLength() const {
     return static_cast<size_t>(*reinterpret_cast<const key_size_t*>(
-          chunk_->data() + kKeyLenOffset(merged())));
+          chunk_.data() + kKeyLenOffset(merged())));
   }
 
   inline Slice key() const {
     return Slice(reinterpret_cast<const char*>(
-          chunk_->data() + kKeyOffset(merged())), keyLength());
+          chunk_.data() + kKeyOffset(merged())), keyLength());
   }
 
   // hash of this node
-  inline Hash hash() const { return chunk_->hash(); }
+  inline Hash hash() const { return chunk_.hash(); }
 
  private:
   static constexpr size_t kUTypeOffset = 0;
@@ -83,7 +83,7 @@ class CellNode {
     return kKeyOffset(merged) + key_len;
   }
 
-  std::unique_ptr<const Chunk> chunk_;
+  Chunk chunk_;
 };
 
 }  // namespace ustore

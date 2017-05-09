@@ -12,23 +12,22 @@ namespace ustore {
 UCell UCell::Create(UType data_type, const Slice& key,
                     const Hash& data_root_hash, const Hash& preHash1,
                     const Hash& preHash2) {
-  const Chunk* chunk =
-      CellNode::NewChunk(data_type, key, data_root_hash, preHash1, preHash2);
-  store::GetChunkStore()->Put(chunk->hash(), *chunk);
-  return UCell(chunk);
+  Chunk chunk = CellNode::NewChunk(data_type, key, data_root_hash, preHash1,
+                                   preHash2);
+  store::GetChunkStore()->Put(chunk.hash(), chunk);
+  return UCell(std::move(chunk));
 }
 
 UCell UCell::Load(const Hash& hash) {
   // ucell do not need chunk loader, as it has only one chunk
-  const Chunk* chunk = store::GetChunkStore()->Get(hash);
-  return UCell(chunk);
+  return UCell(store::GetChunkStore()->Get(hash));
 }
 
-UCell::UCell(const Chunk* chunk) {
-  if (chunk == nullptr) {
+UCell::UCell(Chunk&& chunk) {
+  if (chunk.empty()) {
     LOG(WARNING) << "Empty Chunk. Loading Failed. ";
-  } else if (chunk->type() == ChunkType::kCell) {
-    node_.reset(new CellNode(chunk));
+  } else if (chunk.type() == ChunkType::kCell) {
+    node_.reset(new CellNode(std::move(chunk)));
   } else {
     LOG(FATAL) << "Cannot be other chunk type for UCell";
   }

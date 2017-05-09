@@ -44,13 +44,13 @@ TEST(BlobChunker, Basic) {
     ustore::BlobChunker::Instance()->Make({&seg1, &seg2});
 
   const ustore::byte_t r[] = "aabbb";
-  EXPECT_EQ(0, memcmp(chunk_info.chunk->data(), r, 5));
+  EXPECT_EQ(0, memcmp(chunk_info.chunk.data(), r, 5));
 
   ASSERT_EQ(1, chunk_info.meta_seg->numEntries());
   const ustore::byte_t* me_data = chunk_info.meta_seg->entry(0);
   ustore::MetaEntry me(me_data);
 
-  EXPECT_EQ(chunk_info.chunk->hash(), me.targetHash());
+  EXPECT_EQ(chunk_info.chunk.hash(), me.targetHash());
   EXPECT_EQ(chunk_info.meta_seg->numBytes(), me.numBytes());
   EXPECT_EQ(5, me.numElements());
   EXPECT_EQ(1, me.numLeaves());

@@ -21,7 +21,7 @@ LDBStore::LDBStore(const std::string& dbpath) {
 
 LDBStore::~LDBStore() { delete db_; }
 
-const Chunk* LDBStore::Get(const Hash& key) {
+Chunk LDBStore::Get(const Hash& key) {
   std::string val;
   auto s = db_->Get(
       rd_opt_,
@@ -31,13 +31,13 @@ const Chunk* LDBStore::Get(const Hash& key) {
   if (s.ok()) {
     std::unique_ptr<byte_t[]> buf(new byte_t[val.size()]);
     std::copy(val.begin(), val.end(), buf.get());
-    Chunk* c = new Chunk(std::move(buf));
+    Chunk c(std::move(buf));
     CHECK(key == c->hash());
     return c;
   } else {
     LOG(ERROR) << "Leveldb chunck storage internal error: " << s.ToString();
   }
-  return nullptr;
+  return Chunk();
 }
 
 bool LDBStore::Put(const Hash& key, const Chunk& chunk) {

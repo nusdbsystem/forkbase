@@ -7,10 +7,10 @@
 
 namespace ustore {
 
-const Chunk* StringNode::NewChunk(const byte_t* data, size_t num_bytes) {
-  Chunk* chunk = new Chunk(ChunkType::kString, sizeof(uint32_t) + num_bytes);
-  *reinterpret_cast<uint32_t*>(chunk->m_data()) = num_bytes;
-  std::memcpy(chunk->m_data() + sizeof(uint32_t), data, num_bytes);
+Chunk StringNode::NewChunk(const byte_t* data, size_t num_bytes) {
+  Chunk chunk(ChunkType::kString, sizeof(uint32_t) + num_bytes);
+  *reinterpret_cast<uint32_t*>(chunk.m_data()) = num_bytes;
+  std::memcpy(chunk.m_data() + sizeof(uint32_t), data, num_bytes);
   return chunk;
 }
 

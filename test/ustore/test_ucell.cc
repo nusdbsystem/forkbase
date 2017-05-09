@@ -14,14 +14,14 @@ TEST(UCell, Load) {
   std::string cell_key("cell_key");
   ustore::Slice key(cell_key);
   ustore::UType type = ustore::UType::kBlob;
-  const ustore::Chunk* chunk =
-      ustore::CellNode::NewChunk(type, key, h1, ustore::Hash::kNull);
+  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, h1,
+                                                   ustore::Hash::kNull);
 
   ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
-  cs->Put(chunk->hash(), *chunk);
+  cs->Put(chunk.hash(), chunk);
 
-  ustore::UCell ucell = ustore::UCell::Load(chunk->hash());
+  ustore::UCell ucell = ustore::UCell::Load(chunk.hash());
 
   EXPECT_EQ(type, ucell.type());
   EXPECT_FALSE(ucell.merged());

@@ -14,15 +14,15 @@ const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";
 TEST(SString, Load) {
   //////////////////////////////////////////////////////
   // Prepare the chunk to load
-  const ustore::Chunk* chunk =
-      ustore::StringNode::NewChunk(raw_data, sizeof(raw_data));
+  ustore::Chunk chunk =
+    ustore::StringNode::NewChunk(raw_data, sizeof(raw_data));
 
   ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
-  cs->Put(chunk->hash(), *chunk);
+  cs->Put(chunk.hash(), chunk);
   //////////////////////////////////////////////////////
 
-  ustore::SString sstring(chunk->hash());
+  ustore::SString sstring(chunk.hash());
   ASSERT_EQ(sizeof(raw_data), sstring.len());
 
   ustore::byte_t* buffer = new ustore::byte_t[sizeof(raw_data)];

@@ -22,14 +22,14 @@ ChunkInfo ListChunker::Make(const std::vector<const Segment*>& segments) const {
     chunk_num_bytes += seg->numBytes();
   }
 
-  std::unique_ptr<Chunk> chunk(new Chunk(ChunkType::kList, chunk_num_bytes));
+  Chunk chunk(ChunkType::kList, chunk_num_bytes);
   uint32_t unum_entries = static_cast<uint32_t>(num_entries);
-  std::memcpy(chunk->m_data(), &unum_entries, sizeof(uint32_t));
+  std::memcpy(chunk.m_data(), &unum_entries, sizeof(uint32_t));
   size_t seg_offset = sizeof(uint32_t);
 
   // Concat segments into chunk one by one
   for (const auto& seg : segments) {
-    seg->AppendForChunk(chunk->m_data() + seg_offset);
+    seg->AppendForChunk(chunk.m_data() + seg_offset);
     seg_offset += seg->numBytes();
   }
 
@@ -37,7 +37,7 @@ ChunkInfo ListChunker::Make(const std::vector<const Segment*>& segments) const {
   // For List, we pad a useless orderkey for create meta_entry
   OrderedKey paddingKey(0);
   std::unique_ptr<const byte_t[]> meta_data(MetaEntry::Encode(
-      1, num_entries, chunk->hash(), paddingKey, &me_num_bytes));
+      1, num_entries, chunk.hash(), paddingKey, &me_num_bytes));
 
   std::unique_ptr<const Segment> meta_seg(
       new VarSegment(std::move(meta_data), me_num_bytes, {0}));

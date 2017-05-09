@@ -91,14 +91,14 @@ TEST(MapNode, Basic) {
   ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->Make(segs);
 
   // First 4 bytes of chunk encode number of items
-  EXPECT_EQ(3, *reinterpret_cast<const uint32_t*>(chunk_info.chunk->data()));
+  EXPECT_EQ(3, *reinterpret_cast<const uint32_t*>(chunk_info.chunk.data()));
   // Subsquent chunk data shall concat 2 kv items
   EXPECT_EQ(0,
-            memcmp(chunk_info.chunk->data() + sizeof(uint32_t),
+            memcmp(chunk_info.chunk.data() + sizeof(uint32_t),
                    seg12->data(),
                    seg12->numBytes()));
   EXPECT_EQ(0,
-            memcmp(chunk_info.chunk->data() + sizeof(uint32_t)
+            memcmp(chunk_info.chunk.data() + sizeof(uint32_t)
                                             + seg12->numBytes(),
                    seg3->data(),
                    seg3->numBytes()));
@@ -108,7 +108,7 @@ TEST(MapNode, Basic) {
   const ustore::byte_t* me_data = chunk_info.meta_seg->entry(0);
   ustore::MetaEntry me(me_data);
 
-  EXPECT_EQ(chunk_info.chunk->hash(), me.targetHash());
+  EXPECT_EQ(chunk_info.chunk.hash(), me.targetHash());
   EXPECT_EQ(chunk_info.meta_seg->numBytes(), me.numBytes());
 
   const ustore::OrderedKey me_key = me.orderedKey();
@@ -119,7 +119,7 @@ TEST(MapNode, Basic) {
   EXPECT_EQ(1, me.numLeaves());
 
   // Test on MetaNode
-  ustore::MapNode mnode(chunk_info.chunk.get());
+  ustore::MapNode mnode(&chunk_info.chunk);
   ASSERT_EQ(3, mnode.numEntries());
   EXPECT_EQ(ustore::MapNode::EncodeNumBytes(kv1), mnode.len(0));
   EXPECT_EQ(ustore::MapNode::EncodeNumBytes(kv3), mnode.len(2));

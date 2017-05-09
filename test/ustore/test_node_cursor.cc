@@ -142,20 +142,20 @@ TEST(NodeCursor, Tree) {
       ustore::MetaChunker::Instance()->Make({&seg_a, &seg_b});
   // delete the useless MetaEntry bytes
 
-  const ustore::Chunk* cm = cm_info.chunk.release();
+  ustore::Chunk cm(std::move(cm_info.chunk));
 
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
 
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
   EXPECT_TRUE(chunk_store->Put(cb.hash(), cb));
-  EXPECT_TRUE(chunk_store->Put(cm->hash(), *cm));
+  EXPECT_TRUE(chunk_store->Put(cm.hash(), cm));
 
   ///////////////////////////////////////////////////////////////
   ustore::ChunkLoader loader;
 
   ustore::NodeCursor* leaf_cursor =
-      ustore::NodeCursor::GetCursorByIndex(cm->hash(), 1, &loader);
+      ustore::NodeCursor::GetCursorByIndex(cm.hash(), 1, &loader);
 
   ASSERT_NE(nullptr, leaf_cursor);
   EXPECT_EQ(1, leaf_cursor->numCurrentBytes());
@@ -197,7 +197,7 @@ TEST(NodeCursor, Tree) {
 
   //// Test Retreating
   ustore::NodeCursor* cur2 =
-      ustore::NodeCursor::GetCursorByIndex(cm->hash(), 3, &loader);
+      ustore::NodeCursor::GetCursorByIndex(cm.hash(), 3, &loader);
   EXPECT_EQ('d', *cur2->current());
   // // points to the frist element after the following retreat
   EXPECT_TRUE(cur2->Retreat(false));
@@ -219,16 +219,16 @@ TEST(NodeCursor, Tree) {
 
   // // last element
   ustore::NodeCursor* cur3 =
-      ustore::NodeCursor::GetCursorByIndex(cm->hash(), 4, &loader);
+      ustore::NodeCursor::GetCursorByIndex(cm.hash(), 4, &loader);
   EXPECT_EQ('e', *cur3->current());
 
   // test the case when index exceeds num elements
   ustore::NodeCursor* cur4 =
-      ustore::NodeCursor::GetCursorByIndex(cm->hash(), 5, &loader);
+      ustore::NodeCursor::GetCursorByIndex(cm.hash(), 5, &loader);
   EXPECT_TRUE(cur4->isEnd());
 
   ustore::NodeCursor* cur5 =
-      ustore::NodeCursor::GetCursorByIndex(cm->hash(), 6, &loader);
+      ustore::NodeCursor::GetCursorByIndex(cm.hash(), 6, &loader);
   EXPECT_TRUE(cur5 == nullptr);
 
   delete leaf_cursor;
@@ -237,7 +237,6 @@ TEST(NodeCursor, Tree) {
   delete cur3;
   delete cur4;
   delete cur5;
-  delete cm;
 }
 
 TEST(NodeCursor, SingleNodeByKey) {
@@ -269,27 +268,24 @@ TEST(NodeCursor, SingleNodeByKey) {
   std::vector<const ustore::Segment*> segs {&seg12, &seg3};
   ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->Make(segs);
 
-  const ustore::Chunk* chunk = chunk_info.chunk.get();
+  ustore::Chunk chunk(std::move(chunk_info.chunk));
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
   ustore::ChunkLoader loader;
-  EXPECT_TRUE(chunk_store->Put(chunk->hash(), *chunk));
+  EXPECT_TRUE(chunk_store->Put(chunk.hash(), chunk));
 
   // Find the smallest key
   bool found = true;
   constexpr ustore::byte_t k0[] = "k0";
   const ustore::OrderedKey key0(false, k0, 2);
   ustore::NodeCursor* cursor = ustore::NodeCursor::GetCursorByKey(
-                                  chunk->hash(), key0,
-                                  &loader);
+                                  chunk.hash(), key0, &loader);
   EXPECT_EQ(0, cursor->idx());
   delete cursor;
 
   // Find the exact key
   found = false;
   const ustore::OrderedKey key1(false, k1, 2);
-  cursor = ustore::NodeCursor::GetCursorByKey(
-                                  chunk->hash(), key1,
-                                  &loader);
+  cursor = ustore::NodeCursor::GetCursorByKey(chunk.hash(), key1, &loader);
   EXPECT_EQ(0, cursor->idx());
   delete cursor;
 
@@ -297,9 +293,7 @@ TEST(NodeCursor, SingleNodeByKey) {
   found = true;
   constexpr ustore::byte_t k12[] = "k12";
   const ustore::OrderedKey key12(false, k12, 3);
-  cursor = ustore::NodeCursor::GetCursorByKey(
-                                  chunk->hash(), key12,
-                                  &loader);
+  cursor = ustore::NodeCursor::GetCursorByKey(chunk.hash(), key12, &loader);
   EXPECT_EQ(1, cursor->idx());
   delete cursor;
 
@@ -307,9 +301,7 @@ TEST(NodeCursor, SingleNodeByKey) {
   found = true;
   constexpr ustore::byte_t k4[] = "k4";
   const ustore::OrderedKey key4(false, k4, 2);
-  cursor = ustore::NodeCursor::GetCursorByKey(
-                                  chunk->hash(), key4,
-                                  &loader);
+  cursor = ustore::NodeCursor::GetCursorByKey(chunk.hash(), key4, &loader);
   EXPECT_EQ(3, cursor->idx());
   delete cursor;
 }
@@ -354,17 +346,17 @@ TEST(NodeCursor, TreeByKey) {
                                                chunk_info12.meta_seg.get()});
 
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
-  EXPECT_TRUE(chunk_store->Put(chunk_info12.chunk->hash(),
-                               *(chunk_info12.chunk)));
+  EXPECT_TRUE(chunk_store->Put(chunk_info12.chunk.hash(),
+                               chunk_info12.chunk));
 
-  EXPECT_TRUE(chunk_store->Put(chunk_info3.chunk->hash(),
-                               *(chunk_info3.chunk)));
+  EXPECT_TRUE(chunk_store->Put(chunk_info3.chunk.hash(),
+                               chunk_info3.chunk));
 
-  EXPECT_TRUE(chunk_store->Put(chunkinfo_meta.chunk->hash(),
-                               *(chunkinfo_meta.chunk)));
+  EXPECT_TRUE(chunk_store->Put(chunkinfo_meta.chunk.hash(),
+                               chunkinfo_meta.chunk));
   //////////////////////////////////////////////////////////////
 
-  ustore::Hash root_hash = chunkinfo_meta.chunk->hash();
+  ustore::Hash root_hash = chunkinfo_meta.chunk.hash();
 
   ustore::ChunkLoader loader;
 
@@ -372,42 +364,33 @@ TEST(NodeCursor, TreeByKey) {
   constexpr ustore::byte_t k0[] = "k0";
   const ustore::OrderedKey key0(false, k0, 2);
   ustore::NodeCursor* cursor = ustore::NodeCursor::GetCursorByKey(
-                                  root_hash, key0,
-                                  &loader);
+                                  root_hash, key0, &loader);
   EXPECT_EQ(0, cursor->idx());
   delete cursor;
 
   // Find the first exact key
   const ustore::OrderedKey key1(false, k1, 2);
-  cursor = ustore::NodeCursor::GetCursorByKey(
-                                  root_hash, key1,
-                                  &loader);
+  cursor = ustore::NodeCursor::GetCursorByKey(root_hash, key1, &loader);
   EXPECT_EQ(0, cursor->idx());
   delete cursor;
 
   // Find the last exact key in a chunk
   const ustore::OrderedKey key2(false, k2, 3);
-  cursor = ustore::NodeCursor::GetCursorByKey(
-                                  root_hash, key2,
-                                  &loader);
+  cursor = ustore::NodeCursor::GetCursorByKey(root_hash, key2, &loader);
   EXPECT_EQ(1, cursor->idx());
   delete cursor;
 
   // Find the non-exact key at start of chunk
   constexpr ustore::byte_t k23[] = "k23";
   const ustore::OrderedKey key23(false, k23, 3);
-  cursor = ustore::NodeCursor::GetCursorByKey(
-                                  root_hash, key23,
-                                  &loader);
+  cursor = ustore::NodeCursor::GetCursorByKey(root_hash, key23, &loader);
   EXPECT_EQ(2, cursor->idx());
   delete cursor;
 
   // Search until the last key
   constexpr ustore::byte_t k4[] = "k4";
   const ustore::OrderedKey key4(false, k4, 2);
-  cursor = ustore::NodeCursor::GetCursorByKey(
-                                  root_hash, key4,
-                                  &loader);
+  cursor = ustore::NodeCursor::GetCursorByKey(root_hash, key4, &loader);
   EXPECT_EQ(2, cursor->idx());
   delete cursor;
 }
@@ -478,9 +461,7 @@ TEST(NodeCursor, MultiStep) {
 
   // Advance to the third leaf chunk first element
   ASSERT_EQ(67 + 38, cr1->AdvanceSteps(67 + 38));
-  ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38,
-                           cr1->current(),
-                           193));
+  ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38, cr1->current(), 193));
   delete cr1;
 
   ustore::NodeCursor* cr2 =
@@ -498,9 +479,7 @@ TEST(NodeCursor, MultiStep) {
 
   // Advance to the third leaf chunk first element
   ASSERT_EQ(1, cr3->AdvanceSteps(1));
-  ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38,
-                           cr3->current(),
-                           193));
+  ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38, cr3->current(), 193));
   delete cr3;
 
   // Advance from first to the last element
@@ -545,11 +524,8 @@ TEST(NodeCursor, MultiStep) {
 
   // Retreat 38 step to first element of the second chunk
   ASSERT_EQ(38, cr8->RetreatSteps(38));
-  ASSERT_EQ(0, std::memcmp(raw_data + 67,
-                           cr8->current(),
-                           38));
+  ASSERT_EQ(0, std::memcmp(raw_data + 67, cr8->current(), 38));
   delete cr8;
-
 
   // Place cursor at seq end
   ustore::NodeCursor* cr9 =
@@ -558,11 +534,8 @@ TEST(NodeCursor, MultiStep) {
 
   // Retreat to first element of the first chunk
   ASSERT_EQ(num_bytes, cr9->RetreatSteps(num_bytes));
-  ASSERT_EQ(0, std::memcmp(raw_data,
-                           cr9->current(),
-                           67));
+  ASSERT_EQ(0, std::memcmp(raw_data, cr9->current(), 67));
   delete cr9;
-
 
   // Place cursor at seq end
   ustore::NodeCursor* cr10 =
@@ -573,6 +546,4 @@ TEST(NodeCursor, MultiStep) {
   ASSERT_EQ(num_bytes + 1, cr10->RetreatSteps(num_bytes + 5));
   ASSERT_TRUE(cr10->isBegin());
   delete cr10;
-
-
 }

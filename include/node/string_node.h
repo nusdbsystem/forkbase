@@ -16,7 +16,7 @@ class StringNode : public UNode {
 
 */
  public:
-  static const Chunk* NewChunk(const byte_t* data, size_t num_bytes);
+  static Chunk NewChunk(const byte_t* data, size_t num_bytes);
 
   explicit StringNode(const Chunk* chunk) : UNode(chunk) {}
   ~StringNode() = default;

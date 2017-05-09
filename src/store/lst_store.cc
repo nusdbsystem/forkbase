@@ -323,7 +323,7 @@ void LSTStore::Load(void* address) {
   }
 }
 
-const Chunk* LSTStore::Get(const Hash& key) {
+Chunk LSTStore::Get(const Hash& key) {
   LSTHash hash(key.value());
   CHECK_EQ(this->chunk_map_.count(hash), 1);
   return this->chunk_map_.at(hash).toChunk();

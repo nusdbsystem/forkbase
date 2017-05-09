@@ -26,14 +26,15 @@ class Chunk : private Noncopyable {
   static constexpr size_t kChunkTypeOffset = kNumBytesOffset + sizeof(uint32_t);
   static constexpr size_t kMetaLength = kChunkTypeOffset + sizeof(ChunkType);
 
+  // create an empty chunk
+  Chunk() : Chunk(nullptr) {}
   // allocate a new chunk with usable capacity (excluding meta data)
   Chunk(ChunkType type, uint32_t capacity);
   // create chunk but not own the data
   explicit inline Chunk(const byte_t* head) noexcept : head_(head) {}
   // create chunk and let it own the data
   explicit Chunk(std::unique_ptr<byte_t[]> head) noexcept;
-
-  // this is required for chunk store iterator
+  // movable
   Chunk(Chunk&& other) noexcept : own_(std::move(other.own_)),
     hash_(std::move(other.hash_)), head_(other.head_) {
     other.head_ = nullptr;
@@ -41,6 +42,15 @@ class Chunk : private Noncopyable {
 
   ~Chunk() {}
 
+  // movable
+  inline Chunk& operator=(Chunk&& other) {
+    own_.swap(other.own_);
+    std::swap(hash_, other.hash_);
+    std::swap(head_, other.head_);
+    return *this;
+  }
+
+  inline bool empty() const noexcept { return head_ == nullptr; }
   // total number of bytes
   inline uint32_t numBytes() const noexcept {
     return *reinterpret_cast<const uint32_t*>(head_ + kNumBytesOffset);

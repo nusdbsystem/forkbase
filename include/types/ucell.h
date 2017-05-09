@@ -48,7 +48,7 @@ class UCell : private Noncopyable {
 
  private:
   // Private contructor to be called by Load() or Create()
-  explicit UCell(const Chunk* chunk);
+  explicit UCell(Chunk&& chunk);
 
   std::unique_ptr<const CellNode> node_;
 };
