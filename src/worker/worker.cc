@@ -4,7 +4,6 @@
 
 #include <memory>
 #include "spec/blob.h"
-#include "store/chunk_store.h"
 #include "types/ublob.h"
 #include "types/ustring.h"
 #include "utils/logging.h"
@@ -29,7 +28,7 @@ ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) {
 }
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
-  auto& version_opt = head_ver_.GetBranch(key, branch);
+  const auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
     LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
                  << "\" does not exist!";
@@ -98,7 +97,7 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
                       const Hash& prev_ver, Hash* ver) {
   if (branch.empty()) return Put(key, val, prev_ver, ver);
-  ErrorCode ec = Write(key, val, prev_ver, Hash::kNull, ver);
+  const auto ec = Write(key, val, prev_ver, Hash::kNull, ver);
   if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
   return ec;
 }
@@ -133,7 +132,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
   // TO change later
   const Slice slice(reinterpret_cast<const char*>(blob.data()),
                     blob.size());
-  SBlob sblob(slice);
+  const SBlob sblob(slice);
   if (sblob.empty()) {
     LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateSBlob;
@@ -145,8 +144,8 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
 ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                               const Hash& prev_ver1, const Hash& prev_ver2,
                               Hash* ver) {
-  Slice slice = val.slice();
-  SString sstring(slice);
+  const Slice slice = val.slice();
+  const SString sstring(slice);
   if (sstring.empty()) {
     LOG(ERROR) << "Failed to create ustring for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateSString;
@@ -243,7 +242,7 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
 
 ErrorCode Worker::Branch(const Slice& key, const Slice& old_branch,
                          const Slice& new_branch) {
-  auto& version_opt = head_ver_.GetBranch(key, old_branch);
+  const auto& version_opt = head_ver_.GetBranch(key, old_branch);
   if (!version_opt) {
     LOG(ERROR) << "Branch \"" << old_branch << "\" for Key \"" << key
                << "\" does not exist!";
@@ -277,42 +276,6 @@ ErrorCode Worker::Rename(const Slice& key, const Slice& old_branch,
   }
   head_ver_.RenameBranch(key, old_branch, new_branch);
   return ErrorCode::kOK;
-}
-
-ErrorCode Worker::Merge(const Slice& key, const Value& val,
-                        const Slice& tgt_branch, const Slice& ref_branch,
-                        Hash* ver) {
-  auto& ref_ver_opt = head_ver_.GetBranch(key, ref_branch);
-  if (!ref_ver_opt) {
-    LOG(ERROR) << "Branch \"" << ref_branch << "\" for Key \"" << key
-               << "\" does not exist!";
-    return ErrorCode::kBranchNotExists;
-  }
-  return Merge(key, val, tgt_branch, *ref_ver_opt, ver);
-}
-
-ErrorCode Worker::Merge(const Slice& key, const Value& val,
-                        const Slice& tgt_branch, const Hash& ref_ver,
-                        Hash* ver) {
-  auto& tgt_ver_opt = head_ver_.GetBranch(key, tgt_branch);
-  if (!tgt_ver_opt) {
-    LOG(ERROR) << "Branch \"" << tgt_branch << "\" for Key \"" << key
-               << "\" does not exist!";
-    return ErrorCode::kBranchNotExists;
-  }
-  ErrorCode ec = Write(key, val, *tgt_ver_opt, ref_ver, ver);
-  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, tgt_branch, *ver);
-  return ec;
-}
-
-ErrorCode Worker::Merge(const Slice& key, const Value& val,
-                        const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver) {
-  return Write(key, val, ref_ver1, ref_ver2, ver);
-}
-
-const Chunk* Worker::GetChunk(const Slice& key, const Hash& ver) {
-  static const auto chunk_store = store::GetChunkStore();
-  return chunk_store->Get(ver);
 }
 
 }  // namespace ustore

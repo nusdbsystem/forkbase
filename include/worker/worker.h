@@ -10,6 +10,7 @@
 #include "spec/db.h"
 #include "spec/slice.h"
 #include "spec/value.h"
+#include "store/chunk_store.h"
 #include "types/type.h"
 #include "types/ucell.h"
 #include "utils/noncopyable.h"
@@ -22,7 +23,7 @@ using WorkerID = uint32_t;
 /**
  * @brief Worker node management.
  */
-class Worker : public DB, private Noncopyable {
+class Worker : public DB2, private Noncopyable {
  public:
   explicit Worker(const WorkerID& id) : id_(id) {}
   ~Worker() {}
@@ -118,8 +119,7 @@ class Worker : public DB, private Noncopyable {
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
    * @return        Error code. (ErrorCode::ok for success)
    */
-  ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell);
-
+  ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell) override;
 
   /**
    * @brief Read the value of a version.
@@ -129,7 +129,7 @@ class Worker : public DB, private Noncopyable {
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
    * @return        Error code. (ErrorCode::ok for success)
    */
-  ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell);
+  ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell) override;
 
   /**
    * @brief Read data.
@@ -166,17 +166,6 @@ class Worker : public DB, private Noncopyable {
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 Hash* ver) override;
 
-  /**
-   * @brief Write data.
-   *
-   * Write data based on the branch head. If the branch does not exist, the
-   * write will be based on the Hash::kNull.
-   *
-   * @param key Data key.
-   * @param val Data val.
-   * @param branch The operating branch.
-   * @return Error code. (0 for success)
-   */
   inline ErrorCode Put(const Slice& key, const Value& val,
                        const Slice& branch) {
     static Hash ver;
@@ -195,14 +184,6 @@ class Worker : public DB, private Noncopyable {
   ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
                 Hash* ver) override;
 
-  /**
-   * @brief Write data.
-   *
-   * @param key Data key.
-   * @param val Data val.
-   * @param prev_ver The previous ver of data.
-   * @return Error code. (0 for success)
-   */
   inline ErrorCode Put(const Slice& key, const Value& val,
                        const Hash& prev_ver) {
     static Hash ver;
@@ -219,7 +200,13 @@ class Worker : public DB, private Noncopyable {
    * @return        Error code. (ErrorCode::ok for success)
    */
   ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
-                Hash* ver);
+                Hash* ver) override;
+
+  inline ErrorCode Put(const Slice& key, const Value2& val,
+                       const Slice& branch) {
+    static Hash ver;
+    return Put(key, val, branch, &ver);
+  }
 
   /**
    * @brief Write a new value as the successor of a version.
@@ -231,7 +218,13 @@ class Worker : public DB, private Noncopyable {
    * @return            Error code. (ErrorCode::ok for success)
    */
   ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver,
-                Hash* ver);
+                Hash* ver) override;
+
+  inline ErrorCode Put(const Slice& key, const Value2& val,
+                       const Hash& prev_ver) {
+    static Hash ver;
+    return Put(key, val, prev_ver, &ver);
+  }
 
   /**
    * @brief Create a new branch for the data.
@@ -274,22 +267,16 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Slice& ref_branch, Hash* ver) override;
+  inline ErrorCode Merge(const Slice& key, const Value& val,
+                         const Slice& tgt_branch, const Slice& ref_branch,
+                         Hash* ver) override {
+    return MergeImpl(key, val, tgt_branch, ref_branch, ver);
+  }
 
-  /**
-   * @brief Merge two branches of the data.
-   *
-   * @param key Data key.
-   * @param val Data value.
-   * @param tgt_branch The target branch.
-   * @param ref_branch The referring branch.
-   * @return Error code. (0 for success)
-   */
   inline ErrorCode Merge(const Slice& key, const Value& val,
                          const Slice& tgt_branch, const Slice& ref_branch) {
     static Hash ver;
-    return Merge(key, val, tgt_branch, ref_branch, &ver);
+    return MergeImpl(key, val, tgt_branch, ref_branch, &ver);
   }
 
   /**
@@ -302,22 +289,16 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Hash& ref_ver, Hash* ver) override;
+  inline ErrorCode Merge(const Slice& key, const Value& val,
+                         const Slice& tgt_branch, const Hash& ref_ver,
+                         Hash* ver) override {
+    return MergeImpl(key, val, tgt_branch, ref_ver, ver);
+  }
 
-  /**
-   * @brief Merge two branches of the data.
-   *
-   * @param key Data key.
-   * @param val Data value.
-   * @param tgt_branch The target branch.
-   * @param ref_ver The referring version of data.
-   * @return Error code. (0 for success)
-   */
   inline ErrorCode Merge(const Slice& key, const Value& val,
                          const Slice& tgt_branch, const Hash& ref_ver) {
     static Hash ver;
-    return Merge(key, val, tgt_branch, ref_ver, &ver);
+    return MergeImpl(key, val, tgt_branch, ref_ver, &ver);
   }
 
   /**
@@ -330,25 +311,88 @@ class Worker : public DB, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Merge(const Slice& key, const Value& val, const Hash& ref_ver1,
-                  const Hash& ref_ver2, Hash* ver) override;
+  inline ErrorCode Merge(const Slice& key, const Value& val,
+                         const Hash& ref_ver1, const Hash& ref_ver2,
+                         Hash* ver) override {
+    return MergeImpl(key, val, ref_ver1, ref_ver2, ver);
+  }
 
-  /**
-   * @brief Merge two versions of the data.
-   *
-   * @param key Data key.
-   * @param val Data value.
-   * @param ref_ver1 The referring version of data.
-   * @param ref_ver2 The referring version of data.
-   * @return Error code. (0 for success)
-   */
   inline ErrorCode Merge(const Slice& key, const Value& val,
                          const Hash& ref_ver1, const Hash& ref_ver2) {
     static Hash ver;
-    return Merge(key, val, ref_ver1, ref_ver2, &ver);
+    return MergeImpl(key, val, ref_ver1, ref_ver2, &ver);
   }
 
-  const Chunk* GetChunk(const Slice& key, const Hash& ver);
+  /**
+   * @brief Merge target branch to a referring branch.
+   *
+   * @param key         Target key.
+   * @param tgt_branch  The target branch.
+   * @param ref_branch  The referring branch.
+   * @param value       (Optional) use if cannot auto-resolve conflicts.
+   * @param version     Returned version.
+   * @return            Error code. (ErrorCode::ok for success)
+   */
+  inline ErrorCode Merge(const Slice& key, const Value2& val,
+                         const Slice& tgt_branch, const Slice& ref_branch,
+                         Hash* ver) override {
+    return MergeImpl(key, val, tgt_branch, ref_branch, ver);
+  }
+
+  inline ErrorCode Merge(const Slice& key, const Value2& val,
+                         const Slice& tgt_branch, const Slice& ref_branch) {
+    static Hash ver;
+    return MergeImpl(key, val, tgt_branch, ref_branch, &ver);
+  }
+
+  /**
+   * @brief Merge target branch to a referring version.
+   *
+   * @param key         Target key.
+   * @param tgt_branch  The target branch.
+   * @param ref_version The referring version.
+   * @param value       (Optional) use if cannot auto-resolve conflicts.
+   * @param version     Returned version.
+   * @return            Error code. (ErrorCode::ok for success)
+   */
+  inline ErrorCode Merge(const Slice& key, const Value2& val,
+                         const Slice& tgt_branch, const Hash& ref_ver,
+                         Hash* ver) override {
+    return MergeImpl(key, val, tgt_branch, ref_ver, ver);
+  }
+
+  inline ErrorCode Merge(const Slice& key, const Value2& val,
+                         const Slice& tgt_branch, const Hash& ref_ver) {
+    static Hash ver;
+    return MergeImpl(key, val, tgt_branch, ref_ver, &ver);
+  }
+
+  /**
+   * @brief Merge two existing versions.
+   *
+   * @param key           Target key.
+   * @param ref_version1  The first referring branch.
+   * @param ref_version2  The second referring version.
+   * @param value         (Optional) use if cannot auto-resolve conflicts.
+   * @param version       Returned version.
+   * @return              Error code. (ErrorCode::ok for success)
+   */
+  inline ErrorCode Merge(const Slice& key, const Value2& val,
+                         const Hash& ref_ver1, const Hash& ref_ver2,
+                         Hash* ver) override {
+    return MergeImpl(key, val, ref_ver1, ref_ver2, ver);
+  }
+
+  inline ErrorCode Merge(const Slice& key, const Value2& val,
+                         const Hash& ref_ver1, const Hash& ref_ver2) {
+    static Hash ver;
+    return MergeImpl(key, val, ref_ver1, ref_ver2, &ver);
+  }
+
+  inline Chunk GetChunk(const Slice& key, const Hash& ver) override {
+    static const auto chunk_store = store::GetChunkStore();
+    return chunk_store->Get(ver);
+  }
 
  private:
   ErrorCode Read(const UCell& ucell, Value* val) const;
@@ -372,25 +416,65 @@ class Worker : public DB, private Noncopyable {
                         const Hash& utype_hash, const Hash& prev_ver1,
                         const Hash& prev_ver2, Hash* ver);
 
-  /**
-   * @brief Write data.
-   *
-   * @param key Data key.
-   * @param val Data val.
-   * @param branch The operating branch.
-   * @param prev_ver The previous ver of data.
-   * @param ver Accommodator of the new data version.
-   * @return Error code. (0 for success)
-   */
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
 
   ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
 
+  template<class T>
+  ErrorCode MergeImpl(const Slice& key, const T& val,
+                      const Slice& tgt_branch, const Slice& ref_branch,
+                      Hash* ver);
+
+  template<class T>
+  ErrorCode MergeImpl(const Slice& key, const T& val,
+                      const Slice& tgt_branch, const Hash& ref_ver,
+                      Hash* ver);
+
+  template<class T>
+  ErrorCode MergeImpl(const Slice& key, const T& val,
+                      const Hash& ref_ver1, const Hash& ref_ver2,
+                      Hash* ver);
+
   const WorkerID id_;
   HeadVersion head_ver_;
 };
+
+template<class T>
+ErrorCode Worker::MergeImpl(const Slice& key, const T& val,
+                            const Slice& tgt_branch, const Slice& ref_branch,
+                            Hash* ver) {
+  const auto& ref_ver_opt = head_ver_.GetBranch(key, ref_branch);
+  if (!ref_ver_opt) {
+    LOG(ERROR) << "Branch \"" << ref_branch << "\" for Key \"" << key
+               << "\" does not exist!";
+    return ErrorCode::kBranchNotExists;
+  }
+  return Merge(key, val, tgt_branch, *ref_ver_opt, ver);
+}
+
+template<class T>
+ErrorCode Worker::MergeImpl(const Slice& key, const T& val,
+                            const Slice& tgt_branch, const Hash& ref_ver,
+                            Hash* ver) {
+  const auto& tgt_ver_opt = head_ver_.GetBranch(key, tgt_branch);
+  if (!tgt_ver_opt) {
+    LOG(ERROR) << "Branch \"" << tgt_branch << "\" for Key \"" << key
+               << "\" does not exist!";
+    return ErrorCode::kBranchNotExists;
+  }
+  ErrorCode ec = Write(key, val, *tgt_ver_opt, ref_ver, ver);
+  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, tgt_branch, *ver);
+  return ec;
+}
+
+template<class T>
+ErrorCode Worker::MergeImpl(const Slice& key, const T& val,
+                            const Hash& ref_ver1, const Hash& ref_ver2,
+                            Hash* ver) {
+  return Write(key, val, ref_ver1, ref_ver2, ver);
+}
 
 #ifdef MOCK_TEST
 class MockWorker : public Worker {
