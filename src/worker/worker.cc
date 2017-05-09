@@ -4,6 +4,7 @@
 
 #include <memory>
 #include "spec/blob.h"
+#include "store/chunk_store.h"
 #include "types/ublob.h"
 #include "types/ustring.h"
 #include "utils/logging.h"
@@ -16,23 +17,40 @@ const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
 }
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) {
+  UCell ucell;
+  const auto ec = Get(key, branch, &ucell);
+  return ec == ErrorCode::kOK ? Read(ucell, val) : ec;
+}
+
+ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) {
+  UCell ucell;
+  const auto ec = Get(key, ver, &ucell);
+  return ec == ErrorCode::kOK ? Read(ucell, val) : ec;
+}
+
+ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
   auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
     LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
                  << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
-  return Get(key, *version_opt, val);
+  return Get(key, *version_opt, ucell);
 }
 
-ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) {
+ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) {
   DCHECK_NE(ver, Hash::kNull);
-  UCell ucell(UCell::Load(ver));
-  if (ucell.empty()) {
+  *ucell = UCell::Load(ver);
+  if (ucell->empty()) {
     LOG(WARNING) << "Data version \"" << ver << "\" does not exists!";
     return ErrorCode::kUCellNotfound;
   }
-  return Read(ucell, val);
+  if (ucell->key() != key) {
+    LOG(ERROR) << "Inconsistent data key: [Expected] " << key
+               << ", [Actual] " << ucell->key();
+    return ErrorCode::kInconsistentKey;
+  }
+  return ErrorCode::kOK;
 }
 
 ErrorCode Worker::Read(const UCell& ucell, Value* val) const {
@@ -137,6 +155,79 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                      ver);
 }
 
+ErrorCode Worker::Put(const Slice& key, const Value2& val,
+                      const Slice& branch, Hash* ver) {
+  return Put(key, val, branch, GetBranchHead(key, branch), ver);
+}
+
+ErrorCode Worker::Put(const Slice& key, const Value2& val, const Slice& branch,
+                      const Hash& prev_ver, Hash* ver) {
+  if (branch.empty()) return Put(key, val, prev_ver, ver);
+  ErrorCode ec = Write(key, val, prev_ver, Hash::kNull, ver);
+  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
+  return ec;
+}
+
+ErrorCode Worker::Put(const Slice& key, const Value2& val,
+                      const Hash& prev_ver, Hash* ver) {
+  return Write(key, val, prev_ver, Hash::kNull, ver);
+}
+
+ErrorCode Worker::Write(const Slice& key, const Value2& val,
+                        const Hash& prev_ver1, const Hash& prev_ver2,
+                        Hash* ver) {
+  ErrorCode ec = ErrorCode::kTypeUnsupported;
+  switch (val.type) {
+    case UType::kBlob:
+      ec = WriteBlob(key, val, prev_ver1, prev_ver2, ver);
+      break;
+    case UType::kString:
+      ec = WriteString(key, val, prev_ver1, prev_ver2, ver);
+      break;
+    default:
+      LOG(WARNING) << "Unsupported data type: " << static_cast<int>(val.type);
+  }
+  return ec;
+}
+
+ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
+                            const Hash& prev_ver1, const Hash& prev_ver2,
+                            Hash* ver) {
+  DCHECK(val.type == UType::kBlob);
+  if (val.vals.size() != 1) return ErrorCode::kInvalidValue2;
+  const Slice slice = val.vals.front();
+  if (val.base == Hash::kNull) { // new insertion
+    SBlob sblob(slice);
+    if (sblob.empty()) {
+      LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
+      return ErrorCode::kFailedCreateSBlob;
+    }
+    return CreateUCell(key, UType::kBlob, sblob.hash(), prev_ver1, prev_ver2,
+                       ver);
+  } else { // update
+    SBlob sblob(val.base);
+    const auto data = reinterpret_cast<const byte_t*>(slice.data());
+    const auto data_hash = sblob.Splice(val.pos, val.dels, data, slice.len());
+    if (*ver == Hash::kNull) return ErrorCode::kFailedSpliceSBlob;
+    return CreateUCell(key, UType::kBlob, data_hash, prev_ver1, prev_ver2,
+                       ver);
+  }
+}
+
+ErrorCode Worker::WriteString(const Slice& key, const Value2& val,
+                              const Hash& prev_ver1, const Hash& prev_ver2,
+                              Hash* ver) {
+  DCHECK(val.type == UType::kString);
+  if (val.vals.size() != 1) return ErrorCode::kInvalidValue2;
+  SString sstr(val.vals.front());
+  if (sstr.empty()) {
+    LOG(ERROR) << "Failed to create SString for Key \"" << key << "\"";
+    return ErrorCode::kFailedCreateSString;
+  }
+  return CreateUCell(key, UType::kString, sstr.hash(), prev_ver1, prev_ver2,
+                     ver);
+}
+
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                               const Hash& utype_hash, const Hash& prev_ver1,
                               const Hash& prev_ver2, Hash* ver) {
@@ -217,6 +308,11 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver) {
   return Write(key, val, ref_ver1, ref_ver2, ver);
+}
+
+const Chunk* Worker::GetChunk(const Slice& key, const Hash& ver) {
+  static const auto chunk_store = store::GetChunkStore();
+  return chunk_store->Get(ver);
 }
 
 }  // namespace ustore

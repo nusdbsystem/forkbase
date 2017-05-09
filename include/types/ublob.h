@@ -29,17 +29,17 @@ class UBlob : public ChunkableType {
    *
    *  Args:
    *    pos: the byte position to remove or insert bytes
-   *    num_delete: the number of bytes to be deleted
+   *    n_delete_bytes: the number of bytes to be deleted
    *    data: the byte array to insert after deletion
-   *    num_insert: number of bytes in array to be inserted into current blob
+   *    n_insert_bytes: number of bytes in array to be inserted into current blob
    *
    *  Return:
    *    the new Blob reflecting the operation
    */
 
-  virtual Hash Splice(size_t pos, size_t num_delete,
+  virtual Hash Splice(size_t pos, size_t n_delete_bytes,
                       const byte_t* data,
-                      size_t num_insert) const = 0;
+                      size_t n_insert_bytes) const = 0;
 
   // * Insert bytes given a position
 

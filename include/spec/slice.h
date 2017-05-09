@@ -52,12 +52,21 @@ class Slice {
     if (len_ != slice.len_) return false;
     return std::memcmp(data_, slice.data_, len_) == 0;
   }
+  inline bool operator!=(const Slice& slice) const {
+    return !operator==(slice);
+  }
   inline bool operator==(const std::string& str) const {
     if (len_ != str.size()) return false;
     return std::memcmp(data_, str.c_str(), len_) == 0;
   }
+  inline bool operator!=(const std::string& str) const {
+    return !operator==(str);
+  }
   friend inline bool operator==(const std::string& str, const Slice& slice) {
     return slice == str;
+  }
+  friend inline bool operator!=(const std::string& str, const Slice& slice) {
+    return str != slice;
   }
 
   inline bool empty() const { return len_ == 0; }

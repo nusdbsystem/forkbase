@@ -220,8 +220,7 @@ class DB2 : public DB {
    * @param chunk   Returned chunk.
    * @return        Error code. (ErrorCode::ok for success)
    */
-  virtual ErrorCode GetChunk(const Slice& key, const Hash& version,
-                             Chunk* chunk) = 0;
+  virtual const Chunk* GetChunk(const Slice& key, const Hash& version) = 0;
 };
 
 }  // namespace ustore

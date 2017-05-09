@@ -80,7 +80,10 @@ enum class ErrorCode : byte_t {
   kInvalidParameters = 9,
   kFailedCreateUCell = 10,
   kFailedCreateSBlob = 11,
-  kFailedCreateSString = 12
+  kFailedCreateSString = 12,
+  kInconsistentKey = 13,
+  kInvalidValue2 = 14,
+  kFailedSpliceSBlob = 15
 };
 
 }  // namespace ustore

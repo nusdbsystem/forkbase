@@ -5,6 +5,7 @@
 
 #include <unordered_set>
 #include <vector>
+#include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "spec/db.h"
 #include "spec/slice.h"
@@ -110,6 +111,27 @@ class Worker : public DB, private Noncopyable {
   }
 
   /**
+   * @brief Read the value which is the head of a branch.
+   *
+   * @param key     Target key.
+   * @param branch  Branch to read.
+   * @param ucell   Accommodator of the to-be-retrieved UCell object.
+   * @return        Error code. (ErrorCode::ok for success)
+   */
+  ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell);
+
+
+  /**
+   * @brief Read the value of a version.
+   *
+   * @param key     Target key.
+   * @param ver     Version to read.
+   * @param ucell   Accommodator of the to-be-retrieved UCell object.
+   * @return        Error code. (ErrorCode::ok for success)
+   */
+  ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell);
+
+  /**
    * @brief Read data.
    *
    * @param key Data key.
@@ -186,6 +208,30 @@ class Worker : public DB, private Noncopyable {
     static Hash ver;
     return Put(key, val, prev_ver, &ver);
   }
+
+  /**
+   * @brief Write a new value as the head of a branch.
+   *
+   * @param key     Target key.
+   * @param branch  Branch to update.
+   * @param value   Value to write.
+   * @param version Returned version.
+   * @return        Error code. (ErrorCode::ok for success)
+   */
+  ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
+                Hash* ver);
+
+  /**
+   * @brief Write a new value as the successor of a version.
+   *
+   * @param key         Target key.
+   * @param pre_version Previous version refered to.
+   * @param value       Value to write.
+   * @param version     Returned version.
+   * @return            Error code. (ErrorCode::ok for success)
+   */
+  ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver,
+                Hash* ver);
 
   /**
    * @brief Create a new branch for the data.
@@ -302,6 +348,8 @@ class Worker : public DB, private Noncopyable {
     return Merge(key, val, ref_ver1, ref_ver2, &ver);
   }
 
+  const Chunk* GetChunk(const Slice& key, const Hash& ver);
+
  private:
   ErrorCode Read(const UCell& ucell, Value* val) const;
   ErrorCode ReadBlob(const UCell& ucell, Value* val) const;
@@ -311,6 +359,13 @@ class Worker : public DB, private Noncopyable {
   ErrorCode WriteBlob(const Slice& key, const Value& val, const Hash& prev_ver1,
                       const Hash& prev_ver2, Hash* ver);
   ErrorCode WriteString(const Slice& key, const Value& val,
+                        const Hash& prev_ver1, const Hash& prev_ver2,
+                        Hash* ver);
+  ErrorCode Write(const Slice& key, const Value2& val, const Hash& prev_ver1,
+                  const Hash& prev_ver2, Hash* ver);
+  ErrorCode WriteBlob(const Slice& key, const Value2& val, const Hash& prev_ver1,
+                      const Hash& prev_ver2, Hash* ver);
+  ErrorCode WriteString(const Slice& key, const Value2& val,
                         const Hash& prev_ver1, const Hash& prev_ver2,
                         Hash* ver);
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
@@ -328,6 +383,9 @@ class Worker : public DB, private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+                const Hash& prev_ver, Hash* ver);
+
+  ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
 
   const WorkerID id_;

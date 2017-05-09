@@ -15,7 +15,9 @@ using SliceFwdList = std::forward_list<Slice>;
 using ValueVec = std::vector<Value>;
 using HashVec = std::vector<Hash>;
 
-const Slice key[] = {Slice("KeyZero"), Slice("KeyOne"), Slice("KeyThree")};
+const Slice key[] = {
+  Slice("KeyZero"), Slice("KeyOne"), Slice("KeyTwo"), Slice("KeyThree")
+};
 
 const Slice branch[] = {
   Slice("BranchMaster"), Slice("BranchFirst"), Slice("BranchSecond"),
@@ -215,4 +217,52 @@ TEST(Worker, UnnamedBranch_Merge) {
   worker.Get(key[1], ver[10], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   EXPECT_EQ(val_blob[10], value);
+}
+
+TEST(Worker, NamedBranch_GetPutString_Value2) {
+  Hash version;
+
+  Value2 val2;
+  val2.type = UType::kString;
+  val2.base = Hash::kNull;
+  EXPECT_EQ(0, val2.vals.size());
+  val2.vals.emplace_back(val_str.back().slice());
+
+  EXPECT_EQ(0, worker.ListBranch(key[2]).size());
+
+  val2.vals[0] = val_str[0].slice();
+  ec = worker.Put(key[2], val2, branch[0], &version);
+  EXPECT_EQ(ErrorCode::kOK, ec);
+  ver.push_back(std::move(version));  // ver[11]
+  EXPECT_EQ(1, worker.ListBranch(key[2]).size());
+  EXPECT_EQ(ver[11], worker.GetBranchHead(key[2], branch[0]));
+  EXPECT_TRUE(worker.IsLatest(key[2], ver[11]));
+
+  val2.vals[0] = val_str[1].slice();
+  ec = worker.Put(key[2], val2, branch[0], &version);
+  EXPECT_EQ(ErrorCode::kOK, ec);
+  ver.push_back(std::move(version));  // ver[12]
+  EXPECT_FALSE(worker.IsBranchHead(key[2], branch[0], ver[11]));
+  EXPECT_TRUE(worker.IsLatest(key[2], ver[12]));
+
+  val2.vals[0] = val_str[2].slice();
+  ec = worker.Put(key[2], val2, branch[1], &version);
+  EXPECT_EQ(ErrorCode::kOK, ec);
+  ver.push_back(std::move(version));  // ver[13]
+  EXPECT_EQ(2, worker.ListBranch(key[2]).size());
+
+  Value value;
+
+  ec = worker.Get(key[2], ver[11], &value);
+  EXPECT_EQ(ErrorCode::kOK, ec);
+  EXPECT_EQ(val_str[0], value);
+
+  ec = worker.Get(key[2], branch[0], &value);
+  EXPECT_EQ(ErrorCode::kOK, ec);
+  EXPECT_EQ(val_str[1], value);
+
+  ec = worker.Get(key[2], branch[1], &value);
+  EXPECT_EQ(ErrorCode::kOK, ec);
+  EXPECT_EQ(val_str[2], value);
+  EXPECT_EQ(ver[13], worker.GetBranchHead(key[2], branch[1]));
 }
