@@ -35,7 +35,7 @@ class LogWriter {
   int FlushLogToDisk();
 
  protected:
-  char* log_dir_; // log directory
+  char* log_dir_;  // log directory
   /*
    * Synchronization type:
    * 0 => default value, log writer flush the logs out when the buffer is full
@@ -44,10 +44,10 @@ class LogWriter {
    *      to provide strong consistency
    * */
   int64_t log_sync_type_;
-  int64_t log_sync_time; // ms
+  int64_t log_sync_time;  // ms
   LogCursor log_cursor_;
   FileAppender file_;
-};  // LogWriter
+};
 
 /*
  * @brief open FileAppender for a Writer class

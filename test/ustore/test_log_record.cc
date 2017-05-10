@@ -14,29 +14,29 @@ char testvalue[] = "odadesades1sda1645f";
 int64_t checksum_result = 1237;
 
 TEST(Recovery, LogRecordChecksum) {
-	ustore::recovery::LogRecord record;
-	EXPECT_EQ(record.version, 1);
-	EXPECT_EQ(record.key, nullptr);
-	EXPECT_EQ(record.value, nullptr);
-	record.logcmd = ustore::recovery::LOG_UPDATE;
-	record.log_sequence_number = 11;
-	record.key = testkey;
-	record.value = testvalue;
-	record.key_length = strlen(testkey);
-	record.value_length = strlen(testvalue);
-	int64_t checksum_ret = record.ComputeChecksum();
-	LOG(INFO) << "returned checksum: " << checksum_ret;
+  ustore::recovery::LogRecord record;
+  EXPECT_EQ(record.version, 1);
+  EXPECT_EQ(record.key, nullptr);
+  EXPECT_EQ(record.value, nullptr);
+  record.logcmd = ustore::recovery::kUpdate;
+  record.log_sequence_number = 11;
+  record.key = testkey;
+  record.value = testvalue;
+  record.key_length = strlen(testkey);
+  record.value_length = strlen(testvalue);
+  int64_t checksum_ret = record.ComputeChecksum();
+  LOG(INFO) << "returned checksum: " << checksum_ret;
 }
 
 TEST(Recovery, LogRecordToString) {
-	ustore::recovery::LogRecord record;
-	record.logcmd = ustore::recovery::LOG_UPDATE;
-	record.log_sequence_number = 11;
-	record.key =	testkey;
-	record.value = testvalue;
-	record.key_length = strlen(testkey);
-	record.value_length = strlen(testvalue);
-	record.ComputeChecksum();
-	char* str = record.ToString();
-	EXPECT_EQ(record.data_length, 70);
+  ustore::recovery::LogRecord record;
+  record.logcmd = ustore::recovery::kUpdate;
+  record.log_sequence_number = 11;
+  record.key = testkey;
+  record.value = testvalue;
+  record.key_length = strlen(testkey);
+  record.value_length = strlen(testvalue);
+  record.ComputeChecksum();
+  char* str = record.ToString();
+  EXPECT_EQ(record.data_length, 70);
 }

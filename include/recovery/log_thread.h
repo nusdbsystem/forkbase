@@ -3,7 +3,7 @@
 #ifndef USTORE_RECOVERY_LOG_THREAD_H_
 #define USTORE_RECOVERY_LOG_THREAD_H_
 
-#include<pthread.h>
+#include <pthread.h>
 
 namespace ustore {
 namespace recovery {
@@ -25,10 +25,11 @@ class LogThread {
   pthread_t m_tid_;  // the containing thread ID
   int m_running_;  // flag to indicate the thread is running or not: 1 yes, 0 no
   int m_detached_;  // flag the thread is detached or not: 1 yes, 0 no
-};  // end of class LogBaseThread
+};
 
 static void* runThread(void* args);
-}  // end of namespace recovery
-}  // end of namespace ustore
+
+}  // namespace recovery
+}  // namespace ustore
 
 #endif  // USTORE_RECOVERY_LOG_THREAD_H_

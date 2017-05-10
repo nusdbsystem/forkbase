@@ -3,16 +3,15 @@
 #ifndef USTORE_RECOVERY_LOG_WORKER_H_
 #define USTORE_RECOVERY_LOG_WORKER_H_
 
+#include <condition_variable>
+#include <mutex>
+
+#include "hash/hash.h"
 #include "recovery/log_thread.h"
 #include "spec/slice.h"
-#include "hash/hash.h"
-
-#include<mutex>
-#include<condition_variable>
 
 namespace ustore {
 namespace recovery {
-
 
 /*
  * Each site should create a LogWorker to write log for the hashtable
@@ -78,31 +77,35 @@ class LogWorker : public LogThread {
    * */
   void* Run();
 
-		/*
-			* @brief: Update branch version
-			* @return: return the log sequence number for the update
-			* */
-		int64_t Update(Slice branch_name, Hash new_version);
-		int64_t Update(Slice* branch_name, Hash* new_version);
-		/*
-			*	@brief: Rename the branch name to a new one
-			*	@return: return the log sequence number for the rename operation
-			* */
-		int64_t Rename(Slice branch_name, Slice new_branch_name);
-		int64_t Rename(Slice* branch_name, Slice* new_branch_name);
-		/*
-			* @brief: Remove the branch from the branch head table
-			* @return: return the log sequence number for the remove operation
-			* */
-		int64_t Remove(Slice branch_name);
-		int64_t Remove(Slice* branch_name);
+  /*
+   * @brief: Update branch version
+   * @return: return the log sequence number for the update
+   * */
+  // TODO(yaochang): change Slice -> const Slice&, Hash -> const Hash&
+  // TODO(yaochang): could remove Slice*, Hash* methods
+  int64_t Update(Slice branch_name, Hash new_version);
+  int64_t Update(Slice* branch_name, Hash* new_version);
+  /*
+   * @brief: Rename the branch name to a new one
+   * @return: return the log sequence number for the rename operation
+   * */
+  int64_t Rename(Slice branch_name, Slice new_branch_name);
+  int64_t Rename(Slice* branch_name, Slice* new_branch_name);
+  /*
+   * @brief: Remove the branch from the branch head table
+   * @return: return the log sequence number for the remove operation
+   * */
+  int64_t Remove(Slice branch_name);
+  int64_t Remove(Slice* branch_name);
 
  private:
   int64_t timeout_;       // timeout to flush the log to disk
+  // TODO(yaochang): why not directly use instance instead of a pointer?
   std::condition_variable* flush_cv_;  // wait_for timeout or the buffer is full
   std::mutex flush_mutex_;
   int64_t buffer_size_;    // the size of the log buffer
   int64_t buffer_indice_;  // current position
+  // TODO(yaochang): why not directly use instance instead of a pointer?
   std::mutex* buffer_lock_;
   char* buffer_;  // the log data buffer
   char* log_dir_;
@@ -116,8 +119,10 @@ class LogWorker : public LogThread {
    * flushed to disk when the buffer is full or the timeout is due
    * */
   int log_sync_type_;
-		int64_t log_sequence_number_;
-};  // end of class LogWorker
-}  // end of namespace recovery
-}  // end of namespace ustore
+  int64_t log_sequence_number_;
+};
+
+}  // namespace recovery
+}  // namespace ustore
+
 #endif   // USTORE_RECOVERY_LOG_WORKER_H_

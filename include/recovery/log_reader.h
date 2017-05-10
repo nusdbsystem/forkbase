@@ -18,25 +18,25 @@ class LogReader {
     UStoreLogReader();
     virtual ~UStoreLogReader();
 /*
-* @brief   initailize UStoreLogReader class, which should be invoked after 
+* @brief   initailize UStoreLogReader class, which should be invoked after
 * the object malloc and before the other functions' invokation
 * @param   [in]    reader: read a single log file
 * @param   [in]    log_dir: log directory
 * @param   [in]    log_file_id_start: start file id
 * @param   [in]    log_seq: previous log entry sequence id that are read
-* @param   [in]    is_retry: whether retry when error occurs            
+* @param   [in]    is_retry: whether retry when error occurs
 * */
-    int Init(SingleLogReader *reader, const char* log_dir, 
-             uint64_t log_file_id_start, uint64_t log_seq, bool is_retry);    
+    int Init(SingleLogReader *reader, const char* log_dir,
+             uint64_t log_file_id_start, uint64_t log_seq, bool is_retry);
 /*
-*  @brief  read a log entry from the log file. If the log command is 
+*  @brief  read a log entry from the log file. If the log command is
 *  USTORE_SWITCH_LOG, the open the next log file directly.
-*  However, if next log file does not exist, 
+*  However, if next log file does not exist,
 *  it may because the log under construction.
 *  In this case, wait 1ms and retry 10 times. Otherwise, return error
 *  @return USTORE_LOG_SUCCESS, USTORE_LOG_NOTHING, USTORE_LOG_ERROR
 * */
-    int ReadLog(LogCommand* cmd, uint64_t* seq_id, 
+    int ReadLog(LogCommand* cmd, uint64_t* seq_id,
                 char** log_data, uint64_t* data_length);
     void SetMaxLogFileId(uint64_t max_log_file_id);
     uint64_t GetMaxLogFileId() const;
@@ -59,8 +59,8 @@ class LogReader {
     bool is_init_;
     bool is_retry_;
     bool has_max_;
-};  // end of UStoreLogReader class
-}  // end of namespace recovery
-}  // end of namespace ustore
+};
+}  // namespace recovery
+}  // namespace ustore
 
 #endif  // USTORE_RECOVERY_LOG_READER_H_

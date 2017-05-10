@@ -34,7 +34,7 @@ class LogCursor {
    * */
   int Serialize(char* buf, uint64_t buf_length, uint64_t pos) const;
   /*
-   * @brief deserialize the cursor from the buffer 
+   * @brief deserialize the cursor from the buffer
    * */
   int Deserialize(const char* buf, uint64_t buf_length, uint64_t pos);
   std::string ToString() const;
@@ -59,7 +59,7 @@ class LogCursor {
  private:
   uint64_t file_id_;  // log file id
   uint64_t log_id_;   // log sequence id
-  uint64_t offset_; 
+  uint64_t offset_;
 };  // LogCursor
 
 // TODO(yaochang): add atomic log cursor

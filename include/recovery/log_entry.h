@@ -47,7 +47,7 @@ class LogEntry {
    * */
   int64_t ComputeChecksum(const char* log_data, uint64_t data_len) const;
   /*
-   * @brief Return the length of the log data 
+   * @brief Return the length of the log data
    * */
   uint32_t GetLogdataLength() const;
   /*

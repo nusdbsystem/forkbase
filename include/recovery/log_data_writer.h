@@ -5,8 +5,8 @@
 
 #include "recovery/log_cursor.h"
 
-namespace ustore{
-namespace recovery{
+namespace ustore {
+namespace recovery {
 
 /*
  * LogDataAppendBuffer is used in LogDataWriter to buffer writeout log data
@@ -30,7 +30,7 @@ class LogDataAppendBuffer {
  private:
   char* buffer_;
   uint64_t buffer_remaining_;
-}; //  end of class LogDataAppendBuffer
+};
 
 class LogDataWriter {
  public:
@@ -46,11 +46,9 @@ class LogDataWriter {
   int StartLog(const LogCursor* log_cursor);
   int Reset();
   int GetLogCursor(LogCursor* log_cursor) const;
-  inline int GetFileSize() {
-   return file_size_;
-  }
+  inline int GetFileSize() { return file_size_; }
   uint64_t ToString(char* dest_buf, uint64_t length) const;
- 
+
  protected:
   int CheckEOF(const LogCursor* log_cursor);
   int PrepareFd(uint64_t file_id);
@@ -67,10 +65,9 @@ class LogDataWriter {
   uint64_t cur_file_id_;
   uint64_t num_file_to_add_;
   uint64_t min_file_id_;
-}; //end of class LogDataWriter
+};
 
-} // end of namespace recovery
-} // end of namespace ustore
-
+}  // namespace recovery
+}  // namespace ustore
 
 #endif  // USTORE_RECOVERY_LOG_DATA_WRITER_H_

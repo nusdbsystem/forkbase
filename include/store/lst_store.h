@@ -55,7 +55,7 @@ namespace lst_store {
 
 constexpr size_t kMetaLogSize = 4096;
 constexpr size_t kSegmentSize = (1<<22);
-constexpr size_t kNumSegments = 16;
+constexpr size_t kNumSegments = 32;
 constexpr size_t kLogFileSize = kSegmentSize * kNumSegments+ kMetaLogSize;
 constexpr size_t kMaxPendingSyncChunks = 1024;
 constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;
@@ -250,7 +250,7 @@ class LSTStore
  private:
   // TODO(qingchao): add a remove-old-log flag to ease unit test
   inline LSTStore(const char* dir = nullptr,
-                  const char* log_file = "ustore.log") {
+                  const char* log_file = "ustore.dat") {
     MmapUstoreLogFile(dir, log_file);
   }
   ~LSTStore() noexcept(false);
