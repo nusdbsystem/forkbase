@@ -53,6 +53,7 @@ class ListNode : public LeafNode {
   size_t GetLength(size_t start, size_t end) const override;
 
   size_t GetIdxForKey(const OrderedKey& key) const override;
+
   OrderedKey key(size_t idx) const override;
 
  private:

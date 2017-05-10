@@ -140,7 +140,7 @@ void MetaNode::PrecomputeOffset() {
   }
 }
 
-const Hash MetaNode::GetChildHashByIndex(size_t element_idx,
+Hash MetaNode::GetChildHashByIndex(size_t element_idx,
                                          size_t* entry_idx) const {
   CHECK_GT(numEntries(), 0);
   // Skip num_entries field (4 bytes) at MetaNode head
@@ -160,15 +160,15 @@ const Hash MetaNode::GetChildHashByIndex(size_t element_idx,
   return Hash();
 }
 
-const Hash MetaNode::GetChildHashByEntry(size_t entry_idx) const {
+Hash MetaNode::GetChildHashByEntry(size_t entry_idx) const {
   CHECK_GE(entry_idx, 0);
   CHECK_LT(entry_idx, numEntries());
   MetaEntry me(chunk_->data() + entryOffset(entry_idx));
   return me.targetHash();
 }
 
-const Hash MetaNode::GetChildHashByKey(const OrderedKey& key,
-                                       size_t* entry_idx) const {
+Hash MetaNode::GetChildHashByKey(const OrderedKey& key,
+                                 size_t* entry_idx) const {
   CHECK_GT(numEntries(), 0);
   // Skip num_entries field (4 bytes) at MetaNode head
   size_t byte_offset = sizeof(uint32_t);
@@ -201,7 +201,7 @@ const byte_t* MetaEntry::Encode(uint32_t num_leaves, uint64_t num_elements,
   return data;
 }
 
-const OrderedKey MetaEntry::orderedKey() const {
+OrderedKey MetaEntry::orderedKey() const {
   // remaining bytes of MetaEntry are for ordered key
   //   skip the by_value field
   size_t key_num_bytes = numBytes() - kKeyOffset - sizeof(bool);
@@ -221,6 +221,6 @@ uint64_t MetaEntry::numElements() const {
   return *(reinterpret_cast<const uint64_t*>(data_ + kNumElementsOffset));
 }
 
-const Hash MetaEntry::targetHash() const { return Hash(data_ + kHashOffset); }
+Hash MetaEntry::targetHash() const { return Hash(data_ + kHashOffset); }
 
 }  // namespace ustore

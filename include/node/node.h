@@ -85,17 +85,17 @@ class MetaNode : public SeqNode {
   // Retreive the ChildHash in the MetaEntry
   // which contains the idx-th element rooted at this metanode
   // Return empty hash and entry_idx=numEntries if such MetaEntry not exist.
-  const Hash GetChildHashByIndex(size_t element_idx, size_t* entry_idx) const;
+  Hash GetChildHashByIndex(size_t element_idx, size_t* entry_idx) const;
 
   // Retreive the ChildHash in the entry_idx-th MetaEntry
   // Caller of this method has to make sure entry_idx is valid.
-  const Hash GetChildHashByEntry(size_t entry_idx) const;
+  Hash GetChildHashByEntry(size_t entry_idx) const;
 
   // Retreive the child hash pointed by the MetaEntry,
   // The Ordered Key of this MetaEntry
   // has the smallest OrderedKey that is no smaller than the compared key
   // Return empty hash and entry_idx=numEntries if such MetaEntry not exist.
-  const Hash GetChildHashByKey(const OrderedKey& key, size_t* entry_idx) const;
+  Hash GetChildHashByKey(const OrderedKey& key, size_t* entry_idx) const;
 
  private:
   size_t entryOffset(size_t idx) const;
@@ -137,7 +137,7 @@ class MetaEntry {
   explicit MetaEntry(const byte_t* data) : data_(data) {}
   ~MetaEntry() {}  // do nothing
 
-  const OrderedKey orderedKey() const;
+  OrderedKey orderedKey() const;
 
   // num of bytes in MetaEntry
   size_t numBytes() const;
@@ -145,7 +145,8 @@ class MetaEntry {
   uint32_t numLeaves() const;
   // num of elements at all leaves rooted at this MetaEntry
   uint64_t numElements() const;
-  const Hash targetHash() const;
+
+  Hash targetHash() const;
 
  private:
   static constexpr size_t kNumBytesOffset = 0;
