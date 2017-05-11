@@ -9,10 +9,12 @@
 #include <boost/filesystem.hpp>
 
 #include <chrono>
+#include <iomanip>
 #include <type_traits>
 
 #include "utils/chars.h"
 #include "utils/logging.h"
+#include "utils/iterator.h"
 
 #define LOG_LST_STORE_FATAL_ERROR_IF(condition, errmsg) \
   do { \
@@ -27,6 +29,34 @@ namespace lst_store {
 void* LSTSegment::base_addr_ = nullptr;
 
 namespace fs = boost::filesystem;
+
+void LSTStoreInfo::print() const {
+  static std::unordered_map<ChunkType, std::string> chunkTypeNames = {
+    {ChunkType::kNull, "kNull"},
+    {ChunkType::kCell, "kCell"},
+    {ChunkType::kMeta, "kMeta"},
+    {ChunkType::kBlob, "kBlob"},
+    {ChunkType::kString, "kString"},
+    {ChunkType::kMap, "kMap"},
+    {ChunkType::kList, "kList"}
+  };
+
+  std::cout << std::setw(30) << "==============Storage Usage Information=============="<< std::endl;
+  std::cout << std::setw(30) << "Number of segments: " << segments << std::endl;
+  std::cout << std::setw(30) << "Number of free segments: " << freeSegments << std::endl;
+  std::cout << std::setw(30) << "Number of used segments: " << usedSegments << std::endl;
+  std::cout << std::endl;
+
+  std::cout << std::setw(30) << "Number of chunks: " << chunks << std::endl;
+  std::cout << std::setw(30) << "Number of valid chunks: " << validChunks << std::endl;
+  std::cout << std::setw(30) << "Bytes of chunks: " << chunkBytes << std::endl;
+  std::cout << std::setw(30) << "Bytes of valid chunks: " << validChunkBytes << std::endl;
+  for (auto type: Enum<ChunkType>()) {
+    std::cout << std::setw(30) << "Number of " + chunkTypeNames[type] + " chunks: " << chunksPerType.at(type) << std::endl;
+    std::cout << std::setw(30) << "Bytes of " + chunkTypeNames[type] + " chunks: " << bytesPerType.at(type) << std::endl;
+  }
+  std::cout << "====================================================" << std::endl;
+}
 
 static void DestroySegmentList(LSTSegment* head) {
   while (head != nullptr) {
@@ -84,6 +114,38 @@ static void LinkSegmentList(LSTSegment* begin) {
     iter->next_ = next;
     last = iter;
     iter = next;
+  }
+}
+
+static void onNewChunk(LSTStoreInfo& storeInfo, ChunkType type, size_t chunkLength) {
+  storeInfo.chunks++;
+  storeInfo.chunkBytes += chunkLength;
+  storeInfo.validChunks++;
+  storeInfo.validChunkBytes += chunkLength;
+  storeInfo.chunksPerType[type]++;
+  storeInfo.bytesPerType[type] += chunkLength;
+}
+
+static void onRemoveChunk(LSTStoreInfo& storeInfo, ChunkType type, size_t chunkLength) {
+  //storeInfo.chunks++;
+  storeInfo.validChunks--;
+  storeInfo.validChunkBytes -= chunkLength;
+  storeInfo.chunksPerType[type]--;
+  storeInfo.bytesPerType[type] -= chunkLength;
+}
+
+static void initStoreInfo(LSTStoreInfo& info, int segments) {
+  info.segments = segments;
+  info.usedSegments = 0;
+  info.freeSegments = segments;
+  info.chunks = 0;
+  info.chunkBytes = 0;
+  info.validChunks = 0;
+  info.validChunkBytes = 0;
+
+  for (auto type: Enum<ChunkType>()) {
+    info.bytesPerType[type] = 0;
+    info.chunksPerType[type] = 0;
   }
 }
 
@@ -146,6 +208,7 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
   // lock the mmap'ed memory to guarantee in-memory access
   ::mlock(address, kLogFileSize);
   LSTSegment::base_addr_ = address;
+  initStoreInfo(storeInfo, kNumSegments);
   this->Load(address);
   return address;
 }
@@ -214,6 +277,11 @@ LSTSegment* LSTStore::Allocate(LSTSegment* current) {
   next->prev_ = current;
   next->next_ = nullptr;
   current = next;
+
+  // update store information
+  ++storeInfo.usedSegments;
+  --storeInfo.freeSegments;
+  
   return current;
 }
 
@@ -247,10 +315,13 @@ size_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
 
     if (IsEndChunk(chunk.type()))
       break;
-    if (chunk.type() == ChunkType::kInvalid)
+    if (chunk.type() == ChunkType::kInvalid) {
       this->chunk_map_.erase(offset);
-    else
+      onRemoveChunk(storeInfo, PtrToChunkType(offset), PtrToChunkLength(offset));
+    } else {
       chunk_map_.emplace(offset, chunk.head());
+      onNewChunk(storeInfo, PtrToChunkType(offset), PtrToChunkLength(offset));
+    }
     offset = GetPtrToNextChunk(offset);
   }
 
@@ -278,10 +349,13 @@ size_t LSTStore::LoadFromValidSegment(LSTSegment* segment) {
 
     CHECK(IsChunkValid(type));
 
-    if (type == ChunkType::kInvalid)
+    if (type == ChunkType::kInvalid) {
       this->chunk_map_.erase(hash_offset);
-    else
+      onRemoveChunk(storeInfo, PtrToChunkType(offset), PtrToChunkLength(offset));
+    } else {
       chunk_map_.emplace(hash_offset, hash_offset + Hash::kByteLength);
+      onNewChunk(storeInfo, PtrToChunkType(offset), PtrToChunkLength(offset));
+    }
 
     offset = GetPtrToNextChunk(offset);
   }
@@ -300,15 +374,20 @@ void LSTStore::Load(void* address) {
   LinkSegmentList(major_list_);
   LinkSegmentList(minor_list_);
 
+  int loaded = 0;
+
   // load from the major list first
   LSTSegment *iter = major_list_;
   while (SegmentPtrToOffset(iter) != v[2]) {
     LoadFromValidSegment(iter);
     iter = iter->next_;
+    ++loaded;
   }
+
   if (iter != nullptr) {
     major_segment_offset_ = LoadFromLastSegment(iter);
     current_major_segment_ = iter;
+    ++loaded;
   }
 
   // and then from minor list
@@ -316,17 +395,23 @@ void LSTStore::Load(void* address) {
   while (SegmentPtrToOffset(iter) != v[4]) {
     LoadFromValidSegment(iter);
     iter = iter->next_;
+    ++loaded;
   }
+
   if (iter != nullptr) {
     minor_segment_offset_ = LoadFromLastSegment(iter);
     current_minor_segment_ = iter;
+    ++loaded;
   }
+
+  storeInfo.usedSegments += loaded;
+  storeInfo.freeSegments -= loaded;
 }
 
 Chunk LSTStore::Get(const Hash& key) {
   LSTHash hash(key.value());
   CHECK_EQ(this->chunk_map_.count(hash), 1);
-  return this->chunk_map_.at(hash).toChunk();
+  return Chunk(chunk_map_.at(hash).chunk_);
 }
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
@@ -358,6 +443,7 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   this->chunk_map_.emplace(offset, offset + key.kByteLength);
   major_segment_offset_ += key.kByteLength + chunk.numBytes();
   to_sync_chunks++;
+  onNewChunk(storeInfo, chunk.type(), chunk.numBytes());
   if (to_sync_chunks >= kMaxPendingSyncChunks || last_sync_time_point
       + std::chrono::milliseconds(kMaxSyncTimeoutMilliseconds)
       < std::chrono::steady_clock::now()) {
@@ -371,7 +457,7 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   return true;
 }
 
-void LSTStore::Sync() {
+void LSTStore::Sync() const {
   if (current_major_segment_ != nullptr)
     SyncToDisk(current_major_segment_->segment_, kSegmentSize);
   if (current_minor_segment_ != nullptr)

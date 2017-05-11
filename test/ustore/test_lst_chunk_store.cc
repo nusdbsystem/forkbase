@@ -6,6 +6,7 @@
 #include <thread>
 #include "gtest/gtest.h"
 #include "store/lst_store.h"
+#include "utils/iterator.h"
 #include "utils/type_traits.h"
 
 #define MAKE_TYPE_ITERATOR(type) \
@@ -31,7 +32,7 @@ Iterator FindChunk(const Chunk& chunk) {
   auto it = lstStore->begin<Iterator>();
   for (; it != lstStore->end<Iterator>(); ++it) {
     const ustore::Chunk& ichunk = *it;
-    if (ichunk.hash() == chunk.hash()) break;
+    if (ichunk.hash() == chunk.hash()) return (it);
   }
   return it;
 }
@@ -42,7 +43,7 @@ Iterator begin() {
   ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
   chunk.forceHash();
-  return FindChunk<typename Iterator::BaseIterator>(chunk);
+  return Iterator(FindChunk<typename Iterator::BaseIterator>(chunk));
 }
 
 template <typename Iterator>
@@ -53,7 +54,7 @@ Iterator end() {
   ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
   chunk.forceHash();
-  return ++FindChunk<typename Iterator::BaseIterator>(chunk);
+  return Iterator(++FindChunk<typename Iterator::BaseIterator>(chunk));
 }
 
 TEST(LSTStore, Put) {
@@ -65,6 +66,7 @@ TEST(LSTStore, Put) {
     lstStore->Put(chunk.hash(), chunk);
   }
   lstStore->Sync();
+  lstStore->getStoreInfo().print();
 }
 
 TEST(LSTStore, Get) {

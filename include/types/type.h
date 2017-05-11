@@ -21,7 +21,10 @@ enum class UType : byte_t {
   // Structured types
   kList = 4,
   kSet = 5,
-  kMap = 6
+  kMap = 6,
+
+  First = kBool,
+  Last = kMap
 };
 
 /*
@@ -40,10 +43,13 @@ enum class ChunkType : byte_t {
   kString = 4,
   kMap = 5,
   kList = 6,
-  // Indicate the validity
-  kInvalid = 99,
-};
 
+  First = kCell,
+  Last = kList,
+
+  // Indicate the validity
+  kInvalid = 99
+};
 
 static inline bool IsChunkValid(ChunkType type) noexcept {
   return type == ChunkType::kNull
