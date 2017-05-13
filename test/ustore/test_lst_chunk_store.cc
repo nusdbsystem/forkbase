@@ -67,7 +67,7 @@ TEST(LSTStore, Put) {
     lstStore->Put(chunk.hash(), chunk);
   }
   lstStore->Sync();
-  lstStore->getStoreInfo().print();
+  lstStore->GetInfo().Print();
 }
 
 TEST(LSTStore, Get) {

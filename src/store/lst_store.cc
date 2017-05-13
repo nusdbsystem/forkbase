@@ -9,12 +9,11 @@
 #include <boost/filesystem.hpp>
 
 #include <chrono>
-#include <iomanip>
 #include <type_traits>
 
 #include "utils/chars.h"
-#include "utils/logging.h"
 #include "utils/iterator.h"
+#include "utils/logging.h"
 
 #define LOG_LST_STORE_FATAL_ERROR_IF(condition, errmsg) \
   do { \
@@ -29,47 +28,6 @@ namespace lst_store {
 void* LSTSegment::base_addr_ = nullptr;
 
 namespace fs = boost::filesystem;
-
-void LSTStoreInfo::print() const {
-  static std::unordered_map<ChunkType, std::string> chunkTypeNames = {
-    {ChunkType::kNull, "kNull"},
-    {ChunkType::kCell, "kCell"},
-    {ChunkType::kMeta, "kMeta"},
-    {ChunkType::kBlob, "kBlob"},
-    {ChunkType::kString, "kString"},
-    {ChunkType::kMap, "kMap"},
-    {ChunkType::kList, "kList"}
-  };
-
-  std::cout << std::setw(30)
-    << "==============Storage Usage Information==============" << std::endl;
-  std::cout << std::setw(30)
-    << "Number of segments: " << segments << std::endl;
-  std::cout << std::setw(30)
-    << "Number of free segments: " << freeSegments << std::endl;
-  std::cout << std::setw(30)
-    << "Number of used segments: " << usedSegments << std::endl;
-  std::cout << std::endl;
-
-  std::cout << std::setw(30)
-    << "Number of chunks: " << chunks << std::endl;
-  std::cout << std::setw(30)
-    << "Number of valid chunks: " << validChunks << std::endl;
-  std::cout << std::setw(30)
-    << "Bytes of chunks: " << chunkBytes << std::endl;
-  std::cout << std::setw(30)
-    << "Bytes of valid chunks: " << validChunkBytes << std::endl;
-  for (auto type : Enum<ChunkType>()) {
-    std::cout << std::setw(30)
-      << "Number of " + chunkTypeNames[type] + " chunks: "
-      << chunksPerType.at(type) << std::endl;
-    std::cout << std::setw(30)
-      << "Bytes of " + chunkTypeNames[type] + " chunks: "
-      << bytesPerType.at(type) << std::endl;
-  }
-  std::cout << std::setw(30)
-    << "====================================================" << std::endl;
-}
 
 static void DestroySegmentList(LSTSegment* head) {
   while (head != nullptr) {
@@ -130,7 +88,7 @@ static void LinkSegmentList(LSTSegment* begin) {
   }
 }
 
-static void onNewChunk(LSTStoreInfo* storeInfo, ChunkType type,
+static void onNewChunk(StoreInfo* storeInfo, ChunkType type,
                        size_t chunkLength) {
   storeInfo->chunks++;
   storeInfo->chunkBytes += chunkLength;
@@ -140,7 +98,7 @@ static void onNewChunk(LSTStoreInfo* storeInfo, ChunkType type,
   storeInfo->bytesPerType[type] += chunkLength;
 }
 
-static void onRemoveChunk(LSTStoreInfo* storeInfo, ChunkType type,
+static void onRemoveChunk(StoreInfo* storeInfo, ChunkType type,
                           size_t chunkLength) {
   // storeInfo->chunks++;
   storeInfo->validChunks--;
@@ -149,7 +107,7 @@ static void onRemoveChunk(LSTStoreInfo* storeInfo, ChunkType type,
   storeInfo->bytesPerType[type] -= chunkLength;
 }
 
-static void initStoreInfo(LSTStoreInfo* info, int segments) {
+static void initStoreInfo(StoreInfo* info, int segments) {
   info->segments = segments;
   info->usedSegments = 0;
   info->freeSegments = segments;

@@ -49,11 +49,6 @@ template<> struct hash<::ustore::lst_store::LSTHash> {
   }
 };
 
-template<> struct hash<::ustore::ChunkType> {
-  size_t operator()(const ::ustore::ChunkType& key) const {
-    return static_cast<std::size_t>(key);
-  }
-};
 }  // namespace std
 
 namespace ustore {
@@ -83,24 +78,6 @@ struct LSTSegment {
   void* segment_;
 
   inline explicit LSTSegment(void* segment) noexcept : segment_(segment) {}
-};
-
-struct LSTStoreInfo {
-  using MapType = std::unordered_map<ChunkType, size_t>;
-
-  size_t chunks;
-  size_t chunkBytes;
-  size_t validChunks;
-  size_t validChunkBytes;
-
-  MapType chunksPerType;
-  MapType bytesPerType;
-
-  size_t segments;
-  size_t freeSegments;
-  size_t usedSegments;
-
-  void print() const;
 };
 
 static inline bool IsEndChunk(ChunkType type) {
@@ -260,12 +237,12 @@ class LSTStore
                                                             T, NoCheckPolicy>;
 
   void Sync() const;
-  virtual Chunk Get(const Hash& key);
-  virtual bool Put(const Hash& key, const Chunk& chunk);
-
-  const LSTStoreInfo& getStoreInfo() const noexcept {
+  Chunk Get(const Hash& key) override;
+  bool Put(const Hash& key, const Chunk& chunk) override;
+  const StoreInfo& GetInfo() const override {
     return storeInfo;
   }
+
 
   template <typename Iterator = iterator>
   Iterator begin() {
@@ -323,7 +300,7 @@ class LSTStore
   size_t major_segment_offset_;
   size_t minor_segment_offset_;
 
-  LSTStoreInfo storeInfo;
+  StoreInfo storeInfo;
 };
 
 }  // namespace lst_store

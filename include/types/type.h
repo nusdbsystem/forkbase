@@ -2,6 +2,8 @@
 
 #ifndef USTORE_TYPES_TYPE_H_
 #define USTORE_TYPES_TYPE_H_
+
+#include <algorithm>
 #include <cstdint>
 
 namespace ustore {
@@ -82,5 +84,15 @@ enum class ErrorCode : byte_t {
 };
 
 }  // namespace ustore
+
+namespace std {
+
+template<>
+struct hash<::ustore::ChunkType> {
+  size_t operator()(const ::ustore::ChunkType& key) const {
+    return static_cast<std::size_t>(key);
+  }
+};
+}  // namespace std
 
 #endif  // USTORE_TYPES_TYPE_H_
