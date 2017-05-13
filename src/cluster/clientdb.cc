@@ -243,9 +243,10 @@ ErrorCode ClientDb::GetVersionResponse(Hash* version) {
 ErrorCode ClientDb::GetValueResponse(Value* value) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  std::string *tmp = new string(response->get_response_payload().value());
-  *value = Value(Blob(reinterpret_cast<const byte_t *>(
-    tmp->data()), response->get_response_payload().value().length()));
+  const std::string &tmp = response->get_response_payload().value();
+  char* buf = new char[tmp.length()];
+  std::memcpy(buf, tmp.data(), sizeof(buf));
+  *value = Value(Blob(reinterpret_cast<const byte_t *>(buf), tmp.length()));
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
   return err;
