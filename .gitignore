@@ -33,3 +33,6 @@ build/
 
 # Project files
 *sublime*
+
+# Temporary files from vim
+*.swp
