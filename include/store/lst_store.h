@@ -133,51 +133,51 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
                          , std::ptrdiff_t
                          , const Chunk*
                          , Chunk>,
-                         protected CheckPolicy<MapType>
-{
-  public:
-    using BaseIterator = LSTStoreIterator;
+                         protected CheckPolicy<MapType> {
+ public:
+  using BaseIterator = LSTStoreIterator;
 
-    LSTStoreIterator(const MapType& map,
-        const LSTSegment* first,
-        const byte_t* ptr) noexcept : map_(map), segment_(first), ptr_(ptr) {}
+  LSTStoreIterator(const MapType& map,
+      const LSTSegment* first,
+      const byte_t* ptr) noexcept : map_(map), segment_(first), ptr_(ptr) {}
 
-    LSTStoreIterator(const LSTStoreIterator&) noexcept = default;
-    LSTStoreIterator& operator=(const LSTStoreIterator&) = default;
+  LSTStoreIterator(const LSTStoreIterator&) noexcept = default;
+  LSTStoreIterator& operator=(const LSTStoreIterator&) = default;
 
-    inline bool operator==(const LSTStoreIterator& other) const {
-      return ptr_ == other.ptr_;
-    }
+  inline bool operator==(const LSTStoreIterator& other) const {
+    return ptr_ == other.ptr_;
+  }
 
-    inline bool operator!=(const LSTStoreIterator& other) const {
-      return !(*this == other);
-    }
+  inline bool operator!=(const LSTStoreIterator& other) const {
+    return !(*this == other);
+  }
 
-    LSTStoreIterator& operator++() {
-      if (IsEndChunk(PtrToChunkType(ptr_))) {
-        return *this;
-      }
-
-      do {
-        ptr_ = GetPtrToNextChunk(ptr_);
-        if (IsEndChunk(PtrToChunkType(ptr_)) && segment_->next_ != nullptr) {
-          segment_ = segment_->next_;
-          ptr_ = GetFirstHashPtr(segment_);
-        }
-      } while (!CheckPolicy<MapType>::check(map_, ptr_) && !IsEndChunk(PtrToChunkType(ptr_)));
-
-      DCHECK(IsChunkValid(PtrToChunkType(ptr_)));
+  LSTStoreIterator& operator++() {
+    if (IsEndChunk(PtrToChunkType(ptr_))) {
       return *this;
     }
 
-    LSTStoreIterator operator++(int) {
-      LSTStoreIterator ret = *this; ++(*this); return ret;
-    }
+    do {
+      ptr_ = GetPtrToNextChunk(ptr_);
+      if (IsEndChunk(PtrToChunkType(ptr_)) && segment_->next_ != nullptr) {
+        segment_ = segment_->next_;
+        ptr_ = GetFirstHashPtr(segment_);
+      }
+    } while (!CheckPolicy<MapType>::check(map_, ptr_)
+             && !IsEndChunk(PtrToChunkType(ptr_)));
 
-    reference operator*() const {
-      DCHECK(CheckPolicy<MapType>::check(map_, ptr_));
-      return Chunk(ptr_ + Hash::kByteLength);
-    }
+    DCHECK(IsChunkValid(PtrToChunkType(ptr_)));
+    return *this;
+  }
+
+  LSTStoreIterator operator++(int) {
+    LSTStoreIterator ret = *this; ++(*this); return ret;
+  }
+
+  reference operator*() const {
+    DCHECK(CheckPolicy<MapType>::check(map_, ptr_));
+    return Chunk(ptr_ + Hash::kByteLength);
+  }
 
  protected:
   const MapType& map_;
@@ -194,33 +194,38 @@ class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
 
   static constexpr ChunkType type_ = T;
 
-    explicit LSTStoreTypeIterator(parent iterator) : parent(iterator) {
+  explicit LSTStoreTypeIterator(parent iterator) : parent(iterator) {
+    ChunkType type = PtrToChunkType(parent::ptr_);
+    if (type != type_ && !IsEndChunk(type))
+      operator++();
+  }
+
+  LSTStoreTypeIterator(const MapType& map,
+      const LSTSegment* segment,
+      const byte_t* ptr) : parent(map, segment, ptr) {
       ChunkType type = PtrToChunkType(parent::ptr_);
       if (type != type_ && !IsEndChunk(type))
         operator++();
-    }
+  }
 
-    LSTStoreTypeIterator(const MapType& map,
-        const LSTSegment* segment,
-        const byte_t* ptr) : parent(map, segment, ptr) {
-        ChunkType type = PtrToChunkType(parent::ptr_);
-        if (type != type_ && !IsEndChunk(type))
-          operator++();
-    }
+  LSTStoreTypeIterator(const LSTStoreTypeIterator&) noexcept = default;
+  LSTStoreTypeIterator& operator=(const LSTStoreTypeIterator&) = default;
 
-    LSTStoreTypeIterator(const LSTStoreTypeIterator&) noexcept = default;
-    LSTStoreTypeIterator& operator=(const LSTStoreTypeIterator&) = default;
-    bool operator==(const LSTStoreTypeIterator& other) const { return parent::operator==(other); }
-    bool operator!=(const LSTStoreTypeIterator& other) const { return !(*this == other); }
+  inline bool operator==(const LSTStoreTypeIterator& other) const {
+    return parent::operator==(other);
+  }
+  inline bool operator!=(const LSTStoreTypeIterator& other) const {
+    return !(*this == other);
+  }
 
-    LSTStoreTypeIterator& operator++() {
-      ChunkType type;
-      do {
-        parent::operator++();
-        type = PtrToChunkType(parent::ptr_);
-      } while (type != type_ && !IsEndChunk(type));
-      return *this;
-    }
+  LSTStoreTypeIterator& operator++() {
+    ChunkType type;
+    do {
+      parent::operator++();
+      type = PtrToChunkType(parent::ptr_);
+    } while (type != type_ && !IsEndChunk(type));
+    return *this;
+  }
 
   LSTStoreTypeIterator operator++(int) {
     LSTStoreTypeIterator ret = *this; ++(*this); return ret;

@@ -11,41 +11,44 @@ namespace ustore{
 template <typename T, typename = enable_if_t<std::is_enum<T>::value>>
 struct Enum {
   class Iterator : public std::iterator<std::input_iterator_tag, T> {
-    public:
-      Iterator(int pos) : pos_(pos) {}
+   public:
+    explicit Iterator(int pos) : pos_(pos) {}
 
-      Iterator& operator++() {
-        ++pos_; return *this;
-      }
+    Iterator& operator++() {
+      ++pos_;
+      return *this;
+    }
 
-      Iterator& operator++(int) {
-        Iterator it = *this;
-        ++(*this); return it;
-      }
+    Iterator& operator++(int) {
+      Iterator it = *this;
+      ++(*this);
+      return it;
+    }
 
-      T operator*() const {
-        return (T)pos_;
-      }
+    T operator*() const {
+      return (T)pos_;
+    }
 
-      Iterator(const Iterator&) noexcept = default;
-      Iterator& operator=(const Iterator&) noexcept = default;
-      bool operator==(const Iterator& other) const { return pos_ == other.pos_; }
-      bool operator!=(const Iterator& other) const { return !(*this == other); }
+    Iterator(const Iterator&) noexcept = default;
+    Iterator& operator=(const Iterator&) noexcept = default;
+    bool operator==(const Iterator& other) const { return pos_ == other.pos_; }
+    bool operator!=(const Iterator& other) const { return !(*this == other); }
 
-    private:
-      int pos_;
+   private:
+     int pos_;
   };
 };
 
 template <typename T, typename = enable_if_t<std::is_enum<T>::value>>
 typename Enum<T>::Iterator begin(Enum<T>) {
-  return typename Enum<T>::Iterator((int)T::First);
+  return typename Enum<T>::Iterator(static_cast<int>(T::First));
 }
 
 template <typename T, typename = enable_if_t<std::is_enum<T>::value>>
 typename Enum<T>::Iterator end(Enum<T>) {
-  return typename Enum<T>::Iterator((int)T::Last + 1);
+  return typename Enum<T>::Iterator(static_cast<int>(T::Last) + 1);
 }
 
-}; // end namespace ustore
-#endif
+}  // namespace ustore
+
+#endif  // USTORE_UTILS_ITERATOR_H_
