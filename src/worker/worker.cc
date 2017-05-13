@@ -17,13 +17,13 @@ const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) {
   UCell ucell;
-  const auto ec = Get(key, branch, &ucell);
+  auto ec = Get(key, branch, &ucell);
   return ec == ErrorCode::kOK ? Read(ucell, val) : ec;
 }
 
 ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) {
   UCell ucell;
-  const auto ec = Get(key, ver, &ucell);
+  auto ec = Get(key, ver, &ucell);
   return ec == ErrorCode::kOK ? Read(ucell, val) : ec;
 }
 
@@ -97,7 +97,7 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
                       const Hash& prev_ver, Hash* ver) {
   if (branch.empty()) return Put(key, val, prev_ver, ver);
-  const auto ec = Write(key, val, prev_ver, Hash::kNull, ver);
+  auto ec = Write(key, val, prev_ver, Hash::kNull, ver);
   if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
   return ec;
 }
@@ -144,8 +144,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
 ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                               const Hash& prev_ver1, const Hash& prev_ver2,
                               Hash* ver) {
-  const Slice slice = val.slice();
-  const SString sstring(slice);
+  const SString sstring(val.slice());
   if (sstring.empty()) {
     LOG(ERROR) << "Failed to create ustring for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateSString;
@@ -195,7 +194,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
   DCHECK(val.type == UType::kBlob);
   if (val.vals.size() != 1) return ErrorCode::kInvalidValue2;
   const Slice slice = val.vals.front();
-  if (val.base == Hash::kNull) { // new insertion
+  if (val.base == Hash::kNull) {  // new insertion
     SBlob sblob(slice);
     if (sblob.empty()) {
       LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
@@ -203,7 +202,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
     }
     return CreateUCell(key, UType::kBlob, sblob.hash(), prev_ver1, prev_ver2,
                        ver);
-  } else { // update
+  } else {  // update
     SBlob sblob(val.base);
     const auto data = reinterpret_cast<const byte_t*>(slice.data());
     const auto data_hash = sblob.Splice(val.pos, val.dels, data, slice.len());
