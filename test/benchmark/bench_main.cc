@@ -12,11 +12,11 @@
 
 using namespace ustore;
 
-const int val_size = 100;
-const int max_str_len = 32;
-const int fixed_str_len = 16;
-const int max_blob_size = 4096;
-const int fixed_blob_size = 4096;
+constexpr int val_size = 100;
+constexpr int max_str_len = 32;
+constexpr int fixed_str_len = 16;
+constexpr int max_blob_size = 4096;
+constexpr int fixed_blob_size = 4096;
 
 void BenchmarkWorker() {
   Worker worker {27};
