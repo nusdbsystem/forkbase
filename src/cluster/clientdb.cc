@@ -8,7 +8,7 @@ namespace ustore {
 
 Message* ClientDb::WaitForResponse() {
   std::unique_lock<std::mutex> lck(res_blob_->lock);
-  res_blob_->has_msg = false;
+  //res_blob_->has_msg = false;
   while (!(res_blob_->has_msg))
     (res_blob_->condition).wait(lck);
   CHECK(res_blob_->message);
@@ -18,10 +18,13 @@ Message* ClientDb::WaitForResponse() {
 bool ClientDb::Send(const Message *msg, const node_id_t& node_id) {
   // serialize and send
   int msg_size = msg->ByteSize();
+  std::unique_lock<std::mutex> lck(res_blob_->lock);
   byte_t *serialized = new byte_t[msg_size];
   msg->SerializeToArray(serialized, msg_size);
   CHECK(net_->GetNetContext(node_id));
   net_->GetNetContext(node_id)->Send(serialized, msg_size);
+
+  res_blob_->has_msg = false;
   delete[] serialized;
   return true;
 }
