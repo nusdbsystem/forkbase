@@ -18,11 +18,10 @@ TEST(LDBStore, PutChunk) {
 TEST(LDBStore, GetChunk) {
   ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
-  const ustore::Chunk* c = ldb->Get(chunk.hash());
-  EXPECT_EQ(c->forceHash(), chunk.hash());
-  EXPECT_EQ(c->type(), ustore::ChunkType::kBlob);
-  EXPECT_EQ(c->numBytes(), chunk.numBytes());
-  EXPECT_EQ(c->capacity(), chunk.capacity());
-  delete c;
+  ustore::Chunk c = ldb->Get(chunk.hash());
+  EXPECT_EQ(c.forceHash(), chunk.hash());
+  EXPECT_EQ(c.type(), ustore::ChunkType::kBlob);
+  EXPECT_EQ(c.numBytes(), chunk.numBytes());
+  EXPECT_EQ(c.capacity(), chunk.capacity());
 }
 #endif // USE_LEVELDB

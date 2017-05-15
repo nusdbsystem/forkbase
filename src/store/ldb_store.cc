@@ -10,6 +10,7 @@
 
 namespace ustore {
 
+// Change the following path if you do not have permissions
 LDBStore::LDBStore() : LDBStore("/tmp/ustore-testdb") {}
 
 LDBStore::LDBStore(const std::string& dbpath) {
@@ -32,7 +33,7 @@ Chunk LDBStore::Get(const Hash& key) {
     std::unique_ptr<byte_t[]> buf(new byte_t[val.size()]);
     std::copy(val.begin(), val.end(), buf.get());
     Chunk c(std::move(buf));
-    CHECK(key == c->hash());
+    CHECK(key == c.hash());
     return c;
   } else {
     LOG(ERROR) << "Leveldb chunck storage internal error: " << s.ToString();
@@ -71,6 +72,11 @@ bool LDBStore::Put(const Hash& key, const Chunk& chunk) {
     LOG(ERROR) << "Leveldb chunck storage internal error: " << s.ToString();
   }
   return false;
+}
+
+const StoreInfo& LDBStore::GetInfo() const {
+  static StoreInfo info;
+  return info;
 }
 
 }  // namespace ustore
