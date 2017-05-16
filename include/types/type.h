@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
+
 
 namespace ustore {
 
