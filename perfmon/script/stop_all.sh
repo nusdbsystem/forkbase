@@ -7,8 +7,12 @@ PERFMON_HOME=$bin/../
 # slave pm_monitor in each slave node
 host_file=$PERFMON_HOME/script/slaves
 for host in `cat $host_file` ; do
-    echo "stopping pm_monitor @ $host"
+  echo "stopping pm_monitor @ $host"
+  if [ $host == localhost ]; then
+    killall pm_monitor
+  else
     ssh $host "killall pm_monitor"
+  fi
 done
 
 sleep 1
