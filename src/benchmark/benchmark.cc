@@ -5,6 +5,7 @@
 #include <iostream>
 #include "benchmark/benchmark.h"
 #include "utils/logging.h"
+#include "store/chunk_store.h"
 
 namespace ustore {
 
@@ -87,6 +88,9 @@ void Benchmark::FixedBlob(int size) {
     Hash ver;
     Value v_b;
     db_->Put(Slice(keys[i]), Value(Blob(blobs[i])), branch, &ver);
+    // Print storage status
+    // if(i % 2000 == 0) 
+    //   store::GetChunkStore()->GetInfo().Print();
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
@@ -138,6 +142,9 @@ void Benchmark::RandomBlob(int size) {
     Hash ver;
     Value v_b;
     db_->Put(Slice(keys[i]), Value(Blob(blobs[i])), branch, &ver);
+    // Print storage status
+    // if(i % 2000 == 0)
+    //   store::GetChunkStore()->GetInfo().Print();
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
