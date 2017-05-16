@@ -1,14 +1,15 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include <iostream>
+#include <cstdio>
 #include <fstream>
-#include <vector>
+#include <iostream>
 #include <thread>
-#include "worker/worker.h"
-#include "utils/env.h"
-#include "cluster/worker_service.h"
+#include <vector>
 #include "cluster/remote_client_service.h"
+#include "cluster/worker_service.h"
 #include "benchmark/benchmark.h"
+#include "utils/env.h"
+#include "worker/worker.h"
 
 using namespace ustore;
 
@@ -75,6 +76,9 @@ void BenchmarkClient() {
 }
 
 int main() {
+  // remove ustore data before benchmark
+  std::remove("ustore.dat");
+
   std::cout << "============================\n";
   std::cout << "Benchmarking worker.......\n";
   BenchmarkWorker();

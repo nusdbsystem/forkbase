@@ -441,6 +441,7 @@ void LSTStore::Sync() const {
 
 LSTStore::~LSTStore() noexcept(false) {
   Sync();
+  GetInfo().Print();
   DestroySegmentList(free_list_);
   DestroySegmentList(major_list_);
   DestroySegmentList(minor_list_);

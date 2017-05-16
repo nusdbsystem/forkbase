@@ -56,8 +56,8 @@ namespace lst_store {
 
 constexpr size_t kMetaLogSize = 4096;
 constexpr size_t kSegmentSize = (1<<22); // 4M
-constexpr size_t kNumSegments = 256;
-constexpr size_t kLogFileSize = kSegmentSize * kNumSegments+ kMetaLogSize;
+constexpr size_t kNumSegments = 64;
+constexpr size_t kLogFileSize = kSegmentSize * kNumSegments + kMetaLogSize;
 constexpr size_t kMaxPendingSyncChunks = 1024;
 constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;
 
