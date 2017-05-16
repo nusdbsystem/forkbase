@@ -9,6 +9,7 @@
 #include "types/base.h"
 
 namespace ustore {
+
 class UString : public BaseType {
  public:
   inline bool empty() const override {
@@ -39,19 +40,6 @@ class UString : public BaseType {
  private:
   // Responsible to remove during destructing
   std::unique_ptr<const StringNode> node_;
-};
-
-class SString : public UString {
- public:
-  // Load an existing sstring
-  explicit SString(const Hash& hash) noexcept;
-
-  // Creata a new sstring
-  explicit SString(const Slice& data) noexcept;
-
-  ~SString() = default;
-
-  SString& operator=(SString&& rhs) = default;
 };
 
 }  // namespace ustore

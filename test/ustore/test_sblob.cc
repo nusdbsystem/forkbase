@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "types/ublob.h"
+#include "types/server/sblob.h"
 
 #include "utils/debug.h"
 #include "utils/logging.h"

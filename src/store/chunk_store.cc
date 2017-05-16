@@ -14,17 +14,17 @@
 
 namespace ustore {
 
-void StoreInfo::Print() const {
-  static std::unordered_map<ChunkType, std::string> chunkTypeNames = {
-    {ChunkType::kNull, "kNull"},
-    {ChunkType::kCell, "kCell"},
-    {ChunkType::kMeta, "kMeta"},
-    {ChunkType::kBlob, "kBlob"},
-    {ChunkType::kString, "kString"},
-    {ChunkType::kMap, "kMap"},
-    {ChunkType::kList, "kList"}
-  };
+static std::unordered_map<ChunkType, std::string> chunkTypeNames = {
+  {ChunkType::kNull, "kNull"},
+  {ChunkType::kCell, "kCell"},
+  {ChunkType::kMeta, "kMeta"},
+  {ChunkType::kBlob, "kBlob"},
+  {ChunkType::kString, "kString"},
+  {ChunkType::kMap, "kMap"},
+  {ChunkType::kList, "kList"}
+};
 
+void StoreInfo::Print() const {
   std::cout << std::setw(30)
     << "==============Storage Usage Information==============" << std::endl;
   std::cout << std::setw(30)

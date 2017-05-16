@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-#include "types/umap.h"
+#include "types/server/smap.h"
 
 // Check KVItems scannbed by iterator are all the same to that in vector
 inline void CheckIdenticalItems(

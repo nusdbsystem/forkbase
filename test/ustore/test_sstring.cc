@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "types/ustring.h"
+#include "types/server/sstring.h"
 
 #include "utils/debug.h"
 // #include "utils/logging.h"

@@ -9,6 +9,7 @@
 #include "types/base.h"
 
 namespace ustore {
+
 class UBlob : public ChunkableType {
  public:
   // Return the number of bytes in this Blob
@@ -66,22 +67,6 @@ class UBlob : public ChunkableType {
   virtual ~UBlob() = default;
 
   bool SetNodeForHash(const Hash& hash) override;
-};
-
-class SBlob : public UBlob {
- public:
-  // Load an exsiting SBlob
-  explicit SBlob(const Hash& root_hash) noexcept;
-
-  // Create a new SBlob
-  explicit SBlob(const Slice& slice) noexcept;
-
-  SBlob() noexcept : UBlob(std::make_shared<ChunkLoader>()) {}
-
-  ~SBlob() = default;
-
-  Hash Splice(size_t pos, size_t num_delete,
-              const byte_t* data, size_t num_insert) const override;
 };
 
 }  // namespace ustore

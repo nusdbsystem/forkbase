@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "types/ulist.h"
+#include "types/server/slist.h"
 
 // Check elements scannbed by iterator are all the same to that in vector
 inline void CheckIdenticalElements(

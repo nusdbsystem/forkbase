@@ -79,18 +79,14 @@ class UIterator : private Noncopyable {
 
  private:
   std::vector<IndexRange> ranges_;
-
   // the index of current IndexRange in ranges_ pointed by iterator
   // -1 if iterator at head
   // ranges_.size() if iterator at end
   int32_t curr_range_idx_;
-
   // the index of element in current IndexRange pointed by iterator
   uint64_t curr_idx_in_range_;
-
   std::unique_ptr<NodeCursor> cursor_;
 };
-
 
 // TODO(pingcheng): why not derive from UIterator, or both derive from a base
 //  type containing next, begin, end, etc.
@@ -189,7 +185,6 @@ class DuallyDiffIterator {
   // false if the previous operation is previous
   bool just_advanced;
 };
-
 
 template <class iterator_trait>
 Slice DuallyDiffIterator<iterator_trait>::lhs_value() const {
@@ -365,14 +360,12 @@ int8_t DuallyDiffIterator<iterator_trait>::update_flag(bool isGreaterValid) {
   return it_flag_;
 }
 
-
 struct iterator_index_trait {
   static uint64_t key(const UIterator& it) {
     return it.index();
   }
 
   static constexpr bool index_supported = true;
-
   static constexpr bool key_supported = false;
 };
 
@@ -382,7 +375,6 @@ struct iterator_key_trait {
   }
 
   static constexpr bool index_supported = false;
-
   static constexpr bool key_supported = true;
 };
 

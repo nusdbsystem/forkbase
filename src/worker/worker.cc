@@ -4,8 +4,8 @@
 
 #include <memory>
 #include "spec/blob.h"
-#include "types/ublob.h"
-#include "types/ustring.h"
+#include "types/server/sblob.h"
+#include "types/server/sstring.h"
 #include "utils/logging.h"
 
 namespace ustore {

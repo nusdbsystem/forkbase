@@ -1,14 +1,16 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include "types/ulist.h"
+
+#include <memory>
+#include <utility>
 #include "node/cursor.h"
 #include "node/node_comparator.h"
 #include "node/orderedkey.h"
-#include "node/list_node.h"
-#include "node/node_builder.h"
-#include "types/ulist.h"
 #include "utils/logging.h"
 
 namespace ustore {
+
 std::unique_ptr<DuallyDiffIndexIterator> UList::DuallyDiff(
     const UList& lhs, const UList& rhs) {
   std::unique_ptr<UIterator> lhs_diff_it = lhs.Diff(rhs);
@@ -86,34 +88,4 @@ std::unique_ptr<UIterator> UList::Intersect(const UList& rhs) const {
       new ListIterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get()));
 }
 
-
-
-
-SList::SList(const Hash& root_hash) noexcept :
-    UList(std::make_shared<ChunkLoader>()) {
-  SetNodeForHash(root_hash);
-}
-
-SList::SList(const std::vector<Slice>& elements) noexcept:
-    UList(std::make_shared<ChunkLoader>()) {
-  CHECK_GT(elements.size(), 0);
-  chunk_loader_ = std::move(std::make_shared<ChunkLoader>());
-  NodeBuilder nb(ListChunker::Instance(), false);
-  std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
-  nb.SpliceElements(0, seg.get());
-  SetNodeForHash(nb.Commit());
-}
-
-Hash SList::Splice(size_t start_idx, size_t num_to_delete,
-                         const std::vector<Slice>& entries) const {
-  CHECK(!empty());
-  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(hash(), start_idx,
-    chunk_loader_.get(), ListChunker::Instance(), false);
-  std::unique_ptr<const Segment> seg = ListNode::Encode({entries});
-  nb->SpliceElements(num_to_delete, seg.get());
-  Hash root_hash = nb->Commit();
-  delete nb;
-
-  return root_hash;
-}
 }  // namespace ustore

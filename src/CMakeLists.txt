@@ -37,7 +37,7 @@ ADD_CUSTOM_TARGET(
 FOREACH(fil ${proto_hdrs})
   GET_FILENAME_COMPONENT(filename ${fil} NAME)
   ADD_CUSTOM_COMMAND(
-    TARGET copy_protobuf POST_BUILD 
+    TARGET copy_protobuf POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
       "${CMAKE_BINARY_DIR}/include/proto/${filename}"
     DEPENDS ${proto_files}
@@ -70,6 +70,9 @@ LIST(APPEND ustore_srcs ${store_source})
 
 AUX_SOURCE_DIRECTORY(types types_source)
 LIST(APPEND ustore_srcs ${types_source})
+
+AUX_SOURCE_DIRECTORY(types/server types_server_source)
+LIST(APPEND ustore_srcs ${types_server_source})
 
 AUX_SOURCE_DIRECTORY(utils utils_source)
 LIST(APPEND ustore_srcs ${utils_source})
