@@ -72,6 +72,10 @@ class Worker : public DB2, private Noncopyable {
     return head_ver_.ListBranch(key);
   }
 
+  inline bool Exists(const Slice& key) const {
+    return head_ver_.Exists(key);
+  }
+
   /**
    * @brief Check for the existence of the specified branch.
    * @param key Data key.
@@ -117,7 +121,7 @@ class Worker : public DB2, private Noncopyable {
    * @param key     Target key.
    * @param branch  Branch to read.
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell) override;
 
@@ -127,7 +131,7 @@ class Worker : public DB2, private Noncopyable {
    * @param key     Target key.
    * @param ver     Version to read.
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell) override;
 
@@ -163,11 +167,12 @@ class Worker : public DB2, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-                Hash* ver) override;
-
   inline ErrorCode Put(const Slice& key, const Value& val,
-                       const Slice& branch) {
+                       const Slice& branch, Hash* ver) override {
+    return Put(key, val, branch, GetBranchHead(key, branch), ver);
+  }
+
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch) {
     static Hash ver;
     return Put(key, val, branch, &ver);
   }
@@ -181,11 +186,12 @@ class Worker : public DB2, private Noncopyable {
    * @param ver Accommodator of the new data version.
    * @return Error code. (0 for success)
    */
-  ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
-                Hash* ver) override;
-
   inline ErrorCode Put(const Slice& key, const Value& val,
-                       const Hash& prev_ver) {
+                       const Hash& prev_ver, Hash* ver) override {
+    return Write(key, val, prev_ver, Hash::kNull, ver);
+  }
+
+  ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver) {
     static Hash ver;
     return Put(key, val, prev_ver, &ver);
   }
@@ -197,13 +203,14 @@ class Worker : public DB2, private Noncopyable {
    * @param branch  Branch to update.
    * @param value   Value to write.
    * @param version Returned version.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
-  ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
-                Hash* ver) override;
+  inline ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
+                       Hash* ver) override {
+    return Put(key, val, branch, GetBranchHead(key, branch), ver);
+  }
 
-  inline ErrorCode Put(const Slice& key, const Value2& val,
-                       const Slice& branch) {
+  ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch) {
     static Hash ver;
     return Put(key, val, branch, &ver);
   }
@@ -215,13 +222,14 @@ class Worker : public DB2, private Noncopyable {
    * @param pre_version Previous version refered to.
    * @param value       Value to write.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
-  ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver,
-                Hash* ver) override;
+  inline ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver,
+                       Hash* ver) override {
+    return Write(key, val, prev_ver, Hash::kNull, ver);
+  }
 
-  inline ErrorCode Put(const Slice& key, const Value2& val,
-                       const Hash& prev_ver) {
+  ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver) {
     static Hash ver;
     return Put(key, val, prev_ver, &ver);
   }
@@ -273,8 +281,8 @@ class Worker : public DB2, private Noncopyable {
     return MergeImpl(key, val, tgt_branch, ref_branch, ver);
   }
 
-  inline ErrorCode Merge(const Slice& key, const Value& val,
-                         const Slice& tgt_branch, const Slice& ref_branch) {
+  ErrorCode Merge(const Slice& key, const Value& val,
+                  const Slice& tgt_branch, const Slice& ref_branch) {
     static Hash ver;
     return MergeImpl(key, val, tgt_branch, ref_branch, &ver);
   }
@@ -295,8 +303,8 @@ class Worker : public DB2, private Noncopyable {
     return MergeImpl(key, val, tgt_branch, ref_ver, ver);
   }
 
-  inline ErrorCode Merge(const Slice& key, const Value& val,
-                         const Slice& tgt_branch, const Hash& ref_ver) {
+  ErrorCode Merge(const Slice& key, const Value& val,
+                  const Slice& tgt_branch, const Hash& ref_ver) {
     static Hash ver;
     return MergeImpl(key, val, tgt_branch, ref_ver, &ver);
   }
@@ -317,8 +325,8 @@ class Worker : public DB2, private Noncopyable {
     return MergeImpl(key, val, ref_ver1, ref_ver2, ver);
   }
 
-  inline ErrorCode Merge(const Slice& key, const Value& val,
-                         const Hash& ref_ver1, const Hash& ref_ver2) {
+  ErrorCode Merge(const Slice& key, const Value& val,
+                  const Hash& ref_ver1, const Hash& ref_ver2) {
     static Hash ver;
     return MergeImpl(key, val, ref_ver1, ref_ver2, &ver);
   }
@@ -331,7 +339,7 @@ class Worker : public DB2, private Noncopyable {
    * @param ref_branch  The referring branch.
    * @param value       (Optional) use if cannot auto-resolve conflicts.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   inline ErrorCode Merge(const Slice& key, const Value2& val,
                          const Slice& tgt_branch, const Slice& ref_branch,
@@ -339,8 +347,8 @@ class Worker : public DB2, private Noncopyable {
     return MergeImpl(key, val, tgt_branch, ref_branch, ver);
   }
 
-  inline ErrorCode Merge(const Slice& key, const Value2& val,
-                         const Slice& tgt_branch, const Slice& ref_branch) {
+  ErrorCode Merge(const Slice& key, const Value2& val,
+                  const Slice& tgt_branch, const Slice& ref_branch) {
     static Hash ver;
     return MergeImpl(key, val, tgt_branch, ref_branch, &ver);
   }
@@ -353,7 +361,7 @@ class Worker : public DB2, private Noncopyable {
    * @param ref_version The referring version.
    * @param value       (Optional) use if cannot auto-resolve conflicts.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   inline ErrorCode Merge(const Slice& key, const Value2& val,
                          const Slice& tgt_branch, const Hash& ref_ver,
@@ -361,8 +369,8 @@ class Worker : public DB2, private Noncopyable {
     return MergeImpl(key, val, tgt_branch, ref_ver, ver);
   }
 
-  inline ErrorCode Merge(const Slice& key, const Value2& val,
-                         const Slice& tgt_branch, const Hash& ref_ver) {
+  ErrorCode Merge(const Slice& key, const Value2& val,
+                  const Slice& tgt_branch, const Hash& ref_ver) {
     static Hash ver;
     return MergeImpl(key, val, tgt_branch, ref_ver, &ver);
   }
@@ -375,7 +383,7 @@ class Worker : public DB2, private Noncopyable {
    * @param ref_version2  The second referring version.
    * @param value         (Optional) use if cannot auto-resolve conflicts.
    * @param version       Returned version.
-   * @return              Error code. (ErrorCode::ok for success)
+   * @return              Error code. (ErrorCode::kOK for success)
    */
   inline ErrorCode Merge(const Slice& key, const Value2& val,
                          const Hash& ref_ver1, const Hash& ref_ver2,
@@ -383,18 +391,18 @@ class Worker : public DB2, private Noncopyable {
     return MergeImpl(key, val, ref_ver1, ref_ver2, ver);
   }
 
-  inline ErrorCode Merge(const Slice& key, const Value2& val,
-                         const Hash& ref_ver1, const Hash& ref_ver2) {
+  ErrorCode Merge(const Slice& key, const Value2& val,
+                  const Hash& ref_ver1, const Hash& ref_ver2) {
     static Hash ver;
     return MergeImpl(key, val, ref_ver1, ref_ver2, &ver);
   }
 
-  inline Chunk GetChunk(const Slice& key, const Hash& ver) override {
-    static const auto chunk_store = store::GetChunkStore();
-    return chunk_store->Get(ver);
-  }
+  Chunk GetChunk(const Slice& key, const Hash& ver) override;
 
  private:
+  ErrorCode CreateUCell(const Slice& key, const UType& utype,
+                        const Hash& utype_hash, const Hash& prev_ver1,
+                        const Hash& prev_ver2, Hash* ver);
   ErrorCode Read(const UCell& ucell, Value* val) const;
   ErrorCode ReadBlob(const UCell& ucell, Value* val) const;
   ErrorCode ReadString(const UCell& ucell, Value* val) const;
@@ -412,13 +420,14 @@ class Worker : public DB2, private Noncopyable {
   ErrorCode WriteString(const Slice& key, const Value2& val,
                         const Hash& prev_ver1, const Hash& prev_ver2,
                         Hash* ver);
-  ErrorCode CreateUCell(const Slice& key, const UType& utype,
-                        const Hash& utype_hash, const Hash& prev_ver1,
-                        const Hash& prev_ver2, Hash* ver);
-
+  ErrorCode WriteList(const Slice& key, const Value2& val,
+                      const Hash& prev_ver1, const Hash& prev_ver2,
+                      Hash* ver);
+  ErrorCode WriteMap(const Slice& key, const Value2& val,
+                     const Hash& prev_ver1, const Hash& prev_ver2,
+                     Hash* ver);
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
-
   ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
 
@@ -426,19 +435,17 @@ class Worker : public DB2, private Noncopyable {
   ErrorCode MergeImpl(const Slice& key, const T& val,
                       const Slice& tgt_branch, const Slice& ref_branch,
                       Hash* ver);
-
   template<class T>
   ErrorCode MergeImpl(const Slice& key, const T& val,
                       const Slice& tgt_branch, const Hash& ref_ver,
                       Hash* ver);
-
   template<class T>
   ErrorCode MergeImpl(const Slice& key, const T& val,
                       const Hash& ref_ver1, const Hash& ref_ver2,
                       Hash* ver);
 
-  const WorkerID id_;
   HeadVersion head_ver_;
+  const WorkerID id_;
 };
 
 template<class T>

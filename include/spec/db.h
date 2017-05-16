@@ -20,7 +20,7 @@ class DB {
    * @param key     Target key.
    * @param branch  Branch to read.
    * @param value   Returned value.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Get(const Slice& key, const Slice& branch,
                         Value* value) = 0;
@@ -30,7 +30,7 @@ class DB {
    * @param key     Target key.
    * @param versin  Version to read.
    * @param value   Returned value.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Get(const Slice& key, const Hash& version,
                         Value* value) = 0;
@@ -41,7 +41,7 @@ class DB {
    * @param branch  Branch to update.
    * @param value   Value to write.
    * @param version Returned version.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Put(const Slice& key, const Value& value,
                         const Slice& branch, Hash* version) = 0;
@@ -52,7 +52,7 @@ class DB {
    * @param pre_version Previous version refered to.
    * @param value       Value to write.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Put(const Slice& key, const Value& value,
                         const Hash& pre_version, Hash* version) = 0;
@@ -62,7 +62,7 @@ class DB {
    * @param key         Target key.
    * @param old_branch  Existing branch.
    * @param new_branch  New branch.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
                            const Slice& new_branch) = 0;
@@ -72,7 +72,7 @@ class DB {
    * @param key         Target key.
    * @param version     Existing version.
    * @param new_branch  New branch.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Branch(const Slice& key, const Hash& version,
                            const Slice& new_branch) = 0;
@@ -83,7 +83,7 @@ class DB {
    * @param old_branch  Existing branch name.
    * @param new_branch  New branch name.
    *                    Remove the branch if new_branch = "".
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Rename(const Slice& key, const Slice& old_branch,
                            const Slice& new_branch) = 0;
@@ -95,7 +95,7 @@ class DB {
    * @param ref_branch  The referring branch.
    * @param value       (Optional) use if cannot auto-resolve conflicts.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Slice& ref_branch,
@@ -108,7 +108,7 @@ class DB {
    * @param ref_version The referring version.
    * @param value       (Optional) use if cannot auto-resolve conflicts.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Hash& ref_version,
@@ -121,7 +121,7 @@ class DB {
    * @param ref_version2  The second referring version.
    * @param value         (Optional) use if cannot auto-resolve conflicts.
    * @param version       Returned version.
-   * @return              Error code. (ErrorCode::ok for success)
+   * @return              Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value& value,
                           const Hash& ref_version1, const Hash& ref_version2,
@@ -136,7 +136,7 @@ class DB2 : public DB {
    * @param key     Target key.
    * @param branch  Branch to read.
    * @param value   Returned value.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Get(const Slice& key, const Slice& branch,
                         UCell* meta) = 0;
@@ -146,7 +146,7 @@ class DB2 : public DB {
    * @param key     Target key.
    * @param versin  Version to read.
    * @param value   Returned value.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Get(const Slice& key, const Hash& version,
                         UCell* meta) = 0;
@@ -157,7 +157,7 @@ class DB2 : public DB {
    * @param branch  Branch to update.
    * @param value   Value to write.
    * @param version Returned version.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Put(const Slice& key, const Value2& value,
                         const Slice& branch, Hash* version) = 0;
@@ -168,7 +168,7 @@ class DB2 : public DB {
    * @param pre_version Previous version refered to.
    * @param value       Value to write.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Put(const Slice& key, const Value2& value,
                         const Hash& pre_version, Hash* version) = 0;
@@ -180,7 +180,7 @@ class DB2 : public DB {
    * @param ref_branch  The referring branch.
    * @param value       (Optional) use if cannot auto-resolve conflicts.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value2& value,
                           const Slice& tgt_branch, const Slice& ref_branch,
@@ -193,7 +193,7 @@ class DB2 : public DB {
    * @param ref_version The referring version.
    * @param value       (Optional) use if cannot auto-resolve conflicts.
    * @param version     Returned version.
-   * @return            Error code. (ErrorCode::ok for success)
+   * @return            Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value2& value,
                           const Slice& tgt_branch, const Hash& ref_version,
@@ -206,7 +206,7 @@ class DB2 : public DB {
    * @param ref_version2  The second referring version.
    * @param value         (Optional) use if cannot auto-resolve conflicts.
    * @param version       Returned version.
-   * @return              Error code. (ErrorCode::ok for success)
+   * @return              Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Merge(const Slice& key, const Value2& value,
                           const Hash& ref_version1, const Hash& ref_version2,
@@ -218,7 +218,7 @@ class DB2 : public DB {
    * @param key     Target key.
    * @param versin  Version to read.
    * @param chunk   Returned chunk.
-   * @return        Error code. (ErrorCode::ok for success)
+   * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual Chunk GetChunk(const Slice& key, const Hash& version) = 0;
 };

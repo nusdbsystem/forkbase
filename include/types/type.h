@@ -17,15 +17,16 @@ typedef uint16_t key_size_t;
  * Supported data types
  */
 enum class UType : byte_t {
+  kUnknown = 0,
   // Primitive types
-  kBool = 0,
-  kNum = 1,
-  kString = 2,
-  kBlob = 3,
+  kBool = 1,
+  kNum = 2,
+  kString = 3,
+  kBlob = 4,
   // Structured types
-  kList = 4,
-  kSet = 5,
-  kMap = 6,
+  kList = 5,
+  kSet = 6,
+  kMap = 7,
 
   First = kBool,
   Last = kMap
@@ -83,9 +84,17 @@ enum class ErrorCode : byte_t {
   kFailedCreateUCell = 10,
   kFailedCreateSBlob = 11,
   kFailedCreateSString = 12,
-  kInconsistentKey = 13,
-  kInvalidValue2 = 14,
-  kFailedSpliceSBlob = 15
+  kFailedCreateSList = 13,
+  kFailedCreateSMap = 14,
+  kInconsistentKey = 15,
+  kInvalidValue2 = 16,
+  kFailedModifySBlob = 17,
+  kFailedModifySList = 18,
+  kFailedModifySMap = 19,
+  kIndexOutOfRange = 20,
+  kTypeMismatch = 21, 
+  kKeyNotExists = 22, 
+  kKeyExists = 23
 };
 
 }  // namespace ustore

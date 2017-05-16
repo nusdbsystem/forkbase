@@ -28,8 +28,8 @@ class HeadVersion : private Noncopyable {
   HeadVersion() {}
   ~HeadVersion() {}
 
-  const boost::optional<Hash> GetBranch(const Slice& key,
-                                        const Slice& branch) const;
+  boost::optional<Hash> GetBranch(const Slice& key,
+                                  const Slice& branch) const;
 
   std::vector<Hash> GetLatest(const Slice& key) const;
 
@@ -43,12 +43,18 @@ class HeadVersion : private Noncopyable {
   void RenameBranch(const Slice& key, const Slice& old_branch,
                     const Slice& new_branch);
 
+  inline bool Exists(const Slice& key) const {
+    return latest_ver_.find(key) != latest_ver_.end();
+  }
+
   bool Exists(const Slice& key, const Slice& branch) const;
 
   bool IsLatest(const Slice& key, const Hash& ver) const;
 
-  bool IsBranchHead(const Slice& key, const Slice& branch,
-                    const Hash& ver) const;
+  inline bool IsBranchHead(const Slice& key, const Slice& branch,
+                           const Hash& ver) const {
+    return Exists(key, branch) ? branch_ver_.at(key).at(branch) == ver : false;
+  }
 
   std::vector<Slice> ListBranch(const Slice& key) const;
 

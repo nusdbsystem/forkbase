@@ -5,6 +5,8 @@
 #include <memory>
 #include "spec/blob.h"
 #include "types/server/sblob.h"
+#include "types/server/slist.h"
+#include "types/server/smap.h"
 #include "types/server/sstring.h"
 #include "utils/logging.h"
 
@@ -90,21 +92,11 @@ ErrorCode Worker::ReadString(const UCell& ucell, Value* val) const {
 }
 
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
-                      Hash* ver) {
-  return Put(key, val, branch, GetBranchHead(key, branch), ver);
-}
-
-ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
                       const Hash& prev_ver, Hash* ver) {
   if (branch.empty()) return Put(key, val, prev_ver, ver);
   auto ec = Write(key, val, prev_ver, Hash::kNull, ver);
   if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
   return ec;
-}
-
-ErrorCode Worker::Put(const Slice& key, const Value& val, const Hash& prev_ver,
-                      Hash* ver) {
-  return Write(key, val, prev_ver, Hash::kNull, ver);
 }
 
 ErrorCode Worker::Write(const Slice& key, const Value& val,
@@ -153,22 +145,12 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                      ver);
 }
 
-ErrorCode Worker::Put(const Slice& key, const Value2& val,
-                      const Slice& branch, Hash* ver) {
-  return Put(key, val, branch, GetBranchHead(key, branch), ver);
-}
-
 ErrorCode Worker::Put(const Slice& key, const Value2& val, const Slice& branch,
                       const Hash& prev_ver, Hash* ver) {
   if (branch.empty()) return Put(key, val, prev_ver, ver);
   ErrorCode ec = Write(key, val, prev_ver, Hash::kNull, ver);
   if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
   return ec;
-}
-
-ErrorCode Worker::Put(const Slice& key, const Value2& val,
-                      const Hash& prev_ver, Hash* ver) {
-  return Write(key, val, prev_ver, Hash::kNull, ver);
 }
 
 ErrorCode Worker::Write(const Slice& key, const Value2& val,
@@ -181,6 +163,12 @@ ErrorCode Worker::Write(const Slice& key, const Value2& val,
       break;
     case UType::kString:
       ec = WriteString(key, val, prev_ver1, prev_ver2, ver);
+      break;
+    case UType::kList:
+      ec = WriteList(key, val, prev_ver1, prev_ver2, ver);
+      break;
+    case UType::kMap:
+      ec = WriteMap(key, val, prev_ver1, prev_ver2, ver);
       break;
     default:
       LOG(WARNING) << "Unsupported data type: " << static_cast<int>(val.type);
@@ -204,9 +192,9 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
                        ver);
   } else {  // update
     SBlob sblob(val.base);
-    const auto data = reinterpret_cast<const byte_t*>(slice.data());
-    const auto data_hash = sblob.Splice(val.pos, val.dels, data, slice.len());
-    if (*ver == Hash::kNull) return ErrorCode::kFailedSpliceSBlob;
+    auto data = reinterpret_cast<const byte_t*>(slice.data());
+    auto data_hash = sblob.Splice(val.pos, val.dels, data, slice.len());
+    if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySBlob;
     return CreateUCell(key, UType::kBlob, data_hash, prev_ver1, prev_ver2,
                        ver);
   }
@@ -224,6 +212,58 @@ ErrorCode Worker::WriteString(const Slice& key, const Value2& val,
   }
   return CreateUCell(key, UType::kString, sstr.hash(), prev_ver1, prev_ver2,
                      ver);
+}
+
+ErrorCode Worker::WriteList(const Slice& key, const Value2& val,
+                            const Hash& prev_ver1, const Hash& prev_ver2,
+                            Hash* ver) {
+  DCHECK(val.type == UType::kList);
+  if (val.base == Hash::kNull) {  // new insertion
+    SList list(val.vals);
+    if (list.empty()) {
+      LOG(ERROR) << "Failed to create SList for Key \"" << key << "\"";
+      return ErrorCode::kFailedCreateSList;
+    }
+    return CreateUCell(key, UType::kList, list.hash(), prev_ver1, prev_ver2,
+                       ver);
+  } else {  // update
+    SList list(val.base);
+    auto data_hash = list.Splice(val.pos, val.dels, val.vals);
+    if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySList;
+    return CreateUCell(key, UType::kList, data_hash, prev_ver1, prev_ver2,
+                       ver);
+  }
+}
+
+ErrorCode Worker::WriteMap(const Slice& key, const Value2& val,
+                           const Hash& prev_ver1, const Hash& prev_ver2,
+                           Hash* ver) {
+  DCHECK(val.type == UType::kMap);
+  if (val.base == Hash::kNull) {  // new insertion
+    if (val.keys.size() != val.vals.size()) return ErrorCode::kInvalidValue2;
+    SMap map(val.keys, val.vals);
+    if (map.empty()) {
+      LOG(ERROR) << "Failed to create SMap for Key \"" << key << "\"";
+      return ErrorCode::kFailedCreateSMap;
+    }
+    return CreateUCell(key, UType::kMap, map.hash(), prev_ver1, prev_ver2,
+                       ver);
+  } else {  // update
+    if (val.keys.size() != 1 || val.keys.size() < val.vals.size())
+      return ErrorCode::kInvalidValue2;
+    auto mkey = val.keys.front();
+    SMap map(val.base);
+    Hash data_hash;
+    if (val.vals.empty()) {
+      data_hash = map.Remove(mkey);
+    } else {
+      DCHECK(val.vals.size() == 1);
+      data_hash = map.Set(mkey, val.vals.front());
+    }
+    if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
+    return CreateUCell(key, UType::kMap, data_hash, prev_ver1, prev_ver2,
+                       ver);
+  }
 }
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
@@ -275,6 +315,11 @@ ErrorCode Worker::Rename(const Slice& key, const Slice& old_branch,
   }
   head_ver_.RenameBranch(key, old_branch, new_branch);
   return ErrorCode::kOK;
+}
+
+Chunk Worker::GetChunk(const Slice& key, const Hash& ver) {
+  static const auto chunk_store = store::GetChunkStore();
+  return chunk_store->Get(ver);
 }
 
 }  // namespace ustore

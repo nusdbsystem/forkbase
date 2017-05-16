@@ -6,7 +6,7 @@
 
 namespace ustore {
 
-const boost::optional<Hash> HeadVersion::GetBranch(const Slice& key,
+boost::optional<Hash> HeadVersion::GetBranch(const Slice& key,
     const Slice& branch) const {
   return Exists(key, branch)
          ? boost::make_optional(branch_ver_.at(key).at(branch))
@@ -107,11 +107,6 @@ bool HeadVersion::IsLatest(const Slice& key, const Hash& ver) const {
   if (key_it == latest_ver_.end()) return false;
   const auto& lv_key = key_it->second;
   return lv_key.find(ver) != lv_key.end();
-}
-
-bool HeadVersion::IsBranchHead(const Slice& key, const Slice& branch,
-                               const Hash& ver) const {
-  return Exists(key, branch) ? branch_ver_.at(key).at(branch) == ver : false;
 }
 
 std::vector<Slice> HeadVersion::ListBranch(const Slice& key) const {
