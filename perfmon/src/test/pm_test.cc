@@ -1,19 +1,22 @@
+// Copyright (c) 2017 The Ustore Authors.
+// Original Author: caiqc
+// Modified by: zl
+
+#include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
-#include <unistd.h>
 #include <string>
 
 using std::string;
 
-int main(int argc, char *argv[]){
-
+int main(int argc, char *argv[]) {
   bool flags = true;
   string path = "/tmp/perfmon/pid_list";
   string file = path+"/pid_test";
   int pid = getpid();
 
   FILE *f = fopen(file.c_str(), "w");
-  if (f == nullptr){
+  if (f == nullptr) {
     printf("cannot open file %s\n", file.c_str());
     exit(0);
   }
@@ -23,8 +26,7 @@ int main(int argc, char *argv[]){
   fprintf(f, "%d\n", pid);
   fclose(f);
 
-
-  while (flags){
+  while (flags) {
     printf("test still running...\n");
     sleep(5);
   }

@@ -1,22 +1,26 @@
+// Copyright (c) 2017 The Ustore Authors.
+// Original Author: caiqc
+// Modified by: zl
+
+#include <unistd.h>
 #include <cstdlib>
 #include <cstdio>
 #include <string>
-#include <unistd.h>
 
 #include "utils/regist.h"
 
 string PERFMON_REG_PATH = "/tmp/perfmon/pid_list";
 
-void setRegistPath(const char* path){
+void setRegistPath(const char* path) {
   PERFMON_REG_PATH = string(path);
 }
 
-bool registInPerfmon(const char* filename){
+bool registInPerfmon(const char* filename) {
   int pid = getpid();
-  string file = PERFMON_REG_PATH+"/"+filename;
+  string file = PERFMON_REG_PATH + "/" + filename;
 
   FILE *f = fopen(file.c_str(), "w");
-  if (f == nullptr){
+  if (f == nullptr) {
     fprintf(stderr, "cannot open file %s\n", file.c_str());
     return false;
   }

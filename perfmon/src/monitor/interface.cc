@@ -1,20 +1,7 @@
-/*
- * =====================================================================================
- *
- *       Filename:  interface.cc
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  12/09/2014 02:13:43 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *   Organization:  
- *
- * =====================================================================================
- */
+// Copyright (c) 2017 The Ustore Authors.
+// Original Author: caiqc
+// Modified by: zl
+
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -29,8 +16,7 @@
 #include "monitor/handler.h"
 #include "monitor/config.h"
 
-int Interface::initInterface(const char * dev)
-{
+int Interface::initInterface(const char * dev) {
     this->dev_ = strdup(dev);
 
     if (dev_ == NULL)
@@ -61,17 +47,18 @@ int Interface::initInterface(const char * dev)
 
     this->addr_ = saddr->sin_addr.s_addr;
     this->saFamily_ = AF_INET;
-    inet_ntop (AF_INET, &addr_, this->str_, 15);
+    inet_ntop(AF_INET, &addr_, this->str_, 15);
 
     this->handler_ = new PacketHandler(dev_);
     if (handler_->openDevLive() < 0) {
-        std::cout << "couldn't open device " << this->dev_ << " for packet capture\n";
+        std::cout << "couldn't open device " <<
+          this->dev_ << " for packet capture\n";
         goto out;
     }
 
-    if (handler_->setNonBlock() < 0)
-    {
-        std::cout << "couldn't set the device to nonblock mode. Don't panic, we can still proceed...\n";
+    if (handler_->setNonBlock() < 0) {
+        std::cout << "couldn't set the device to nonblock mode."
+          << " Don't panic, we can still proceed...\n";
     }
 
     return 0;
@@ -80,12 +67,11 @@ out:
     return -1;
 }
 
-char * Interface::getAddr () {
+char * Interface::getAddr() {
     return this->str_;
 }
 
-Interface::~Interface ()
-{
+Interface::~Interface() {
     delete this->handler_;
     if (dev_)
         free(dev_);
@@ -93,14 +79,14 @@ Interface::~Interface ()
         free(str_);
 }
 
-bool Interface::contains (const in_addr_t & addr) {
+bool Interface::contains(const in_addr_t & addr) {
 #ifdef PERF_DEBUG
-    //std::cout << addr << " " << this->addr_ << std::endl;
+    // std::cout << addr << " " << this->addr_ << std::endl;
 #endif
     if ((this->saFamily_ == AF_INET) && (addr == this->addr_))
         return true;
     return false;
-    //return next_->contains(addr);
+    // return next_->contains(addr);
 }
 
 int Interface::processNextPkt() {

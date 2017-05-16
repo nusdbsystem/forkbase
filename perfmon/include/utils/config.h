@@ -1,5 +1,9 @@
-#ifndef INCLUDE_CONFIG_H
-#define INCLUDE_CONFIG_H
+// Copyright (c) 2017 The Ustore Authors.
+// Original Author: caiqc
+// Modified by: zl
+
+#ifndef USTORE_PERFMON_UTILS_CONFIG_H_
+#define USTORE_PERFMON_UTILS_CONFIG_H_
 
 #include <cstdio>
 #include <cstdlib>
@@ -10,11 +14,11 @@ using std::string;
 using std::map;
 
 class Config{
-  private:
-    map<string,string> dic;
-  public:
-    void loadConfigFile(string file);
-    string get(string feature);
+ public:
+  void loadConfigFile(string file);
+  string get(string feature);
+ private:
+  map<string, string> dic;
 };
 
-#endif
+#endif  // USTORE_PERFMON_UTILS_CONFIG_H_

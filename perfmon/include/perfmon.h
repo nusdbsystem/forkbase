@@ -1,54 +1,40 @@
-/*
- * =====================================================================================
- *
- *       Filename:  perfmon.h
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  12/16/2014 08:05:02 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  CAI Qingchao (), qingchaochoi@gmail.com
- *   Organization:  
- *
- * =====================================================================================
- */
+// Copyright (c) 2017 The Ustore Authors.
+// Original Author: caiqc
+// Modified by: zl
 
-#ifndef __PERFMON_H
-#define __PERFMON_H
+#ifndef USTORE_PERFMON_PERFMON_H_
+#define USTORE_PERFMON_PERFMON_H_
 
 #include <cstdio>
+#include <map>
+#include <string>
 #include "utils/sock.h"
 #include "utils/proto.h"
-
-#include <map>
 
 class NetworkMonitor;
 class ProcessManager;
 
 class PerformanceMonitor{
-    public:
-        PerformanceMonitor(const char * const hostname, int port,  char* const dir, int numNic = 0, char** nicList = NULL);
-        ~PerformanceMonitor();
-        void start();
-    private:
-        char* dir_;
-        void refreshProcess();
+ public:
+  // constant
+  static constexpr int MAX_PROC = 50;
+  static constexpr int BUF_LEN = (MAX_PROC+1)*(sizeof(struct ProcInfo));
 
-    public:
-        //constant
-        const static int MAX_PROC = 50;
-        const static int BUF_LEN = (MAX_PROC+1)*(sizeof(struct ProcInfo));
-    private:
-        //socket
-        SocketClient socket;
-        char buf[BUF_LEN];
-        //monitor
-        char pidFile[BUF_LEN];
+  PerformanceMonitor(const char * const hostname, int port,
+    char* const dir, int numNic = 0, char** nicList = NULL);
+  ~PerformanceMonitor();
+  void start();
+ private:
+  // socket
+  SocketClient socket;
+  char buf[BUF_LEN];
+  // monitor
+  char pidFile[BUF_LEN];
 
-        map<int, string> pidList_;
+  char* dir_;
+  void refreshProcess();
+  map<int, string> pidList_;
 };
 
-#endif
+#endif  // USTORE_PERFMON_PERFMON_H_
+

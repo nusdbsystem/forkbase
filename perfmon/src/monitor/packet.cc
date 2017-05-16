@@ -1,20 +1,7 @@
-/*
- * =====================================================================================
- *
- *       Filename:  packet.cc
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  12/09/2014 02:50:21 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *   Organization:  
- *
- * =====================================================================================
- */
+// Copyright (c) 2017 The Ustore Authors.
+// Original Author: caiqc
+// Modified by: zl
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
@@ -23,10 +10,10 @@
 #include "monitor/netmon.h"
 #include "monitor/config.h"
 
-//extern Interface *interfaces;
+// extern Interface *interfaces;
 
-Packet::Packet (in_addr sip, uint16_t sport, in_addr dip, uint16_t dport, uint32_t len, struct timeval time, Direction direction) 
-{
+Packet::Packet(in_addr sip, uint16_t sport, in_addr dip,
+  uint16_t dport, uint32_t len, struct timeval time, Direction direction) {
     this->sip_ = sip;
     this->sport_ = sport;
     this->dip_ = dip;
@@ -39,7 +26,7 @@ Packet::Packet (in_addr sip, uint16_t sport, in_addr dip, uint16_t dport, uint32
     this->connStr_ = NULL;
 }
 
-Packet::Packet (const Packet& old) {
+Packet::Packet(const Packet& old) {
     this->sip_ = old.sip_;
     this->sport_ = old.sport_;
     this->dip_ = old.dip_;
@@ -52,17 +39,15 @@ Packet::Packet (const Packet& old) {
     if (old.connStr_ == NULL)
         connStr_ = old.connStr_;
     else
-        connStr_ = strdup (old.connStr_);
+        connStr_ = strdup(old.connStr_);
 }
 
-Packet::~Packet () 
-{
+Packet::~Packet() {
     if (this->connStr_ != NULL)
         free(this->connStr_);
 }
 
-Packet * Packet::newInverted ()
-{
+Packet * Packet::newInverted() {
     Direction dir = UNKNOWN;
     if (this->direction_ == OUTGOING)
         dir = INCOMING;
@@ -73,14 +58,13 @@ Packet * Packet::newInverted ()
 }
 
 
-/* 
+/*
  * ===  FUNCTION  ======================================================================
  *         Name:  getNullIncomingPkt
  *  Description:  return a copy of given pkt with zero length
  * =====================================================================================
  */
-Packet * Packet::getNullIncomingPkt (Packet * pkt)
-{
+Packet * Packet::getNullIncomingPkt(Packet * pkt) {
     Packet * ret;
     if (pkt->isOutgoing())
         ret = pkt->newInverted();
@@ -91,14 +75,13 @@ Packet * Packet::getNullIncomingPkt (Packet * pkt)
     return ret;
 }
 
-/* 
+/*
  * ===  FUNCTION  ======================================================================
  *         Name:  getNullOutgoingPkt
- *  Description:  
+ *  Description:
  * =====================================================================================
  */
-Packet * Packet::getNullOutgoingPkt (Packet * pkt)
-{
+Packet * Packet::getNullOutgoingPkt(Packet * pkt) {
     Packet * ret;
     if (pkt->isOutgoing())
         ret = new Packet(*pkt);
@@ -110,18 +93,17 @@ Packet * Packet::getNullOutgoingPkt (Packet * pkt)
 }
 
 
-/* 
+/*
  * ===  FUNCTION  ======================================================================
  *         Name:  getConnStr
- *  Description:  
+ *  Description:
  * =====================================================================================
  */
-char * Packet::getConnStr () 
-{
+char *Packet::getConnStr() {
     if (this->connStr_)
         goto out;
 
-    connStr_ = (char *) malloc (CONNSTRLEN * sizeof(char));
+    connStr_ = (char *) malloc(CONNSTRLEN * sizeof(char));
     char localStr[50];
     char remoteStr[50];
 
@@ -130,21 +112,23 @@ char * Packet::getConnStr ()
         inet_ntop(saFamily_, &dip_, remoteStr, 49);
 
         if (isOutgoing()) {
-            snprintf(this->connStr_, CONNSTRLEN * sizeof(char), "%s:%d-%s:%d", localStr, sport_, remoteStr, dport_); 
-        } else{
-            snprintf(this->connStr_, CONNSTRLEN * sizeof(char), "%s:%d-%s:%d", remoteStr, dport_, localStr, sport_); 
+            snprintf(this->connStr_, CONNSTRLEN * sizeof(char),
+              "%s:%d-%s:%d", localStr, sport_, remoteStr, dport_);
+        } else {
+            snprintf(this->connStr_, CONNSTRLEN * sizeof(char),
+              "%s:%d-%s:%d", remoteStr, dport_, localStr, sport_);
         }
     }
-out:
 
+out:
     return connStr_;
 }
 
-bool Packet::isOlderThan (timeval time) {
+bool Packet::isOlderThan(timeval time) {
     return (time_.tv_sec <= time.tv_sec);
 }
 
-bool Packet::isOutgoing () {
+bool Packet::isOutgoing() {
     switch (this->direction_) {
         case OUTGOING:
             return true;
@@ -153,7 +137,8 @@ bool Packet::isOutgoing () {
         case UNKNOWN:
             bool isLocal = false;
             if (this->saFamily_ == AF_INET)
-                isLocal = NetworkMonitor::getNetworkMonitor()->contains(this->sip_.s_addr);
+                isLocal = NetworkMonitor::getNetworkMonitor()
+                  ->contains(this->sip_.s_addr);
             if (isLocal)
                 this->direction_ = OUTGOING;
             else
@@ -163,13 +148,14 @@ bool Packet::isOutgoing () {
     return false;
 }
 
-bool Packet::match (Packet *packet) {
-    // we neglect the comparison between the source ip and dest ip, 
+bool Packet::match(Packet *packet) {
+    // we neglect the comparison between the source ip and dest ip,
     // since the local host may have multiple interfaces and
     // packets of the same connection may be sent over different interfaces
-    bool ret = (this->sport_ == packet->sport_) && (this->dport_ == packet->dport_)
-            && (this->dip_.s_addr == packet->dip_.s_addr)
-            && (this->sip_.s_addr == packet->sip_.s_addr);
+    bool ret = (this->sport_ == packet->sport_)
+        && (this->dport_ == packet->dport_)
+        && (this->dip_.s_addr == packet->dip_.s_addr)
+        && (this->sip_.s_addr == packet->sip_.s_addr);
 
     return ret;
 }

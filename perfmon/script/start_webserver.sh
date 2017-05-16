@@ -11,4 +11,4 @@ host=`grep "hostname=" $PERFMON_HOME/conf/perfmon.cfg | cut -d '=' -f 2`
 sed -e "6c\ \ Monitor.API=\"http://$host:$port\";" $PERFMON_HOME/webui/js/monitor.js
 cd $PERFMON_HOME/webui;
 
-#python -m SimpleHTTPServer $port;
+python -m SimpleHTTPServer $port;

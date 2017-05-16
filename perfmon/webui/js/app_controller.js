@@ -37,7 +37,7 @@
 					procIndex++;
 					var proc = host.procs[j];
 					html+="<tr>"
-						+"<td class='host' title='"+host.name+"'>"+host.name.split("-")[1]+"</td>"
+						+"<td class='host' title='"+host.name+"'>"+host.name.split("-")[0]+"</td>"
 						+"<td class='proc' title='"+proc.name+"'>"+proc.name.split(":")[0]+"</td>";
 					for(var attrName in attrs){
 						var attr =proc.attrs[attrName];

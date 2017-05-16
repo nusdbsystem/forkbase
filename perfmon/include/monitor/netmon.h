@@ -1,23 +1,9 @@
-/*
- * =====================================================================================
- *
- *       Filename:  netmon.h
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  12/08/2014 02:04:24 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *   Organization:  
- *
- * =====================================================================================
- */
+// Copyright (c) 2017 The Ustore Authors.
+// Original Author: caiqc
+// Modified by: zl
 
-#ifndef __NETMON_H
-#define __NETMON_H
+#ifndef USTORE_PERFMON_MONITOR_NETMON_H_
+#define USTORE_PERFMON_MONITOR_NETMON_H_
 
 #include <netinet/in.h>
 #include <inttypes.h>
@@ -27,21 +13,20 @@
 class Interface;
 
 class NetworkMonitor{
-    public:
-        void startMonitor();
-        void addInterface(char *);
-        bool contains(const in_addr_t &);
+ public:
+  NetworkMonitor();
+  ~NetworkMonitor();
+  void startMonitor();
+  void addInterface(char *);
+  bool contains(const in_addr_t &);
 
-        static NetworkMonitor * getNetworkMonitor( ) {
-            static NetworkMonitor monitor;
-            return &monitor;
-        }
+  static NetworkMonitor* getNetworkMonitor() {
+    static NetworkMonitor monitor;
+    return &monitor;
+  }
 
-    private:
-        std::vector<Interface *> interfaces_;
-
-        NetworkMonitor(); 
-        ~NetworkMonitor(); 
+ private:
+  std::vector<Interface *> interfaces_;
 };
 
-#endif
+#endif  // USTORE_PERFMON_MONITOR_NETMON_H_
