@@ -10,20 +10,19 @@
 namespace ustore {
 
 class SMap : public UMap {
-// UMap for server side
  public:
   SMap() = default;
   SMap(SMap&& rhs) = default;
-  // Load an existing map using hash
+  // Load existing SMap
   explicit SMap(const Hash& root_hash) noexcept;
+  // Create new SMap
+  // kv_items must be sorted in strict ascending order based on key
+  SMap(const std::vector<Slice>& keys,
+       const std::vector<Slice>& vals) noexcept;
   ~SMap() = default;
 
   SMap& operator=(SMap&& rhs) = default;
 
-  // create an SMap using the kv_items
-  // kv_items must be sorted in strict ascending order based on key
-  SMap(const std::vector<Slice>& keys,
-       const std::vector<Slice>& vals) noexcept;
   // Both Use chunk builder to do splice
   // this kv_items must be sorted in descending order before
   Hash Set(const Slice& key, const Slice& val) const override;

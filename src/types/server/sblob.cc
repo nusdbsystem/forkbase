@@ -14,7 +14,6 @@ SBlob::SBlob(const Hash& root_hash) noexcept :
 
 SBlob::SBlob(const Slice& data) noexcept :
     UBlob(std::make_shared<ServerChunkLoader>()) {
-
   NodeBuilder nb(BlobChunker::Instance(), true);
   FixedSegment seg(reinterpret_cast<const byte_t*>(data.data()),
                    data.len(), 1);
@@ -23,8 +22,7 @@ SBlob::SBlob(const Slice& data) noexcept :
   SetNodeForHash(root_hash);
 }
 
-Hash SBlob::Splice(size_t pos, size_t num_delete,
-                   const byte_t* data,
+Hash SBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
                    size_t num_append) const {
   NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(
       root_node_->hash(), pos, chunk_loader_.get(), BlobChunker::Instance(),

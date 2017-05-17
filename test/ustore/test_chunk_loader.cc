@@ -1,9 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
+
 #include <algorithm>
 #include <cstring>
 #include <string>
 #include "gtest/gtest.h"
-#include "store/chunk_loader.h"
+#include "chunk/chunk_loader.h"
 #include "store/chunk_store.h"
 
 const ustore::byte_t raw_data[] = "The quick brown fox jumps over the lazy dog";

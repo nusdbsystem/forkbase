@@ -14,7 +14,7 @@ namespace ustore {
 // DB is deprecated from v0.2
 class DB {
  public:
-  /**
+   /**
    * @brief Read the value which is the head of a branch.
    *
    * @param key     Target key.
@@ -126,6 +126,10 @@ class DB {
   virtual ErrorCode Merge(const Slice& key, const Value& value,
                           const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) = 0;
+
+ protected:
+  DB() = default;
+  virtual ~DB() = default;
 };
 
 class DB2 : public DB {
@@ -221,9 +225,12 @@ class DB2 : public DB {
    * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual Chunk GetChunk(const Slice& key, const Hash& version) = 0;
+
+ protected:
+  DB2() = default;
+  virtual ~DB2() = default;
 };
 
 }  // namespace ustore
 
 #endif  // USTORE_SPEC_DB_H_
-

@@ -35,7 +35,7 @@ Hash UBlob::Delete(size_t pos, size_t num_delete) const {
   return Splice(pos, num_delete, nullptr, 0);
 }
 
-Hash UBlob::Append(byte_t* data, size_t num_append) const {
+Hash UBlob::Append(const byte_t* data, size_t num_append) const {
   return Splice(size(), 0, data, num_append);
 }
 

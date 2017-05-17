@@ -36,7 +36,7 @@ class UMap : public ChunkableType {
  protected:
   UMap() = default;
   UMap(UMap&& rhs) = default;
-  explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept  :
+  explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept :
       ChunkableType(loader) {}
   virtual ~UMap() = default;
 

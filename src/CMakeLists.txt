@@ -65,11 +65,17 @@ LIST(APPEND ustore_srcs ${node_source})
 AUX_SOURCE_DIRECTORY(recovery recovery_source)
 LIST(APPEND ustore_srcs ${recovery_source})
 
+AUX_SOURCE_DIRECTORY(spec spec_source)
+LIST(APPEND ustore_srcs ${spec_source})
+
 AUX_SOURCE_DIRECTORY(store store_source)
 LIST(APPEND ustore_srcs ${store_source})
 
 AUX_SOURCE_DIRECTORY(types types_source)
 LIST(APPEND ustore_srcs ${types_source})
+
+AUX_SOURCE_DIRECTORY(types/client types_client_source)
+LIST(APPEND ustore_srcs ${types_client_source})
 
 AUX_SOURCE_DIRECTORY(types/server types_server_source)
 LIST(APPEND ustore_srcs ${types_server_source})

@@ -7,9 +7,9 @@
 #include <vector>
 
 #include "chunk/chunker.h"
+#include "chunk/chunk_loader.h"
 #include "node/cursor.h"
 #include "node/rolling_hash.h"
-#include "store/chunk_loader.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
 

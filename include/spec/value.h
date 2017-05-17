@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <memory>
+#include <vector>
 #include "hash/hash.h"
 #include "types/type.h"
 #include "spec/blob.h"
@@ -101,12 +102,12 @@ struct Value2 {
   UType type;
   // Hash::kNull if it is a new insertion
   Hash base;
-  // only used for a update
+  // only used for an update
   size_t pos;
   size_t dels;
   // size = 1 for Blob/String, size > 1 for Map/List
   std::vector<Slice> vals;
-  // for Map
+  // for Map only
   std::vector<Slice> keys;
 };
 

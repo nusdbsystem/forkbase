@@ -8,9 +8,9 @@
 #include <utility>
 #include <vector>
 
+#include "chunk/chunk_loader.h"
 #include "hash/hash.h"
 #include "node/cursor.h"
-#include "store/chunk_loader.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
 

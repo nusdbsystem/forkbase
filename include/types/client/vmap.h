@@ -3,25 +3,28 @@
 #ifndef USTORE_TYPES_CLIENT_VMAP_H_
 #define USTORE_TYPES_CLIENT_VMAP_H_
 
+#include <memory>
+#include <vector>
+#include "types/client/vvalue.h"
 #include "types/umap.h"
 
 namespace ustore {
-class VMap : public UMap, private Noncopyable {
-// UMap for server side
+
+class VMap : public UMap, public Buffered {
  public:
-  // // Create an existing map using hash
-  // explicit VMap(const Hash& root_hash) noexcept;
+  ~VMap() = default;
 
-  // create an empty map
-  // construct chunk loader for client
-  VMap() {}
+  Hash Set(const Slice& key, const Slice& val) const override;
+  Hash Remove(const Slice& key) const override;
 
-  ~VMap() = default
-
-  // // Send message to server
-  // VMap Set(const byte_t* key, size_t key_size,
-  //          const byte_t* value, size_t value_size);
+ protected:
+  // Load an existing VMap
+  VMap(std::shared_ptr<ChunkLoader>, const Hash& root_hash) noexcept;
+  // Create a new VMap
+  VMap(std::shared_ptr<ChunkLoader>, const std::vector<Slice>& keys,
+       const std::vector<Slice>& vals) noexcept;
 };
+
 }  // namespace ustore
 
 #endif  // USTORE_TYPES_CLIENT_VMAP_H_

@@ -13,9 +13,9 @@ class SList : public UList {
  public:
   SList() = default;
   SList(SList&& rhs) = default;
-  // Load an existing map using hash
+  // Load existing SList
   explicit SList(const Hash& root_hash) noexcept;
-  // create an SList using the initial elements
+  // create new SList
   explicit SList(const std::vector<Slice>& elements) noexcept;
   ~SList() = default;
 

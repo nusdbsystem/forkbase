@@ -6,9 +6,9 @@
 #include <memory>
 #include <vector>
 
+#include "chunk/chunk_loader.h"
 #include "node/orderedkey.h"
 #include "node/node.h"
-#include "store/chunk_loader.h"
 #include "types/type.h"
 #include "utils/logging.h"
 

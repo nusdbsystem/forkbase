@@ -52,13 +52,13 @@ void StoreInfo::Print() const {
 
   cout << "============= Storage Usage Information ==============" << endl;
   // segment type
-  cout << "Segment Type"
+  cout << setw(kSegmentAlign) << left << "Segment Type"
        << " |" << setw(kSegmentAlign) << right << "Total"
        << " |" << setw(kSegmentAlign) << right << "Free"
        << " |" << setw(kSegmentAlign) << right << "Used"
        << endl;
   // segment count
-  cout << "Count       "
+  cout << setw(kSegmentAlign) << left << "Count"
        << " |" << setw(kSegmentAlign) << right << segments
        << " |" << setw(kSegmentAlign) << right << freeSegments
        << " |" << setw(kSegmentAlign) << right << usedSegments

@@ -35,13 +35,11 @@ class UBlob : public ChunkableType {
    *  Return:
    *    the new Blob reflecting the operation
    */
-  virtual Hash Splice(size_t pos, size_t n_delete_bytes,
-                      const byte_t* data,
+  virtual Hash Splice(size_t pos, size_t n_delete_bytes, const byte_t* data,
                       size_t n_insert_bytes) const = 0;
   // * Insert bytes given a position
   // * Use Splice internally
-  Hash Insert(size_t pos, const byte_t* data,
-              size_t num_insert) const;
+  Hash Insert(size_t pos, const byte_t* data, size_t num_insert) const;
   /** Delete bytes from a given position
    *
    *  Use Splice internally
@@ -51,7 +49,7 @@ class UBlob : public ChunkableType {
    *
    *  Use Splice internally
    */
-  Hash Append(byte_t* data, size_t num_insert) const;
+  Hash Append(const byte_t* data, size_t num_insert) const;
 
  protected:
   UBlob() = default;

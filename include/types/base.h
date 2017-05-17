@@ -7,12 +7,13 @@
 #include <memory>
 #include <utility>
 
+#include "chunk/chunk_loader.h"
 #include "node/node.h"
-#include "store/chunk_loader.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
-class BaseType : Noncopyable {
+
+class BaseType : private Noncopyable {
   // A genric type for parent class
   // all other types shall inherit from this
  public:

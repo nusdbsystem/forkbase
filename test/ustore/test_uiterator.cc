@@ -2,11 +2,10 @@
 
 #include "gtest/gtest.h"
 
-#include "types/uiterator.h"
+#include "chunk/chunk_loader.h"
 #include "node/blob_node.h"
-
-#include "store/chunk_loader.h"
 #include "store/chunk_store.h"
+#include "types/uiterator.h"
 
 TEST(UIterator, Basic) {
   const ustore::byte_t c[] = "abcdeg";
