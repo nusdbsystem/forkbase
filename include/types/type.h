@@ -92,8 +92,8 @@ enum class ErrorCode : byte_t {
   kFailedModifySList = 18,
   kFailedModifySMap = 19,
   kIndexOutOfRange = 20,
-  kTypeMismatch = 21, 
-  kKeyNotExists = 22, 
+  kTypeMismatch = 21,
+  kKeyNotExists = 22,
   kKeyExists = 23
 };
 

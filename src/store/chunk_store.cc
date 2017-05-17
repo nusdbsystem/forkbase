@@ -14,7 +14,7 @@
 
 namespace ustore {
 
-static std::unordered_map<ChunkType, std::string> chunkTypeNames = {
+std::unordered_map<ChunkType, std::string> chunkTypeNames = {
   {ChunkType::kNull, "kNull"},
   {ChunkType::kCell, "kCell"},
   {ChunkType::kMeta, "kMeta"},

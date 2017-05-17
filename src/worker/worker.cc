@@ -252,7 +252,7 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value2& val,
     if (val.vals.empty()) {
       data_hash = map.Remove(mkey);
     } else {
-      DCHECK(val.vals.size() == 1);
+      DCHECK_EQ(val.vals.size(), 1);
       data_hash = map.Set(mkey, val.vals.front());
     }
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;

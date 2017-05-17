@@ -3,6 +3,7 @@
 #ifndef USTORE_WORKER_WORKER_EXT_H_
 #define USTORE_WORKER_WORKER_EXT_H_
 
+#include <vector>
 #include "worker/worker.h"
 
 namespace ustore {
@@ -81,7 +82,6 @@ class WorkerExt : public Worker {
                               const Slice& branch, UCell* ucell) {
     return GetForType(type, key, GetBranchHead(key, branch), ucell);
   }
-
 };
 
 }  // namespace ustore
