@@ -8,9 +8,9 @@
 #include "utils/logging.h"
 #include "worker/worker_ext.h"
 
-#include "analytics.h"
-#include "config.h"
-#include "utils.h"
+#include "ca/analytics.h"
+#include "ca/config.h"
+#include "ca/utils.h"
 
 namespace ustore {
 namespace example {

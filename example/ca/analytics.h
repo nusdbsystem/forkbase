@@ -13,8 +13,9 @@
 #include "utils/logging.h"
 #include "worker/worker_ext.h"
 
-#include "config.h"
-#include "utils.h"
+#include "ca/config.h"
+#include "ca/relational.h"
+#include "ca/utils.h"
 
 namespace ustore {
 namespace example {
@@ -116,6 +117,26 @@ class MergeAnalytics : public Analytics {
     std::cout << "[Parameters]"
               << " branch=\"" << branch_ << '\"' << std::endl;
   }
+
+  int Compute(StringSet* aff_cols) override;
+};
+
+class ColumnStoreAnalytics {
+ public:
+  ColumnStoreAnalytics(const std::string& branch, ColumnStore& cs)
+    : branch_(branch), cs_(cs) {}
+
+  inline const std::string& branch() { return branch_; }
+  virtual int Compute(StringSet* aff_cols) = 0;
+
+ protected:
+  const std::string branch_;
+  ColumnStore& cs_;
+};
+
+class SampleAnalytics : public ColumnStoreAnalytics {
+  SampleAnalytics(const std::string& branch, ColumnStore& cs)
+    : ColumnStoreAnalytics(branch, cs) {}
 
   int Compute(StringSet* aff_cols) override;
 };

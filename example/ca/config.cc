@@ -1,6 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include "config.h"
+#include "ca/config.h"
 
 namespace ustore {
 namespace example {

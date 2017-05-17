@@ -2,8 +2,7 @@
 
 #include <utility>
 #include <vector>
-
-#include "analytics.h"
+#include "ca/analytics.h"
 
 namespace ustore {
 namespace example {
@@ -107,6 +106,35 @@ int MergeAnalytics::Compute(StringSet* aff_cols) {
   USTORE_GUARD_INT(
     db_.Merge(col_name, Value(Slice(col_str)), branch_, branch_bin));
   if (aff_cols != nullptr) aff_cols->insert(col_name.ToString());
+  return 0;
+}
+
+int SampleAnalytics::Compute(StringSet* aff_cols) {
+  const std::string table("sample table");
+
+  USTORE_GUARD_INT(
+    cs_.BranchTable(table, branch_, "master"));
+
+  Column col1, col2;
+  USTORE_GUARD_INT(
+    cs_.GetColumn(table, branch_, "col-1", &col1));
+  USTORE_GUARD_INT(
+    cs_.GetColumn(table, branch_, "col-2", &col2));
+
+  // std::vector<std::string> col;
+  // for (auto itr = col1.Scan(); !itr->end(); itr->next()) {
+  //   col.emplace_back("*" + itr->value().ToString());
+  // }
+  // USTORE_GUARD_INT(
+  //   cs_.PutColumn(table, branch_, "result", col));
+
+  // ColumnDiffIterator itr_diff;
+  // USTORE_GUARD_INT(
+  //   cs_.DiffColumn(table, branch_, "col-1",
+  //                 table, branch_, "result", &itr_diff));
+  // for (; !itr_diff->end(); itr_diff->next()) std::cout << "#";
+  // std::cout << std::endl;
+
   return 0;
 }
 
