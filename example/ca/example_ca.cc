@@ -6,7 +6,7 @@
 #include "spec/value.h"
 #include "types/type.h"
 #include "utils/logging.h"
-#include "worker/worker.h"
+#include "worker/worker_ext.h"
 
 #include "analytics.h"
 #include "config.h"
@@ -16,7 +16,7 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-Worker db(Config::kWorkID);
+WorkerExt db(Config::kWorkID);
 
 int LoadDataset() {
   std::cout << std::endl

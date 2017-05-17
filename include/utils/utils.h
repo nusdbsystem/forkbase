@@ -3,7 +3,9 @@
 #ifndef USTORE_UTILS_UTILS_H_
 #define USTORE_UTILS_UTILS_H_
 
+#include <algorithm>
 #include <list>
+#include <numeric>
 #include <queue>
 #include <set>
 #include <string>
@@ -100,6 +102,9 @@ class Utils {
   static UType ToUType(const std::string& str);
 
   static ErrorCode CheckIndex(const size_t idx, const SList& list);
+
+  template <typename T>
+  static std::vector<size_t> SortIndexes(const std::vector<T>& v);
 };
 
 template<typename T>
@@ -147,9 +152,21 @@ std::vector<T> Utils::ToVector(
   return vec;
 }
 
+template <typename T>
+std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
+  std::vector<size_t> idx(v.size());
+  std::iota(idx.begin(), idx.end(), 0);
+
+  // sort indexes based on comparing values in v
+  std::sort(idx.begin(), idx.end(),
+  [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+
+  return idx;
+}
+
 inline std::ostream& operator<<(std::ostream& os, const UType& obj) {
-    os << Utils::ToString(obj);
-    return os;
+  os << Utils::ToString(obj);
+  return os;
 }
 
 }  // namespace ustore

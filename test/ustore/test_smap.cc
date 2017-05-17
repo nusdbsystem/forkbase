@@ -47,7 +47,8 @@ TEST(SMap, Small) {
   const ustore::Slice k4("k4444", 5);
   const ustore::Slice v4("v4444", 5);
 
-  ustore::SMap smap({k1, k2, k3}, {v1, v2, v3});
+  // Internally, key slices will be sorted in ascending order
+  ustore::SMap smap({k1, k3, k2}, {v1, v3, v2});
 
   size_t val_num_bytes = 0;
 

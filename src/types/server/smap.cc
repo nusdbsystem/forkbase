@@ -5,6 +5,7 @@
 #include "node/map_node.h"
 #include "node/node_builder.h"
 #include "utils/debug.h"
+#include "utils/utils.h"
 
 namespace ustore {
 
@@ -20,7 +21,8 @@ SMap::SMap(const std::vector<Slice>& keys,
   CHECK_EQ(vals.size(), keys.size());
   NodeBuilder nb(MapChunker::Instance(), false);
   std::vector<KVItem> kv_items;
-  for (size_t i = 0; i < keys.size(); i++) {
+
+  for (size_t i : Utils::SortIndexes<Slice>(keys)) {
     KVItem item = {reinterpret_cast<const byte_t*>(keys[i].data()),
                    reinterpret_cast<const byte_t*>(vals[i].data()),
                    keys[i].len(),

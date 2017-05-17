@@ -12,11 +12,6 @@
 
 namespace ustore {
 
-const Hash Worker::GetBranchHead(const Slice& key, const Slice& branch) const {
-  const auto& ver_opt = head_ver_.GetBranch(key, branch);
-  return ver_opt ? *ver_opt : Hash::kNull;
-}
-
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) {
   UCell ucell;
   auto ec = Get(key, branch, &ucell);

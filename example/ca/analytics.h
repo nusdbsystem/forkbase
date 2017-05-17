@@ -11,7 +11,7 @@
 #include "spec/value.h"
 #include "types/type.h"
 #include "utils/logging.h"
-#include "worker/worker.h"
+#include "worker/worker_ext.h"
 
 #include "config.h"
 #include "utils.h"
@@ -23,7 +23,7 @@ namespace ca {
 class Analytics {
  public:
   template<class T>
-  Analytics(const T& branch, Worker& db)
+  Analytics(const T& branch, WorkerExt& db)
     : branch_(Slice(branch)), db_(db) {}
 
   inline const Slice& branch() { return branch_; }
@@ -31,7 +31,7 @@ class Analytics {
 
  protected:
   const Slice branch_;
-  Worker& db_;
+  WorkerExt& db_;
 
   template<class T1, class T2>
   ErrorCode BranchAndLoad(const T1& col_name, const T2& base_branch,
@@ -59,7 +59,7 @@ class Random {
 class DataLoading : public Analytics {
  public:
   template<class T>
-  DataLoading(const T& branch, Worker& db,
+  DataLoading(const T& branch, WorkerExt& db,
               size_t n_columns, size_t n_records)
     : Analytics(branch, db), n_columns_(n_columns), n_records_(n_records) {
     std::cout << "[Parameters]"
@@ -76,7 +76,7 @@ class DataLoading : public Analytics {
 class PoissonAnalytics : public Analytics, private Random {
  public:
   template<class T>
-  PoissonAnalytics(const T& branch, Worker& db, double mean)
+  PoissonAnalytics(const T& branch, WorkerExt& db, double mean)
     : Analytics(branch, db), distr_(mean) {
     std::cout << "[Parameters]"
               << " branch=\"" << branch_ << '\"'
@@ -93,7 +93,7 @@ class PoissonAnalytics : public Analytics, private Random {
 class BinomialAnalytics : public Analytics, private Random {
  public:
   template<class T>
-  BinomialAnalytics(const T& branch, Worker& db, double p)
+  BinomialAnalytics(const T& branch, WorkerExt& db, double p)
     : Analytics(branch, db), distr_(Config::n_records - 1, p) {
     std::cout << "[Parameters]"
               << " branch=\"" << branch_ << '\"'
@@ -111,7 +111,7 @@ class BinomialAnalytics : public Analytics, private Random {
 class MergeAnalytics : public Analytics {
  public:
   template<class T>
-  MergeAnalytics(const T& branch, Worker& db)
+  MergeAnalytics(const T& branch, WorkerExt& db)
     : Analytics(branch, db) {
     std::cout << "[Parameters]"
               << " branch=\"" << branch_ << '\"' << std::endl;

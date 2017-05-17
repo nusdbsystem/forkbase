@@ -78,12 +78,7 @@ void WorkerService::Init() {
 #endif
 
   fin.close();
-  // init worker
-#ifdef MOCK_TEST
-  worker_ = new MockWorker(worker_id);
-#else
   worker_ = new Worker(worker_id);
-#endif
 }
 
 void WorkerService::Start() {

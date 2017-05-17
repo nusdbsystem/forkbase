@@ -371,17 +371,17 @@ TEST(Worker, NamedBranch_GetPutMap_Value2) {
   val.type = UType::kMap;
   EXPECT_EQ(0, val.keys.size());
   EXPECT_EQ(0, val.vals.size());
-  
+
   EXPECT_EQ(0, worker.ListBranch(key[4]).size());
-  
+
   // construct a new map
   val.base = Hash::kNull;
   val.keys.clear();
-  val.keys.emplace_back(val_str[1].slice());
   val.keys.emplace_back(val_str[0].slice());
+  val.keys.emplace_back(val_str[1].slice());
   val.vals.clear();
-  val.vals.emplace_back(val_str[6].slice());
   val.vals.emplace_back(val_str[5].slice());
+  val.vals.emplace_back(val_str[6].slice());
 
   ec = worker.Put(key[4], val, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
@@ -396,6 +396,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value2) {
   EXPECT_EQ(val_str[5].slice(), map1.Get(val_str[0].slice()));
   EXPECT_EQ(val_str[6].slice(), map1.Get(val_str[1].slice()));
 
+  // update an entry in the map
   val.base = map1.hash();
   val.keys.clear();
   val.keys.emplace_back(val_str[2].slice());
@@ -415,6 +416,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value2) {
   EXPECT_EQ(3, map2.numElements());
   EXPECT_EQ(val_str[7].slice(), map2.Get(val_str[2].slice()));
 
+  // remove an entry in the map
   val.base = map2.hash();
   val.keys.clear();
   val.keys.emplace_back(val_str[1].slice());

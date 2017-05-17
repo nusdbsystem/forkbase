@@ -38,68 +38,9 @@ class Worker : public DB2, private Noncopyable {
    * @return Head version of the branch; Hash::kNull if the requesting head
    *         version is unavailable.
    */
-  const Hash GetBranchHead(const Slice& key, const Slice& branch) const;
-
-  /**
-   * @brief Obtain all the latest versions of data.
-   *
-   * @param key Data key.
-   * @return A set of all the latest versions of data.
-   */
-  // TODO(linqian): later on, we may have filters on the returned versions, e.g,
-  //  return last 10 latest versions
-  inline std::vector<Hash> GetLatestVersions(const Slice& key) const {
-    return head_ver_.GetLatest(key);
-  }
-
-  /**
-   * @brief Check if the given version is one of the latest versions of data.
-   *
-   * @param key Data key.
-   * @param ver Data version.
-   */
-  inline bool IsLatest(const Slice& key, const Hash& ver) const {
-    return head_ver_.IsLatest(key, ver);
-  }
-
-  /**
-   * @brief List all the branchs of data.
-   *
-   * @param key Data key.
-   * @return A set of all the branches of the data.
-   */
-  inline std::vector<Slice> ListBranch(const Slice& key) const {
-    return head_ver_.ListBranch(key);
-  }
-
-  inline bool Exists(const Slice& key) const {
-    return head_ver_.Exists(key);
-  }
-
-  /**
-   * @brief Check for the existence of the specified branch.
-   * @param key Data key.
-   * @param branch The specified branch.
-   * @return True if the specified branch exists for the data;
-   *         otherwise false.
-   */
-  inline bool Exists(const Slice& key, const Slice& branch) const {
-    return head_ver_.Exists(key, branch);
-  }
-
-  /**
-   * @brief Check whether the given version is the head version of the
-   *        specified branch.
-   *
-   * @param key Data key.
-   * @param branch The operating branch.
-   * @param ver Data version.
-   * @return True if the given version is the head version of the specified
-   *         branch; otherwise false.
-   */
-  inline bool IsBranchHead(const Slice& key, const Slice& branch,
-                           const Hash& ver) const {
-    return head_ver_.IsBranchHead(key, branch, ver);
+  inline Hash GetBranchHead(const Slice& key, const Slice& branch) const {
+    const auto& ver_opt = head_ver_.GetBranch(key, branch);
+    return ver_opt ? *ver_opt : Hash::kNull;
   }
 
   /**
@@ -154,23 +95,6 @@ class Worker : public DB2, private Noncopyable {
    * @return Error code. (0 for success)
    */
   ErrorCode Get(const Slice& key, const Hash& ver, Value* val) override;
-
-  /**
-   * @brief Write data.
-   *
-   * Write data based on the branch head. If the branch does not exist, the
-   * write will be based on the Hash::kNull.
-   *
-   * @param key Data key.
-   * @param val Data val.
-   * @param branch The operating branch.
-   * @param ver Accommodator of the new data version.
-   * @return Error code. (0 for success)
-   */
-  inline ErrorCode Put(const Slice& key, const Value& val,
-                       const Slice& branch, Hash* ver) override {
-    return Put(key, val, branch, GetBranchHead(key, branch), ver);
-  }
 
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch) {
     static Hash ver;
@@ -232,6 +156,23 @@ class Worker : public DB2, private Noncopyable {
   ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver) {
     static Hash ver;
     return Put(key, val, prev_ver, &ver);
+  }
+
+  /**
+   * @brief Write data.
+   *
+   * Write data based on the branch head. If the branch does not exist, the
+   * write will be based on the Hash::kNull.
+   *
+   * @param key Data key.
+   * @param val Data val.
+   * @param branch The operating branch.
+   * @param ver Accommodator of the new data version.
+   * @return Error code. (0 for success)
+   */
+  inline ErrorCode Put(const Slice& key, const Value& val,
+                       const Slice& branch, Hash* ver) override {
+    return Put(key, val, branch, GetBranchHead(key, branch), ver);
   }
 
   /**
@@ -399,6 +340,9 @@ class Worker : public DB2, private Noncopyable {
 
   Chunk GetChunk(const Slice& key, const Hash& ver) override;
 
+ protected:
+  HeadVersion head_ver_;
+
  private:
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Hash& utype_hash, const Hash& prev_ver1,
@@ -444,7 +388,6 @@ class Worker : public DB2, private Noncopyable {
                       const Hash& ref_ver1, const Hash& ref_ver2,
                       Hash* ver);
 
-  HeadVersion head_ver_;
   const WorkerID id_;
 };
 
@@ -483,70 +426,6 @@ ErrorCode Worker::MergeImpl(const Slice& key, const T& val,
   return Write(key, val, ref_ver1, ref_ver2, ver);
 }
 
-#ifdef MOCK_TEST
-class MockWorker : public Worker {
- public:
-  explicit MockWorker(const WorkerID& id) : Worker(id), count_put_(0),
-    count_merge_(0) {}
-
-  ErrorCode Get(const Slice& key, const Slice& branch,
-                Value* val) const {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-  ErrorCode Get(const Slice& key, const Hash& version,
-                Value* val) const {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-
-  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-                Hash* ver) {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-
-  ErrorCode Put(const Slice& key, const Value& val, const Hash& version,
-                Hash* ver) {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-
-  ErrorCode Branch(const Slice& key,
-                   const Hash& ver, const Slice& new_branch) {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-
-  ErrorCode Branch(const Slice& key,
-                   const Slice& old_branch, const Slice& new_branch) {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-
-
-  ErrorCode Move(const Slice& key, const Slice& old_branch,
-                 const Slice& new_branch);
-
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Slice& ref_branch,
-                  Hash* ver) {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-
-  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
-                  const Hash& ref_ver,
-                  Hash* ver) {
-    LOG(FATAL) << "Method not implemented in MockWorker. Use Worker instead!";
-    return ErrorCode::kUnknownOp;
-  }
-
- private:
-  int count_put_;  // number of requests seen so far
-  int count_merge_;
-};
-#endif
 }  // namespace ustore
 
 #endif  // USTORE_WORKER_WORKER_H_

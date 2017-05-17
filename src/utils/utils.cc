@@ -1,7 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include <boost/tokenizer.hpp>
-
 #include "utils/utils.h"
 
 namespace ustore {
