@@ -25,9 +25,6 @@ class ServerChunkLoader : public ChunkLoader {
  public:
   // let ServerChunkLoader call chunkStore internally
   ServerChunkLoader();
-
-  // explicit ServerChunkLoader(ChunkStore* cs);
-
   //  Delete all chunks
   ~ServerChunkLoader();
 

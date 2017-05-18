@@ -36,6 +36,9 @@ class ChunkStore {
    * store allocates the returned chunck,
    * caller need to release memory after use.
    */
+  ChunkStore() = default;
+  virtual ~ChunkStore() noexcept(false) {}
+
   virtual Chunk Get(const Hash& key) = 0;
   virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
   virtual const StoreInfo& GetInfo() const = 0;
