@@ -62,7 +62,7 @@ void startHttpService(int port, ProtoBuffer* buf) {
 
 void printProcInfo(string &s, ProcInfo *p) {
   char buf[500];
-  char* header = "{ \"pname\" : \"%s\" ,"
+  static const char header[] = "{ \"pname\" : \"%s\" ,"
     " \"cpu\" : \"%.1lf\" , \"vmem\" : \"%lu\" ,"
     " \"rss\" : \"%lu\" , \"io_read\" : \"%d\" ,"
     " \"io_write\" : \"%d\" , \"net_send\" : \"%d\" ,"
@@ -76,7 +76,7 @@ void printProcInfo(string &s, ProcInfo *p) {
 
 void printSnapshot(string &s, ProtoBufferNode *p) {
   char buf[100];
-  char* header = "\"time\" : \"%lu\" ,"
+  static const char header[] = "\"time\" : \"%lu\" ,"
     " \"hname\" : \"%s\" , \"procs\" : [ ";
   sprintf(buf, header, p->t_monitor, p->node);
 

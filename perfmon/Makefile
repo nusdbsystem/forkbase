@@ -1,8 +1,8 @@
 CC      := g++
-CFLAGS  := -pthread -Wall -O -std=gnu++11 -g
+CFLAGS  := -pthread -Wall -O -std=c++11 -g
 INCLUDEFLAGS = -I./include
-LDFLAGS := -lpcap -lboost_system -lssl 
-TARGETS := pm_monitor pm_daemon 
+LDFLAGS := -lpcap -lboost_system -lssl
+TARGETS := pm_monitor pm_daemon
 CXXFLAGS := $(CFLAGS) $(INCLUDEFLAGS)
 
 ######################Setting Varialbes#######################################
@@ -29,7 +29,7 @@ OBJS := $(sort $(MONITOR_OBJS) $(UTILS_OBJS) $(PERFMON_OBJS) $(DAEMON_OBJS) $(TE
 
 ########################Compilation Section###################################
 
-.PHONY: all 
+.PHONY: all
 all : $(TARGETS)
 
 pm_monitor: $(MONITOR_OBJS) $(UTILS_OBJS) $(PERFMON_OBJS)
@@ -53,7 +53,7 @@ $(OBJS) : $(BUILD_DIR)/%.o : %.cc
 		-e '/^$$/ d' -e 's/$$/ :/' < $(BUILD_DIR)/$*.d >> $(BUILD_DIR)/$*.P; \
 	rm -f $*.d
 
-.PHONY: clean 
+.PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
 	@echo

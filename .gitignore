@@ -31,6 +31,10 @@
 # Build folder
 build/
 
+# Perfmon logs
+perfmon/logs/
+perfmon/tmp/
+
 # Project files
 *sublime*
 

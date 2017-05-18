@@ -300,9 +300,8 @@ void ConnectionManager::updateMap(char * buffer) {
 
     unsigned long inode;
 
-    char* format = "%*d: %64[0-9A-Fa-f]:%X %64"
-      "[0-9A-Fa-f]:%X %*X %*X:%*X %*X:%*X %*X %"
-      "*d %*d %ld %*512s\n";
+    static const char format[] = "%*d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %*X"
+                                 "%*X:%*X %*X:%*X %*X %*d %*d %ld %*512s\n";
     int matches = sscanf(buffer, format,
     //  "%*d: %64[0-9A-Fa-f]:%X %64
     //  [0-9A-Fa-f]:%X %*X %*X:%*X %*X:%*X %*X %
