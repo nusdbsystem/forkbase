@@ -14,13 +14,24 @@ namespace ustore {
 */
 class ChunkLoader {
  public:
-  ChunkLoader();
-  // let ChunkLoader call chunkStore internally
-  // explicit ChunkLoader(ChunkStore* cs);
-  //  Delete all chunks
-  ~ChunkLoader();
+  ChunkLoader() = default;
+  virtual ~ChunkLoader() = default;
 
-  const Chunk* Load(const Hash& key);
+  virtual const Chunk* Load(const Hash& key) = 0;
+};
+
+
+class ServerChunkLoader : public ChunkLoader {
+ public:
+  // let ServerChunkLoader call chunkStore internally
+  ServerChunkLoader();
+
+  // explicit ServerChunkLoader(ChunkStore* cs);
+
+  //  Delete all chunks
+  ~ServerChunkLoader();
+
+  const Chunk* Load(const Hash& key) override;
 
  private:
   std::map<Hash, Chunk> cache_;

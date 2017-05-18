@@ -8,14 +8,13 @@
 namespace ustore {
 
 SList::SList(const Hash& root_hash) noexcept :
-    UList(std::make_shared<ChunkLoader>()) {
+    UList(std::make_shared<ServerChunkLoader>()) {
   SetNodeForHash(root_hash);
 }
 
 SList::SList(const std::vector<Slice>& elements) noexcept:
-    UList(std::make_shared<ChunkLoader>()) {
+    UList(std::make_shared<ServerChunkLoader>()) {
   CHECK_GT(elements.size(), 0);
-  chunk_loader_ = std::move(std::make_shared<ChunkLoader>());
   NodeBuilder nb(ListChunker::Instance(), false);
   std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
   nb.SpliceElements(0, seg.get());

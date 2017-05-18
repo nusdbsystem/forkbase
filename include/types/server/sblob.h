@@ -16,7 +16,7 @@ class SBlob : public UBlob {
   // Create a new SBlob
   explicit SBlob(const Slice& slice) noexcept;
 
-  SBlob() noexcept : UBlob(std::make_shared<ChunkLoader>()) {}
+  SBlob() noexcept : UBlob(std::make_shared<ServerChunkLoader>()) {}
 
   ~SBlob() = default;
 

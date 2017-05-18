@@ -13,7 +13,7 @@ TEST(ChunkLoader, GetChunk) {
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
   ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   EXPECT_TRUE(cs->Put(chunk.hash(), chunk));
-  ustore::ChunkLoader cl;
+  ustore::ServerChunkLoader cl;
   // load from stroage
   const ustore::Chunk* c = cl.Load(chunk.hash());
   EXPECT_EQ(c->hash(), chunk.hash());

@@ -8,13 +8,12 @@
 namespace ustore {
 
 SBlob::SBlob(const Hash& root_hash) noexcept :
-    UBlob(std::make_shared<ChunkLoader>()) {
+    UBlob(std::make_shared<ServerChunkLoader>()) {
   SetNodeForHash(root_hash);
 }
 
 SBlob::SBlob(const Slice& data) noexcept :
-    UBlob(std::make_shared<ChunkLoader>()) {
-  std::shared_ptr<ChunkLoader> loader(new ChunkLoader());
+    UBlob(std::make_shared<ServerChunkLoader>()) {
 
   NodeBuilder nb(BlobChunker::Instance(), true);
   FixedSegment seg(reinterpret_cast<const byte_t*>(data.data()),

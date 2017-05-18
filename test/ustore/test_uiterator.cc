@@ -23,7 +23,7 @@ TEST(UIterator, Basic) {
   EXPECT_TRUE(chunk_store->Put(hash, *chunk));
 
   // This loader must load chunk from the above chunk_store
-  ustore::ChunkLoader loader;
+  ustore::ServerChunkLoader loader;
 
   // c[0], c[1], c[3] and c[5] are selected
 

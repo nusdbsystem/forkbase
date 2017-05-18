@@ -22,7 +22,7 @@ TEST(NodeCursor, SingleNode) {
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
 
-  ustore::ChunkLoader loader;
+  ustore::ServerChunkLoader loader;
   ustore::NodeCursor* cr =
       ustore::NodeCursor::GetCursorByIndex(ca.hash(), 1, &loader);
 
@@ -152,7 +152,7 @@ TEST(NodeCursor, Tree) {
   EXPECT_TRUE(chunk_store->Put(cm.hash(), cm));
 
   ///////////////////////////////////////////////////////////////
-  ustore::ChunkLoader loader;
+  ustore::ServerChunkLoader loader;
 
   ustore::NodeCursor* leaf_cursor =
       ustore::NodeCursor::GetCursorByIndex(cm.hash(), 1, &loader);
@@ -270,7 +270,7 @@ TEST(NodeCursor, SingleNodeByKey) {
 
   ustore::Chunk chunk(std::move(chunk_info.chunk));
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
-  ustore::ChunkLoader loader;
+  ustore::ServerChunkLoader loader;
   EXPECT_TRUE(chunk_store->Put(chunk.hash(), chunk));
 
   // Find the smallest key
@@ -358,7 +358,7 @@ TEST(NodeCursor, TreeByKey) {
 
   ustore::Hash root_hash = chunkinfo_meta.chunk.hash();
 
-  ustore::ChunkLoader loader;
+  ustore::ServerChunkLoader loader;
 
   // Find the smallest key
   constexpr ustore::byte_t k0[] = "k0";
@@ -451,7 +451,7 @@ TEST(NodeCursor, MultiStep) {
   67  38  193  183  512  320  53  55  74  256 (# of Byte in BlobChunk)
   */
 
-  ustore::ChunkLoader loader;
+  ustore::ServerChunkLoader loader;
 
 
 /////////////////////////////////////////

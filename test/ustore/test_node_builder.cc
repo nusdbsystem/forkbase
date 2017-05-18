@@ -17,7 +17,7 @@
 
 class NodeBuilderEnv : public ::testing::Test {
  protected:
-  virtual void SetUp() { loader_ = new ustore::ChunkLoader(); }
+  virtual void SetUp() { loader_ = new ustore::ServerChunkLoader(); }
 
   virtual void TearDown() { delete loader_; }
 

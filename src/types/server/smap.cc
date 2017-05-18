@@ -10,13 +10,13 @@
 namespace ustore {
 
 SMap::SMap(const Hash& root_hash) noexcept :
-    UMap(std::make_shared<ChunkLoader>()) {
+    UMap(std::make_shared<ServerChunkLoader>()) {
   SetNodeForHash(root_hash);
 }
 
 SMap::SMap(const std::vector<Slice>& keys,
            const std::vector<Slice>& vals) noexcept :
-    UMap(std::make_shared<ChunkLoader>()) {
+    UMap(std::make_shared<ServerChunkLoader>()) {
   CHECK_GT(keys.size(), 0);
   CHECK_EQ(vals.size(), keys.size());
   NodeBuilder nb(MapChunker::Instance(), false);

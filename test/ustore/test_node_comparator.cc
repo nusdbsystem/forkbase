@@ -10,7 +10,7 @@
 class IndexComparatorSmallEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ChunkLoader>();
+    loader_ = std::make_shared<ustore::ServerChunkLoader>();
     constexpr ustore::byte_t rhs_data[] = "abcededfhijklmnopqrst";  // 20 chars
 
     ustore::NodeBuilder nb(ustore::BlobChunker::Instance(), true);
@@ -138,7 +138,7 @@ TEST_F(IndexComparatorSmallEnv, Deletion) {
 class IndexComparatorBigEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ChunkLoader>();
+    loader_ = std::make_shared<ustore::ServerChunkLoader>();
     const ustore::byte_t rhs_data[] = {
         "SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
         "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
@@ -245,7 +245,7 @@ TEST_F(IndexComparatorBigEnv, Basic) {
 class KeyComparatorSmallEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ChunkLoader>();
+    loader_ = std::make_shared<ustore::ServerChunkLoader>();
 
     constexpr const ustore::byte_t k1[] = "k1";
     constexpr const ustore::byte_t v1[] = "v1";
@@ -412,7 +412,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 class KeyComparatorBigEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ChunkLoader>();
+    loader_ = std::make_shared<ustore::ServerChunkLoader>();
 
     // the num bytes for both key and value
     entry_size_ = 2 * sizeof(uint32_t);

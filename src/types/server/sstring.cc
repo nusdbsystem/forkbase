@@ -8,7 +8,7 @@
 namespace ustore {
 
 SString::SString(const Slice& data) noexcept :
-    UString(std::make_shared<ChunkLoader>()) {
+    UString(std::make_shared<ServerChunkLoader>()) {
   Chunk chunk = StringNode::NewChunk(
                 reinterpret_cast<const byte_t*>(data.data()), data.len());
   store::GetChunkStore()->Put(chunk.hash(), chunk);
@@ -16,7 +16,7 @@ SString::SString(const Slice& data) noexcept :
 }
 
 SString::SString(const Hash& hash) noexcept :
-    UString(std::make_shared<ChunkLoader>()) {
+    UString(std::make_shared<ServerChunkLoader>()) {
   SetNodeForHash(hash);
 }
 

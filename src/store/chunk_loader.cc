@@ -4,11 +4,11 @@
 
 namespace ustore {
 
-ChunkLoader::ChunkLoader() : cs_{store::GetChunkStore()} {}
+ServerChunkLoader::ServerChunkLoader() : cs_{store::GetChunkStore()} {}
 
-ChunkLoader::~ChunkLoader() {}
+ServerChunkLoader::~ServerChunkLoader() {}
 
-const Chunk* ChunkLoader::Load(const Hash& key) {
+const Chunk* ServerChunkLoader::Load(const Hash& key) {
   auto it = cache_.find(key);
   if (it != cache_.end()) return &(it->second);
   cache_.emplace(key.Clone(), cs_->Get(key));
