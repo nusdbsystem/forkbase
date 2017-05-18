@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>UStore Performance Monitor</title> 
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet"> 
+    <!-- Custom styles for this template -->
+    <link href="css/custom.css" rel="stylesheet">  
+  </head> 
+  <body> 
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header"> 
+          <a class="navbar-brand" href="#">UStore Monitor</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse"> 
+        </div>
+      </div>
+    </nav>
+    <div class="container-fluid">
+      <div class="row">
+        <div id="sidebar" class="col-sm-3 col-md-3 sidebar">
+
+			<form id="jobForm" style="display:none"> 
+				<div class="form-group">
+					<label for="host">Host:</label>
+					<select class="form-control" name="host" id="hostSelect">
+					 
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="proc">Proc:</label>
+					<select class="form-control" name="proc" id="procSelect">
+						 
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="attrs">Attrs:</label>
+					<select multiple class="form-control" name="attrs" id="attrsSelect" style="height:135px">
+						  
+					</select>
+				</div> 
+				<button id="createJobBtn" type="button" class="btn btn-primary" style="padding:5px 30px;font-size:24px;float:right">New</button> 
+			
+			</form> 
+        </div>
+		<div id="main" class="col-md-9 col-md-offset-3 main">
+			
+		
+		
+		</div>
+		
+		
+	  </div>
+	   
+	</div>
+	  
+	<script type="text/x-handlebars" id='chart_template' >
+		<div class="chart">
+            <p>{{title}}
+    			<button  class="btn btn-primary" >X</button>  
+            </p>
+			<div class="highchart"></div>
+		</div>
+	</script>
+	  
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="js/jquery-1.10.2.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/highcharts.js"></script> 
+    <script src="js/handlebars-v2.0.0.js"></script>   
+	<script src="js/monitor.js"></script> 
+	<script src="js/models.js"></script> 
+	<script src="js/app_controller.js"></script> 
+	<script src="js/chart_controller.js"></script> 
+	<script type="text/javascript">
+	
+		$("document").ready(function(){
+			Monitor.init();	 
+		})
+		
+	</script>
+	    
+  </body>
+</html>
