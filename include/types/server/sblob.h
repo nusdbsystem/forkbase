@@ -20,6 +20,14 @@ class SBlob : public UBlob {
 
   ~SBlob() = default;
 
+  SBlob(SBlob&& rhs) noexcept :
+      UBlob(std::move(rhs)) {}
+
+  SBlob& operator=(SBlob&& rhs) noexcept {
+    UBlob::operator=(std::move(rhs));
+    return *this;
+  }
+
   Hash Splice(size_t pos, size_t num_delete,
               const byte_t* data, size_t num_insert) const override;
 };

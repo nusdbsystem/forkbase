@@ -127,6 +127,19 @@ TEST(SList, Small) {
   ASSERT_EQ(1, diff_it->index());
   ASSERT_EQ(e2, diff_it->lhs_value());
   ASSERT_EQ(e3, diff_it->rhs_value());
+
+  // test for move ctor
+  ustore::SList slist1(std::move(slist));
+
+  EXPECT_EQ(e2.len(), slist1.Get(1).len());
+  EXPECT_EQ(0, memcmp(e2.data(), slist1.Get(1).data(), e2.len()));
+
+  // test for move assignment
+  ustore::SList slist2;
+  slist2 = std::move(slist1);
+
+  EXPECT_EQ(e2.len(), slist2.Get(1).len());
+  EXPECT_EQ(0, memcmp(e2.data(), slist2.Get(1).data(), e2.len()));
 }
 
 class SListHugeEnv : public ::testing::Test {

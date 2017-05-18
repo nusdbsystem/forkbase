@@ -20,8 +20,20 @@ class BaseType : Noncopyable {
 
   virtual const Hash hash() const = 0;
 
+  BaseType() = default;
+
+  // move ctor
+  BaseType(BaseType&& rhs) noexcept :
+    chunk_loader_(std::move(rhs.chunk_loader_)) {}
+
+  // move assignment
+  BaseType& operator=(BaseType&& rhs) noexcept {
+    chunk_loader_ = std::move(rhs.chunk_loader_);
+    return *this;
+  }
+
  protected:
-  explicit BaseType(std::shared_ptr<ChunkLoader> loader) :
+  explicit BaseType(std::shared_ptr<ChunkLoader> loader) noexcept :
       chunk_loader_(std::move(loader)) {}
 
   virtual ~BaseType() = default;
@@ -48,6 +60,20 @@ class ChunkableType : public BaseType {
   inline uint64_t numElements() const {
     CHECK(!empty());
     return root_node_->numElements();
+  }
+
+  ChunkableType() = default;
+
+  // move ctor
+  ChunkableType(ChunkableType&& rhs) noexcept :
+      BaseType(std::move(rhs)),
+      root_node_(std::move(rhs.root_node_)) {}
+
+  // move assignment
+  ChunkableType& operator=(ChunkableType&& rhs) noexcept {
+    BaseType::operator=(std::move(rhs));
+    root_node_ = std::move(rhs.root_node_);
+    return *this;
   }
 
  protected:

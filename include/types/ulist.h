@@ -17,6 +17,17 @@ class UList : public ChunkableType {
  public:
   static std::unique_ptr<DuallyDiffIndexIterator> DuallyDiff(
       const UList& lhs, const UList& rhs);
+
+  UList() = default;
+
+  UList(UList&& rhs) noexcept :
+      ChunkableType(std::move(rhs)) {}
+
+  UList& operator=(UList&& rhs) noexcept {
+    ChunkableType::operator=(std::move(rhs));
+    return *this;
+  }
+
   // For idx > total # of elements
   //    return empty slice
   Slice Get(uint64_t idx) const;

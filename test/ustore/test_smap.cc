@@ -100,6 +100,17 @@ TEST(SMap, Small) {
   CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
                       new_smap4.Scan().get());
 
+  // test for move ctor
+  ustore::SMap new_smap4_1(std::move(new_smap4));
+  CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
+                      new_smap4_1.Scan().get());
+
+  // test for move assignment
+  ustore::SMap new_smap4_2;
+  new_smap4_2 = std::move(new_smap4_1);
+  CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
+                      new_smap4_2.Scan().get());
+
 
   // Use new_smap3 with smap to perform duallydiff
   // lhs: k1->v1, k2->v2, k3->v3

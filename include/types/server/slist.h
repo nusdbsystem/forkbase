@@ -18,6 +18,16 @@ class SList : public UList {
   // create an SList using the initial elements
   explicit SList(const std::vector<Slice>& elements) noexcept;
 
+  SList() = default;
+
+  SList(SList&& rhs) noexcept :
+      UList(std::move(rhs)) {}
+
+  SList& operator=(SList&& rhs) noexcept {
+    UList::operator=(std::move(rhs));
+    return *this;
+  }
+
   // create an empty map
   // construct chunk loader for server
   ~SList() = default;

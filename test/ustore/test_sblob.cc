@@ -290,4 +290,35 @@ TEST(SimpleSBlob, Load) {
   EXPECT_EQ(len, sblob.Read(pos, len, buffer));
 
   EXPECT_EQ(ustore::byte2str(raw_data, len), ustore::byte2str(buffer, len));
+  delete[] buffer;
+
+
+  // Test for move assignment
+  ustore::SBlob sblob_m;
+  sblob_m = std::move(sblob);
+
+  // size()
+  EXPECT_EQ(len, sblob_m.size());
+
+  // Read
+  pos = 0;
+  buffer = new ustore::byte_t[len];
+  EXPECT_EQ(len, sblob_m.Read(pos, len, buffer));
+
+  EXPECT_EQ(ustore::byte2str(raw_data, len), ustore::byte2str(buffer, len));
+  delete[] buffer;
+
+  // Test for move ctor
+  ustore::SBlob sblob_m1(std::move(sblob_m));
+
+  // size()
+  EXPECT_EQ(len, sblob_m1.size());
+
+  // Read
+  pos = 0;
+  buffer = new ustore::byte_t[len];
+  EXPECT_EQ(len, sblob_m1.Read(pos, len, buffer));
+
+  EXPECT_EQ(ustore::byte2str(raw_data, len), ustore::byte2str(buffer, len));
+  delete[] buffer;
 }

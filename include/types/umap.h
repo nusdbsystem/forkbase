@@ -15,6 +15,16 @@ namespace ustore {
 
 class UMap : public ChunkableType {
  public:
+  UMap() = default;
+
+  UMap(UMap&& rhs) noexcept :
+      ChunkableType(std::move(rhs)) {}
+
+  UMap& operator=(UMap&& rhs) noexcept {
+    ChunkableType::operator=(std::move(rhs));
+    return *this;
+  }
+
   static std::unique_ptr<DuallyDiffKeyIterator> DuallyDiff(
       const UMap& lhs, const UMap& rhs);
   // Use chunk loader to load chunk and read value

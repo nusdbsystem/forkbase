@@ -32,6 +32,34 @@ TEST(SString, Load) {
   std::string expected_str = ustore::byte2str(raw_data, sizeof(raw_data));
 
   ASSERT_EQ(expected_str, buf_str);
+  delete[] buffer;
+
+  // Test for move ctor
+  ustore::SString sstring1(std::move(sstring));
+  ASSERT_EQ(sizeof(raw_data), sstring1.len());
+
+  buffer = new ustore::byte_t[sizeof(raw_data)];
+  ASSERT_EQ(sizeof(raw_data), sstring1.data(buffer));
+
+  buf_str = ustore::byte2str(buffer, sizeof(raw_data));
+  expected_str = ustore::byte2str(raw_data, sizeof(raw_data));
+
+  ASSERT_EQ(expected_str, buf_str);
+  delete[] buffer;
+
+  // Test for move assignment
+  ustore::SString sstring2;
+  sstring2 = std::move(sstring1);
+  ASSERT_EQ(sizeof(raw_data), sstring2.len());
+
+  buffer = new ustore::byte_t[sizeof(raw_data)];
+  ASSERT_EQ(sizeof(raw_data), sstring2.data(buffer));
+
+  buf_str = ustore::byte2str(buffer, sizeof(raw_data));
+  expected_str = ustore::byte2str(raw_data, sizeof(raw_data));
+
+  ASSERT_EQ(expected_str, buf_str);
+  delete[] buffer;
 }
 
 TEST(SString, Create) {

@@ -119,4 +119,23 @@ TEST(UIterator, Basic) {
   ASSERT_TRUE(it.next());
   actual_c3 = it.value();
   ASSERT_EQ(c[3], *actual_c3.data());
+
+
+  // test for move assignment
+  ustore::UIterator it1(hash, {range1, range2, range3}, &loader);
+  ustore::UIterator it2 = std::move(it1);
+
+  ASSERT_EQ(0, it2.index());
+
+  actual_c0 = it2.value();
+  ASSERT_EQ(c[0], *actual_c0.data());
+  ASSERT_EQ(1, actual_c0.len());
+
+  ustore::UIterator it3(std::move(it2));
+
+  ASSERT_EQ(0, it3.index());
+
+  actual_c0 = it3.value();
+  ASSERT_EQ(c[0], *actual_c0.data());
+  ASSERT_EQ(1, actual_c0.len());
 }

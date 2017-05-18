@@ -17,7 +17,15 @@ class SString : public UString {
 
   ~SString() = default;
 
-  SString& operator=(SString&& rhs) = default;
+  SString() = default;
+
+  SString(SString&& rhs) noexcept :
+      UString(std::move(rhs)) {}
+
+  SString& operator=(SString&& rhs) noexcept {
+    UString::operator=(std::move(rhs));
+    return *this;
+  }
 };
 
 }  // namespace ustore

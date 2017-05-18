@@ -12,6 +12,18 @@ namespace ustore {
 
 class UString : public BaseType {
  public:
+  UString() = default;
+
+  UString(UString&& rhs) noexcept :
+      BaseType(std::move(rhs)),
+      node_(std::move(rhs.node_)) {}
+
+  UString& operator=(UString&& rhs) noexcept {
+    BaseType::operator=(std::move(rhs));
+    node_ = std::move(rhs.node_);
+    return *this;
+  }
+
   inline bool empty() const override {
     return this->node_.get() == nullptr;
   }

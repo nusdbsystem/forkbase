@@ -60,6 +60,16 @@ class UBlob : public ChunkableType {
    */
   Hash Append(byte_t* data, size_t num_insert) const;
 
+  UBlob() = default;
+
+  UBlob(UBlob&& rhs) noexcept :
+      ChunkableType(std::move(rhs)) {}
+
+  UBlob& operator=(UBlob&& rhs) noexcept {
+    ChunkableType::operator=(std::move(rhs));
+    return *this;
+  }
+
  protected:
   explicit UBlob(std::shared_ptr<ChunkLoader> loader) noexcept :
       ChunkableType(loader) {}

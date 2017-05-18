@@ -16,6 +16,22 @@ namespace ustore {
 
 class UIterator : private Noncopyable {
  public:
+  UIterator() = default;
+
+  UIterator(UIterator&& rhs) noexcept :
+      ranges_(std::move(rhs.ranges_)),
+      curr_range_idx_(rhs.curr_range_idx_),
+      curr_idx_in_range_(rhs.curr_idx_in_range_),
+      cursor_(std::move(rhs.cursor_)) {}
+
+  UIterator& operator=(UIterator&& rhs) noexcept {
+    ranges_ = std::move(rhs.ranges_);
+    curr_range_idx_ = rhs.curr_range_idx_;
+    curr_idx_in_range_ = rhs.curr_idx_in_range_;
+    cursor_ = std::move(rhs.cursor_);
+    return *this;
+  }
+
   UIterator(const Hash& root, const std::vector<IndexRange>& ranges,
             ChunkLoader* loader) noexcept
       : ranges_(ranges), curr_range_idx_(0), curr_idx_in_range_(0) {
@@ -109,6 +125,22 @@ class DuallyDiffIterator {
         update_flag(false);
   }
 
+  DuallyDiffIterator() = default;
+
+  DuallyDiffIterator(DuallyDiffIterator&& rhs) noexcept :
+      lhs_diff_it_(rhs.lhs_diff_it_),
+      rhs_diff_it_(rhs.rhs.rhs_diff_it_),
+      it_flag_(rhs.it_flag_),
+      just_advanced(rhs.just_advanced) {}
+
+  DuallyDiffIterator& operator=(DuallyDiffIterator&& rhs) noexcept {
+    lhs_diff_it_(rhs.lhs_diff_it_);
+    rhs_diff_it_(rhs.rhs_diff_it_);
+    it_flag_(rhs.it_flag_);
+    just_advanced(rhs.just_advanced);
+    return *this;
+  }
+
   // return lhs value for the current key, which is different
   //   from rhs
   // return empty slice if the current key does not
@@ -141,6 +173,7 @@ class DuallyDiffIterator {
   inline bool head() const {
     return lhs_diff_it_->head() && rhs_diff_it_->head();
   }
+
 
  private:
   // update it_flag_ based on lhs and rhs key comparison

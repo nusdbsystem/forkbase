@@ -12,6 +12,16 @@ namespace ustore {
 class SMap : public UMap {
 // UMap for server side
  public:
+  SMap() = default;
+
+  SMap(SMap&& rhs) noexcept :
+      UMap(std::move(rhs)) {}
+
+  SMap& operator=(SMap&& rhs) noexcept {
+    UMap::operator=(std::move(rhs));
+    return *this;
+  }
+
   // Load an existing map using hash
   explicit SMap(const Hash& root_hash) noexcept;
 
