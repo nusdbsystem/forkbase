@@ -61,6 +61,9 @@ void WorkerService::Init() {
   fin.close();
 
   std::sort(ranges_.begin(), ranges_.end(), range_cmp);
+
+/*
+ * zh: decouple the client service and worker service
   // add address of the client service
   std::ifstream fin_cs(Env::Instance()->config()->clientservice_file(),
                        std::ifstream::in);
@@ -69,6 +72,7 @@ void WorkerService::Init() {
   while (fin_cs >> cs_addr)
     addresses_.push_back(cs_addr);
   fin_cs.close();
+ */
 
 // TODO(zhanghao): define a static function in net.cc to create net instance,
 // instead of directly use USE_RDMA flag everywhere

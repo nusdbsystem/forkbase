@@ -1,22 +1,16 @@
-/*
- * test_rdma.cc
- *
- *  Created on: Jul 26, 2016
- *      Author: zhanghao
- */
+// Copyright (c) 2017 The Ustore Authors.
 
-#include "gtest/gtest.h"
 #include <gflags/gflags.h>
 #include <unistd.h>
 #include <thread>
-#include <assert.h>
 #include <vector>
 #include "net/net.h"
 #include "utils/logging.h"
+#include "gtest/gtest.h"
 
-//by default, it choose the zmq_net
-//if u want to test the rdma net, you have to define USE_RDMA
-//#define USE_RDMA
+// by default, it choose the zmq_net
+// if u want to test the rdma net, you have to define USE_RDMA
+// #define USE_RDMA
 
 #ifdef USE_RDMA
 #include "net/rdma_net.h"
@@ -29,14 +23,15 @@ using std::string;
 using std::thread;
 using std::vector;
 
+const int kSleepTime = 100000;
+
 class TestCallBack : public CallBack {
  public:
-  TestCallBack(void* handler = nullptr): CallBack(handler) {};
+  explicit TestCallBack(void* handler = nullptr): CallBack(handler) {}
   void operator()(const void *msg, int size, const node_id_t& source) {
-    ((char*) msg)[size] = '\0';
-    EXPECT_TRUE(!strcmp(static_cast<const char*>(msg),
-                static_cast<const char*>(source.c_str())));
-    DLOG(WARNING) << "msg = " << static_cast<const char*>(msg);
+    string m(static_cast<const char*>(msg), size);
+    EXPECT_TRUE(source.compare(m) == 0);
+    DLOG(WARNING) << "msg = " << m;
   }
 };
 
@@ -44,52 +39,52 @@ void Start(Net* net) {
   net->Start();
 }
 
-string id0 = "localhost:1235";
-string id1 = "localhost:1236";
-string id2 = "localhost:1237";
+const string kID0 = "localhost:1235";
+const string kID1 = "localhost:1236";
+const string kID2 = "localhost:1237";
 
 // test putting two value from node0 to node1 and node2
 TEST(NetTest, MsgTest) {
   ustore::SetStderrLogging(ustore::WARNING);
 
 #ifdef USE_RDMA
-  Net* net0 = new RdmaNet(id0);
-  Net* net1 = new RdmaNet(id1);
-  Net* net2 = new RdmaNet(id2);
+  Net* net0 = new RdmaNet(kID0);
+  Net* net1 = new RdmaNet(kID1);
+  Net* net2 = new RdmaNet(kID2);
 #else
-  Net* net0 = new ZmqNet(id0);
-  Net* net1 = new ZmqNet(id1);
-  Net* net2 = new ZmqNet(id2);
+  Net* net0 = new ZmqNet(kID0);
+  Net* net1 = new ZmqNet(kID1);
+  Net* net2 = new ZmqNet(kID2);
 #endif
 
-  sleep(1.0);
-  NetContext* ctx0_1 = net0->CreateNetContext(id1);
-  NetContext* ctx0_2 = net0->CreateNetContext(id2);
+  usleep(kSleepTime);
+  NetContext* ctx0_1 = net0->CreateNetContext(kID1);
+  NetContext* ctx0_2 = net0->CreateNetContext(kID2);
 
   /*
    * create NetContext from node 1
    * actually this is not necessary since node 0 already connected to node 1
    * but it is ok to do this connection again (will be ignored)
    */
-  NetContext* ctx1_0 = net1->CreateNetContext(id0);
-  NetContext* ctx1_2 = net1->CreateNetContext(id2);
+  NetContext* ctx1_0 = net1->CreateNetContext(kID0);
+  NetContext* ctx1_2 = net1->CreateNetContext(kID2);
 
-  //create the NetContext from node 2
-  NetContext* ctx2_0 = net2->CreateNetContext(id0);
-  NetContext* ctx2_1 = net2->CreateNetContext(id1);
+  // create the NetContext from node 2
+  NetContext* ctx2_0 = net2->CreateNetContext(kID0);
+  NetContext* ctx2_1 = net2->CreateNetContext(kID1);
 
   TestCallBack cb0;
   TestCallBack cb1;
   TestCallBack cb2;
 
-  //register receive callback function
+  // register receive callback function
   net0->RegisterRecv(&cb0);
   net1->RegisterRecv(&cb1);
   net2->RegisterRecv(&cb2);
 
-  sleep(1.0);
+  usleep(kSleepTime);
 
-  //start the net background thread
+  // start the net background thread
   thread* t0 = new thread(Start, net0);
   thread* t1 = new thread(Start, net1);
   thread* t2 = new thread(Start, net2);
@@ -97,57 +92,61 @@ TEST(NetTest, MsgTest) {
   /*
    * node 0 sends msg to node 1
    */
-  ctx0_1->Send(id0.c_str(), id0.length());
+  ctx0_1->Send(kID0.c_str(), kID0.length());
 
   /*
    * node 1 sends msg to node 0
    */
-  ctx1_0->Send(id1.c_str(), id1.length());
+  ctx1_0->Send(kID1.c_str(), kID1.length());
 
   /*
    * node 2 sends msg to node 0
    */
-  ctx2_0->Send(id2.c_str(), id2.length());
+  ctx2_0->Send(kID2.c_str(), kID2.length());
 
   /*
    * node 2 sends msg to node 1
    */
-  ctx2_1->Send(id2.c_str(), id2.length());
+  ctx2_1->Send(kID2.c_str(), kID2.length());
 
-  //free the resources
-  sleep(1);
+  // free the resources
+  usleep(kSleepTime);
   net0->Stop();
-  net1->Stop();
-  net2->Stop();
-  sleep(1);
   t0->join();
-  t1->join();
-  t2->join();
   delete net0;
+  usleep(kSleepTime);
+
+  net1->Stop();
+  t1->join();
   delete net1;
+  usleep(kSleepTime);
+
+  net2->Stop();
+  t2->join();
   delete net2;
+  usleep(kSleepTime);
 }
 
 // test putting two value from node0 to node1 and node2
 TEST(NetTest, CreateContexts) {
   ustore::SetStderrLogging(ustore::WARNING);
 
-  vector<node_id_t> nodes = {id0, id1, id2};
+  vector<node_id_t> nodes = {kID0, kID1, kID2};
 
 #ifdef USE_RDMA
-  Net* net0 = new RdmaNet(id0);
-  Net* net1 = new RdmaNet(id1);
-  Net* net2 = new RdmaNet(id2);
+  Net* net0 = new RdmaNet(kID0);
+  Net* net1 = new RdmaNet(kID1);
+  Net* net2 = new RdmaNet(kID2);
 #else
-  Net* net0 = new ZmqNet(id0);
-  Net* net1 = new ZmqNet(id1);
-  Net* net2 = new ZmqNet(id2);
+  Net* net0 = new ZmqNet(kID0);
+  Net* net1 = new ZmqNet(kID1);
+  Net* net2 = new ZmqNet(kID2);
 #endif
 
-  sleep(1.0);
+  usleep(kSleepTime);
   net0->CreateNetContexts(nodes);
-  NetContext* ctx0_1 = net0->GetNetContext(id1);
-  NetContext* ctx0_2 = net0->GetNetContext(id2);
+  NetContext* ctx0_1 = net0->GetNetContext(kID1);
+  NetContext* ctx0_2 = net0->GetNetContext(kID2);
 
   /*
    * create NetContext from node 1
@@ -155,26 +154,26 @@ TEST(NetTest, CreateContexts) {
    * but it is ok to do this connection again (will be ignored)
    */
   net1->CreateNetContexts(nodes);
-  NetContext* ctx1_0 = net1->GetNetContext(id0);
-  NetContext* ctx1_2 = net1->GetNetContext(id2);
+  NetContext* ctx1_0 = net1->GetNetContext(kID0);
+  NetContext* ctx1_2 = net1->GetNetContext(kID2);
 
-  //create the NetContext from node 2
+  // create the NetContext from node 2
   net2->CreateNetContexts(nodes);
-  NetContext* ctx2_0 = net2->GetNetContext(id0);
-  NetContext* ctx2_1 = net2->GetNetContext(id1);
+  NetContext* ctx2_0 = net2->GetNetContext(kID0);
+  NetContext* ctx2_1 = net2->GetNetContext(kID1);
 
   TestCallBack cb0;
   TestCallBack cb1;
   TestCallBack cb2;
 
-  //register receive callback function
+  // register receive callback function
   net0->RegisterRecv(&cb0);
   net1->RegisterRecv(&cb1);
   net2->RegisterRecv(&cb2);
 
-  sleep(1.0);
+  usleep(kSleepTime);
 
-  //start the net background thread
+  // start the net background thread
   thread* t0 = new thread(Start, net0);
   thread* t1 = new thread(Start, net1);
   thread* t2 = new thread(Start, net2);
@@ -182,30 +181,35 @@ TEST(NetTest, CreateContexts) {
   /*
    * node 0 sends msg to node 1
    */
-  ctx0_1->Send(id0.c_str(), id0.length());
+  ctx0_1->Send(kID0.c_str(), kID0.length());
 
   /*
    * node 1 sends msg to node 0
    */
-  ctx1_0->Send(id1.c_str(), id1.length());
+  ctx1_0->Send(kID1.c_str(), kID1.length());
 
   /*
    * node 2 sends msg to node 0
    */
-  ctx2_0->Send(id2.c_str(), id2.length());
+  ctx2_0->Send(kID2.c_str(), kID2.length());
 
   /*
    * node 2 sends msg to node 1
    */
-  ctx2_1->Send(id2.c_str(), id2.length());
+  ctx2_1->Send(kID2.c_str(), kID2.length());
 
-  //free the resources
-  sleep(1);
+  // free the resources
+  usleep(kSleepTime);
   net0->Stop();
-  net1->Stop();
-  net2->Stop();
-  sleep(1);
+  t0->join();
   delete net0;
+  usleep(kSleepTime);
+  net1->Stop();
+  t1->join();
   delete net1;
+  usleep(kSleepTime);
+  net2->Stop();
+  t2->join();
   delete net2;
+  usleep(kSleepTime);
 }

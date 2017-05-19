@@ -8,10 +8,12 @@
 #include <vector>
 #include "types/type.h"
 #include "utils/noncopyable.h"
+#include "utils/logging.h"
 
 namespace ustore {
 
 using node_id_t = std::string;
+const string kCloseMsg = "+close";
 
 /**
  * Callback functor that is invoked on receiving of a message.
@@ -44,6 +46,18 @@ class Net : private Noncopyable {
 
   // create the NetContext of idth node
   virtual NetContext* CreateNetContext(const node_id_t& id) = 0;
+
+  // delete the NetContext
+  virtual void DeleteNetContext(NetContext* ctx);
+  inline void DeleteNetContext(const node_id_t& id) {
+    // CHECK(ContainNetContext(id));
+    if (netmap_.count(id)) {
+      DeleteNetContext(netmap_.at(id));
+      netmap_.erase(id);
+      LOG(INFO) << "Delete NetContext " << id;
+    }
+  }
+
   // create the NetContexts of all the nodes
   void CreateNetContexts(const std::vector<node_id_t>& nodes);
   virtual void Start() = 0;  // start the listening service
@@ -54,6 +68,10 @@ class Net : private Noncopyable {
   inline const node_id_t& GetNodeID() const { return cur_node_; }
   inline NetContext* GetNetContext(const node_id_t& id) const {
     return netmap_.at(id);
+  }
+
+  inline bool ContainNetContext(const node_id_t& id) const {
+    return netmap_.count(id) == 1 ? true : false;
   }
 
   /**

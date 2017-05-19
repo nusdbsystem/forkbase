@@ -436,10 +436,7 @@ NetContext* RdmaNet::CreateNetContext(const node_id_t& id) {
   RdmaNetContext* ctx = CreateRdmaNetContext(id, exist);
 
   if (!exist) {
-    vector<std::string> ip_port;
-    Split(id, ip_port);
-    assert(ip_port.size() == 2);
-    ctx->ExchConnParam(cur_node_, ip_port[0].c_str(), atoi(ip_port[1].c_str()));
+    ctx->ExchConnParam(cur_node_, id, this);
   }
   return ctx;
 }
@@ -832,13 +829,19 @@ char* RdmaNetContext::RecvComp(ibv_wc& wc) {
   return ret;
 }
 
-int RdmaNetContext::ExchConnParam(node_id_t cur_node, const char* ip,
-                                  int port) {
+int RdmaNetContext::ExchConnParam(const node_id_t& cur_node,
+                                  const node_id_t& node, RdmaNet* net) {
+  vector<std::string> ip_port1;
+  Split(node, ip_port1);
+  assert(ip_port1.size() == 2);
+  char* ip = const_cast<char*>(ip_port1[0].c_str());
+  int port = atoi(ip_port1[1].c_str());
+
   // open the socket to exch rdma resouces
   char neterr[ANET_ERR_LEN];
   int sockfd;
   // trying to connect until succeed
-  while ((sockfd = anetTcpConnect(neterr, const_cast<char *>(ip), port)) < 0)
+  while ((sockfd = anetTcpConnect(neterr, ip, port)) < 0)
   {};
 //  if (sockfd < 0) {
 //    LOG(WARNING) << "Connecting to " << ip << ":" << port << ":" << neterr;
@@ -877,7 +880,9 @@ int RdmaNetContext::ExchConnParam(node_id_t cur_node, const char* ip,
 
   SetRemoteConnParam(cv[1].c_str());
 
-  close(sockfd);
+  // close(sockfd);
+  SetFD(sockfd);
+  net->CreateConnectionEvent(sockfd, node);
   return 0;
 }
 
@@ -886,6 +891,9 @@ RdmaNetContext::~RdmaNetContext() {
   ibv_dereg_mr(send_buf_);
   free(send_buf_->addr);
   free(msg_);
+  CHECK(sockfds_[0]);
+  close(sockfds_[0]);
+  if (sockfds_[1]) close(sockfds_[1]);
 }
 
 RdmaNet::RdmaNet(const node_id_t& id, int nthreads)
@@ -1055,6 +1063,12 @@ ssize_t RdmaNetContext::Send(const void* ptr, size_t len, CallBack* func) {
   return ret;
 }
 
+void TCPConnectionHandle(aeEventLoop *el, int fd, void *data, int mask) {
+  CHECK(data);
+  RdmaNet *net = static_cast<RdmaNet*>(data);
+  net->DeleteConnectionEvent(fd);
+}
+
 void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
   assert(data != nullptr);
   RdmaNet *net = static_cast<RdmaNet*>(data);
@@ -1071,6 +1085,7 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
   bool exist = false;
 
   cfd = anetTcpAccept(neterr, fd, cip, sizeof(cip), &cport);
+  LOG(INFO) << "Accept connection from: " << cfd;
   if (cfd == ANET_ERR) {
     if (errno != EWOULDBLOCK)
     LOG(WARNING)<< "Accepting client connection: " << neterr << std::endl;
@@ -1082,7 +1097,8 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
     n = read(cfd, msg, sizeof msg);
     if (unlikely(n <= 0)) {
       LOG(WARNING)<< "Unable to read conn string\n";
-      goto out;
+      close(cfd);
+      return;
     }
     msg[n] = '\0';
     LOG(INFO) << "conn string " << msg;
@@ -1090,12 +1106,16 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
 
   Split(msg, cv, ';');
   assert(cv.size() == 2);
+  id = cv[0];
   if (unlikely(!(ctx =
-      static_cast<RdmaNetContext*>(net->CreateRdmaNetContext(cv[0], exist))))) {
-    goto out;
+      static_cast<RdmaNetContext*>(net->CreateRdmaNetContext(id, exist))))) {
+    close(cfd);
+    return;
   }
   if (!exist) {
     ctx->SetRemoteConnParam(cv[1].c_str());
+  } else {
+    LOG(INFO) << "The RdmaNetContext already exists " << cfd;
   }
 
   conn.append(net->GetNodeID());
@@ -1106,9 +1126,12 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
 
   if (unlikely(n < conn.size())) {
     LOG(WARNING) << "Unable to send conn string\n";
-    net->RemoveContext(ctx);
+    net->DeleteNetContext(id);
+    return;
   }
-  out: close(cfd);
+
+  ctx->SetFD(cfd);
+  net->CreateConnectionEvent(cfd, id);
 }
 
 void RdmaHandle(aeEventLoop *el, int fd, void *data, int mask) {

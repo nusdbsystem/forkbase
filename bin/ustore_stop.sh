@@ -24,17 +24,17 @@ for i in ${hosts[@]}; do
   fi
 done
 
-# kill ustore client service processes
-host_file=$USTORE_CONF/client_services
-hosts=`cat $host_file | cut -d ':' -f 1`
-for i in ${hosts[@]}; do
-  echo Kill ustore @ $i ...
-  if [ $i == localhost ]; then
-    $ustore_kill
-  else
-    ssh $ssh_options $i $ustore_kill
-  fi
-done
+## kill ustore client service processes
+#host_file=$USTORE_CONF/client_services
+#hosts=`cat $host_file | cut -d ':' -f 1`
+#for i in ${hosts[@]}; do
+#  echo Kill ustore @ $i ...
+#  if [ $i == localhost ]; then
+#    $ustore_kill
+#  else
+#    ssh $ssh_options $i $ustore_kill
+#  fi
+#done
 
 # wait for killall command
 sleep 2

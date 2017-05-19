@@ -19,6 +19,7 @@ constexpr int max_str_len = 32;
 constexpr int fixed_str_len = 16;
 constexpr int max_blob_size = 4096;
 constexpr int fixed_blob_size = 4096;
+constexpr int kSleepTime = 100000;
 
 void BenchmarkWorker() {
   Worker worker {27};
@@ -68,16 +69,15 @@ void BenchmarkClient() {
 
   service->Stop();
   client_service_thread.join();
-
-  for (WorkerService *ws : workers) {
-    ws->Stop();
-  }
-  for (int i = 0; i < worker_threads.size(); ++i)
-    worker_threads[i].join();
-
-  for (int i = 0; i < worker_threads.size(); ++i)
-    delete workers[i];
   delete service;
+  usleep(kSleepTime);
+
+  for (int i = 0; i < worker_threads.size(); ++i) {
+    workers[i]->Stop();
+    worker_threads[i].join();
+    delete workers[i];
+    usleep(kSleepTime);
+  }
 }
 
 int main() {

@@ -33,7 +33,7 @@ Env::Env() {
   google::protobuf::TextFormat::Parse(
       new google::protobuf::io::FileInputStream(fd), &config_);
   LOG(INFO) << "worker_file: " << config_.worker_file();
-  LOG(INFO) << "clientservice_file = " << config_.clientservice_file();
+  // LOG(INFO) << "clientservice_file = " << config_.clientservice_file();
   LOG(INFO) << "recv_threads: " << config_.recv_threads();
   LOG(INFO) << "service_threads = " << config_.service_threads();
 

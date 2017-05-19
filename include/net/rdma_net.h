@@ -27,9 +27,11 @@
 
 namespace ustore {
 
+aeFileProc TCPConnectionHandle;
 aeFileProc TcpHandle;
 aeFileProc RdmaHandle;
 class RdmaNetContext;
+class RdmaNet;
 
 class RdmaNetResource {
   friend class RdmaNetContext;
@@ -115,9 +117,20 @@ class RdmaNetContext : public NetContext {
   int SetRemoteConnParam(const char *remConn);
   const char* GetRdmaConnString();
 
+  inline void SetFD(int fd) {
+    CHECK(fd);
+    if (sockfds_[0]) {
+      CHECK(!sockfds_[1]);
+      sockfds_[1] = fd;
+    } else {
+      sockfds_[0] = fd;
+    }
+  }
+
  private:
   // below are for internal use
-  int ExchConnParam(node_id_t cur_node, const char* ip, int port);
+  int ExchConnParam(const node_id_t& cur_node,
+                    const node_id_t& node, RdmaNet* net);
   inline uint32_t GetQP() const { return qp_->qp_num; }
   inline const node_id_t& GetID() const { return id_; }
 
@@ -181,6 +194,13 @@ class RdmaNetContext : public NetContext {
   std::queue<RdmaRequest> pending_requests_;
   char *msg_ = nullptr;
   std::mutex global_lock_;
+
+  /*
+   * the TCP fd used to transfer rdma connection info
+   * in case of concurrent connecting from workers,
+   * we use two fds to deal with this issue
+   */
+  int sockfds_[2] = {0, 0};
 };
 
 
@@ -190,9 +210,19 @@ class RdmaNet : public Net {
   ~RdmaNet();
 
   NetContext* CreateNetContext(const node_id_t& id) override;
+
+  inline void DeleteNetContext(NetContext* ctx) override {
+    RdmaNetContext* rctx = dynamic_cast<RdmaNetContext*>(ctx);
+    LOG(WARNING) << "Delete RdmaNetContext " << rctx->GetID();
+    if (qpCliMap_.erase(rctx->GetQP()))
+      resource_->DeleteRdmaNetContext(rctx);
+  }
+
+  using Net::DeleteNetContext;
+
   void Start() override {
     is_running_ = true;
-    while(is_running_);
+    while (is_running_) {}
   }
   void Stop() override {
     is_running_ = false;
@@ -201,12 +231,30 @@ class RdmaNet : public Net {
 
   // below are for internal use
   RdmaNetContext* CreateRdmaNetContext(const node_id_t& id, bool& exist);
-  inline void RemoveContext(RdmaNetContext* ctx) {
-    qpCliMap_.erase(ctx->GetQP());
-    // idCliMap_.erase(ctx->GetID());
-    netmap_.erase(ctx->GetID());
-  }
+
   void ProcessRdmaRequest();
+
+  // create an event to monitor the liveness of the TCP connection
+  inline int CreateConnectionEvent(uint32_t fd, const node_id_t& node) {
+    int ret = AE_ERR;
+    if (fd > 0 && (ret = aeCreateFileEvent(el_, fd, AE_READABLE,
+                                 TCPConnectionHandle, this) == AE_ERR)) {
+        LOG(WARNING) << "Unrecoverable error creating cfd file event.";
+    }
+
+    assert(fdCliMap_.count(fd) == 0);
+    fdCliMap_[fd] = node;
+    return ret;
+  }
+
+  // delete the tcp connection event
+  inline void DeleteConnectionEvent(uint32_t fd) {
+    LOG(WARNING) << "Close connection " << fd;
+    aeDeleteFileEvent(el_, fd, AE_READABLE);
+    assert(fdCliMap_.count(fd));
+    DeleteNetContext(fdCliMap_.at(fd));
+    fdCliMap_.erase(fd);
+  }
 
  private:
   void StartService(const node_id_t& id, RdmaNetResource* res);
@@ -237,6 +285,8 @@ class RdmaNet : public Net {
   aeEventLoop* el_ = nullptr;
   int sockfd_ = 0;
   HashTable<uint32_t, RdmaNetContext*> qpCliMap_;
+  // the map between file descriptor and the NetContext
+  HashTable<uint32_t, node_id_t> fdCliMap_;
   // HashTable<std::string, RdmaNetContext*> idCliMap_;
   std::thread* st_ = nullptr;
   std::mutex net_lock_;

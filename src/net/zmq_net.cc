@@ -30,6 +30,7 @@ void ServerThread(void *args);
 Net::~Net() {
   for (auto val : netmap_)
     delete val.second;
+  LOG(INFO) << "destroy Net ";
 }
 
 void Net::CreateNetContexts(const vector<node_id_t>& nodes) {
@@ -46,6 +47,10 @@ void Net::CreateNetContexts(const vector<node_id_t>& nodes) {
     if (*val != cur_node_)
       CreateNetContext(*val);
   }
+}
+
+void Net::DeleteNetContext(NetContext* ctx) {
+  delete ctx;
 }
 
 ZmqNet::ZmqNet(const node_id_t& id, int nthreads)
@@ -151,6 +156,11 @@ void ServerThread(void *args) {
       zframe_t *identity = zmsg_pop(msg);
       char *connection_id = zmsg_popstr(msg);
 
+      // dynamically add the NetContext
+      if (!net->ContainNetContext(connection_id)) {
+        net->CreateNetContext(connection_id);
+      }
+
       zframe_t *content = zmsg_pop(msg);
       net->Dispatch(string(connection_id),
           zframe_data(content), zframe_size(content));
@@ -171,6 +181,7 @@ ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest)
 }
 
 ZmqNetContext::~ZmqNetContext() {
+  Send(kCloseMsg.c_str(), kCloseMsg.length());
   zsock_destroy((zsock_t **)&send_sock_);
 }
 
@@ -190,6 +201,11 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
 
 void ZmqNet::Dispatch(const node_id_t& source, const void *msg, int size) {
   // recv_lock_.lock();
+  if (memcmp(kCloseMsg.c_str(), msg, size) == 0) {
+    LOG(WARNING) << "close ZmqNetContext " << source;
+    DeleteNetContext(source);
+    return;
+  }
   (*this->cb_)(msg, size, source);
   // recv_lock_.unlock();
 }

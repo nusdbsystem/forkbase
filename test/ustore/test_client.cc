@@ -47,6 +47,8 @@ const string values[] = {"where is the wisdome in knowledge",
                          "the brown fox",
                          "jump over"};
 
+const int kSleepTime = 100000;
+
 // i^th thread issue requests from i*(nthreads/nreqs) to
 // (i+1)*(nthreads/nreqs)
 void TestClientRequest(ClientDb* client, int idx, int len) {
@@ -142,25 +144,25 @@ TEST(TestMessage, TestClient1Thread) {
   service->Init();
   // service->Start();
   thread client_service_thread(&RemoteClientService::Start, service);
-  sleep(1);
+  usleep(kSleepTime);
 
   // 1 thread
   ClientDb *client = service->CreateClientDb();
   TestClientRequest(client, 0, NREQUESTS);
 
+  // stop the client service
   service->Stop();
   client_service_thread.join();
-
-  // then stop workers
-  for (WorkerService *ws : workers)
-    ws->Stop();
-  for (int i = 0; i < worker_threads.size(); i++)
-    worker_threads[i].join();
-
-  // delete workers and client
-  for (int i=0; i< workers.size(); i++)
-    delete workers[i];
   delete service;
+  usleep(kSleepTime);
+
+  // stop workers
+  for (int i = 0; i < worker_threads.size(); i++) {
+    workers[i]->Stop();
+    worker_threads[i].join();
+    delete workers[i];
+    usleep(kSleepTime);
+  }
 }
 
 /*
