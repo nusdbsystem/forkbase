@@ -37,7 +37,7 @@ TEST(VBlob, CreateNewVBlob) {
   byte_t* buf = new byte_t[v.size()];
   v.Read(0, v.size(), buf);
   EXPECT_EQ(0, memcmp(raw_data, buf, v.size()));
-  delete buf;
+  delete[] buf;
 }
 
 TEST(VBlob, UpdateExistingVBlob) {
@@ -67,5 +67,5 @@ TEST(VBlob, UpdateExistingVBlob) {
   ustore::byte_t* buf = new ustore::byte_t[v.size()];
   v.Read(0, v.size(), buf);
   EXPECT_EQ(0, memcmp(s.data(), buf, s.length()));
-  delete buf;
+  delete[] buf;
 }
