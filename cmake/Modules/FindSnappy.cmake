@@ -24,4 +24,7 @@ if(SNAPPY_FOUND)
   ustore_parse_header(${Snappy_INCLUDE_DIR}/snappy-stubs-public.h
                      SNAPPY_VERION_LINES SNAPPY_MAJOR SNAPPY_MINOR SNAPPY_PATCHLEVEL)
   set(Snappy_VERSION "${SNAPPY_MAJOR}.${SNAPPY_MINOR}.${SNAPPY_PATCHLEVEL}")
+  if(Snappy_VERSION)
+    message(STATUS "Snappy version: ${Snappy_VERSION}")
+  endif()
 endif()

@@ -77,11 +77,11 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 # copy the conf directory
 FILE(COPY conf DESTINATION ${PROJECT_BINARY_DIR})
-MESSAGE(STATUS "copy directory: conf")
+MESSAGE(STATUS "copied directory: conf")
 
 # copy the bin directory
 FILE(COPY bin DESTINATION ${PROJECT_BINARY_DIR})
-MESSAGE(STATUS "copy directory: bin")
+MESSAGE(STATUS "copied directory: bin")
 
 IF(ENABLE_TEST)
   ADD_SUBDIRECTORY(test)

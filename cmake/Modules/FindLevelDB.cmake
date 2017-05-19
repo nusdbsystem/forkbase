@@ -35,8 +35,9 @@ if(LEVELDB_FOUND)
       endif()
     endforeach()
 
-    if(LEVELDB_VERSION_MAJOR AND LEVELDB_VERSION_MINOR)
-      set(LEVELDB_VERSION "${LEVELDB_VERSION_MAJOR}.${LEVELDB_VERSION_MINOR}")
+    set(LEVELDB_VERSION "${LEVELDB_VERSION_MAJOR}.${LEVELDB_VERSION_MINOR}")
+    if(NOT LEVELDB_VERSION STREQUAL "")
+      message(STATUS "LevelDB Version: ${LEVELDB_VERSION}")
     endif()
 
     ustore_clear_vars(__line __version_lines)
