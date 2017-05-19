@@ -15,11 +15,11 @@ using ustore::ErrorCode;
 using ustore::Hash;
 
 ustore::Worker worker_vblob(17);
-ustore::ObjectDB db(&worker_vblob);
 const char key_vblob[] = "key_vblob";
 const char branch_vblob[] = "branch_vblob";
 
 TEST(VBlob, CreateNewVBlob) {
+  ustore::ObjectDB db(&worker_vblob);
   // create buffered new blob
   ustore::VBlob blob{Slice(raw_data)};
   // put new blob
@@ -36,11 +36,12 @@ TEST(VBlob, CreateNewVBlob) {
   // check data
   byte_t* buf = new byte_t[v.size()];
   v.Read(0, v.size(), buf);
-  EXPECT_EQ(0, memcmp(raw_data, buf, sizeof(raw_data)));
+  EXPECT_EQ(0, memcmp(raw_data, buf, v.size()));
   delete buf;
 }
 
 TEST(VBlob, UpdateExistingVBlob) {
+  ustore::ObjectDB db(&worker_vblob);
   // create buffered new blob
   ustore::VBlob blob{Slice(raw_data)};
   // put new blob

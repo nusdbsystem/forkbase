@@ -8,6 +8,9 @@
 #include "spec/value.h"
 #include "types/ucell.h"
 #include "types/client/vblob.h"
+#include "types/client/vlist.h"
+#include "types/client/vmap.h"
+#include "types/client/vstring.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
@@ -42,6 +45,9 @@ class VMeta : private Noncopyable {
   inline ErrorCode code() const { return code_; }
 
   VBlob Blob() const;
+  VString String() const;
+  VList List() const;
+  VMap Map() const;
 
  private:
   DB2* db_;

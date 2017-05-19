@@ -12,5 +12,29 @@ VBlob VMeta::Blob() const {
   return VBlob();
 }
 
+VString VMeta::String() const {
+  if (!cell_.empty() && cell_.type() == UType::kString) {
+    return VString(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
+                   cell_.dataHash());
+  }
+  return VString();
+}
+
+VList VMeta::List() const {
+  if (!cell_.empty() && cell_.type() == UType::kList) {
+    return VList(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
+                   cell_.dataHash());
+  }
+  return VList();
+}
+
+VMap VMeta::Map() const {
+  if (!cell_.empty() && cell_.type() == UType::kMap) {
+    return VMap(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
+                   cell_.dataHash());
+  }
+  return VMap();
+}
+
 }  // namespace ustore
 

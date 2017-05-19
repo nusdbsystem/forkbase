@@ -409,8 +409,8 @@ const byte_t* NodeCursor::current() const {
     return nullptr;
   }
   if (idx_ == seq_node_->numEntries()) {
-    LOG(WARNING) << "Cursor points to Seq End. Return pointer points to byte "
-                    "after the last entry.";
+    DLOG(WARNING) << "Cursor points to Seq End. Return pointer points to byte "
+                     "after the last entry.";
     return seq_node_->data(idx_ - 1) + seq_node_->len(idx_ - 1);
   }
   return seq_node_->data(idx_);

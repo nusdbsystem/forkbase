@@ -22,6 +22,7 @@ class UList : public ChunkableType {
   //    return empty slice
   Slice Get(uint64_t idx) const;
   // entry vector can be empty
+  // TODO(pingcheng): cannot use size_t instead?
   virtual Hash Splice(uint64_t start_idx, uint64_t num_to_delete,
                       const std::vector<Slice>& entries) const = 0;
   Hash Delete(uint64_t start_idx, uint64_t num_to_delete) const;

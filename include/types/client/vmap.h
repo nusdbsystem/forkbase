@@ -5,14 +5,22 @@
 
 #include <memory>
 #include <vector>
-#include "types/client/vvalue.h"
+#include "types/client/vobject.h"
 #include "types/umap.h"
 
 namespace ustore {
 
-class VMap : public UMap, public Buffered {
+class VMap : public UMap, public VObject {
+  friend class VMeta;
+
  public:
+  VMap() = default;
+  VMap(VMap&& rhs) = default;
+  // Create new VMap
+  VMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals) noexcept;
   ~VMap() = default;
+
+  VMap& operator=(VMap&& rhs) = default;
 
   Hash Set(const Slice& key, const Slice& val) const override;
   Hash Remove(const Slice& key) const override;
@@ -20,9 +28,6 @@ class VMap : public UMap, public Buffered {
  protected:
   // Load an existing VMap
   VMap(std::shared_ptr<ChunkLoader>, const Hash& root_hash) noexcept;
-  // Create a new VMap
-  VMap(std::shared_ptr<ChunkLoader>, const std::vector<Slice>& keys,
-       const std::vector<Slice>& vals) noexcept;
 };
 
 }  // namespace ustore
