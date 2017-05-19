@@ -10,23 +10,15 @@ namespace ustore {
 
 class SBlob : public UBlob {
  public:
-  // Load an exsiting SBlob
+  SBlob() = default;
+  SBlob(SBlob&& rhs) = default;
+  // Load exsiting SBlob
   explicit SBlob(const Hash& root_hash) noexcept;
-
-  // Create a new SBlob
+  // Create new SBlob
   explicit SBlob(const Slice& slice) noexcept;
-
-  SBlob() noexcept : UBlob(std::make_shared<ServerChunkLoader>()) {}
-
   ~SBlob() = default;
 
-  SBlob(SBlob&& rhs) noexcept :
-      UBlob(std::move(rhs)) {}
-
-  SBlob& operator=(SBlob&& rhs) noexcept {
-    UBlob::operator=(std::move(rhs));
-    return *this;
-  }
+  SBlob& operator=(SBlob&& rhs) = default;
 
   Hash Splice(size_t pos, size_t num_delete,
               const byte_t* data, size_t num_insert) const override;

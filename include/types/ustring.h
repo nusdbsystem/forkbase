@@ -12,40 +12,26 @@ namespace ustore {
 
 class UString : public BaseType {
  public:
-  UString() = default;
-
-  UString(UString&& rhs) noexcept :
-      BaseType(std::move(rhs)),
-      node_(std::move(rhs.node_)) {}
-
-  UString& operator=(UString&& rhs) noexcept {
-    BaseType::operator=(std::move(rhs));
-    node_ = std::move(rhs.node_);
-    return *this;
-  }
-
-  inline bool empty() const override {
-    return this->node_.get() == nullptr;
-  }
-
+  inline bool empty() const override { return this->node_.get() == nullptr; }
   inline const Hash hash() const override {
     CHECK(!empty());
     return node_->hash();
   }
-
   inline size_t len() const { return node_->len(); }
   // copy string contents to buffer
   //   return string length
   inline const size_t data(byte_t* buffer) const { return node_->Copy(buffer); }
-
   // pointer to orignal data
   inline const byte_t* data() const { return node_->Read(); }
 
  protected:
+  UString() = default;
+  UString(UString&& rhs) = default;
   explicit UString(std::shared_ptr<ChunkLoader> loader) noexcept :
       BaseType(loader) {}
-
   ~UString() = default;
+
+  UString& operator=(UString&& rhs) = default;
 
   bool SetNodeForHash(const Hash& hash) override;
 

@@ -9,23 +9,15 @@ namespace ustore {
 
 class SString : public UString {
  public:
+  SString() = default;
+  SString(SString&& rhs) = default;
   // Load an existing sstring
   explicit SString(const Hash& hash) noexcept;
-
   // Creata a new sstring
   explicit SString(const Slice& data) noexcept;
-
   ~SString() = default;
 
-  SString() = default;
-
-  SString(SString&& rhs) noexcept :
-      UString(std::move(rhs)) {}
-
-  SString& operator=(SString&& rhs) noexcept {
-    UString::operator=(std::move(rhs));
-    return *this;
-  }
+  SString& operator=(SString&& rhs) = default;
 };
 
 }  // namespace ustore

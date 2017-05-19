@@ -24,14 +24,6 @@ class UIterator : private Noncopyable {
       curr_idx_in_range_(rhs.curr_idx_in_range_),
       cursor_(std::move(rhs.cursor_)) {}
 
-  UIterator& operator=(UIterator&& rhs) noexcept {
-    ranges_ = std::move(rhs.ranges_);
-    curr_range_idx_ = rhs.curr_range_idx_;
-    curr_idx_in_range_ = rhs.curr_idx_in_range_;
-    cursor_ = std::move(rhs.cursor_);
-    return *this;
-  }
-
   UIterator(const Hash& root, const std::vector<IndexRange>& ranges,
             ChunkLoader* loader) noexcept
       : ranges_(ranges), curr_range_idx_(0), curr_idx_in_range_(0) {
@@ -46,6 +38,16 @@ class UIterator : private Noncopyable {
     CHECK_LT(0, ranges_.size());
     cursor_ = std::unique_ptr<NodeCursor>(
                   NodeCursor::GetCursorByIndex(root, index(), loader));
+  }
+
+  virtual ~UIterator() = default;
+
+  UIterator& operator=(UIterator&& rhs) noexcept {
+    ranges_ = std::move(rhs.ranges_);
+    curr_range_idx_ = rhs.curr_range_idx_;
+    curr_idx_in_range_ = rhs.curr_idx_in_range_;
+    cursor_ = std::move(rhs.cursor_);
+    return *this;
   }
 
   // point to next element

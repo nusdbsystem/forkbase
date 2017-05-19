@@ -14,7 +14,6 @@ class UBlob : public ChunkableType {
  public:
   // Return the number of bytes in this Blob
   inline size_t size() const { return root_node_->numElements(); }
-
   /** Read the blob data and copy into buffer
    *    Args:
    *      pos: the number of position to read
@@ -25,7 +24,6 @@ class UBlob : public ChunkableType {
    *      the number of bytes that actually read
    */
   size_t Read(size_t pos, size_t len, byte_t* buffer) const;
-
    /** Delete some bytes from a position and insert new bytes
    *
    *  Args:
@@ -37,44 +35,32 @@ class UBlob : public ChunkableType {
    *  Return:
    *    the new Blob reflecting the operation
    */
-
   virtual Hash Splice(size_t pos, size_t n_delete_bytes,
                       const byte_t* data,
                       size_t n_insert_bytes) const = 0;
-
   // * Insert bytes given a position
-
-  //  *  Use Splice internally
+  // * Use Splice internally
   Hash Insert(size_t pos, const byte_t* data,
               size_t num_insert) const;
-
   /** Delete bytes from a given position
    *
    *  Use Splice internally
    */
   Hash Delete(size_t pos, size_t num_delete) const;
-
   /** Append bytes from the last position of Blob
    *
    *  Use Splice internally
    */
   Hash Append(byte_t* data, size_t num_insert) const;
 
-  UBlob() = default;
-
-  UBlob(UBlob&& rhs) noexcept :
-      ChunkableType(std::move(rhs)) {}
-
-  UBlob& operator=(UBlob&& rhs) noexcept {
-    ChunkableType::operator=(std::move(rhs));
-    return *this;
-  }
-
  protected:
+  UBlob() = default;
+  UBlob(UBlob&& rhs) = default;
   explicit UBlob(std::shared_ptr<ChunkLoader> loader) noexcept :
       ChunkableType(loader) {}
-
   virtual ~UBlob() = default;
+
+  UBlob& operator=(UBlob&& rhs) = default;
 
   bool SetNodeForHash(const Hash& hash) override;
 };

@@ -17,26 +17,21 @@ class BaseType : Noncopyable {
   // all other types shall inherit from this
  public:
   virtual bool empty() const = 0;
-
   virtual const Hash hash() const = 0;
 
+ protected:
   BaseType() = default;
-
-  // move ctor
   BaseType(BaseType&& rhs) noexcept :
     chunk_loader_(std::move(rhs.chunk_loader_)) {}
+  explicit BaseType(std::shared_ptr<ChunkLoader> loader) noexcept :
+      chunk_loader_(std::move(loader)) {}
+  virtual ~BaseType() = default;
 
   // move assignment
   BaseType& operator=(BaseType&& rhs) noexcept {
     chunk_loader_ = std::move(rhs.chunk_loader_);
     return *this;
   }
-
- protected:
-  explicit BaseType(std::shared_ptr<ChunkLoader> loader) noexcept :
-      chunk_loader_(std::move(loader)) {}
-
-  virtual ~BaseType() = default;
 
   // Must be called at the last step of construction
   virtual bool SetNodeForHash(const Hash& hash) = 0;
@@ -48,39 +43,25 @@ class ChunkableType : public BaseType {
   // A genric type for parent class
   // all other types shall inherit from this
  public:
-  inline bool empty() const override {
-    return root_node_.get() == nullptr;
-  }
-
+  inline bool empty() const override { return root_node_.get() == nullptr; }
   inline const Hash hash() const override {
     CHECK(!empty());
     return root_node_->hash();
   }
-
   inline uint64_t numElements() const {
     CHECK(!empty());
     return root_node_->numElements();
   }
 
-  ChunkableType() = default;
-
-  // move ctor
-  ChunkableType(ChunkableType&& rhs) noexcept :
-      BaseType(std::move(rhs)),
-      root_node_(std::move(rhs.root_node_)) {}
-
-  // move assignment
-  ChunkableType& operator=(ChunkableType&& rhs) noexcept {
-    BaseType::operator=(std::move(rhs));
-    root_node_ = std::move(rhs.root_node_);
-    return *this;
-  }
-
  protected:
+  ChunkableType() = default;
+  ChunkableType(ChunkableType&& rhs) = default;
   explicit ChunkableType(std::shared_ptr<ChunkLoader> loader) noexcept :
       BaseType(loader) {}
-
   virtual ~ChunkableType() = default;
+
+  // move assignment
+  ChunkableType& operator=(ChunkableType&& rhs) = default;
 
   std::unique_ptr<const SeqNode> root_node_;
 };

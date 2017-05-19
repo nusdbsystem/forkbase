@@ -23,9 +23,9 @@ class UCell : private Noncopyable {
                       const Hash& preHash2);
   static UCell Load(const Hash& unode_hash);
 
-  UCell() {}
+  UCell() = default;
   UCell(UCell&& ucell) : node_(std::move(ucell.node_)) {}
-  ~UCell() {}
+  ~UCell() = default;
 
   UCell& operator=(UCell&& ucell) {
     std::swap(node_, ucell.node_);
@@ -42,7 +42,6 @@ class UCell : private Noncopyable {
     return node_->preHash(second);
   }
   inline Slice key() const { return node_->key(); }
-
   // hash of this ucell
   inline Hash hash() const { return node_->hash(); }
 

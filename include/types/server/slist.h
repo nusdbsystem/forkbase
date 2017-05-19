@@ -10,27 +10,16 @@
 namespace ustore {
 
 class SList : public UList {
-// UMap for server side
  public:
+  SList() = default;
+  SList(SList&& rhs) = default;
   // Load an existing map using hash
   explicit SList(const Hash& root_hash) noexcept;
-
   // create an SList using the initial elements
   explicit SList(const std::vector<Slice>& elements) noexcept;
-
-  SList() = default;
-
-  SList(SList&& rhs) noexcept :
-      UList(std::move(rhs)) {}
-
-  SList& operator=(SList&& rhs) noexcept {
-    UList::operator=(std::move(rhs));
-    return *this;
-  }
-
-  // create an empty map
-  // construct chunk loader for server
   ~SList() = default;
+
+  SList& operator=(SList&& rhs) = default;
 
   // entry vector can be empty
   Hash Splice(uint64_t start_idx, uint64_t num_to_delete,

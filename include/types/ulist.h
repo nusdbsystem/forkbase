@@ -18,47 +18,34 @@ class UList : public ChunkableType {
   static std::unique_ptr<DuallyDiffIndexIterator> DuallyDiff(
       const UList& lhs, const UList& rhs);
 
-  UList() = default;
-
-  UList(UList&& rhs) noexcept :
-      ChunkableType(std::move(rhs)) {}
-
-  UList& operator=(UList&& rhs) noexcept {
-    ChunkableType::operator=(std::move(rhs));
-    return *this;
-  }
-
   // For idx > total # of elements
   //    return empty slice
   Slice Get(uint64_t idx) const;
-
   // entry vector can be empty
   virtual Hash Splice(uint64_t start_idx, uint64_t num_to_delete,
                       const std::vector<Slice>& entries) const = 0;
-
   Hash Delete(uint64_t start_idx, uint64_t num_to_delete) const;
-
   Hash Insert(uint64_t start_idx, const std::vector<Slice>& entries) const;
-
   Hash Append(const std::vector<Slice>& entries) const;
-
   // Return an iterator that scan from List Start
   std::unique_ptr<UIterator> Scan() const;
-
   // Return an iterator that scan elements that exist in this Ulist
   //   and NOT in rhs
   std::unique_ptr<UIterator> Diff(const UList& rhs) const;
-
   // Return an iterator that scan elements that both exist in this Ulist and rhs
   std::unique_ptr<UIterator> Intersect(const UList& rhs) const;
 
  protected:
+  UList() = default;
+  UList(UList&& rhs) = default;
   // create an empty map
   // construct chunk loader for server
   explicit UList(std::shared_ptr<ChunkLoader> loader) noexcept :
       ChunkableType(loader) {}
   // construct chunk loader for server
   virtual ~UList() = default;
+
+  UList& operator=(UList&& rhs) = default;
 
   bool SetNodeForHash(const Hash& hash) override;
 
