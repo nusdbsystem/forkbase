@@ -14,9 +14,8 @@ TEST(MetaEntry, EncodeDecode) {
   uint32_t num_leaves = 5;
   uint64_t num_elements = 10;
 
-  ustore::Hash data_hash;
   const char encoded_hash_value[] = "26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
-  data_hash.FromBase32(encoded_hash_value);
+  ustore::Hash data_hash = ustore::Hash::FromBase32(encoded_hash_value);
 
   // construct order key from above hash
   // padding a false bool in front of hash value to indicate not by value
@@ -53,9 +52,8 @@ TEST(MetaNode, Basic) {
   uint32_t num_leaves1 = 1;
   uint64_t num_elements1 = 10;
 
-  ustore::Hash data_hash1;
   const char encoded_hash_value1[] = "36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
-  data_hash1.FromBase32(encoded_hash_value1);
+  ustore::Hash data_hash1 = ustore::Hash::FromBase32(encoded_hash_value1);
 
   ustore::OrderedKey key1(5);
 
@@ -66,9 +64,8 @@ TEST(MetaNode, Basic) {
   // construct second MetaEntry
   uint32_t num_leaves2 = 2;
   uint64_t num_elements2 = 20;
-  ustore::Hash data_hash2;
   const char encoded_hash_value2[] = "46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
-  data_hash2.FromBase32(encoded_hash_value2);
+  ustore::Hash data_hash2 = ustore::Hash::FromBase32(encoded_hash_value2);
 
   ustore::OrderedKey key2(10);
 
@@ -79,9 +76,8 @@ TEST(MetaNode, Basic) {
   // construct third MetaEntry
   uint32_t num_leaves3 = 3;
   uint64_t num_elements3 = 25;
-  ustore::Hash data_hash3;
   const char encoded_hash_value3[] = "56UPXMYH36AJI3OKTK6LACBOJ6GVMUPE";
-  data_hash3.FromBase32(encoded_hash_value3);
+  ustore::Hash data_hash3 = ustore::Hash::FromBase32(encoded_hash_value3);
 
   ustore::OrderedKey key3(15);
 

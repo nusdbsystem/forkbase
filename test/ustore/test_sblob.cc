@@ -71,7 +71,7 @@ class SBlobEnv : public ::testing::Test {
                              data_bytes_);
 
     const ustore::SBlob sblob_(data);
-    blob_hash_.CopyFrom(sblob_.hash());
+    blob_hash_ = sblob_.hash().Clone();
   }
 
   virtual void TearDown() {

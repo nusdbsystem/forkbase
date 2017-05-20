@@ -22,22 +22,25 @@ class Hash {
   // the hash used to represent null value
   static const Hash kNull;
 
-  // TODO(wangsh): consider if need make default hash value as kNull
-  // TODO(wangsh): but will make uninitialized hash and kNull indistinguishable
-  inline Hash() {}
-  // use existing hash
-  inline Hash(const Hash& hash) noexcept : value_(hash.value_) {}
-  // use existing byte array
-  explicit inline Hash(const byte_t* hash) noexcept : value_(hash) {}
-  inline ~Hash() {}
+  // decode hash from base32 format
+  // if do so, must allocate own value
+  static Hash FromBase32(const std::string& base32);
+  // compute hash from data
+  // if do so, must allocate own value
+  static Hash ComputeFrom(const byte_t* data, size_t len);
+  static Hash ComputeFrom(const std::string& data);
 
+  Hash() = default;
   // movable
-  inline Hash(Hash&& hash) noexcept : own_(std::move(hash.own_)) {
-    std::swap(value_, hash.value_);
-  }
+  Hash(Hash&& hash) = default;
+  // use existing hash
+  Hash(const Hash& hash) noexcept : value_(hash.value_) {}
+  // use existing byte array
+  explicit Hash(const byte_t* hash) noexcept : value_(hash) {}
+  ~Hash() = default;
 
   // copy and move assignment
-  inline Hash& operator=(Hash hash) noexcept {
+  Hash& operator=(Hash hash) noexcept {
     own_.swap(hash.own_);
     std::swap(value_, hash.value_);
     return *this;
@@ -72,17 +75,10 @@ class Hash {
 
   // check if the hash is empty
   inline bool empty() const { return value_ == nullptr; }
+  // check if hash owns the data
+  inline bool own() const { return own_.get() != nullptr; }
   // expose byte array to others
   inline const byte_t* value() const { return value_; }
-  // copy content from another
-  void CopyFrom(const Hash& hash);
-  // decode hash from base32 format
-  // if do so, must allocate own value
-  Hash& FromBase32(const std::string& base32);
-  // compute hash from data
-  // if do so, must allocate own value
-  Hash& Compute(const byte_t* data, size_t len);
-  Hash& Compute(const std::string& data);
   // encode to base32 format
   std::string ToBase32() const;
   // get a copy that contains own bytes

@@ -80,7 +80,7 @@ class Chunk : private Noncopyable {
   }
   // force to re-compute chunk hash
   inline const Hash& forceHash() const {
-    hash_.Compute(head_, numBytes());
+    hash_ = Hash::ComputeFrom(head_, numBytes());
     return hash_;
   }
 

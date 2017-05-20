@@ -35,8 +35,7 @@ TEST(Recovery, LogWorkerInit) {
 	EXPECT_EQ(worker.GetSyncType(), 1);
 	ustore::Slice branch_name(name_data);
 	ustore::Slice new_branch_name(new_name);
-	ustore::Hash version;
-	version.Compute(raw_str, 43);
+	ustore::Hash version = ustore::Hash::ComputeFrom(raw_str, 43);
 	EXPECT_EQ(worker.Update(branch_name, version), 1);
 	EXPECT_EQ(worker.Rename(branch_name, new_branch_name), 2);
 	EXPECT_EQ(worker.Remove(new_branch_name), 3);

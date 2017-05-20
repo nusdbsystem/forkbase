@@ -52,18 +52,14 @@ const std::map<char, byte_t> base32dict = {{'A', 0},
   {'7', 31}
 };
 
-void Hash::CopyFrom(const Hash& hash) {
-  Alloc();
-  std::memcpy(own_.get(), hash.value_, kByteLength);
-}
-
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
 // which is a multiplier of 5 bits, so no need of padding.
-Hash& Hash::FromBase32(const std::string& base32) {
+Hash Hash::FromBase32(const std::string& base32) {
   CHECK_EQ(kBase32Length, base32.length())
       << "length of input string is not 32 bytes";
-  Alloc();
+  Hash h;
+  h.Alloc();
   uint64_t tmp;
   size_t dest = 0;
   for (size_t i = 0; i < kBase32Length; i += 8) {
@@ -73,16 +69,19 @@ Hash& Hash::FromBase32(const std::string& base32) {
       tmp += base32dict.at(base32[i + j]);
     }
     for (size_t j = 0; j < 5; ++j) {
-      own_[dest + 4 - j] = byte_t(tmp & ((1 << 8) - 1));
+      h.own_[dest + 4 - j] = byte_t(tmp & ((1 << 8) - 1));
       tmp >>= 8;
     }
     dest += 5;
   }
-
-  return *this;
+  return h;
 }
 
 std::string Hash::ToBase32() const {
+  if (empty()) {
+    LOG(WARNING) << "Convert from an empty hash";
+    return std::string();
+  }
   std::string ret;
   uint64_t tmp;
   for (size_t i = 0; i < kByteLength; i += 5) {
@@ -111,17 +110,19 @@ void Hash::Alloc() {
 }
 
 #ifdef USE_SHA256
-Hash& Hash::Compute(const byte_t* data, size_t len) {
-  Alloc();
+Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
+  Hash h;
+  h.Alloc();
   byte_t fullhash[kBase32Length];
   picosha2::hash256(data, data + len, fullhash, fullhash + kBase32Length);
-  std::copy(fullhash, fullhash + kByteLength, own_.get());
-  return *this;
+  std::copy(fullhash, fullhash + kByteLength, h.own_.get());
+  return h;
+}
+
+Hash Hash::ComputeFrom(const std::string& data) {
+  return Hash::ComputeFrom(reinterpret_cast<const byte_t*>(data.c_str()),
+                           data.size());
 }
 #endif  // USE_SHA256
-
-inline Hash& Hash::Compute(const std::string& data) {
-  return Compute(reinterpret_cast<const byte_t*>(data.c_str()), data.size());
-}
 
 }  // namespace ustore

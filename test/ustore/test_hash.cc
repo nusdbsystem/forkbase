@@ -11,14 +11,12 @@ const char base32_encoded[] = "26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
 const char hash_hex_str[] = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e4";
 
 TEST(Hash, FromBase32) {
-  ustore::Hash h;
-  h.FromBase32(base32_encoded);
+  ustore::Hash h = ustore::Hash::FromBase32(base32_encoded);
   EXPECT_EQ(base32_encoded, h.ToBase32());
 }
 
 TEST(Hash, ComputeHash) {
-  ustore::Hash h;
-  h.Compute(raw_str, 43);
+  ustore::Hash h= ustore::Hash::ComputeFrom(raw_str, 43);
   EXPECT_EQ(h.ToBase32(), base32_encoded);
   std::ostringstream stm;
   for (size_t i = 0; i < ustore::Hash::kByteLength; ++i) {
@@ -43,10 +41,10 @@ TEST(Hash, Clone) {
 }
 
 TEST(Hash, Movable) {
-  ustore::Hash old;
-  old.FromBase32(base32_encoded);
+  ustore::Hash old = ustore::Hash::FromBase32(base32_encoded);
+  EXPECT_TRUE(old.own());
   ustore::Hash h = std::move(old);
-  EXPECT_TRUE(old.empty());
-  EXPECT_FALSE(h.empty());
+  EXPECT_FALSE(old.own());
+  EXPECT_TRUE(h.own());
   EXPECT_EQ(base32_encoded, h.ToBase32());
 }

@@ -43,7 +43,8 @@ void RemoteClientService::Init() {
   Hash h;
   while (fin >> worker_addr) {
     RangeInfo rif;
-    h.Compute((const byte_t*)worker_addr.data(), worker_addr.length());
+    h = Hash::ComputeFrom((const byte_t*)worker_addr.data(),
+                          worker_addr.length());
     rif.set_start(h.ToBase32());
     rif.set_address(worker_addr);
     workers.push_back(rif);

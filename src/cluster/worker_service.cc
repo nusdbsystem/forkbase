@@ -47,7 +47,8 @@ void WorkerService::Init() {
   while (fin >> worker_addr) {
     if (worker_addr != node_addr_) {
       RangeInfo rif;
-      h.Compute((const byte_t*)worker_addr.data(), worker_addr.length());
+      h = Hash::ComputeFrom((const byte_t*)worker_addr.data(),
+                            worker_addr.length());
       rif.set_start(h.ToBase32());
       rif.set_address(worker_addr);
       ranges_.push_back(rif);

@@ -45,8 +45,7 @@ const string values[] = {"where is the wisdome in knowledge",
 // i^th thread issue requests from i*(nthreads/nreqs) to
 // (i+1)*(nthreads/nreqs)
 void TestClientRequest(ClientDb* client, int idx, int len) {
-  Hash HEAD_VERSION;
-  HEAD_VERSION.Compute((const byte_t*)("head"), 4);
+  Hash HEAD_VERSION = Hash::ComputeFrom((const byte_t*)("head"), 4);
 
   // put
   Hash version;

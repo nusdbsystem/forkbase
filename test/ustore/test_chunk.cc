@@ -20,8 +20,7 @@ TEST(Chunk, CreateNewChunk) {
   // check content
   EXPECT_EQ(0, std::memcmp(raw_data, chunk.data(), sizeof(raw_data)));
   // check chunk hash
-  ustore::Hash h;
-  h.Compute(chunk.head(), chunk.numBytes());
+  ustore::Hash h = ustore::Hash::ComputeFrom(chunk.head(), chunk.numBytes());
   EXPECT_EQ(h.ToBase32(), chunk.hash().ToBase32());
 }
 
@@ -41,7 +40,6 @@ TEST(Chunk, LoadChunk) {
   // check content
   EXPECT_EQ(0, std::memcmp(raw_data, chunk.data(), sizeof(raw_data)));
   // check chunk hash
-  ustore::Hash h;
-  h.Compute(chunk.head(), chunk.numBytes());
+  ustore::Hash h = ustore::Hash::ComputeFrom(chunk.head(), chunk.numBytes());
   EXPECT_EQ(h.ToBase32(), chunk.hash().ToBase32());
 }

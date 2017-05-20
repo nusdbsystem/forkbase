@@ -7,8 +7,7 @@
 #include "node/cell_node.h"
 
 TEST(CellNode, NewCellNode) {
-  ustore::Hash h1;
-  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h1 = ustore::Hash::FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
   ustore::UType type = ustore::UType::kBlob;
   std::string cell_key("cell_key");
   ustore::Slice key(cell_key);
@@ -25,9 +24,9 @@ TEST(CellNode, NewCellNode) {
 }
 
 TEST(CellNode, SinglePreHash) {
-  ustore::Hash h1, h2, h3;
-  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h2.FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h1 = ustore::Hash::FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h2 = ustore::Hash::FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  ustore::Hash h3;
 
   ustore::UType type = ustore::UType::kBlob;
   std::string cell_key("cell_key");
@@ -45,10 +44,9 @@ TEST(CellNode, SinglePreHash) {
 }
 
 TEST(CellNode, DoublePreHash) {
-  ustore::Hash h1, h2, h3;
-  h1.FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h2.FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
-  h3.FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h1 = ustore::Hash::FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h2 = ustore::Hash::FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h3 = ustore::Hash::FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
 
   std::string cell_key("cell_key");
   ustore::Slice key(cell_key);
