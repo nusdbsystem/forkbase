@@ -29,12 +29,12 @@ TEST(VList, CreateNewVList) {
   VMeta put = db.Put(Slice(key_vlist), list, Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == put.code());
   EXPECT_TRUE(put.cell().empty());
-  EXPECT_FALSE(put.hash().empty());
+  EXPECT_FALSE(put.version().empty());
   // get list
   VMeta get = db.Get(Slice(key_vlist), Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == get.code());
   EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.hash().empty());
+  EXPECT_TRUE(get.version().empty());
   auto v = get.List();
   // check data
   auto it = v.Scan();
@@ -51,7 +51,7 @@ TEST(VList, UpdateExistingVList) {
   // create buffered new list
   ustore::VList list(slice_data);
   // put new list
-  Hash hash = db.Put(Slice(key_vlist), list, Slice(branch_vlist)).hash();
+  Hash hash = db.Put(Slice(key_vlist), list, Slice(branch_vlist)).version();
   // get list
   auto v = db.Get(Slice(key_vlist), Slice(branch_vlist)).List();
   // update list
@@ -61,12 +61,12 @@ TEST(VList, UpdateExistingVList) {
   VMeta update = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == update.code());
   EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.hash().empty());
+  EXPECT_FALSE(update.version().empty());
   // get updated list
   VMeta get = db.Get(Slice(key_vlist), Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == get.code());
   EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.hash().empty());
+  EXPECT_TRUE(get.version().empty());
   v = get.List();
   // check data
   auto it = v.Scan();
