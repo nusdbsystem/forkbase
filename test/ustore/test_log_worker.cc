@@ -5,6 +5,7 @@
 #include<sstream>
 #include<utility>
 #include"gtest/gtest.h"
+#include"recovery/log_record.h"
 #include"recovery/log_worker.h"
 #include"hash/hash.h"
 #include"utils/logging.h"
@@ -39,4 +40,20 @@ TEST(Recovery, LogWorkerInit) {
 	EXPECT_EQ(worker.Update(branch_name, version), 1);
 	EXPECT_EQ(worker.Rename(branch_name, new_branch_name), 2);
 	EXPECT_EQ(worker.Remove(new_branch_name), 3);
+}
+
+TEST(Recovery, LogWorkerRead) {
+	ustore::recovery::LogWorker worker(1);
+	bool ret = worker.Init(log_dir, log_file);
+	EXPECT_EQ(ret, true);
+	ustore::recovery::LogRecord record;
+	ustore::Hash version = ustore::Hash::ComputeFrom(raw_str, 43);
+	bool read_flag;
+	read_flag = worker.ReadOneLogRecord(record);
+	EXPECT_EQ(read_flag, true);
+	EXPECT_EQ(0, strcmp(reinterpret_cast<const char*>(record.key), name_data));
+	read_flag = worker.ReadOneLogRecord(record);
+	EXPECT_EQ(read_flag, true);
+	EXPECT_EQ(0, strcmp(reinterpret_cast<const char*>(record.key), name_data));
+	EXPECT_EQ(0, strcmp(reinterpret_cast<const char*>(record.value), new_name));
 }

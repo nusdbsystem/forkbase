@@ -21,14 +21,27 @@ LogRecord::LogRecord() {
   data_length = 0;
 }
 
-char* LogRecord::ToString() {
-  char* ret = new char[200];
+LogRecord::~LogRecord() {
+	//if(key != nullptr) delete[] key;
+	//if(value != nullptr) delete[] value;
+}
+
+std::string LogRecord::ToString() {
+  char ret[200];
+		int64_t reserve_space = 0;
   size_t pos = 0;
   memset(ret, 0, sizeof(ret));
+		/*
+			* Reserve space for data_length
+			* */
+		memcpy(ret+pos, &reserve_space,sizeof(int64_t));
+		pos = pos + sizeof(int64_t);
   memcpy(ret+pos, &checksum, sizeof(int64_t));
   pos = pos + sizeof(int64_t);
   memcpy(ret+pos, &version, sizeof(int16_t));
   pos = pos + sizeof(int16_t);
+		memcpy(ret+pos, &logcmd, sizeof(int16_t));
+		pos = pos + sizeof(int16_t);
   memcpy(ret+pos, &log_sequence_number, sizeof(int64_t));
   pos = pos + sizeof(int64_t);
   memcpy(ret+pos, &key_length, sizeof(int64_t));
@@ -44,7 +57,9 @@ char* LogRecord::ToString() {
     pos = pos + (size_t) value_length;
   }
   data_length = (int64_t) pos;
-  return ret;
+		memcpy(ret, &data_length, sizeof(int64_t));  // fill the data_length
+		std::string ret_str(ret, pos); 
+  return ret_str;
 }
 
 int64_t LogRecord::GetLength() {
@@ -52,7 +67,7 @@ int64_t LogRecord::GetLength() {
     return data_length;
   } else {
     int64_t ret = 0;
-    size_t a1 = sizeof(int64_t)*3 + sizeof(int16_t)*2;
+    size_t a1 = sizeof(int64_t)*4 + sizeof(int16_t)*3;
     ret = (int64_t)a1;
     if (key != nullptr) {
       ret = ret + key_length;

@@ -3,6 +3,8 @@
 #ifndef USTORE_RECOVERY_LOG_WORKER_H_
 #define USTORE_RECOVERY_LOG_WORKER_H_
 
+#include"recovery/log_record.h"
+
 #include <condition_variable>
 #include <mutex>
 
@@ -18,7 +20,7 @@ namespace recovery {
  * */
 class LogWorker : public LogThread {
  public:
-  LogWorker();
+  LogWorker(int stage = 0);
   ~LogWorker();
   bool Init(const char* log_dir, const char* log_filename);
 
@@ -56,7 +58,7 @@ class LogWorker : public LogThread {
    * @brief: append log data in the log buffer, the log data should contain meta
    * infomation, which is also useful for the recovery.
    * */
-  bool WriteLog(char* data, uint64_t data_length);
+  bool WriteLog(const char* data, uint64_t data_length);
   /*
    * @brief: flush the data in the log buffer to disk and reset related
    * variables
@@ -83,33 +85,40 @@ class LogWorker : public LogThread {
    * */
   // TODO(yaochang): change Slice -> const Slice&, Hash -> const Hash&
   // TODO(yaochang): could remove Slice*, Hash* methods
-  int64_t Update(Slice branch_name, Hash new_version);
-  int64_t Update(Slice* branch_name, Hash* new_version);
+  int64_t Update(const Slice& branch_name, const Hash& new_version);
+  //int64_t Update(Slice* branch_name, Hash* new_version);
   /*
    * @brief: Rename the branch name to a new one
    * @return: return the log sequence number for the rename operation
    * */
-  int64_t Rename(Slice branch_name, Slice new_branch_name);
-  int64_t Rename(Slice* branch_name, Slice* new_branch_name);
+  int64_t Rename(const Slice& branch_name, const Slice& new_branch_name);
+  //int64_t Rename(Slice* branch_name, Slice* new_branch_name);
   /*
    * @brief: Remove the branch from the branch head table
    * @return: return the log sequence number for the remove operation
    * */
-  int64_t Remove(Slice branch_name);
-  int64_t Remove(Slice* branch_name);
+  int64_t Remove(const Slice& branch_name);
+  //int64_t Remove(Slice* branch_name);
+
+		/*
+			* @brief: Read one log record from log file
+			* @return: return one log record.
+			* */
+		bool ReadOneLogRecord(LogRecord& record);
 
  private:
+		int stage_; 	// 0 -> normal execution, 1 -> restart/recovery 
   int64_t timeout_;       // timeout to flush the log to disk
   // TODO(yaochang): why not directly use instance instead of a pointer?
+		// operator= on instance is disabled
   std::condition_variable* flush_cv_;  // wait_for timeout or the buffer is full
   std::mutex flush_mutex_;
   int64_t buffer_size_;    // the size of the log buffer
   int64_t buffer_indice_;  // current position
-  // TODO(yaochang): why not directly use instance instead of a pointer?
-  std::mutex* buffer_lock_;
+  std::mutex buffer_lock_;
   char* buffer_;  // the log data buffer
-  char* log_dir_;
-  char* log_filename_;
+  const char* log_dir_;
+  const char* log_filename_;
   int fd_;
   /*
    * log synchronization type may affect the system performance

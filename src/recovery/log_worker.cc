@@ -16,12 +16,12 @@
 namespace ustore {
 namespace recovery {
 
-LogWorker::LogWorker() {
+LogWorker::LogWorker(int stage) {
   // TODO(yaochang): for such configuration, should have a static variable,
   //  rather than hard code use magic numbers
+		stage_ = stage;
   timeout_ = 5000;  // default value: 5 seconds
-  flush_cv_ = new std::condition_variable();
-  buffer_lock_ = new std::mutex();
+		flush_cv_ = new std::condition_variable();
   buffer_size_ = 4 * 1024 * 1024;  // the default value is 4MB
   buffer_indice_ = 0;
   buffer_ = new char[buffer_size_];
@@ -33,8 +33,6 @@ LogWorker::LogWorker() {
 }
 
 LogWorker::~LogWorker() {
-  delete flush_cv_;
-  delete buffer_lock_;
   delete[] buffer_;
 }
 
@@ -49,7 +47,11 @@ bool LogWorker::Init(const char* log_dir, const char* log_filename) {
   written_char = written_char + 1;
   snprintf(absoluate_path + written_char, sizeof(absoluate_path), "%s",
            log_filename_);
-  fd_ = open(absoluate_path, O_RDWR|O_CREAT, 00666);
+		if(stage_ == 0) { 
+  	fd_ = open(absoluate_path, O_RDWR|O_CREAT, 00666);
+		}else{
+			fd_ = open(absoluate_path, O_RDWR, 00666);
+		}
   if (fd_ < 0) {
     LOG(INFO) << "Log File Path: " << absoluate_path;
     LOG(FATAL) << "UStore::Recovery::LogWorker Init: open log file fails!";
@@ -111,7 +113,7 @@ bool LogWorker::SetSyncType(int type) {
   return true;
 }
 
-bool LogWorker::WriteLog(char* data, uint64_t data_length) {
+bool LogWorker::WriteLog(const char* data, uint64_t data_length) {
   // buffer_lock_->lock();
   int ret = -1;
   if (log_sync_type_ == 1) {
@@ -156,9 +158,9 @@ void* LogWorker::Run() {
   while (1) {
     if (flush_cv_->wait_for(lck, std::chrono::milliseconds(timeout_))
       == std::cv_status::timeout) {
-       buffer_lock_->lock();
+       buffer_lock_.lock();
        Flush();
-       buffer_lock_->unlock();
+       buffer_lock_.unlock();
     }
   }
   return nullptr;
@@ -166,133 +168,116 @@ void* LogWorker::Run() {
 
 // TODO(yaochang): all update/rename/remove have almost same impl.
 //  Should create a function to avoid code redundency
-int64_t LogWorker::Update(Slice branch_name, Hash new_version) {
-  // TODO(yaochang): memory leak here!
-  LogRecord* record = new LogRecord();
-  record->key_length = (int64_t) branch_name.len();
-  record->value_length = (int64_t) Hash::kByteLength;
-  // TODO(yaochang): why not change to const char*, so can avoid const cast
-  record->key = branch_name.data();
-  record->value = new_version.value();
-  record->logcmd = kUpdate;
-  buffer_lock_->lock();
+int64_t LogWorker::Update(const Slice& branch_name, const Hash& new_version) {
+  LogRecord record;
+  record.key_length = (int64_t) branch_name.len();
+  record.value_length = (int64_t) Hash::kByteLength;
+  record.key = branch_name.data();
+  record.value = new_version.value();
+  record.logcmd = (int16_t)LogCommand::kUpdate;
+  buffer_lock_.lock();
   int64_t ret_lsn = log_sequence_number_ + 1;
-  record->log_sequence_number = ret_lsn;
-  record->ComputeChecksum();
-  char* log_data = record->ToString();
-  int64_t log_data_length = record->GetLength();
-  bool write_ret = WriteLog(log_data, log_data_length);
+  record.log_sequence_number = ret_lsn;
+  record.ComputeChecksum();
+		std::string log_data = record.ToString();
+  int64_t log_data_length = record.GetLength();
+  bool write_ret = WriteLog(log_data.c_str(), log_data_length);
   if (write_ret == false) ret_lsn = -1;
   log_sequence_number_ = ret_lsn;
-  buffer_lock_->unlock();
+  buffer_lock_.unlock();
   return ret_lsn;
 }
 
-int64_t LogWorker::Update(Slice* branch_name, Hash* new_version) {
-  LogRecord* record = new LogRecord();
-  record->key_length = (int64_t) branch_name->len();
-  record->value_length = (int16_t) Hash::kByteLength;
-  record->key = branch_name->data();
-  record->value = new_version->value();
-  record->logcmd = kUpdate;
-  buffer_lock_->lock();  // enter the critical section
+int64_t LogWorker::Rename(const Slice& branch_name, const Slice& new_branch_name) {
+  LogRecord record;
+  record.key_length = (int64_t) branch_name.len();
+  record.value_length = (int16_t) new_branch_name.len();
+  record.key = branch_name.data();
+  record.value = new_branch_name.data();
+  record.logcmd = (int16_t)LogCommand::kRename;
+  buffer_lock_.lock();
   int64_t ret_lsn = log_sequence_number_ + 1;
-  record->log_sequence_number = ret_lsn;
-  record->ComputeChecksum();
-  char* log_data = record->ToString();
-  int64_t log_data_length = record->GetLength();
-  bool write_ret = WriteLog(log_data, log_data_length);
-  if (write_ret == false) ret_lsn = -1;
-  log_sequence_number_ = ret_lsn;
-  buffer_lock_->unlock();
-  return ret_lsn;
-}
-
-int64_t LogWorker::Rename(Slice branch_name, Slice new_branch_name) {
-  LogRecord* record = new LogRecord();
-  record->key_length = (int64_t) branch_name.len();
-  record->value_length = (int16_t) new_branch_name.len();
-  record->key = branch_name.data();
-  record->value = new_branch_name.data();
-  record->logcmd = kRename;
-  buffer_lock_->lock();
-  int64_t ret_lsn = log_sequence_number_ + 1;
-  record->log_sequence_number = ret_lsn;
-  record->ComputeChecksum();
-  char* log_data = record->ToString();
-  int64_t log_data_length = record->GetLength();
-  bool write_ret = WriteLog(log_data, log_data_length);
+  record.log_sequence_number = ret_lsn;
+  record.ComputeChecksum();
+		std::string log_data = record.ToString();
+  int64_t log_data_length = record.GetLength();
+  bool write_ret = WriteLog(log_data.c_str(), log_data_length);
   if(write_ret == false) {
    ret_lsn = -1;
   }
   log_sequence_number_ = ret_lsn;
-  buffer_lock_->unlock();
+  buffer_lock_.unlock();
   return ret_lsn;
 }
 
-int64_t LogWorker::Rename(Slice* branch_name, Slice* new_branch_name) {
-  LogRecord* record = new LogRecord();
-  record->key_length = (int64_t) branch_name->len();
-  record->value_length = (int16_t) new_branch_name->len();
-  record->key = branch_name->data();
-  record->value = new_branch_name->data();
-  record->logcmd = kRename;
-  buffer_lock_->lock();
+int64_t LogWorker::Remove(const Slice& branch_name) {
+  LogRecord record;
+  record.key_length = (int64_t) branch_name.len();
+  record.value_length = 0;
+  record.key = branch_name.data();
+  record.value = nullptr;
+  record.logcmd = (int16_t)LogCommand::kRemove;
+  buffer_lock_.lock();
   int64_t ret_lsn = log_sequence_number_ + 1;
-  record->log_sequence_number = ret_lsn;
-  record->ComputeChecksum();
-  char* log_data = record->ToString();
-  int64_t log_data_length = record->GetLength();
-  bool write_ret = WriteLog(log_data, log_data_length);
+  record.ComputeChecksum();
+		std::string log_data = record.ToString();
+  int64_t log_data_length = record.GetLength();
+  bool write_ret = WriteLog(log_data.c_str(), log_data_length);
   if(write_ret == false) {
    ret_lsn = -1;
   }
-  buffer_lock_->unlock();
-  log_sequence_number_ = ret_lsn;
+		log_sequence_number_ = ret_lsn;
+  buffer_lock_.unlock();
   return ret_lsn;
 }
 
-int64_t LogWorker::Remove(Slice branch_name) {
-  LogRecord* record = new LogRecord();
-  record->key_length = (int64_t) branch_name.len();
-  record->value_length = 0;
-  record->key = branch_name.data();
-  record->value = nullptr;
-  record->logcmd = kRemove;
-  buffer_lock_->lock();
-  int64_t ret_lsn = log_sequence_number_ + 1;
-  record->ComputeChecksum();
-  char* log_data = record->ToString();
-  int64_t log_data_length = record->GetLength();
-  bool write_ret = WriteLog(log_data, log_data_length);
-  if(write_ret == false) {
-   ret_lsn = -1;
-  }
-  buffer_lock_->unlock();
-  log_sequence_number_ = ret_lsn;
-  return ret_lsn;
+bool LogWorker::ReadOneLogRecord(LogRecord& record) {
+		int64_t data_length = 0;
+		int read_ret = 0;
+		read_ret = read(fd_, &data_length, sizeof(int64_t));
+		if(read_ret == -1) {
+			LOG(FATAL) << "Read log length fails";
+			return false;	
+		}
+		char log_data[200]; 
+		read_ret = read(fd_, log_data, (size_t)data_length - sizeof(int64_t));
+		if(read_ret == -1) {
+			LOG(FATAL) << "Read log data fails";
+			return false;
+		}
+		record.data_length = data_length;
+		size_t pos = 0;
+		memcpy(&record.checksum, log_data + pos, sizeof(int64_t));
+		pos = pos + sizeof(int64_t);
+		memcpy(&record.version, log_data + pos, sizeof(int16_t));
+		pos = pos + sizeof(int16_t);
+		memcpy(&record.logcmd, log_data + pos, sizeof(int16_t));
+		pos = pos + sizeof(int16_t);
+		memcpy(&record.log_sequence_number, log_data + pos, sizeof(int64_t));
+		pos = pos + sizeof(int64_t);
+		memcpy(&record.key_length, log_data + pos, sizeof(int64_t));
+		pos = pos + sizeof(int64_t);
+		memcpy(&record.value_length, log_data + pos, sizeof(int16_t));
+		pos = pos + sizeof(int16_t);
+		byte_t* key = new byte_t[record.key_length]; //handled by delete
+		byte_t* value = new byte_t[record.value_length];
+		if(record.key_length != 0) {
+			//std::string key(log_data+pos, record.key_length);
+			memcpy(key, log_data + pos, record.key_length);
+			pos = pos + (size_t) record.key_length;
+			//record.key = reinterpret_cast<const byte_t*>(key.c_str());
+			record.key = key;
+		}
+		if(record.value_length != 0) {
+			//std::string value(log_data+pos, record.value_length);
+			memcpy(value, log_data + pos, record.value_length);
+			pos = pos + (size_t) record.value_length;
+			//record.value = reinterpret_cast<const byte_t*>(value.c_str());
+			record.value = value;
+		}
+		return true;
 }
 
-int64_t LogWorker::Remove(Slice* branch_name) {
-  LogRecord* record = new LogRecord();
-  record->key_length = (int64_t) branch_name->len();
-  record->value_length = 0;
-  record->key = branch_name->data();
-  record->value = nullptr;
-  record->logcmd = kRemove;
-  buffer_lock_->lock();
-  int64_t ret_lsn = log_sequence_number_ + 1;
-  record->ComputeChecksum();
-  char* log_data = record->ToString();
-  int64_t log_data_length = record->GetLength();
-  bool write_ret = WriteLog(log_data, log_data_length);
-  if(write_ret == false) {
-   ret_lsn = -1;
-  }
-  log_sequence_number_ = ret_lsn;
-  buffer_lock_->unlock();
-  return ret_lsn;
-}
 
 }  // end of namespace recovery
 }  // end of namespace ustore
