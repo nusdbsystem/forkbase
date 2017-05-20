@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include "hash/murmurhash.h"
+#include "types/type.h"
 
 namespace ustore {
 
@@ -18,25 +19,22 @@ namespace ustore {
  */
 class Slice {
  public:
-  Slice(const Slice& slice) : data_(slice.data_), len_(slice.len_) {}
+  Slice() = default;
+  Slice(const Slice& slice) = default;
+  Slice(const byte_t* slice, size_t len) : data_(slice), len_(len) {}
+  // share data from c string
+  Slice(const char* slice, size_t len)
+    : Slice(reinterpret_cast<const byte_t*>(slice), len) {}
+  explicit Slice(const char* slice) : Slice(slice, std::strlen(slice)) {}
   // share data from c++ string
   explicit Slice(const std::string& slice)
-    : data_(slice.data()), len_(slice.length()) {}
+    : Slice(slice.data(), slice.length()) {}
   // delete constructor that takes in rvalue std::string
   //   to avoid the memory space of parameter is released unawares.
   explicit Slice(std::string&& slice) = delete;
-  // share data from c string
-  explicit Slice(const char* slice) : data_(slice) {
-    len_ = std::strlen(slice);
-  }
-  Slice(const char* slice, size_t len) : data_(slice), len_(len) {}
-  ~Slice() {}
+  ~Slice() = default;
 
-  inline Slice& operator=(const Slice& slice) {
-    data_ = slice.data_;
-    len_ = slice.len_;
-    return *this;
-  }
+  Slice& operator=(const Slice& other) = default;
 
   inline bool operator<(const Slice& slice) const {
     size_t min_len = std::min(len_, slice.len_);
@@ -71,10 +69,10 @@ class Slice {
 
   inline bool empty() const { return len_ == 0; }
   inline size_t len() const { return len_; }
-  inline const char* data() const { return data_; }
+  inline const byte_t* data() const { return data_; }
 
-  inline const std::string ToString() const {
-    return std::string(data_, len_);
+  inline std::string ToString() const {
+    return std::string(reinterpret_cast<const char*>(data_), len_);
   }
 
   friend inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
@@ -83,7 +81,7 @@ class Slice {
   }
 
  private:
-  const char* data_ = nullptr;
+  const byte_t* data_ = nullptr;
   size_t len_ = 0;
 };
 
@@ -96,7 +94,7 @@ class PSlice : public Slice {
   static PSlice Persist(const Slice& slice) {
     PSlice ps(slice);
     // create own string and point to it
-    ps.value_ = std::string(slice.data(), slice.len());
+    ps.value_ = slice.ToString();
     ps.Slice::operator=(Slice(ps.value_));
     return ps;
   }

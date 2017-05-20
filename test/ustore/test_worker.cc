@@ -53,7 +53,7 @@ const ValueVec val_str(ToValues<Slice>([](const Slice& s) {
 }));
 
 const ValueVec val_blob(ToValues<Blob>([](const Slice& s) {
-  return Blob(reinterpret_cast<const byte_t*>(s.data()), s.len());
+  return Blob(s.data(), s.len());
 }));
 
 HashVec ver;

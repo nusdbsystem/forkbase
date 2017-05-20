@@ -247,9 +247,9 @@ ErrorCode ClientDb::GetValueResponse(Value* value) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
   const std::string &tmp = response->get_response_payload().value();
-  char* buf = new char[tmp.length()];
+  byte_t* buf = new byte_t[tmp.length()];
   std::memcpy(buf, tmp.data(), tmp.length());
-  *value = Value(Blob(reinterpret_cast<const byte_t *>(buf), tmp.length()));
+  *value = Value(Blob(buf, tmp.length()));
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
   return err;

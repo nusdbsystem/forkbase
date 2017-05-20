@@ -15,8 +15,7 @@ SBlob::SBlob(const Hash& root_hash) noexcept :
 SBlob::SBlob(const Slice& data) noexcept :
     UBlob(std::make_shared<ServerChunkLoader>()) {
   NodeBuilder nb(BlobChunker::Instance(), true);
-  FixedSegment seg(reinterpret_cast<const byte_t*>(data.data()),
-                   data.len(), 1);
+  FixedSegment seg(data.data(), data.len(), 1);
   nb.SpliceElements(0, &seg);
   Hash root_hash(nb.Commit());
   SetNodeForHash(root_hash);

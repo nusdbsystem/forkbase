@@ -82,8 +82,7 @@ class UIterator : private Noncopyable {
 
   // Override this method to return d
   virtual Slice RealValue() const {
-    return Slice(reinterpret_cast<const char*>(data()),
-                 numBytes());
+    return Slice(data(), numBytes());
   }
 
  protected:
@@ -192,7 +191,7 @@ class DuallyDiffIterator {
 
   inline Slice t_key(std::false_type) const {
     LOG(FATAL) << "Not supported for key.";
-    return Slice(nullptr, 0);
+    return Slice();
   }
 
   inline uint64_t t_index(std::true_type) const {
@@ -227,7 +226,7 @@ Slice DuallyDiffIterator<iterator_trait>::lhs_value() const {
     return lhs_diff_it_->value();
   } else {
     // return empty slice
-    return Slice(nullptr, 0);
+    return Slice();
   }
 }
 
@@ -237,7 +236,7 @@ Slice DuallyDiffIterator<iterator_trait>::rhs_value() const {
     return rhs_diff_it_->value();
   } else {
     // return empty slice
-    return Slice(nullptr, 0);
+    return Slice();
   }
 }
 

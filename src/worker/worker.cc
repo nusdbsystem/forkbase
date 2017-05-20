@@ -79,8 +79,8 @@ ErrorCode Worker::ReadBlob(const UCell& ucell, Value* val) const {
 ErrorCode Worker::ReadString(const UCell& ucell, Value* val) const {
   SString sstring(ucell.dataHash());
   size_t n_bytes = sstring.len();
-  char* buffer = new char[n_bytes];  // Note: potential memory leak
-  n_bytes = sstring.data(reinterpret_cast<byte_t*>(buffer));
+  byte_t* buffer = new byte_t[n_bytes];  // Note: potential memory leak
+  n_bytes = sstring.data(buffer);
   DCHECK_EQ(sstring.len(), n_bytes);
   *val = Value(Slice(buffer, n_bytes));
   return ErrorCode::kOK;
@@ -115,10 +115,8 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
                             const Hash& prev_ver1, const Hash& prev_ver2,
                             Hash* ver) {
   Blob blob = val.blob();
-
   // TO change later
-  const Slice slice(reinterpret_cast<const char*>(blob.data()),
-                    blob.size());
+  Slice slice(blob.data(), blob.size());
   const SBlob sblob(slice);
   if (sblob.empty()) {
     LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
@@ -176,7 +174,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
                             Hash* ver) {
   DCHECK(val.type == UType::kBlob);
   if (val.vals.size() != 1) return ErrorCode::kInvalidValue2;
-  const Slice slice = val.vals.front();
+  Slice slice = val.vals.front();
   if (val.base == Hash::kNull) {  // new insertion
     SBlob sblob(slice);
     if (sblob.empty()) {
@@ -187,8 +185,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
                        ver);
   } else {  // update
     SBlob sblob(val.base);
-    auto data = reinterpret_cast<const byte_t*>(slice.data());
-    auto data_hash = sblob.Splice(val.pos, val.dels, data, slice.len());
+    auto data_hash = sblob.Splice(val.pos, val.dels, slice.data(), slice.len());
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySBlob;
     return CreateUCell(key, UType::kBlob, data_hash, prev_ver1, prev_ver2,
                        ver);

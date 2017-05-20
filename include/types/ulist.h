@@ -63,7 +63,7 @@ class UList : public ChunkableType {
 
     inline Slice key() const override {
       LOG(WARNING) << "Key not supported for list";
-      return Slice(nullptr, 0);
+      return Slice();
     }
 
    private:

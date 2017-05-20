@@ -23,9 +23,7 @@ SMap::SMap(const std::vector<Slice>& keys,
   std::vector<KVItem> kv_items;
 
   for (size_t i : Utils::SortIndexes<Slice>(keys)) {
-    KVItem item = {reinterpret_cast<const byte_t*>(keys[i].data()),
-                   reinterpret_cast<const byte_t*>(vals[i].data()),
-                   keys[i].len(),
+    KVItem item = {keys[i].data(), vals[i].data(), keys[i].len(),
                    vals[i].len()};
 
     kv_items.push_back(item);
@@ -50,9 +48,7 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
 
   // If the item with identical key exists,
   //   remove it to replace
-  KVItem kv_item = {reinterpret_cast<const byte_t*>(key.data()),
-                    reinterpret_cast<const byte_t*>(val.data()),
-                    key.len(), val.len()};
+  KVItem kv_item = {key.data(), val.data(), key.len(), val.len()};
 
   std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
   nb->SpliceElements(num_splice, seg.get());

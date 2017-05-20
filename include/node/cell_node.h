@@ -57,8 +57,7 @@ class CellNode {
   }
 
   inline Slice key() const {
-    return Slice(reinterpret_cast<const char*>(
-          chunk_.data() + kKeyOffset(merged())), keyLength());
+    return Slice(chunk_.data() + kKeyOffset(merged()), keyLength());
   }
 
   // hash of this node

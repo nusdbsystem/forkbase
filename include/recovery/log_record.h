@@ -4,6 +4,7 @@
 #define USTORE_RECOVERY_LOG_RECORD_H_
 
 #include <string>
+#include "types/type.h"
 
 namespace ustore {
 namespace recovery {
@@ -34,8 +35,8 @@ struct LogRecord {
   int64_t key_length;
   int16_t value_length;
   // TODO(yaochang): key and value cannot be const char* ?
-  char* key;
-  char* value;
+  const byte_t* key;
+  const byte_t* value;
   int64_t data_length;
 };
 

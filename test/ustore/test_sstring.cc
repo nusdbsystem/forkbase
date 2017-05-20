@@ -63,8 +63,7 @@ TEST(SString, Load) {
 }
 
 TEST(SString, Create) {
-  const ustore::Slice slice(reinterpret_cast<const char*>(raw_data),
-                            sizeof(raw_data));
+  ustore::Slice slice(raw_data, sizeof(raw_data));
 
   ustore::SString sstring(slice);
 

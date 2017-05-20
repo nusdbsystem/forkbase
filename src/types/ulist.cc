@@ -33,7 +33,7 @@ Slice UList::Get(uint64_t idx) const {
                     idx, chunk_loader_.get()));
 
   if (cursor == nullptr || cursor->isEnd()) {
-    return Slice(nullptr, 0);
+    return Slice();
   } else {
     return ListNode::Decode(cursor->current());
   }

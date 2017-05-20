@@ -31,12 +31,10 @@ Slice UMap::Get(const Slice& key) const {
 
   if (!cursor->isEnd() && orderedkey == cursor->currentKey()) {
     size_t value_size;
-    auto value_data =
-        reinterpret_cast<const char*>(MapNode::value(cursor->current(),
-                                                     &value_size));
+    auto value_data = MapNode::value(cursor->current(), &value_size);
     return Slice(value_data, value_size);
   } else {
-    return Slice(nullptr, 0);
+    return Slice();
   }
 }
 

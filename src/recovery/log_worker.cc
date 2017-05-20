@@ -167,13 +167,13 @@ void* LogWorker::Run() {
 // TODO(yaochang): all update/rename/remove have almost same impl.
 //  Should create a function to avoid code redundency
 int64_t LogWorker::Update(Slice branch_name, Hash new_version) {
+  // TODO(yaochang): memory leak here!
   LogRecord* record = new LogRecord();
   record->key_length = (int64_t) branch_name.len();
   record->value_length = (int64_t) Hash::kByteLength;
   // TODO(yaochang): why not change to const char*, so can avoid const cast
-  record->key = const_cast<char*>(branch_name.data());
-  record->value = const_cast<char*>(reinterpret_cast<const char*>(
-                  new_version.value()));
+  record->key = branch_name.data();
+  record->value = new_version.value();
   record->logcmd = kUpdate;
   buffer_lock_->lock();
   int64_t ret_lsn = log_sequence_number_ + 1;
@@ -192,9 +192,8 @@ int64_t LogWorker::Update(Slice* branch_name, Hash* new_version) {
   LogRecord* record = new LogRecord();
   record->key_length = (int64_t) branch_name->len();
   record->value_length = (int16_t) Hash::kByteLength;
-  record->key = const_cast<char*>(branch_name->data());
-  record->value = const_cast<char*>(reinterpret_cast<const char*>(
-                  new_version->value()));
+  record->key = branch_name->data();
+  record->value = new_version->value();
   record->logcmd = kUpdate;
   buffer_lock_->lock();  // enter the critical section
   int64_t ret_lsn = log_sequence_number_ + 1;
@@ -213,8 +212,8 @@ int64_t LogWorker::Rename(Slice branch_name, Slice new_branch_name) {
   LogRecord* record = new LogRecord();
   record->key_length = (int64_t) branch_name.len();
   record->value_length = (int16_t) new_branch_name.len();
-  record->key = const_cast<char*>(branch_name.data());
-  record->value = const_cast<char*>(new_branch_name.data());
+  record->key = branch_name.data();
+  record->value = new_branch_name.data();
   record->logcmd = kRename;
   buffer_lock_->lock();
   int64_t ret_lsn = log_sequence_number_ + 1;
@@ -235,8 +234,8 @@ int64_t LogWorker::Rename(Slice* branch_name, Slice* new_branch_name) {
   LogRecord* record = new LogRecord();
   record->key_length = (int64_t) branch_name->len();
   record->value_length = (int16_t) new_branch_name->len();
-  record->key = const_cast<char*>(branch_name->data());
-  record->value = const_cast<char*>(new_branch_name->data());
+  record->key = branch_name->data();
+  record->value = new_branch_name->data();
   record->logcmd = kRename;
   buffer_lock_->lock();
   int64_t ret_lsn = log_sequence_number_ + 1;
@@ -257,7 +256,7 @@ int64_t LogWorker::Remove(Slice branch_name) {
   LogRecord* record = new LogRecord();
   record->key_length = (int64_t) branch_name.len();
   record->value_length = 0;
-  record->key = const_cast<char*>(branch_name.data());
+  record->key = branch_name.data();
   record->value = nullptr;
   record->logcmd = kRemove;
   buffer_lock_->lock();
@@ -278,7 +277,7 @@ int64_t LogWorker::Remove(Slice* branch_name) {
   LogRecord* record = new LogRecord();
   record->key_length = (int64_t) branch_name->len();
   record->value_length = 0;
-  record->key = const_cast<char*>(branch_name->data());
+  record->key = branch_name->data();
   record->value = nullptr;
   record->logcmd = kRemove;
   buffer_lock_->lock();

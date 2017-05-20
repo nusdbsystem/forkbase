@@ -21,9 +21,7 @@ class OrderedKey {
  */
  public:
   inline static OrderedKey FromSlice(const Slice& key) {
-    return OrderedKey(false,
-                      reinterpret_cast<const byte_t*>(key.data()),
-                      key.len());
+    return OrderedKey(false, key.data(), key.len());
   }
   // Set an integer value for key
   // own set to false
@@ -57,8 +55,7 @@ class OrderedKey {
 
   inline Slice ToSlice() const {
     CHECK(!by_value_);
-    return Slice(reinterpret_cast<const char*>(data_),
-                 num_bytes_);
+    return Slice(data_, num_bytes_);
   }
 
  private:

@@ -67,9 +67,7 @@ class SBlobEnv : public ::testing::Test {
     append_data_ = new ustore::byte_t[append_data_bytes_];
     std::memcpy(append_data_, raw_data_append, append_data_bytes_);
 
-    const ustore::Slice data(reinterpret_cast<const char*>(data_),
-                             data_bytes_);
-
+    ustore::Slice data(data_, data_bytes_);
     const ustore::SBlob sblob_(data);
     blob_hash_ = sblob_.hash().Clone();
   }

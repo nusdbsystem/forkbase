@@ -84,7 +84,7 @@ TEST(LSTStore, Get) {
   for (int i = 0; i < NUMBER; ++i) {
     // load from stroage
     const ustore::Chunk c =
-      lstStore->Get(ustore::Hash(reinterpret_cast<ustore::byte_t*>(hash[i])));
+      lstStore->Get(ustore::Hash(hash[i]));
       EXPECT_EQ(c.type(), ustore::ChunkType::kBlob);
       EXPECT_EQ(c.numBytes(), LEN + ::ustore::Chunk::kMetaLength);
       EXPECT_EQ(c.capacity(), LEN);
