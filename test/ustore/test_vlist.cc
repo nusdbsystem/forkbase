@@ -39,8 +39,8 @@ TEST(VList, CreateNewVList) {
   // check data
   auto it = v.Scan();
   for (const auto& s : slice_data) {
-    EXPECT_EQ(s, it->value());
-    it->next();
+    EXPECT_EQ(s, it.value());
+    it.next();
   }
 }
 
@@ -71,7 +71,7 @@ TEST(VList, UpdateExistingVList) {
   // check data
   auto it = v.Scan();
   for (const auto& s : slice_data) {
-    EXPECT_EQ(s, it->value());
-    it->next();
+    EXPECT_EQ(s, it.value());
+    it.next();
   }
 }

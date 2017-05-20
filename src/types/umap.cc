@@ -9,19 +9,18 @@
 
 namespace ustore {
 
-std::unique_ptr<DuallyDiffKeyIterator> UMap::DuallyDiff(
+DuallyDiffKeyIterator UMap::DuallyDiff(
     const UMap& lhs, const UMap& rhs) {
-  std::unique_ptr<UIterator> lhs_diff_it = lhs.Diff(rhs);
-  std::unique_ptr<UIterator> rhs_diff_it = rhs.Diff(lhs);
+  std::unique_ptr<UIterator> lhs_diff_it(new UMap::Iterator(lhs.Diff(rhs)));
+  std::unique_ptr<UIterator> rhs_diff_it(new UMap::Iterator(rhs.Diff(lhs)));
 
   lhs_diff_it->previous();
   rhs_diff_it->previous();
 
   DCHECK(lhs_diff_it->head() && rhs_diff_it->head());
 
-  return std::unique_ptr<DuallyDiffKeyIterator>(
-      new DuallyDiffKeyIterator(std::move(lhs_diff_it),
-                                std::move(rhs_diff_it)));
+  return DuallyDiffKeyIterator(std::move(lhs_diff_it),
+                               std::move(rhs_diff_it));
 }
 
 Slice UMap::Get(const Slice& key) const {
@@ -38,24 +37,21 @@ Slice UMap::Get(const Slice& key) const {
   }
 }
 
-std::unique_ptr<UIterator> UMap::Scan() const {
+UMap::Iterator UMap::Scan() const {
   IndexRange all_range{0, numElements()};
-  return std::unique_ptr<UIterator>(
-      new MapIterator(hash(), {all_range}, chunk_loader_.get()));
+  return UMap::Iterator(hash(), {all_range}, chunk_loader_.get());
 }
 
-std::unique_ptr<UIterator> UMap::Diff(const UMap& rhs) const {
+UMap::Iterator UMap::Diff(const UMap& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
   KeyComparator cmptor(rhs.hash(), chunk_loader_);
-  return std::unique_ptr<UIterator>(
-      new MapIterator(hash(), cmptor.Diff(hash()), chunk_loader_.get()));
+  return UMap::Iterator(hash(), cmptor.Diff(hash()), chunk_loader_.get());
 }
 
-std::unique_ptr<UIterator> UMap::Intersect(const UMap& rhs) const {
+UMap::Iterator UMap::Intersect(const UMap& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
   KeyComparator cmptor(rhs.hash(), chunk_loader_);
-  return std::unique_ptr<UIterator>(
-      new MapIterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get()));
+  return UMap::Iterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get());
 }
 
 bool UMap::SetNodeForHash(const Hash& root_hash) {

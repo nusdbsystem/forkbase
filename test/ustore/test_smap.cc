@@ -64,8 +64,8 @@ TEST(SMap, Small) {
 
   // Test on Iterator
   auto it = smap.Scan();
-  CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3}, it.get());
-  EXPECT_TRUE(it->end());
+  CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3}, &it);
+  EXPECT_TRUE(it.end());
 
   // Set with an non-existent key
   ustore::SMap new_smap1(smap.Set(k4, v4));
@@ -75,8 +75,9 @@ TEST(SMap, Small) {
                         new_smap1.Get(k4).data(),
                         v4.len()));
 
+  auto it1 = new_smap1.Scan();
   CheckIdenticalItems({k1, k2, k3, k4}, {v1, v2, v3, v4},
-                      new_smap1.Scan().get());
+                      &it1);
 
   // Set with an existent key
   // Set v3 with v4
@@ -87,29 +88,34 @@ TEST(SMap, Small) {
                         new_smap2.Get(k3).data(),
                         v4.len()));
 
+  auto it2 = new_smap2.Scan();
   CheckIdenticalItems({k1, k2, k3, k4}, {v1, v2, v4, v4},
-                      new_smap2.Scan().get());
+                      &it2);
 
-  // // Remove an existent key
+  // Remove an existent key
   ustore::SMap new_smap3(new_smap2.Remove(k1));
+  auto it3 = new_smap3.Scan();
   CheckIdenticalItems({k2, k3, k4}, {v2, v4, v4},
-                      new_smap3.Scan().get());
+                      &it3);
 
   // Remove an non-existent key
   ustore::SMap new_smap4(smap.Remove(k4));
+  auto it4 = new_smap4.Scan();
   CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
-                      new_smap4.Scan().get());
+                      &it4);
 
   // test for move ctor
   ustore::SMap new_smap4_1(std::move(new_smap4));
+  auto it4_1 = new_smap4_1.Scan();
   CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
-                      new_smap4_1.Scan().get());
+                      &it4_1);
 
   // test for move assignment
   ustore::SMap new_smap4_2;
   new_smap4_2 = std::move(new_smap4_1);
+  auto it4_2 = new_smap4_2.Scan();
   CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
-                      new_smap4_2.Scan().get());
+                      &it4_2);
 
 
   // Use new_smap3 with smap to perform duallydiff
@@ -117,67 +123,67 @@ TEST(SMap, Small) {
   // rhs:         k2->v2, k3->v4, k4->v4
   auto dually_diff_it = ustore::UMap::DuallyDiff(smap, new_smap3);
 
-  ASSERT_EQ(k1, dually_diff_it->key());
-  ASSERT_EQ(v1, dually_diff_it->lhs_value());
-  ASSERT_TRUE(dually_diff_it->rhs_value().empty());
+  ASSERT_EQ(k1, dually_diff_it.key());
+  ASSERT_EQ(v1, dually_diff_it.lhs_value());
+  ASSERT_TRUE(dually_diff_it.rhs_value().empty());
 
-  ASSERT_TRUE(dually_diff_it->next());
+  ASSERT_TRUE(dually_diff_it.next());
 
-  ASSERT_EQ(k3, dually_diff_it->key());
-  ASSERT_EQ(v3, dually_diff_it->lhs_value());
-  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+  ASSERT_EQ(k3, dually_diff_it.key());
+  ASSERT_EQ(v3, dually_diff_it.lhs_value());
+  ASSERT_EQ(v4, dually_diff_it.rhs_value());
 
-  ASSERT_TRUE(dually_diff_it->next());
+  ASSERT_TRUE(dually_diff_it.next());
 
-  ASSERT_EQ(k4, dually_diff_it->key());
-  ASSERT_TRUE(dually_diff_it->lhs_value().empty());
-  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+  ASSERT_EQ(k4, dually_diff_it.key());
+  ASSERT_TRUE(dually_diff_it.lhs_value().empty());
+  ASSERT_EQ(v4, dually_diff_it.rhs_value());
 
-  ASSERT_FALSE(dually_diff_it->next());
-  ASSERT_TRUE(dually_diff_it->end());
+  ASSERT_FALSE(dually_diff_it.next());
+  ASSERT_TRUE(dually_diff_it.end());
 
   // ensure can not advance using next since it is end already
-  ASSERT_FALSE(dually_diff_it->next());
-  ASSERT_TRUE(dually_diff_it->end());
+  ASSERT_FALSE(dually_diff_it.next());
+  ASSERT_TRUE(dually_diff_it.end());
 
   // start to retreat
-  ASSERT_TRUE(dually_diff_it->previous());
+  ASSERT_TRUE(dually_diff_it.previous());
 
-  ASSERT_EQ(k4, dually_diff_it->key());
-  ASSERT_TRUE(dually_diff_it->lhs_value().empty());
-  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+  ASSERT_EQ(k4, dually_diff_it.key());
+  ASSERT_TRUE(dually_diff_it.lhs_value().empty());
+  ASSERT_EQ(v4, dually_diff_it.rhs_value());
 
-  ASSERT_TRUE(dually_diff_it->previous());
+  ASSERT_TRUE(dually_diff_it.previous());
 
-  ASSERT_EQ(k3, dually_diff_it->key());
-  ASSERT_EQ(v3, dually_diff_it->lhs_value());
-  ASSERT_EQ(v4, dually_diff_it->rhs_value());
+  ASSERT_EQ(k3, dually_diff_it.key());
+  ASSERT_EQ(v3, dually_diff_it.lhs_value());
+  ASSERT_EQ(v4, dually_diff_it.rhs_value());
 
-  ASSERT_TRUE(dually_diff_it->previous());
+  ASSERT_TRUE(dually_diff_it.previous());
 
-  ASSERT_EQ(k1, dually_diff_it->key());
-  ASSERT_EQ(v1, dually_diff_it->lhs_value());
-  ASSERT_TRUE(dually_diff_it->rhs_value().empty());
+  ASSERT_EQ(k1, dually_diff_it.key());
+  ASSERT_EQ(v1, dually_diff_it.lhs_value());
+  ASSERT_TRUE(dually_diff_it.rhs_value().empty());
 
-  ASSERT_FALSE(dually_diff_it->previous());
-  ASSERT_TRUE(dually_diff_it->head());
+  ASSERT_FALSE(dually_diff_it.previous());
+  ASSERT_TRUE(dually_diff_it.head());
 
   // ensure can not retreat using previous since it is at head already
-  ASSERT_FALSE(dually_diff_it->previous());
-  ASSERT_TRUE(dually_diff_it->head());
+  ASSERT_FALSE(dually_diff_it.previous());
+  ASSERT_TRUE(dually_diff_it.head());
 
   // Test on altenative advance and retreat
-  ASSERT_TRUE(dually_diff_it->next());
-  ASSERT_FALSE(dually_diff_it->previous());
-  ASSERT_TRUE(dually_diff_it->head());
+  ASSERT_TRUE(dually_diff_it.next());
+  ASSERT_FALSE(dually_diff_it.previous());
+  ASSERT_TRUE(dually_diff_it.head());
 
-  ASSERT_TRUE(dually_diff_it->next());
-  ASSERT_TRUE(dually_diff_it->next());
-  ASSERT_TRUE(dually_diff_it->previous());
+  ASSERT_TRUE(dually_diff_it.next());
+  ASSERT_TRUE(dually_diff_it.next());
+  ASSERT_TRUE(dually_diff_it.previous());
 
-  ASSERT_EQ(k1, dually_diff_it->key());
-  ASSERT_EQ(v1, dually_diff_it->lhs_value());
-  ASSERT_TRUE(dually_diff_it->rhs_value().empty());
+  ASSERT_EQ(k1, dually_diff_it.key());
+  ASSERT_EQ(v1, dually_diff_it.lhs_value());
+  ASSERT_TRUE(dually_diff_it.rhs_value().empty());
 }
 
 class SMapHugeEnv : public ::testing::Test {
@@ -212,7 +218,8 @@ class SMapHugeEnv : public ::testing::Test {
 
 TEST_F(SMapHugeEnv, Basic) {
   ustore::SMap smap(keys_, vals_);
-  CheckIdenticalItems(keys_, vals_, smap.Scan().get());
+  auto it = smap.Scan();
+  CheckIdenticalItems(keys_, vals_, &it);
 
   // Get using key[23]
   auto actual_val23 = smap.Get(keys_[23]);
@@ -223,7 +230,8 @@ TEST_F(SMapHugeEnv, Basic) {
   ustore::SMap smap1(smap.Remove(keys_[35]));
   keys_.erase(keys_.begin() + 35);
   vals_.erase(vals_.begin() + 35);
-  CheckIdenticalItems(keys_, vals_, smap1.Scan().get());
+  auto it1 = smap1.Scan();
+  CheckIdenticalItems(keys_, vals_, &it1);
 
   // Set the value of key55 with val56
   ustore::SMap smap2(smap.Set(keys_[55], vals_[56]));
@@ -308,8 +316,8 @@ TEST_F(SMapHugeEnv, Compare) {
   expected_rhs_vals.insert(expected_rhs_vals.end(),
                            new_vals.begin(),
                            new_vals.end());
-
-  CheckIdenticalItems(expected_rhs_keys, expected_rhs_vals, rhs.Scan().get());
+  auto rhs_it = rhs.Scan();
+  CheckIdenticalItems(expected_rhs_keys, expected_rhs_vals, &rhs_it);
 
 
   // Diff
@@ -324,9 +332,8 @@ TEST_F(SMapHugeEnv, Compare) {
                             vals_.begin() + 100,
                             vals_.begin() + 300);
 
-  CheckIdenticalItems(expected_diff_keys, expected_diff_vals,
-                      lhs.Diff(rhs).get());
-
+  auto diff_it = lhs.Diff(rhs);
+  CheckIdenticalItems(expected_diff_keys, expected_diff_vals, &diff_it);
 
   // Intersect
   std::vector<ustore::Slice> expected_intersect_keys;
@@ -348,11 +355,10 @@ TEST_F(SMapHugeEnv, Compare) {
                                  vals_.begin() + 300,
                                  vals_.end());
 
-
+  auto intersect_it = lhs.Intersect(rhs);
   CheckIdenticalItems(expected_intersect_keys,
                       expected_intersect_vals,
-                      lhs.Intersect(rhs).get());
-
+                      &intersect_it);
 
   for (const auto& key : new_keys) {delete[] key.data(); }
   for (const auto& val : new_vals) {delete[] val.data(); }

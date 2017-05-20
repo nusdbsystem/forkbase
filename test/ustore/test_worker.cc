@@ -298,11 +298,11 @@ TEST(Worker, NamedBranch_GetPutList_Value2) {
   EXPECT_EQ(ErrorCode::kOK, ec);
   const SList list1(ucell.dataHash());
   auto itr_list1 = list1.Scan();
-  EXPECT_EQ(val_str[0].slice(), itr_list1->value());
-  EXPECT_TRUE(itr_list1->next());
-  EXPECT_EQ(val_str[1].slice(), itr_list1->value());
-  EXPECT_TRUE(itr_list1->next());
-  EXPECT_FALSE(itr_list1->next());
+  EXPECT_EQ(val_str[0].slice(), itr_list1.value());
+  EXPECT_TRUE(itr_list1.next());
+  EXPECT_EQ(val_str[1].slice(), itr_list1.value());
+  EXPECT_TRUE(itr_list1.next());
+  EXPECT_FALSE(itr_list1.next());
   EXPECT_EQ(val_str[2].slice(), list1.Get(2));
 
   // update existing list by replacing one element
@@ -345,22 +345,22 @@ TEST(Worker, NamedBranch_GetPutList_Value2) {
   const SList list3(ucell.dataHash());
   EXPECT_EQ(5, list3.numElements());
   auto itr_diff = UList::DuallyDiff(list1, list3);
-  EXPECT_EQ(1, itr_diff->index());
-  EXPECT_EQ(val_str[1].slice(), itr_diff->lhs_value());
-  EXPECT_EQ(val_str[4].slice(), itr_diff->rhs_value());
-  EXPECT_TRUE(itr_diff->next());
-  EXPECT_EQ(2, itr_diff->index());
-  EXPECT_EQ(val_str[2].slice(), itr_diff->lhs_value());
-  EXPECT_EQ(val_str[5].slice(), itr_diff->rhs_value());
-  EXPECT_TRUE(itr_diff->next());
-  EXPECT_EQ(3, itr_diff->index());
-  EXPECT_TRUE(itr_diff->lhs_value().empty());
-  EXPECT_EQ(val_str[3].slice(), itr_diff->rhs_value());
-  EXPECT_TRUE(itr_diff->next());
-  EXPECT_EQ(4, itr_diff->index());
-  EXPECT_TRUE(itr_diff->lhs_value().empty());
-  EXPECT_EQ(val_str[2].slice(), itr_diff->rhs_value());
-  EXPECT_FALSE(itr_diff->next());
+  EXPECT_EQ(1, itr_diff.index());
+  EXPECT_EQ(val_str[1].slice(), itr_diff.lhs_value());
+  EXPECT_EQ(val_str[4].slice(), itr_diff.rhs_value());
+  EXPECT_TRUE(itr_diff.next());
+  EXPECT_EQ(2, itr_diff.index());
+  EXPECT_EQ(val_str[2].slice(), itr_diff.lhs_value());
+  EXPECT_EQ(val_str[5].slice(), itr_diff.rhs_value());
+  EXPECT_TRUE(itr_diff.next());
+  EXPECT_EQ(3, itr_diff.index());
+  EXPECT_TRUE(itr_diff.lhs_value().empty());
+  EXPECT_EQ(val_str[3].slice(), itr_diff.rhs_value());
+  EXPECT_TRUE(itr_diff.next());
+  EXPECT_EQ(4, itr_diff.index());
+  EXPECT_TRUE(itr_diff.lhs_value().empty());
+  EXPECT_EQ(val_str[2].slice(), itr_diff.rhs_value());
+  EXPECT_FALSE(itr_diff.next());
 }
 
 TEST(Worker, NamedBranch_GetPutMap_Value2) {
@@ -432,8 +432,8 @@ TEST(Worker, NamedBranch_GetPutMap_Value2) {
   EXPECT_EQ(2, map3.numElements());
   size_t n_diffs = 0;
   for (auto itr_diff = UMap::DuallyDiff(map1, map3);
-       !itr_diff->end(); itr_diff->next(), ++n_diffs) {
-    DLOG(INFO) << "diff at key: " << itr_diff->key();
+       !itr_diff.end(); itr_diff.next(), ++n_diffs) {
+    DLOG(INFO) << "diff at key: " << itr_diff.key();
   }
   EXPECT_EQ(2, n_diffs);
 }

@@ -11,19 +11,18 @@
 
 namespace ustore {
 
-std::unique_ptr<DuallyDiffIndexIterator> UList::DuallyDiff(
+DuallyDiffIndexIterator UList::DuallyDiff(
     const UList& lhs, const UList& rhs) {
-  std::unique_ptr<UIterator> lhs_diff_it = lhs.Diff(rhs);
-  std::unique_ptr<UIterator> rhs_diff_it = rhs.Diff(lhs);
+  std::unique_ptr<UIterator> lhs_diff_it(new UList::Iterator(lhs.Diff(rhs)));
+  std::unique_ptr<UIterator> rhs_diff_it(new UList::Iterator(rhs.Diff(lhs)));
 
   lhs_diff_it->previous();
   rhs_diff_it->previous();
 
   DCHECK(lhs_diff_it->head() && rhs_diff_it->head());
 
-  return std::unique_ptr<DuallyDiffIndexIterator>(
-      new DuallyDiffIndexIterator(std::move(lhs_diff_it),
-                                  std::move(rhs_diff_it)));
+  return DuallyDiffIndexIterator(std::move(lhs_diff_it),
+                                 std::move(rhs_diff_it));
 }
 
 Slice UList::Get(uint64_t idx) const {
@@ -68,24 +67,21 @@ Hash UList::Append(const std::vector<Slice>& entries) const {
   return Splice(numElements(), 0, entries);
 }
 
-std::unique_ptr<UIterator> UList::Scan() const {
+UList::Iterator UList::Scan() const {
   IndexRange all_range{0, numElements()};
-  return std::unique_ptr<UIterator>(
-      new ListIterator(hash(), {all_range}, chunk_loader_.get()));
+  return Iterator(hash(), {all_range}, chunk_loader_.get());
 }
 
-std::unique_ptr<UIterator> UList::Diff(const UList& rhs) const {
+UList::Iterator UList::Diff(const UList& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
   IndexComparator cmptor(rhs.hash(), chunk_loader_);
-  return std::unique_ptr<UIterator>(
-      new ListIterator(hash(), cmptor.Diff(hash()), chunk_loader_.get()));
+  return Iterator(hash(), cmptor.Diff(hash()), chunk_loader_.get());
 }
 
-std::unique_ptr<UIterator> UList::Intersect(const UList& rhs) const {
+UList::Iterator UList::Intersect(const UList& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
   IndexComparator cmptor(rhs.hash(), chunk_loader_);
-  return std::unique_ptr<UIterator>(
-      new ListIterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get()));
+  return Iterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get());
 }
 
 }  // namespace ustore

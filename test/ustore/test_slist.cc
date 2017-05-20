@@ -49,84 +49,85 @@ TEST(SList, Small) {
   EXPECT_TRUE(nonexist_v5.empty());
 
   // Test on Iterator
-  CheckIdenticalElements({0, 1, 2}, {e1, e2, e5}, slist.Scan().get());
+  auto it = slist.Scan();
+  CheckIdenticalElements({0, 1, 2}, {e1, e2, e5}, &it);
 
   // Splice in middle
   ustore::SList new_slist1(slist.Splice(1, 1, {e3, e4}));
+  auto it1 = new_slist1.Scan();
   CheckIdenticalElements({0, 1, 2, 3},
-                         {e1, e3, e4, e5},
-                         new_slist1.Scan().get());
+                         {e1, e3, e4, e5}, &it1);
 
   // Splice to the end
   ustore::SList new_slist2(new_slist1.Splice(3, 2, {e2}));
+  auto it2 = new_slist2.Scan();
   CheckIdenticalElements({0, 1, 2, 3},
-                         {e1, e3, e4, e2},
-                         new_slist2.Scan().get());
+                         {e1, e3, e4, e2}, &it2);
 
   auto diff_it = ustore::UList::DuallyDiff(slist, new_slist2);
 
-  ASSERT_EQ(1, diff_it->index());
-  ASSERT_EQ(e2, diff_it->lhs_value());
-  ASSERT_EQ(e3, diff_it->rhs_value());
+  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(e2, diff_it.lhs_value());
+  ASSERT_EQ(e3, diff_it.rhs_value());
 
-  ASSERT_TRUE(diff_it->next());
+  ASSERT_TRUE(diff_it.next());
 
-  ASSERT_EQ(2, diff_it->index());
-  ASSERT_EQ(e5, diff_it->lhs_value());
-  ASSERT_EQ(e4, diff_it->rhs_value());
+  ASSERT_EQ(2, diff_it.index());
+  ASSERT_EQ(e5, diff_it.lhs_value());
+  ASSERT_EQ(e4, diff_it.rhs_value());
 
-  ASSERT_TRUE(diff_it->next());
+  ASSERT_TRUE(diff_it.next());
 
-  ASSERT_EQ(3, diff_it->index());
-  ASSERT_TRUE(diff_it->lhs_value().empty());
-  ASSERT_EQ(e2, diff_it->rhs_value());
+  ASSERT_EQ(3, diff_it.index());
+  ASSERT_TRUE(diff_it.lhs_value().empty());
+  ASSERT_EQ(e2, diff_it.rhs_value());
 
-  ASSERT_FALSE(diff_it->next());
-  ASSERT_TRUE(diff_it->end());
+  ASSERT_FALSE(diff_it.next());
+  ASSERT_TRUE(diff_it.end());
 
   // try to advance one more steps
-  ASSERT_FALSE(diff_it->next());
-  ASSERT_TRUE(diff_it->end());
+  ASSERT_FALSE(diff_it.next());
+  ASSERT_TRUE(diff_it.end());
 
   // start to retreat
-  ASSERT_TRUE(diff_it->previous());
+  ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(3, diff_it->index());
-  ASSERT_TRUE(diff_it->lhs_value().empty());
-  ASSERT_EQ(e2, diff_it->rhs_value());
+  ASSERT_EQ(3, diff_it.index());
+  ASSERT_TRUE(diff_it.lhs_value().empty());
+  ASSERT_EQ(e2, diff_it.rhs_value());
 
-  ASSERT_TRUE(diff_it->previous());
+  ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(2, diff_it->index());
-  ASSERT_EQ(e5, diff_it->lhs_value());
-  ASSERT_EQ(e4, diff_it->rhs_value());
+  ASSERT_EQ(2, diff_it.index());
+  ASSERT_EQ(e5, diff_it.lhs_value());
+  ASSERT_EQ(e4, diff_it.rhs_value());
 
-  ASSERT_TRUE(diff_it->previous());
+  ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(1, diff_it->index());
-  ASSERT_EQ(e2, diff_it->lhs_value());
-  ASSERT_EQ(e3, diff_it->rhs_value());
+  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(e2, diff_it.lhs_value());
+  ASSERT_EQ(e3, diff_it.rhs_value());
 
-  ASSERT_FALSE(diff_it->previous());
-  ASSERT_TRUE(diff_it->head());
+  ASSERT_FALSE(diff_it.previous());
+  ASSERT_TRUE(diff_it.head());
 
   // try to retreat one more steps
-  ASSERT_FALSE(diff_it->previous());
-  ASSERT_TRUE(diff_it->head());
+  ASSERT_FALSE(diff_it.previous());
+  ASSERT_TRUE(diff_it.head());
 
-  ASSERT_TRUE(diff_it->next());
+  ASSERT_TRUE(diff_it.next());
 
-  ASSERT_EQ(1, diff_it->index());
-  ASSERT_EQ(e2, diff_it->lhs_value());
-  ASSERT_EQ(e3, diff_it->rhs_value());
+  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(e2, diff_it.lhs_value());
+  ASSERT_EQ(e3, diff_it.rhs_value());
 
   // test on alternative next() and previous()
-  ASSERT_TRUE(diff_it->next());
-  ASSERT_TRUE(diff_it->previous());
+  ASSERT_TRUE(diff_it.next());
+  ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(1, diff_it->index());
-  ASSERT_EQ(e2, diff_it->lhs_value());
-  ASSERT_EQ(e3, diff_it->rhs_value());
+  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(e2, diff_it.lhs_value());
+  ASSERT_EQ(e3, diff_it.rhs_value());
 
   // test for move ctor
   ustore::SList slist1(std::move(slist));
@@ -178,9 +179,9 @@ class SListHugeEnv : public ::testing::Test {
 
 TEST_F(SListHugeEnv, Access) {
   ustore::SList slist(elements_);
+  auto it = slist.Scan();
   CheckIdenticalElements(idxs(elements_.size()),
-                         elements_,
-                         slist.Scan().get());
+                         elements_, &it);
 
   // Get
   auto actual_element23 = slist.Get(23);
@@ -219,10 +220,9 @@ TEST_F(SListHugeEnv, Splice) {
                          elements_.begin() + 38,
                          elements_.end());
 
-
+  auto it1 = slist1.Scan();
   CheckIdenticalElements(idxs(expected_slist1.size()),
-                         expected_slist1,
-                         slist1.Scan().get());
+                         expected_slist1, &it1);
 }
 
 TEST_F(SListHugeEnv, Remove) {
@@ -239,9 +239,10 @@ TEST_F(SListHugeEnv, Remove) {
                          elements_.begin() + 60,
                          elements_.end());
 
+  auto it2 = slist2.Scan();
   CheckIdenticalElements(idxs(expected_slist2.size()),
-                         expected_slist2,
-                         slist2.Scan().get());
+                         expected_slist2, &it2);
+
 }
 
 TEST_F(SListHugeEnv, Insert) {
@@ -268,9 +269,9 @@ TEST_F(SListHugeEnv, Insert) {
                          elements_.begin() + 500,
                          elements_.end());
 
+  auto it3 = slist3.Scan();
   CheckIdenticalElements(idxs(expected_slist3.size()),
-                         expected_slist3,
-                         slist3.Scan().get());
+                         expected_slist3, &it3);
 }
 
 TEST_F(SListHugeEnv, Append) {
@@ -293,9 +294,9 @@ TEST_F(SListHugeEnv, Append) {
                          appended_elements.begin(),
                          appended_elements.end());
 
+  auto it4 = slist4.Scan();
   CheckIdenticalElements(idxs(expected_slist4.size()),
-                         expected_slist4,
-                         slist4.Scan().get());
+                         expected_slist4, &it4);
 }
 
 TEST_F(SListHugeEnv, Compare) {
@@ -348,7 +349,8 @@ TEST_F(SListHugeEnv, Compare) {
                        elements_.end() - 100,
                        elements_.end());
 
-  CheckIdenticalElements(diff_idx, diff_elements, lhs.Diff(rhs).get());
+  auto diff_it = lhs.Diff(rhs);
+  CheckIdenticalElements(diff_idx, diff_elements, &diff_it);
 
 // For Intersect operation
   std::vector<uint64_t> intersect_idx;
@@ -370,6 +372,7 @@ TEST_F(SListHugeEnv, Compare) {
                             elements_.begin() + 200,
                             elements_.end() - 100);
 
+  auto intersect_it = lhs.Intersect(rhs);
   CheckIdenticalElements(intersect_idx, intersect_elements,
-                         lhs.Intersect(rhs).get());
+                         &intersect_it);
 }

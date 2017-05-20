@@ -15,42 +15,15 @@ namespace ustore {
 
 class UMap : public ChunkableType {
  public:
-  static std::unique_ptr<DuallyDiffKeyIterator> DuallyDiff(
+  static DuallyDiffKeyIterator DuallyDiff(
       const UMap& lhs, const UMap& rhs);
 
-  // Use chunk loader to load chunk and read value
-  // return empty slice if key not found
-  Slice Get(const Slice& key) const;
-  // Both Use chunk builder to do splice
-  // this kv_items must be sorted in descending order before
-  virtual Hash Set(const Slice& key, const Slice& val) const = 0;
-  virtual Hash Remove(const Slice& key) const = 0;
-  // Return an iterator that scan from List Start
-  std::unique_ptr<UIterator> Scan() const;
-  // Return an iterator that scan elements that exist in this UMap
-  //   and NOT in rhs
-  std::unique_ptr<UIterator> Diff(const UMap& rhs) const;
-  // Return an iterator that scan elements that both exist in this UMap and rhs
-  std::unique_ptr<UIterator> Intersect(const UMap& rhs) const;
-
- protected:
-  UMap() = default;
-  UMap(UMap&& rhs) = default;
-  explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept :
-      ChunkableType(loader) {}
-  virtual ~UMap() = default;
-
-  UMap& operator=(UMap&& rhs) = default;
-
-  bool SetNodeForHash(const Hash& hash) override;
-
- private:
-  class MapIterator : public UIterator {
+  class Iterator : public UIterator {
    public:
-    MapIterator(const Hash& root, const std::vector<IndexRange>& ranges,
+    Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
                 ChunkLoader* loader) noexcept :
         UIterator(root, ranges, loader) {}
-    MapIterator(const Hash& root, std::vector<IndexRange>&& ranges,
+    Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
                 ChunkLoader* loader) noexcept :
         UIterator(root, std::move(ranges), loader) {}
 
@@ -67,6 +40,33 @@ class UMap : public ChunkableType {
       return Slice(value, value_num_bytes);
     }
   };
+
+  // Use chunk loader to load chunk and read value
+  // return empty slice if key not found
+  Slice Get(const Slice& key) const;
+  // Both Use chunk builder to do splice
+  // this kv_items must be sorted in descending order before
+  virtual Hash Set(const Slice& key, const Slice& val) const = 0;
+  virtual Hash Remove(const Slice& key) const = 0;
+  // Return an iterator that scan from List Start
+  UMap::Iterator Scan() const;
+  // Return an iterator that scan elements that exist in this UMap
+  //   and NOT in rhs
+  UMap::Iterator Diff(const UMap& rhs) const;
+  // Return an iterator that scan elements that both exist in this UMap and rhs
+  UMap::Iterator Intersect(const UMap& rhs) const;
+
+ protected:
+  UMap() = default;
+  UMap(UMap&& rhs) = default;
+  explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept :
+      ChunkableType(loader) {}
+  virtual ~UMap() = default;
+
+  UMap& operator=(UMap&& rhs) = default;
+
+  bool SetNodeForHash(const Hash& hash) override;
+
 };
 
 }  // namespace ustore

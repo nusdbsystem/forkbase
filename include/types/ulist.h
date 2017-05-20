@@ -15,7 +15,28 @@ namespace ustore {
 
 class UList : public ChunkableType {
  public:
-  static std::unique_ptr<DuallyDiffIndexIterator> DuallyDiff(
+  class Iterator : public UIterator {
+   public:
+    Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
+                 ChunkLoader* loader) noexcept :
+        UIterator(root, ranges, loader) {}
+
+    Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
+                 ChunkLoader* loader) noexcept :
+        UIterator(root, std::move(ranges), loader) {}
+
+    inline Slice key() const override {
+      LOG(WARNING) << "Key not supported for list";
+      return Slice();
+    }
+
+   private:
+    inline Slice RealValue() const override {
+      return ListNode::Decode(data());
+    }
+  };
+
+  static DuallyDiffIndexIterator DuallyDiff(
       const UList& lhs, const UList& rhs);
 
   // For idx > total # of elements
@@ -29,12 +50,12 @@ class UList : public ChunkableType {
   Hash Insert(uint64_t start_idx, const std::vector<Slice>& entries) const;
   Hash Append(const std::vector<Slice>& entries) const;
   // Return an iterator that scan from List Start
-  std::unique_ptr<UIterator> Scan() const;
+  UList::Iterator Scan() const;
   // Return an iterator that scan elements that exist in this Ulist
   //   and NOT in rhs
-  std::unique_ptr<UIterator> Diff(const UList& rhs) const;
+  UList::Iterator Diff(const UList& rhs) const;
   // Return an iterator that scan elements that both exist in this Ulist and rhs
-  std::unique_ptr<UIterator> Intersect(const UList& rhs) const;
+  UList::Iterator Intersect(const UList& rhs) const;
 
  protected:
   UList() = default;
@@ -49,28 +70,6 @@ class UList : public ChunkableType {
   UList& operator=(UList&& rhs) = default;
 
   bool SetNodeForHash(const Hash& hash) override;
-
- private:
-  class ListIterator : public UIterator {
-   public:
-    ListIterator(const Hash& root, const std::vector<IndexRange>& ranges,
-                 ChunkLoader* loader) noexcept :
-        UIterator(root, ranges, loader) {}
-
-    ListIterator(const Hash& root, std::vector<IndexRange>&& ranges,
-                 ChunkLoader* loader) noexcept :
-        UIterator(root, std::move(ranges), loader) {}
-
-    inline Slice key() const override {
-      LOG(WARNING) << "Key not supported for list";
-      return Slice();
-    }
-
-   private:
-    inline Slice RealValue() const override {
-      return ListNode::Decode(data());
-    }
-  };
 };
 
 }  // namespace ustore

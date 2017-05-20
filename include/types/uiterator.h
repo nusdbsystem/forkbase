@@ -129,16 +129,16 @@ class DuallyDiffIterator {
   DuallyDiffIterator() = default;
 
   DuallyDiffIterator(DuallyDiffIterator&& rhs) noexcept :
-      lhs_diff_it_(rhs.lhs_diff_it_),
-      rhs_diff_it_(rhs.rhs.rhs_diff_it_),
+      lhs_diff_it_(std::move(rhs.lhs_diff_it_)),
+      rhs_diff_it_(std::move(rhs.rhs_diff_it_)),
       it_flag_(rhs.it_flag_),
       just_advanced(rhs.just_advanced) {}
 
   DuallyDiffIterator& operator=(DuallyDiffIterator&& rhs) noexcept {
-    lhs_diff_it_(rhs.lhs_diff_it_);
-    rhs_diff_it_(rhs.rhs_diff_it_);
-    it_flag_(rhs.it_flag_);
-    just_advanced(rhs.just_advanced);
+    lhs_diff_it_ = std::move(rhs.lhs_diff_it_);
+    rhs_diff_it_ = std::move(rhs.rhs_diff_it_);
+    it_flag_ = rhs.it_flag_;
+    just_advanced = rhs.just_advanced;
     return *this;
   }
 

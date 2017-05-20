@@ -43,9 +43,9 @@ TEST(VMap, CreateNewVMap) {
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size(); ++i) {
-    EXPECT_EQ(slice_key[i], it->key());
-    EXPECT_EQ(slice_val[i], it->value());
-    it->next();
+    EXPECT_EQ(slice_key[i], it.key());
+    EXPECT_EQ(slice_val[i], it.value());
+    it.next();
   }
 }
 
@@ -80,9 +80,9 @@ TEST(VMap, AddToExistingVMap) {
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size(); ++i) {
-    EXPECT_EQ(slice_key[i], it->key());
-    EXPECT_EQ(slice_val[i], it->value());
-    it->next();
+    EXPECT_EQ(slice_key[i], it.key());
+    EXPECT_EQ(slice_val[i], it.value());
+    it.next();
   }
 }
 
@@ -113,9 +113,9 @@ TEST(VMap, RemoveFromExistingVMap) {
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size() - 1; ++i) {
-    EXPECT_EQ(slice_key[i], it->key());
-    EXPECT_EQ(slice_val[i], it->value());
-    it->next();
+    EXPECT_EQ(slice_key[i], it.key());
+    EXPECT_EQ(slice_val[i], it.value());
+    it.next();
   }
 }
 
@@ -148,8 +148,8 @@ TEST(VMap, UpdateExistingVMap) {
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size(); ++i) {
-    EXPECT_EQ(slice_key[i], it->key());
-    EXPECT_EQ(slice_val[i], it->value());
-    it->next();
+    EXPECT_EQ(slice_key[i], it.key());
+    EXPECT_EQ(slice_val[i], it.value());
+    it.next();
   }
 }
