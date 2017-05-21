@@ -42,52 +42,7 @@ message UStoreMessage {
   // to identify the sending thread
   required int32 source = 15;
 
-  /**
-   * PAYLOAD
-   */
-  // PUT_REQUEST payload
-  message PutRequestPayload {
-    required bytes value = 3; 
-  }
-
-  // PUT_RESPONSE payload
-  message PutResponsePayload {
-    required bytes new_version = 1;
-  }
-
-  // MERGE_RESPONSE payload
-  message MergeResponsePayload {
-    required bytes new_version = 1;
-  }
-
-  // GET_REQUEST payload - Nothing to do
-
-  // GET_RESPONSE payload
-  message GetResponsePayload {
-    required bytes value = 1;
-  }
-
-  // BRANCH_REQUEST 
-  message BranchRequestPayload {
-    required bytes new_branch = 1; 
-  }
-
-  // BRANCH_RESPONSE, MOVE_RESPONSE, MERGE_RESPONSE
-  // Status field indicates success or failure
-
-  // MOVE_REQUEST
-  message RenameRequestPayload {
-    required bytes new_branch = 1;  
-  }
-
-  // MERGE_REQUEST
-  message MergeRequestPayload {
-    optional bytes target_branch = 1;
-    optional bytes ref_branch = 2; 
-    optional bytes ref_version = 6;
-    required bytes value = 3; 
-  }
-
+  
   optional PutRequestPayload put_request_payload = 6; 
   optional PutResponsePayload put_response_payload = 7; 
   optional GetResponsePayload get_response_payload = 8; 
@@ -95,6 +50,55 @@ message UStoreMessage {
   optional RenameRequestPayload rename_request_payload = 10; 
   optional MergeRequestPayload merge_request_payload = 11; 
   optional MergeResponsePayload merge_response_payload = 12; 
+}
+
+/**
+   * PAYLOAD
+   */
+  // PUT_REQUEST payload
+message PutRequestPayload {
+    //required bytes value = 3; 
+    required Value2Payload value = 3;
+}
+
+  // PUT_RESPONSE payload
+message PutResponsePayload {
+    required bytes new_version = 1;
+}
+
+  // MERGE_RESPONSE payload
+message MergeResponsePayload {
+    required bytes new_version = 1;
+}
+
+  // GET_REQUEST payload - Nothing to do
+
+  // GET_RESPONSE payload
+message GetResponsePayload {
+    //required bytes value = 1;
+    required UCellPayload meta = 1;
+}
+
+  // BRANCH_REQUEST 
+message BranchRequestPayload {
+    required bytes new_branch = 1; 
+}
+
+  // BRANCH_RESPONSE, MOVE_RESPONSE, MERGE_RESPONSE
+  // Status field indicates success or failure
+
+  // MOVE_REQUEST
+message RenameRequestPayload {
+    required bytes new_branch = 1;  
+}
+
+  // MERGE_REQUEST
+message MergeRequestPayload {
+    optional bytes target_branch = 1;
+    optional bytes ref_branch = 2; 
+    optional bytes ref_version = 6;
+    //required bytes value = 3; 
+    required Value2Payload value = 3;
 }
 
 /**
@@ -124,4 +128,21 @@ message RangeInfo {
 
   // Worker information
   required string address = 4;
+}
+
+message UCellPayload {
+  required int32 type = 1;
+  required bytes key = 2;
+  required bytes data_root_hash = 3;
+  optional bytes prehash1 = 4;
+  optional bytes prehash2 = 5;
+}
+
+message Value2Payload {
+  required int32 type = 1;
+  optional bytes base = 2;
+  optional int32 pos = 3;
+  optional int32 dels = 4;
+  repeated bytes values = 5;  // vector<Slice> vals
+  repeated bytes keys = 6;  // vector<Slice> keys
 }

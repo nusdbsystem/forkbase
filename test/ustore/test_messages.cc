@@ -3,14 +3,27 @@
 #include "gtest/gtest.h"
 #include "proto/messages.pb.h"
 #include "types/type.h"
+#include "hash/hash.h"
 
 using ustore::UStoreMessage;
+using ustore::GetResponsePayload;
+using ustore::PutRequestPayload;
+using ustore::PutResponsePayload;
+using ustore::BranchRequestPayload;
+using ustore::RenameRequestPayload;
+using ustore::MergeRequestPayload;
+using ustore::MergeResponsePayload;
+using ustore::Value2Payload;
+using ustore::UCellPayload;
+using ustore::UType;
+using ustore::Hash;
 using ustore::byte_t;
 using ustore::ErrorCode;
 const size_t TEST_KEY_SIZE = 32;
 const size_t TEST_VERSION_SIZE = 32;
 const size_t TEST_BRANCH_SIZE = 32;
 const size_t TEST_VALUE_SIZE = 128;
+const size_t VALUE2_NVALS = 5;
 
 void randomVals(byte_t* buf, int size) {
   srand(time(NULL));
@@ -51,15 +64,29 @@ bool checkPayload(const byte_t* original, int size_original,
   return true;
 }
 
+
 TEST(TestMessage, TestPutRequest) {
   UStoreMessage msg;
   populateHeader(&msg, UStoreMessage::PUT_REQUEST);
 
   // add payload
-  UStoreMessage::PutRequestPayload *payload = msg.mutable_put_request_payload();
-  byte_t value[TEST_VALUE_SIZE];
-  randomVals(value, TEST_VALUE_SIZE);
-  payload->set_value(value, TEST_VALUE_SIZE);
+  PutRequestPayload *payload = msg.mutable_put_request_payload();
+  Value2Payload *val = payload->mutable_value();
+  val->set_type(static_cast<int>(UType::kList));
+  byte_t base[Hash::kByteLength];
+  randomVals(base, Hash::kByteLength);
+  val->set_base(base, Hash::kByteLength);
+  val->set_pos(0);
+  val->set_dels(0);
+  for (int i=0; i<VALUE2_NVALS; i++) {
+    byte_t value[TEST_VALUE_SIZE];
+    randomVals(value, TEST_VALUE_SIZE);
+    val->add_values(value, TEST_VALUE_SIZE);
+
+    byte_t key[TEST_KEY_SIZE];
+    randomVals(key, TEST_KEY_SIZE);
+    val->add_keys(key, TEST_KEY_SIZE);
+  }
 
   // serialized
   int msg_size = msg.ByteSize();
@@ -71,9 +98,18 @@ TEST(TestMessage, TestPutRequest) {
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::PUT_REQUEST);
   EXPECT_EQ(recovered_msg.has_put_request_payload(), true);
-  EXPECT_EQ(checkPayload(value, TEST_VALUE_SIZE,
-        (const byte_t*)recovered_msg.put_request_payload().value().data(),
-          recovered_msg.put_request_payload().value().length()), true);
+  EXPECT_EQ(recovered_msg.put_request_payload().value().type(),
+              static_cast<int>(UType::kList));
+  // check that there are VALUE2_NVALS items in vals and keys
+  EXPECT_EQ(recovered_msg.put_request_payload().value().values_size(),
+                  VALUE2_NVALS);
+  EXPECT_EQ(recovered_msg.put_request_payload().value().keys_size(),
+                  VALUE2_NVALS);
+  EXPECT_EQ(checkPayload(base, Hash::kByteLength,
+        (const byte_t*)recovered_msg.put_request_payload().value()
+                        .base().data(),
+          recovered_msg.put_request_payload().value().base().length()),
+          true);
 
   delete[] serialized;
 }
@@ -85,7 +121,7 @@ TEST(TestMessage, TestPutResponse) {
   // add status
   msg.set_status((int)ErrorCode::kOK);
   // add payload
-  UStoreMessage::PutResponsePayload *payload
+  PutResponsePayload *payload
     = msg.mutable_put_response_payload();
   byte_t version[TEST_VERSION_SIZE];
   randomVals(version, TEST_VERSION_SIZE);
@@ -138,11 +174,23 @@ TEST(TestMessage, TestGetResponse) {
   // add status
   msg.set_status((int)ErrorCode::kOK);
   // add payload
-  UStoreMessage::GetResponsePayload *payload
+  GetResponsePayload *payload
     = msg.mutable_get_response_payload();
-  byte_t value[TEST_VALUE_SIZE];
-  randomVals(value, TEST_VALUE_SIZE);
-  payload->set_value(value, TEST_VALUE_SIZE);
+  UCellPayload *ucell = payload->mutable_meta();
+  ucell->set_type(static_cast<int>(UType::kMap));
+  
+  byte_t key[TEST_KEY_SIZE];
+  randomVals(key, TEST_KEY_SIZE);
+  ucell->set_key(key, TEST_KEY_SIZE);
+
+  byte_t root_hash[Hash::kByteLength];
+  randomVals(root_hash, Hash::kByteLength);
+  ucell->set_data_root_hash(root_hash, Hash::kByteLength);
+
+  byte_t preHash[Hash::kByteLength];
+  randomVals(preHash, Hash::kByteLength);
+  ucell->set_prehash1(preHash, Hash::kByteLength);
+  ucell->set_prehash2(preHash, Hash::kByteLength);
 
   // serialized
   int msg_size = msg.ByteSize();
@@ -156,9 +204,12 @@ TEST(TestMessage, TestGetResponse) {
   EXPECT_EQ(recovered_msg.has_get_response_payload(), true);
   EXPECT_EQ(recovered_msg.has_status(), true);
   EXPECT_EQ(recovered_msg.status(), (int)ErrorCode::kOK);
-  EXPECT_EQ(checkPayload(value, TEST_VALUE_SIZE,
-        (const byte_t*)recovered_msg.get_response_payload().value().data(),
-        recovered_msg.get_response_payload().value().length()), true);
+  EXPECT_EQ(checkPayload((const byte_t*)recovered_msg.get_response_payload().
+                        meta().data_root_hash().data(), Hash::kByteLength,
+                        root_hash, Hash::kByteLength), true); 
+  EXPECT_EQ(checkPayload((const byte_t*)recovered_msg.get_response_payload().
+                        meta().prehash1().data(), Hash::kByteLength,
+                        preHash, Hash::kByteLength), true); 
 
   delete[] serialized;
 }
@@ -168,7 +219,7 @@ TEST(TestMessage, TestBranchRequest) {
   populateHeader(&msg, UStoreMessage::BRANCH_REQUEST);
 
   // add payload
-  UStoreMessage::BranchRequestPayload *payload
+  BranchRequestPayload *payload
     = msg.mutable_branch_request_payload();
   byte_t branch[TEST_BRANCH_SIZE];
   randomVals(branch, TEST_BRANCH_SIZE);
@@ -221,7 +272,7 @@ TEST(TestMessage, TestMergeRequest) {
   populateHeader(&msg, UStoreMessage::MERGE_REQUEST);
 
   // add payload
-  UStoreMessage::MergeRequestPayload *payload
+  MergeRequestPayload *payload
     = msg.mutable_merge_request_payload();
   byte_t target_branch[TEST_BRANCH_SIZE];
   randomVals(target_branch, TEST_BRANCH_SIZE);
@@ -229,9 +280,24 @@ TEST(TestMessage, TestMergeRequest) {
   byte_t ref_branch[TEST_BRANCH_SIZE];
   randomVals(ref_branch, TEST_BRANCH_SIZE);
   payload->set_ref_branch(ref_branch, TEST_BRANCH_SIZE);
-  byte_t value[TEST_VALUE_SIZE];
-  randomVals(value, TEST_VALUE_SIZE);
-  payload->set_value(value, TEST_VALUE_SIZE);
+
+  // add Value2Payload 
+  Value2Payload *val = payload->mutable_value();
+  val->set_type(static_cast<int>(UType::kList));
+  byte_t base[Hash::kByteLength];
+  randomVals(base, Hash::kByteLength);
+  val->set_base(base, Hash::kByteLength);
+  val->set_pos(0);
+  val->set_dels(0);
+  for (int i=0; i<VALUE2_NVALS; i++) {
+    byte_t value[TEST_VALUE_SIZE];
+    randomVals(value, TEST_VALUE_SIZE);
+    val->add_values(value, TEST_VALUE_SIZE);
+
+    byte_t key[TEST_KEY_SIZE];
+    randomVals(key, TEST_KEY_SIZE);
+    val->add_keys(key, TEST_KEY_SIZE);
+  }
 
   // serialized
   int msg_size = msg.ByteSize();
@@ -249,9 +315,16 @@ TEST(TestMessage, TestMergeRequest) {
   EXPECT_EQ(checkPayload(ref_branch, TEST_BRANCH_SIZE,
     (const byte_t*)recovered_msg.merge_request_payload().ref_branch().data(),
     recovered_msg.merge_request_payload().ref_branch().length()), true);
-  EXPECT_EQ(checkPayload(value, TEST_VALUE_SIZE,
-    (const byte_t*)recovered_msg.merge_request_payload().value().data(),
-    recovered_msg.merge_request_payload().value().length()), true);
+
+  EXPECT_EQ(recovered_msg.merge_request_payload().value().values_size(),
+                  VALUE2_NVALS);
+  EXPECT_EQ(recovered_msg.merge_request_payload().value().keys_size(),
+                  VALUE2_NVALS);
+  EXPECT_EQ(checkPayload(base, Hash::kByteLength,
+        (const byte_t*)recovered_msg.merge_request_payload().value()
+                        .base().data(),
+          recovered_msg.merge_request_payload().value().base().length()),
+          true);
 
   delete[] serialized;
 }

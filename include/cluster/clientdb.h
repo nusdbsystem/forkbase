@@ -59,28 +59,48 @@ struct ResponseBlob {
  *
  */
 
-class ClientDb : public DB {
+class ClientDb : public DB2 {
  public:
   ClientDb(const node_id_t& master, int id, Net *net, ResponseBlob *blob,
       WorkerList* workers)
     : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
   ~ClientDb();
 
-  // Storage APIs. Inheritted from DB.
+  // Storage APIs. Inheritted from DB2.
   ErrorCode Get(const Slice& key, const Slice& branch,
-                        Value* value) override;
+                        UCell* meta) override;
   ErrorCode Get(const Slice& key, const Hash& version,
-                        Value* value) override;
-  ErrorCode Put(const Slice& key, const Value& value,
+                        UCell* meta) override;
+  
+  ErrorCode Put(const Slice& key, const Value2& value,
                         const Slice& branch, Hash* version) override;
-  ErrorCode Put(const Slice& key, const Value& value,
+  ErrorCode Put(const Slice& key, const Value2& value,
                         const Hash& pre_version, Hash* version) override;
+  
   ErrorCode Branch(const Slice& key, const Slice& old_branch,
                            const Slice& new_branch) override;
   ErrorCode Branch(const Slice& key, const Hash& version,
                            const Slice& new_branch) override;
   ErrorCode Rename(const Slice& key, const Slice& old_branch,
                            const Slice& new_branch) override;
+  ErrorCode Merge(const Slice& key, const Value2& value,
+                          const Slice& tgt_branch, const Slice& ref_branch,
+                          Hash* version) override;
+  ErrorCode Merge(const Slice& key, const Value2& value,
+                          const Slice& tgt_branch, const Hash& ref_version,
+                          Hash* version) override;
+  ErrorCode Merge(const Slice& key, const Value2& value,
+                          const Hash& ref_version1, const Hash& ref_version2,
+                          Hash* version) override;
+
+
+  // depcreated in 0.2
+  ErrorCode Get(const Slice& key, const Slice& branch, Value* val) override;
+  ErrorCode Get(const Slice& key, const Hash& ver, Value* val) override;
+  ErrorCode Put(const Slice& key, const Value& value,
+                        const Slice& branch, Hash* version) override; 
+  ErrorCode Put(const Slice& key, const Value& value,
+                        const Hash& pre_version, Hash* version) override;
   ErrorCode Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Slice& ref_branch,
                           Hash* version) override;
@@ -90,6 +110,9 @@ class ClientDb : public DB {
   ErrorCode Merge(const Slice& key, const Value& value,
                           const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) override;
+
+  //  not implemented for now
+  Chunk GetChunk(const Slice& key, const Hash& version) {return Chunk();}
 
   inline int id() const noexcept { return id_; }
 
@@ -102,16 +125,16 @@ class ClientDb : public DB {
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
   // helper methods for creating messages
-  UStoreMessage* CreatePutRequest(const Slice &key, const Value &value);
+  UStoreMessage* CreatePutRequest(const Slice &key, const Value2 &value);
   UStoreMessage* CreateGetRequest(const Slice &key);
   UStoreMessage* CreateBranchRequest(const Slice &key,
                                     const Slice &new_branch);
-  UStoreMessage* CreateMergeRequest(const Slice &key, const Value &value,
+  UStoreMessage* CreateMergeRequest(const Slice &key, const Value2 &value,
                                     const Slice &target_branch);
   // helper methods for getting response
   ErrorCode GetEmptyResponse();
   ErrorCode GetVersionResponse(Hash* version);
-  ErrorCode GetValueResponse(Value* value);
+  ErrorCode GetUCellResponse(UCell* value);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node

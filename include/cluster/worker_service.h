@@ -6,6 +6,8 @@
 #include <vector>
 #include "net/net.h"
 #include "proto/messages.pb.h"
+#include "types/ucell.h"
+#include "spec/value.h"
 
 namespace ustore {
 
@@ -52,6 +54,10 @@ class WorkerService {
     Worker* worker_;  // where the logic happens
     std::vector<node_id_t> addresses_;  // worker addresses
     CallBack* cb_ = nullptr;
+
+    // helper methods for parsing request/response
+    bool CreateUCellPayload(const UCell &val, UCellPayload *payload);
+    Value2* Value2FromRequest(Value2Payload *payload);
 };
 }  // namespace ustore
 

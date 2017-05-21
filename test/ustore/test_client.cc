@@ -9,12 +9,14 @@
 #include "gtest/gtest.h"
 #include "proto/messages.pb.h"
 #include "types/type.h"
+#include "types/ucell.h"
 #include "utils/env.h"
 #include "cluster/worker_service.h"
 #include "cluster/remote_client_service.h"
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/blob.h"
+#include "spec/value.h"
 #include "utils/logging.h"
 
 using ustore::UStoreMessage;
@@ -29,6 +31,9 @@ using ustore::Env;
 using ustore::ErrorCode;
 using ustore::ClientDb;
 using ustore::Value;
+using ustore::Value2;
+using ustore::UType;
+using ustore::UCell;
 using std::thread;
 using std::vector;
 using std::set;
@@ -47,44 +52,80 @@ const string values[] = {"where is the wisdome in knowledge",
 void TestClientRequest(ClientDb* client, int idx, int len) {
   Hash HEAD_VERSION = Hash::ComputeFrom((const byte_t*)("head"), 4);
 
-  // put
+  // put a string
+  Value2 string_val;
+  string_val.type = UType::kString;
+  string_val.base = Hash::kNull;
+  string_val.vals.push_back(Slice(values[idx]));
   Hash version;
   EXPECT_EQ(client->Put(Slice(keys[idx]),
-        Value(Blob((const byte_t*)values[idx].data(),
-        values[idx].length())), HEAD_VERSION, &version), ErrorCode::kOK);
-  LOG(INFO) << "PUT version : " << version.ToBase32();
+        //Value(Blob((const byte_t*)values[idx].data(),
+        //values[idx].length())), 
+        string_val,
+        HEAD_VERSION, &version), ErrorCode::kOK);
+  LOG(INFO) << "PUT version (string): " << version.ToBase32();
 
-  // get it back
-  Value value;
-  EXPECT_EQ(client->Get(Slice(keys[idx]), version, &value), ErrorCode::kOK);
+  // put a list of 2 values
+  Value2 list_val;
+  list_val.type = UType::kList;
+  list_val.base = Hash::kNull;
+  list_val.vals.push_back(Slice(values[0]));
+  list_val.vals.push_back(Slice(values[idx]));
+  Hash version_list;
+  EXPECT_EQ(client->Put(Slice(keys[idx]),
+        //Value(Blob((const byte_t*)values[idx].data(),
+        //values[idx].length())), 
+        list_val,
+        HEAD_VERSION, &version_list), ErrorCode::kOK);
+  LOG(INFO) << "PUT version (list): " << version_list.ToBase32();
 
-  LOG(INFO) << "GET value : " << string((const char*)value.blob().data(),
-                                            value.blob().size());
+  // get the string back
+  UCell string_value;
+  EXPECT_EQ(client->Get(Slice(keys[idx]), version, &string_value),
+                                        ErrorCode::kOK);
+  EXPECT_EQ(string_value.type(), UType::kString); 
+  LOG(INFO) << "GET datahash (string): "
+              <<  string_value.dataHash().ToBase32();
+
+  // get the list back
+  UCell list_value;
+  EXPECT_EQ(client->Get(Slice(keys[idx]), version_list, &list_value),
+                                        ErrorCode::kOK);
+  EXPECT_EQ(list_value.type(), UType::kList); 
+  LOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
+
   // branch from head
   string new_branch = "branch_"+std::to_string(idx);
   EXPECT_EQ(client->Branch(Slice(keys[idx]),
                               version, Slice(new_branch)), ErrorCode::kOK);
 
-  // put on the new branch
+  // put on the new branch (string value)
   Hash branch_version;
   EXPECT_EQ(client->Put(Slice(keys[idx]),
-      Value(Blob((const byte_t *)values[idx].data(),
-   values[idx].length())), Slice(new_branch), &branch_version), ErrorCode::kOK);
-
-  LOG(INFO) << "PUT version: " << branch_version.ToBase32() << std::endl;
+      //Value(Blob((const byte_t *)values[idx].data(),
+      //values[idx].length())), 
+      string_val,
+      Slice(new_branch), &branch_version), ErrorCode::kOK);
+  
+  LOG(INFO) << "PUT version (new branch): " << branch_version.ToBase32() 
+            << std::endl;
 
   // merge
   Hash merge_version;
   EXPECT_EQ(client->Merge(Slice(keys[idx]),
-        Value(Blob((const byte_t *)values[idx].data(), values[idx].length())),
+        //Value(Blob((const byte_t *)values[idx].data(), values[idx].length())),
+        string_val,
                 Slice(new_branch), version, &merge_version), ErrorCode::kOK);
-  LOG(INFO) << "MERGE version: " << merge_version.ToBase32() << std::endl;
+  LOG(INFO) << "MERGE version (w/o branch): " << merge_version.ToBase32()
+            << std::endl;
 
   EXPECT_EQ(client->Merge(Slice(keys[idx]),
-        Value(Blob((const byte_t *)values[idx].data(), values[idx].length())),
+        //Value(Blob((const byte_t *)values[idx].data(), values[idx].length())),
+                string_val,
                 version, branch_version, &merge_version),
                 ErrorCode::kOK);
-  LOG(INFO) << "MERGE version: " << merge_version.ToBase32() << std::endl;
+  LOG(INFO) << "MERGE version (with branch): " << merge_version.ToBase32()
+            << std::endl;
 }
 
 TEST(TestMessage, TestClient1Thread) {
