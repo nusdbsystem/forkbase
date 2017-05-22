@@ -46,6 +46,7 @@ class UCell : private Noncopyable {
   inline Slice key() const { return node_->key(); }
   // hash of this ucell
   inline Hash hash() const { return node_->hash(); }
+  inline const Chunk& chunk() const { return node_->chunk(); }
 
  private:
   std::unique_ptr<const CellNode> node_;

@@ -50,18 +50,16 @@ class CellNode {
   // return empty hash (Hash()) if
   // the request second prehash does not exist
   Hash preHash(bool second = false) const;
-
   inline size_t keyLength() const {
     return static_cast<size_t>(*reinterpret_cast<const key_size_t*>(
           chunk_.data() + kKeyLenOffset(merged())));
   }
-
   inline Slice key() const {
     return Slice(chunk_.data() + kKeyOffset(merged()), keyLength());
   }
-
   // hash of this node
   inline Hash hash() const { return chunk_.hash(); }
+  inline const Chunk& chunk() const { return chunk_; }
 
  private:
   static constexpr size_t kUTypeOffset = 0;
