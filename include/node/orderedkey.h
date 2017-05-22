@@ -10,8 +10,6 @@
 #include "utils/logging.h"
 
 namespace ustore {
-// TODO(pingcheng): Later make OrdreedKey contain a slice as member
-//   and use slice for comparison if not by value
 class OrderedKey {
   /* OrderedKey can either be a hash value (byte array) or an uint64_t integer
 
@@ -25,18 +23,30 @@ class OrderedKey {
   }
   // Set an integer value for key
   // own set to false
-  OrderedKey() {}
-  explicit OrderedKey(uint64_t value);
+  OrderedKey() = default;
+
+  explicit OrderedKey(uint64_t value) noexcept;
   // Set the hash data for key
-  OrderedKey(bool by_value, const byte_t* data, size_t num_bytes);
-  OrderedKey(const OrderedKey& key) = default;
-  ~OrderedKey() {}
+  OrderedKey(bool by_value, const byte_t* data, size_t num_bytes) noexcept;
 
-  OrderedKey& operator=(const OrderedKey& key) = default;
+  OrderedKey(const OrderedKey& key) noexcept :
+      by_value_(key.by_value_),
+      value_(key.value_),
+      slice_(key.slice_) {}
 
-  inline const byte_t* data() const { return data_; }
+  ~OrderedKey() = default;
+
+  OrderedKey& operator=(const OrderedKey& key) noexcept {
+    by_value_ = key.by_value_;
+    value_ = key.value_;
+    slice_ = key.slice_;
+
+    return *this;
+  }
+
+  inline const byte_t* data() const { return slice_.data(); }
   inline size_t numBytes() const {
-    return by_value_ ? sizeof(uint64_t) : num_bytes_;
+    return by_value_ ? sizeof(uint64_t) : slice_.len();
   }
   // encode OrderedKey into buffer
   // given buffer capacity > numBytes
@@ -55,16 +65,15 @@ class OrderedKey {
 
   inline Slice ToSlice() const {
     CHECK(!by_value_);
-    return Slice(data_, num_bytes_);
+    return slice_;
   }
 
  private:
-  size_t num_bytes_;  // number of bytes of data
   // Parse the data as a number to compare
   // Otherwise as hash value
   bool by_value_;
   uint64_t value_;
-  const byte_t* data_;  // data bytes
+  Slice slice_;
 };
 
 }  // namespace ustore
