@@ -25,6 +25,8 @@ class UCell : private Noncopyable {
 
   UCell() = default;
   UCell(UCell&& ucell) : node_(std::move(ucell.node_)) {}
+  // To be called by Load(), Create() and ClientDb()
+  explicit UCell(Chunk&& chunk);
   ~UCell() = default;
 
   UCell& operator=(UCell&& ucell) {
@@ -46,9 +48,6 @@ class UCell : private Noncopyable {
   inline Hash hash() const { return node_->hash(); }
 
  private:
-  // Private contructor to be called by Load() or Create()
-  explicit UCell(Chunk&& chunk);
-
   std::unique_ptr<const CellNode> node_;
 };
 

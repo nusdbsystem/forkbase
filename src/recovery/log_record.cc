@@ -13,12 +13,9 @@ namespace recovery {
 
 std::string LogRecord::ToString() {
   std::string ret;
-  int64_t reserve_space = 0;
-  /*
-   * Reserve space for data_length
-   * */
-  ret.append(reinterpret_cast<const char*>(&reserve_space),
-             sizeof(reserve_space));
+  // Reserve space for data_length
+  ret.append(reinterpret_cast<const char*>(&data_length),
+             sizeof(data_length));
   ret.append(reinterpret_cast<const char*>(&checksum), sizeof(checksum));
   ret.append(reinterpret_cast<const char*>(&version), sizeof(version));
   ret.append(reinterpret_cast<const char*>(&logcmd), sizeof(logcmd));
@@ -34,6 +31,7 @@ std::string LogRecord::ToString() {
     ret.append(reinterpret_cast<const char*>(value), value_length);
   }
   data_length = ret.length();
+  // Set data_length
   ret.replace(0, sizeof(data_length),
               reinterpret_cast<const char*>(&data_length), sizeof(data_length));
   return ret;

@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <string>
-#include "spec/slice.h"
 #include "types/type.h"
 
 namespace ustore {
