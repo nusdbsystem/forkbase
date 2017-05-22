@@ -134,6 +134,26 @@ ErrorCode ClientDb::Get(const Slice& key, const Hash& version,
   return GetUCellResponse(meta);
 }
 
+Chunk ClientDb::GetChunk(const Slice& key, const Hash& version) {
+  UStoreMessage *request = CreateGetRequest(key);
+  // header
+  request->set_version(version.value(), Hash::kByteLength);
+  // send
+  node_id_t dest = workers_->GetWorker(key);
+  Send(request, dest);
+  delete request;
+
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+  // const std::string &tmp = response->get_response_payload().value();
+  UCellPayload *tmp = response->mutable_get_response_payload()
+                      ->mutable_meta();
+  // make a copy of the Slice object
+  byte_t* buf = new byte_t[tmp->value().length()];
+  std::memcpy(buf, tmp->value().data(), tmp->value().length());
+  return Chunk(std::move(buf));
+}
+
 UStoreMessage *ClientDb::CreateBranchRequest(const Slice &key,
     const Slice &new_branch) {
   UStoreMessage *request = new UStoreMessage();
@@ -320,17 +340,10 @@ ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
   UCellPayload *tmp = response->mutable_get_response_payload()
                       ->mutable_meta();
   // make a copy of the Slice object
-  byte_t* buf = new byte_t[tmp->key().length()];
-  std::memcpy(buf, tmp->key().data(), tmp->key().length());
-  
-  *meta  = UCell::Create(static_cast<UType>(tmp->type()),
-                        Slice(buf, tmp->key().length()),
-                        Hash(reinterpret_cast<const byte_t*>
-                              (tmp->data_root_hash().data())).Clone(),
-                        Hash(reinterpret_cast<const byte_t*>
-                              (tmp->prehash1().data())).Clone(),
-                        Hash(reinterpret_cast<const byte_t*>
-                              (tmp->prehash2().data())).Clone());
+  byte_t* buf = new byte_t[tmp->value().length()];
+  std::memcpy(buf, tmp->value().data(), tmp->value().length());
+  Chunk c(std::move(buf));
+  *meta = UCell(std::move(c));
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
   return err;

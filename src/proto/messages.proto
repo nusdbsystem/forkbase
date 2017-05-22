@@ -131,11 +131,7 @@ message RangeInfo {
 }
 
 message UCellPayload {
-  required int32 type = 1;
-  required bytes key = 2;
-  required bytes data_root_hash = 3;
-  optional bytes prehash1 = 4;
-  optional bytes prehash2 = 5;
+  required bytes value = 1;
 }
 
 message Value2Payload {

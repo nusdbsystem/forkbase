@@ -86,13 +86,16 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   EXPECT_EQ(string_value.type(), UType::kString); 
   LOG(INFO) << "GET datahash (string): "
               <<  string_value.dataHash().ToBase32();
-
   // get the list back
   UCell list_value;
   EXPECT_EQ(client->Get(Slice(keys[idx]), version_list, &list_value),
                                         ErrorCode::kOK);
   EXPECT_EQ(list_value.type(), UType::kList); 
   LOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
+
+  // check GetChunk
+  EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list).numBytes(),
+            list_value.chunk().numBytes());
 
   // branch from head
   string new_branch = "branch_"+std::to_string(idx);

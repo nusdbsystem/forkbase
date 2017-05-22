@@ -90,22 +90,6 @@ void WorkerService::Start() {
   net_->Start();
 }
 
-bool WorkerService::CreateUCellPayload(const UCell &val,
-                                      UCellPayload *payload) {
-  payload->set_type(static_cast<int>(val.type()));
-  payload->set_key(val.key().data(), val.key().len());
-  payload->set_data_root_hash(
-    reinterpret_cast<const byte_t*>(val.dataHash().value()),
-    Hash::kByteLength);
-  payload->set_prehash1(
-    reinterpret_cast<const byte_t*>(val.preHash().value()),
-    Hash::kByteLength);
-  payload->set_prehash2(
-    reinterpret_cast<const byte_t*>(val.preHash(true).value()),
-    Hash::kByteLength);
-  return true;
-}
-
 Value2* WorkerService::Value2FromRequest(Value2Payload *payload) {
   Value2 *val = new Value2();
   val->type = static_cast<UType>(payload->type());
@@ -179,8 +163,8 @@ void WorkerService::HandleRequest(const void *msg, int size,
 
       GetResponsePayload *payload =
               response->mutable_get_response_payload();
-      CreateUCellPayload(val, payload->mutable_meta());
-      //payload->set_value((val.blob()).data(), (val.blob()).size());
+      payload->mutable_meta()
+            ->set_value(val.chunk().head(), val.chunk().numBytes());
       break;
     }
     case UStoreMessage::BRANCH_REQUEST:

@@ -111,8 +111,7 @@ class ClientDb : public DB2 {
                           const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) override;
 
-  //  not implemented for now
-  Chunk GetChunk(const Slice& key, const Hash& version) {return Chunk();}
+  Chunk GetChunk(const Slice& key, const Hash& version) override;
 
   inline int id() const noexcept { return id_; }
 

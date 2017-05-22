@@ -177,20 +177,10 @@ TEST(TestMessage, TestGetResponse) {
   GetResponsePayload *payload
     = msg.mutable_get_response_payload();
   UCellPayload *ucell = payload->mutable_meta();
-  ucell->set_type(static_cast<int>(UType::kMap));
   
-  byte_t key[TEST_KEY_SIZE];
-  randomVals(key, TEST_KEY_SIZE);
-  ucell->set_key(key, TEST_KEY_SIZE);
-
-  byte_t root_hash[Hash::kByteLength];
-  randomVals(root_hash, Hash::kByteLength);
-  ucell->set_data_root_hash(root_hash, Hash::kByteLength);
-
-  byte_t preHash[Hash::kByteLength];
-  randomVals(preHash, Hash::kByteLength);
-  ucell->set_prehash1(preHash, Hash::kByteLength);
-  ucell->set_prehash2(preHash, Hash::kByteLength);
+  byte_t value[TEST_VALUE_SIZE];
+  randomVals(value, TEST_VALUE_SIZE);
+  ucell->set_value(value, TEST_VALUE_SIZE);
 
   // serialized
   int msg_size = msg.ByteSize();
@@ -205,12 +195,8 @@ TEST(TestMessage, TestGetResponse) {
   EXPECT_EQ(recovered_msg.has_status(), true);
   EXPECT_EQ(recovered_msg.status(), (int)ErrorCode::kOK);
   EXPECT_EQ(checkPayload((const byte_t*)recovered_msg.get_response_payload().
-                        meta().data_root_hash().data(), Hash::kByteLength,
-                        root_hash, Hash::kByteLength), true); 
-  EXPECT_EQ(checkPayload((const byte_t*)recovered_msg.get_response_payload().
-                        meta().prehash1().data(), Hash::kByteLength,
-                        preHash, Hash::kByteLength), true); 
-
+                        meta().value().data(), TEST_VALUE_SIZE,
+                        value, TEST_VALUE_SIZE), true); 
   delete[] serialized;
 }
 
