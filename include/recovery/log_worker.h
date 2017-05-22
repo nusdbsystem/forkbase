@@ -3,12 +3,11 @@
 #ifndef USTORE_RECOVERY_LOG_WORKER_H_
 #define USTORE_RECOVERY_LOG_WORKER_H_
 
-#include"recovery/log_record.h"
-
 #include <condition_variable>
 #include <mutex>
 
 #include "hash/hash.h"
+#include"recovery/log_record.h"
 #include "recovery/log_thread.h"
 #include "spec/slice.h"
 
@@ -20,106 +19,95 @@ namespace recovery {
  * */
 class LogWorker : public LogThread {
  public:
-  LogWorker(int stage = 0);
+  explicit LogWorker(int stage = 0);
   ~LogWorker();
-  bool Init(const char* log_dir, const char* log_filename);
 
+  bool Init(const char* log_dir, const char* log_filename);
   /*
-   * @brief: get the defined timeout
+   * @brief: Update branch version
+   * @return: return the log sequence number for the update
    * */
-  int64_t GetTimeout();
+  int64_t Update(const Slice& branch_name, const Hash& new_version);
   /*
-   * @brief: set the timeout according to your application requirement
+   * @brief: Rename the branch name to a new one
+   * @return: return the log sequence number for the rename operation
    * */
-  void SetTimeout(int64_t timeout_ms);
+  int64_t Rename(const Slice& branch_name, const Slice& new_branch_name);
   /*
-   * @brief: get the size of the log buffer that is maintained in memory
+   * @brief: Remove the branch from the branch head table
+   * @return: return the log sequence number for the remove operation
    * */
-  int64_t GetBufferSize();
+  int64_t Remove(const Slice& branch_name);
   /*
-   * @brief: set the size of the log buffer, and should resize the buffer
+   * @brief: Read one log record from log file
+   * @return: return one log record.
    * */
-  bool SetBufferSize(int64_t buf_size);
-  /*
-   * @brief: get the condition_variable
-   * */
-  std::condition_variable* GetFlushCV();
-  std::condition_variable* GetWorkerCV();
-  /*
-   * @brief: set the condition_variable
-   * */
-  void SetFlushCV(std::condition_variable* cv);
-  void SetWorkerCV(std::condition_variable* cv);
-  /*
-   * @brief: get the current position in the log buffer
-   * */
-  int64_t GetBufferIndice();
-  /*
-   * @brief: append log data in the log buffer, the log data should contain meta
-   * infomation, which is also useful for the recovery.
-   * */
-  bool WriteLog(const char* data, uint64_t data_length);
+  bool ReadOneLogRecord(LogRecord* record);
   /*
    * @brief: flush the data in the log buffer to disk and reset related
    * variables
    * */
   int Flush();
   /*
+   * @brief: get the defined timeout
+   * */
+  inline int64_t timeout() { return timeout_; }
+  /*
+   * @brief: set the timeout according to your application requirement
+   * */
+  inline void setTimeout(int64_t timeout_ms) { timeout_ = timeout_ms; }
+  /*
+   * @brief: get the size of the log buffer that is maintained in memory
+   * */
+  inline int64_t bufferSize() { return buffer_size_; }
+  /*
+   * @brief: set the size of the log buffer, and should resize the buffer
+   * */
+  bool setBufferSize(int64_t buf_size);
+  /*
+   * @brief: get the current position in the log buffer
+   * */
+  inline int64_t bufferIndice() { return buffer_indice_; }
+  /*
    * @brief: get the synchronization type
    * */
-  int GetSyncType();
+  inline int syncType() { return log_sync_type_; }
   /*
    * @brief: set the synchroniation type
    * @params [in] type: 1==>strong consistency, 0==>weak consistency
    * */
-  bool SetSyncType(int type);
+  bool setSyncType(int type);
 
+ private:
+  static constexpr int64_t kDefaultBufferSize = 4 * 1024 * 1024;
+  static constexpr int64_t kDefaultTimeout = 5000;
+
+  int64_t WriteRecord(LogCommand cmd, const Slice& key, const Slice& value);
+  /*
+   * @brief: get the condition_variable
+   * */
+  inline std::condition_variable& flushCV() { return flush_cv_; }
+  /*
+   * @brief: append log data in the log buffer, the log data should contain meta
+   * infomation, which is also useful for the recovery.
+   * */
+  bool WriteLog(const char* data, uint64_t data_length);
   /*
    * @brief: create a thread to do the work
    * */
   void* Run();
 
-  /*
-   * @brief: Update branch version
-   * @return: return the log sequence number for the update
-   * */
-  // TODO(yaochang): change Slice -> const Slice&, Hash -> const Hash&
-  // TODO(yaochang): could remove Slice*, Hash* methods
-  int64_t Update(const Slice& branch_name, const Hash& new_version);
-  //int64_t Update(Slice* branch_name, Hash* new_version);
-  /*
-   * @brief: Rename the branch name to a new one
-   * @return: return the log sequence number for the rename operation
-   * */
-  int64_t Rename(const Slice& branch_name, const Slice& new_branch_name);
-  //int64_t Rename(Slice* branch_name, Slice* new_branch_name);
-  /*
-   * @brief: Remove the branch from the branch head table
-   * @return: return the log sequence number for the remove operation
-   * */
-  int64_t Remove(const Slice& branch_name);
-  //int64_t Remove(Slice* branch_name);
-
-		/*
-			* @brief: Read one log record from log file
-			* @return: return one log record.
-			* */
-		bool ReadOneLogRecord(LogRecord& record);
-
- private:
-		int stage_; 	// 0 -> normal execution, 1 -> restart/recovery 
-  int64_t timeout_;       // timeout to flush the log to disk
-  // TODO(yaochang): why not directly use instance instead of a pointer?
-		// operator= on instance is disabled
-  std::condition_variable* flush_cv_;  // wait_for timeout or the buffer is full
+  int stage_;  // 0 -> normal execution, 1 -> restart/recovery
+  std::condition_variable flush_cv_;  // wait_for timeout or the buffer is full
   std::mutex flush_mutex_;
-  int64_t buffer_size_;    // the size of the log buffer
-  int64_t buffer_indice_;  // current position
+  int64_t buffer_indice_ = 0;  // current position
   std::mutex buffer_lock_;
+  int64_t buffer_size_ = kDefaultBufferSize;
   char* buffer_;  // the log data buffer
-  const char* log_dir_;
-  const char* log_filename_;
-  int fd_;
+  int64_t timeout_ = kDefaultTimeout;
+  // const char* log_dir_ = nullptr;
+  // const char* log_filename_ = nullptr;
+  int fd_ = -1;
   /*
    * log synchronization type may affect the system performance
    * strong consistency ==> 1, each operation can commit only after the log is
@@ -127,8 +115,8 @@ class LogWorker : public LogThread {
    * weak consistency ==> 0, which is also the default setting, the log is
    * flushed to disk when the buffer is full or the timeout is due
    * */
-  int log_sync_type_;
-  int64_t log_sequence_number_;
+  int log_sync_type_ = 0;
+  int64_t log_sequence_number_ = 0;
 };
 
 }  // namespace recovery

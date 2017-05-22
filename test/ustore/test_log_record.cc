@@ -18,7 +18,7 @@ TEST(Recovery, LogRecordChecksum) {
   EXPECT_EQ(record.version, 1);
   EXPECT_EQ(record.key, nullptr);
   EXPECT_EQ(record.value, nullptr);
-  record.logcmd = (int64_t)ustore::recovery::LogCommand::kUpdate;
+  record.logcmd = ustore::recovery::LogCommand::kUpdate;
   record.log_sequence_number = 11;
   record.key = reinterpret_cast<const ustore::byte_t*>(testkey);
   record.value = reinterpret_cast<const ustore::byte_t*>(testvalue);
@@ -30,15 +30,13 @@ TEST(Recovery, LogRecordChecksum) {
 
 TEST(Recovery, LogRecordToString) {
   ustore::recovery::LogRecord record;
-  record.logcmd = (int16_t)ustore::recovery::LogCommand::kUpdate;
+  record.logcmd = ustore::recovery::LogCommand::kUpdate;
   record.log_sequence_number = 11;
   record.key = reinterpret_cast<const ustore::byte_t*>(testkey);
   record.value = reinterpret_cast<const ustore::byte_t*>(testvalue);
   record.key_length = strlen(testkey);
-		LOG(INFO) << "key_length:" << record.key_length;
   record.value_length = strlen(testvalue);
-		LOG(INFO) << "value length: " << record.value_length;
   record.ComputeChecksum();
-		std::string str = record.ToString();
-  EXPECT_EQ(record.data_length, 80);
+	std::string str = record.ToString();
+  EXPECT_EQ(record.data_length, 86);
 }

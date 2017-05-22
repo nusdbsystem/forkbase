@@ -43,6 +43,7 @@ TEST(Logging, StderrLoggingLevel) {
   LOG(INFO) << "test info logging to stderr";
   LOG(WARNING) << "test warning logging to stderr and file";
   LOG(ERROR) << "test error logging to stderr and file";
+  ustore::SetStderrLogging(ustore::INFO);
 }
 
 #ifdef DEBUG

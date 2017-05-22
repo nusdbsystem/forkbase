@@ -3,14 +3,16 @@
 #ifndef USTORE_RECOVERY_LOG_RECORD_H_
 #define USTORE_RECOVERY_LOG_RECORD_H_
 
+#include <memory>
 #include <string>
+#include "spec/slice.h"
 #include "types/type.h"
 
 namespace ustore {
 namespace recovery {
 
-// (yaochang): change enum to enum class
 enum class LogCommand : int16_t {
+  kNull = 0,  // Invalid
   kUpdate = 111,  // Update(branch_name, version)
   kRename = 112,  // Rename(branch_name, new_branch_name)
   kRemove = 113   // Remove(branch_name)
@@ -21,23 +23,28 @@ enum class LogCommand : int16_t {
    **/
 struct LogRecord {
  public:
-  LogRecord();
-  ~LogRecord();
-  // (yaochang): change char* to std::string
-		std::string ToString();  // generate all the content to a string
-  int64_t GetLength();  // return the string length from ToString()
-  int64_t ComputeChecksum();  // Compute the checksum according to the content
+  LogRecord() {}
+  ~LogRecord() = default;
 
-  int64_t checksum;  // compute the checksum after the other fields are filled
-  int16_t version;  // by default
-  int16_t logcmd;  // what kind of operation
-  int64_t log_sequence_number;
-  int64_t key_length;
-  int64_t value_length;
-  // (yaochang): change key and value to be const char*
-  const byte_t* key;
-  const byte_t* value;
-  int64_t data_length;
+  // generate all the content to a string
+  std::string ToString();
+  // generate all the content to a string
+  void FromString(const char* log_data);
+  // Compute the checksum according to the content
+  int64_t ComputeChecksum();
+
+  // compute the checksum after the other fields are filled
+  int64_t checksum = 0;
+  int16_t version = 1;  // by default
+  LogCommand logcmd = LogCommand::kNull;  // what kind of operation
+  int64_t log_sequence_number = 0;
+  const byte_t* key = nullptr;
+  const byte_t* value = nullptr;
+  int64_t key_length = 0;
+  int64_t value_length = 0;
+  int64_t data_length = 0;
+  std::unique_ptr<byte_t[]> key_data;
+  std::unique_ptr<byte_t[]> value_data;
 };
 
 }  // namespace recovery
