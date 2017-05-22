@@ -12,12 +12,16 @@
 
 namespace ustore {
 
-// TODO(pingcheng): can consider -> using KVItem = std::pair<Slice, Slice>
 struct KVItem {
-  const byte_t* key;
-  const byte_t* val;
-  size_t key_num_bytes;
-  size_t val_num_bytes;
+  Slice key;
+  Slice val;
+
+  KVItem(const byte_t* key_data,
+         const byte_t* val_data,
+         size_t key_num_bytes,
+         size_t value_num_bytes) :
+      key(key_data, key_num_bytes),
+      val(val_data, value_num_bytes) {}
 };
 
 class MapChunker : public Singleton<MapChunker>, public Chunker {

@@ -58,12 +58,12 @@ TEST(MapNode, Codec) {
   size_t actual_item_num_bytes;
   ustore::KVItem kvitem =
       ustore::MapNode::kvitem(buffer, &actual_item_num_bytes);
-  EXPECT_EQ(key_num_bytes, kvitem.key_num_bytes);
-  EXPECT_EQ(val_num_bytes, kvitem.val_num_bytes);
+  EXPECT_EQ(key_num_bytes, kvitem.key.len());
+  EXPECT_EQ(val_num_bytes, kvitem.val.len());
   EXPECT_EQ(0,
-            memcmp(key_data, kvitem.key, key_num_bytes));
+            memcmp(key_data, kvitem.key.data(), key_num_bytes));
   EXPECT_EQ(0,
-            memcmp(val_data, kvitem.val, val_num_bytes));
+            memcmp(val_data, kvitem.val.data(), val_num_bytes));
 }
 
 TEST(MapNode, Basic) {
@@ -128,10 +128,10 @@ TEST(MapNode, Basic) {
   size_t item2_num_bytes;
   const ustore::KVItem item2 = ustore::MapNode::kvitem(kv2_data,
                                                        &item2_num_bytes);
-  EXPECT_EQ(3, item2.key_num_bytes);
-  EXPECT_EQ(3, item2.val_num_bytes);
-  EXPECT_EQ(0, memcmp(item2.key, k2, 3));
-  EXPECT_EQ(0, memcmp(item2.val, v2, 3));
+  EXPECT_EQ(3, item2.key.len());
+  EXPECT_EQ(3, item2.val.len());
+  EXPECT_EQ(0, memcmp(item2.key.data(), k2, 3));
+  EXPECT_EQ(0, memcmp(item2.val.data(), v2, 3));
 
   // Find the exact key
   ustore::OrderedKey key1(false, k1, 2);

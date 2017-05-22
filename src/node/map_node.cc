@@ -103,17 +103,17 @@ size_t MapNode::Encode(byte_t* buffer, const KVItem& kv_item) {
   const size_t num_byte_offset = 0;
   const size_t key_byte_offset = num_byte_offset + sizeof(uint32_t);
   const size_t key_offset = key_byte_offset + sizeof(uint32_t);
-  const size_t val_offset = key_offset + kv_item.key_num_bytes;
+  const size_t val_offset = key_offset + kv_item.key.len();
 
   const size_t item_num_bytes = MapNode::EncodeNumBytes(kv_item);
 
   uint32_t uitem_num_bytes = static_cast<uint32_t>(item_num_bytes);
-  uint32_t ukey_num_bytes = static_cast<uint32_t>(kv_item.key_num_bytes);
+  uint32_t ukey_num_bytes = static_cast<uint32_t>(kv_item.key.len());
 
   std::memcpy(buffer + num_byte_offset, &uitem_num_bytes, sizeof(uint32_t));
   std::memcpy(buffer + key_byte_offset, &ukey_num_bytes, sizeof(uint32_t));
-  std::memcpy(buffer + key_offset, kv_item.key, kv_item.key_num_bytes);
-  std::memcpy(buffer + val_offset, kv_item.val, kv_item.val_num_bytes);
+  std::memcpy(buffer + key_offset, kv_item.key.data(), kv_item.key.len());
+  std::memcpy(buffer + val_offset, kv_item.val.data(), kv_item.val.len());
 
   return item_num_bytes;
 }
@@ -121,8 +121,8 @@ size_t MapNode::Encode(byte_t* buffer, const KVItem& kv_item) {
 size_t MapNode::EncodeNumBytes(const KVItem& kv_item) {
   return sizeof(uint32_t)  // 4 bytes for entry length
          + sizeof(uint32_t)  // 4 bytes for key size
-         + kv_item.key_num_bytes
-         + kv_item.val_num_bytes;
+         + kv_item.key.len()
+         + kv_item.val.len();
 }
 
 std::unique_ptr<const Segment> MapNode::Encode(
@@ -130,11 +130,11 @@ std::unique_ptr<const Segment> MapNode::Encode(
   CHECK_GT(items.size(), 0);
   // Calcuate into number of bytes required
   // Meanwhile check key is in strict increasing order
-  OrderedKey preKey(false, items[0].key, items[0].key_num_bytes);
+  OrderedKey preKey(false, items[0].key.data(), items[0].key.len());
   size_t total_num_bytes = MapNode::EncodeNumBytes(items[0]);
 
   for (size_t i = 1; i < items.size(); ++i) {
-    OrderedKey currKey(false, items[i].key, items[i].key_num_bytes);
+    OrderedKey currKey(false, items[i].key.data(), items[i].key.len());
     total_num_bytes += MapNode::EncodeNumBytes(items[i]);
     CHECK(preKey < currKey);
     preKey = currKey;
