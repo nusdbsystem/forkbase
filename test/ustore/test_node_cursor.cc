@@ -247,9 +247,9 @@ TEST(NodeCursor, SingleNodeByKey) {
   constexpr const ustore::byte_t k3[] = "k333";
   constexpr const ustore::byte_t v3[] = "v333";
 
-  ustore::KVItem kv1{k1, v1, 2, 2};
-  ustore::KVItem kv2{k2, v2, 3, 3};
-  ustore::KVItem kv3{k3, v3, 4, 4};
+  ustore::KVItem kv1{{k1, 2}, {v1, 2}};
+  ustore::KVItem kv2{{k2, 3}, {v2, 3}};
+  ustore::KVItem kv3{{k3, 4}, {v3, 4}};
 
   ustore::byte_t* seg_data12 = new ustore::byte_t[100];
   ustore::byte_t* seg_data3 = new ustore::byte_t[100];
@@ -315,9 +315,9 @@ TEST(NodeCursor, TreeByKey) {
   constexpr const ustore::byte_t k3[] = "k333";
   constexpr const ustore::byte_t v3[] = "v333";
 
-  ustore::KVItem kv1{k1, v1, 2, 2};
-  ustore::KVItem kv2{k2, v2, 3, 3};
-  ustore::KVItem kv3{k3, v3, 4, 4};
+  ustore::KVItem kv1{{k1, 2}, {v1, 2}};
+  ustore::KVItem kv2{{k2, 3}, {v2, 3}};
+  ustore::KVItem kv3{{k3, 4}, {v3, 4}};
 
   ustore::byte_t* seg_data1 = new ustore::byte_t[100];
   ustore::byte_t* seg_data2 = new ustore::byte_t[100];

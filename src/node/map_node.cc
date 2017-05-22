@@ -96,7 +96,7 @@ const KVItem MapNode::kvitem(const byte_t* entry, size_t* item_num_bytes) {
                     + key_num_bytes
                     + val_num_bytes;
 
-  return {key_data, val_data, key_num_bytes, val_num_bytes};
+  return {{key_data, key_num_bytes}, {val_data, val_num_bytes}};
 }
 
 size_t MapNode::Encode(byte_t* buffer, const KVItem& kv_item) {

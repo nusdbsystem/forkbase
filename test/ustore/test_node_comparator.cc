@@ -262,13 +262,13 @@ class KeyComparatorSmallEnv : public ::testing::Test {
     constexpr const ustore::byte_t k7[] = "k7";
     constexpr const ustore::byte_t v7[] = "v7";
 
-    ustore::KVItem kv1{k1, v1, 2, 2};
-    ustore::KVItem kv2{k2, v2, 2, 2};
-    ustore::KVItem kv3{k3, v3, 2, 2};
-    ustore::KVItem kv4{k4, v4, 2, 2};
-    ustore::KVItem kv5{k5, v5, 3, 3};
-    ustore::KVItem kv6{k6, v6, 2, 2};
-    ustore::KVItem kv7{k7, v7, 2, 2};
+    ustore::KVItem kv1{{k1, 2}, {v1, 2}};
+    ustore::KVItem kv2{{k2, 2}, {v2, 2}};
+    ustore::KVItem kv3{{k3, 2}, {v3, 2}};
+    ustore::KVItem kv4{{k4, 2}, {v4, 2}};
+    ustore::KVItem kv5{{k5, 3}, {v5, 3}};
+    ustore::KVItem kv6{{k6, 2}, {v6, 2}};
+    ustore::KVItem kv7{{k7, 2}, {v7, 2}};
 
     std::unique_ptr<const ustore::Segment> seg =
         ustore::MapNode::Encode({kv1, kv2, kv3, kv4, kv5, kv6, kv7});
@@ -318,11 +318,11 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   constexpr const ustore::byte_t k9[] = "k9";
   constexpr const ustore::byte_t v9[] = "v9";
 
-  ustore::KVItem new_kv2{k2, new_v2, 3, 3};
-  ustore::KVItem new_kv5{new_k5, new_v2, 2, 2};
+  ustore::KVItem new_kv2{{k2, 3}, {new_v2, 3}};
+  ustore::KVItem new_kv5{{new_k5, 2}, {new_v2, 2}};
 
-  ustore::KVItem kv8{k8, v8, 2, 2};
-  ustore::KVItem kv9{k9, v9, 2, 2};
+  ustore::KVItem kv8{{k8, 2}, {v8, 2}};
+  ustore::KVItem kv9{{k9, 2}, {v9, 2}};
 
   const ustore::OrderedKey key2(false, k2, 2);
   const ustore::OrderedKey key5(false, k5, 3);
@@ -430,7 +430,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
 
         keys_.push_back(key);
         vals_.push_back(val);
-        kvs_.push_back({key, val, entry_size_, entry_size_});
+        kvs_.push_back({{key, entry_size_}, {val, entry_size_}});
       }
     }  // end 2 fors
 
@@ -481,7 +481,7 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
   std::vector<ustore::KVItem> new_items;
   for (size_t i = 400; i < 400 + 100; i++) {
-    new_items.push_back({keys_[i], vals_[i+1], entry_size_, entry_size_});
+    new_items.push_back({{keys_[i], entry_size_}, {vals_[i+1], entry_size_}});
   }
   auto seg1 = ustore::MapNode::Encode(new_items);
 
