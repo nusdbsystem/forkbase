@@ -24,23 +24,17 @@ class OrderedKey {
   // Set an integer value for key
   // own set to false
   OrderedKey() = default;
-
   explicit OrderedKey(uint64_t value) noexcept;
   // Set the hash data for key
   OrderedKey(bool by_value, const byte_t* data, size_t num_bytes) noexcept;
-
-  OrderedKey(const OrderedKey& key) noexcept :
-      by_value_(key.by_value_),
-      value_(key.value_),
-      slice_(key.slice_) {}
-
+  OrderedKey(const OrderedKey& key) noexcept
+    : by_value_(key.by_value_), value_(key.value_), slice_(key.slice_) {}
   ~OrderedKey() = default;
 
   OrderedKey& operator=(const OrderedKey& key) noexcept {
     by_value_ = key.by_value_;
     value_ = key.value_;
     slice_ = key.slice_;
-
     return *this;
   }
 

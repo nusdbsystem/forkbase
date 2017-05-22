@@ -115,6 +115,9 @@ class DuallyDiffIterator {
  public:
   //  The keys/index must be in strictly increasing order during iteration
   //  two iterator must be both at head
+  DuallyDiffIterator() = default;
+  DuallyDiffIterator(DuallyDiffIterator&& rhs) = default;
+
   DuallyDiffIterator(std::unique_ptr<UIterator> lhs_diff_it,
                      std::unique_ptr<UIterator> rhs_diff_it) noexcept :
       lhs_diff_it_(std::move(lhs_diff_it)),
@@ -126,21 +129,9 @@ class DuallyDiffIterator {
         update_flag(false);
   }
 
-  DuallyDiffIterator() = default;
+  ~DuallyDiffIterator() = default;
 
-  DuallyDiffIterator(DuallyDiffIterator&& rhs) noexcept :
-      lhs_diff_it_(std::move(rhs.lhs_diff_it_)),
-      rhs_diff_it_(std::move(rhs.rhs_diff_it_)),
-      it_flag_(rhs.it_flag_),
-      just_advanced(rhs.just_advanced) {}
-
-  DuallyDiffIterator& operator=(DuallyDiffIterator&& rhs) noexcept {
-    lhs_diff_it_ = std::move(rhs.lhs_diff_it_);
-    rhs_diff_it_ = std::move(rhs.rhs_diff_it_);
-    it_flag_ = rhs.it_flag_;
-    just_advanced = rhs.just_advanced;
-    return *this;
-  }
+  DuallyDiffIterator& operator=(DuallyDiffIterator&& rhs) = default;
 
   // return lhs value for the current key, which is different
   //   from rhs

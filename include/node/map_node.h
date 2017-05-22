@@ -16,12 +16,12 @@ struct KVItem {
   Slice key;
   Slice val;
 
-  KVItem(const byte_t* key_data,
-         const byte_t* val_data,
-         size_t key_num_bytes,
-         size_t value_num_bytes) :
-      key(key_data, key_num_bytes),
-      val(val_data, value_num_bytes) {}
+  KVItem() = default;
+  KVItem(const Slice& key_data, const Slice& val_data)
+    : key(key_data), val(val_data) {}
+  KVItem(const byte_t* key_data, const byte_t* val_data,
+         size_t key_num_bytes, size_t value_num_bytes)
+    : key(key_data, key_num_bytes), val(val_data, value_num_bytes) {}
 };
 
 class MapChunker : public Singleton<MapChunker>, public Chunker {

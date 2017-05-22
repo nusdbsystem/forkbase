@@ -31,28 +31,16 @@ size_t OrderedKey::Encode(byte_t* buffer) const {
 
 bool OrderedKey::operator>(const OrderedKey& otherKey) const {
   CHECK_EQ(by_value_, otherKey.by_value_);
-  if (by_value_) {
-    return value_ > otherKey.value_;
-  } else {
-    return slice_ > otherKey.slice_;
-  }
+  return by_value_ ? value_ > otherKey.value_ : slice_ > otherKey.slice_;
 }
 
 bool OrderedKey::operator<(const OrderedKey& otherKey) const {
   CHECK_EQ(by_value_, otherKey.by_value_);
-  if (by_value_) {
-    return value_ < otherKey.value_;
-  } else {
-    return slice_ < otherKey.slice_;
-  }
+  return by_value_ ? value_ < otherKey.value_ : slice_ < otherKey.slice_;
 }
 
 bool OrderedKey::operator==(const OrderedKey& otherKey) const {
   CHECK_EQ(by_value_, otherKey.by_value_);
-  if (by_value_) {
-    return value_ == otherKey.value_;
-  } else {
-    return slice_ == otherKey.slice_;
-  }
+  return by_value_ ? value_ == otherKey.value_ : slice_ == otherKey.slice_;
 }
 }  // namespace ustore

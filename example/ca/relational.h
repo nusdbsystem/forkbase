@@ -76,9 +76,8 @@ class ColumnStore {
   // Generate key for a column for a table
   // This is both used as a key to store column as a VList
   //   and as a key in table VMap to reference the VList hash
-  const std::string GetColumnKeyForTable(
-      const std::string& table_name,
-      const std::string& col_name) const {
+  const std::string GetColumnKeyForTable(const std::string& table_name,
+                                         const std::string& col_name) const {
     return table_name + "_" + col_name;
   }
 
