@@ -73,7 +73,7 @@ ErrorCode ColumnStore::MergeTable(const std::string& table_name,
   Slice ref_branch(ref_branch_name);
   Slice tgt_branch(tgt_branch_name);
 
-  VMeta table_meta = odb_.Get(table_key, ref_branch);
+  VMeta table_meta = odb_.Get(table_key, tgt_branch);
   USTORE_GUARD(table_meta.code());
   VMap table_map = table_meta.Map();
 // Put the entire column as a Vlist
