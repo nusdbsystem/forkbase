@@ -3,13 +3,13 @@
 package ustore;
 
 /**
- * A message exchanged between the system components. 
+ * A message exchanged between the system components.
  * It contains 2 parts: a header and a payload
  *  + Header: key, version, branch, type (and response status, if applicable)
  *  + Payload: each message type has its own payload message
  *
- * The message contains many optional fields, each corresponding to a payload type. 
- * Note that when ommited, these fields consume no space. 
+ * The message contains many optional fields, each corresponding to a payload type.
+ * Note that when ommited, these fields consume no space.
  *
  * To extend the message: define a new type, and define a new payload inside this object.
  */
@@ -18,12 +18,12 @@ message UStoreMessage {
     PUT_REQUEST = 1;
     PUT_RESPONSE = 2;
     GET_REQUEST = 3;
-    GET_RESPONSE = 4; 
-    BRANCH_REQUEST = 5; 
+    GET_RESPONSE = 4;
+    BRANCH_REQUEST = 5;
     BRANCH_RESPONSE = 6;
     RENAME_REQUEST = 7;
     RENAME_RESPONSE = 8;
-    MERGE_REQUEST = 9; 
+    MERGE_REQUEST = 9;
     MERGE_RESPONSE = 10;
   }
 
@@ -36,20 +36,19 @@ message UStoreMessage {
   // version
   optional bytes version = 3;
   // branch
-  optional bytes branch = 4; 
+  optional bytes branch = 4;
   // status (only for RESPONSE messages)
-  optional int32 status = 5; 
+  optional int32 status = 5;
   // to identify the sending thread
   required int32 source = 15;
 
-  
-  optional PutRequestPayload put_request_payload = 6; 
-  optional PutResponsePayload put_response_payload = 7; 
-  optional GetResponsePayload get_response_payload = 8; 
-  optional BranchRequestPayload branch_request_payload = 9; 
-  optional RenameRequestPayload rename_request_payload = 10; 
-  optional MergeRequestPayload merge_request_payload = 11; 
-  optional MergeResponsePayload merge_response_payload = 12; 
+  optional PutRequestPayload put_request_payload = 6;
+  optional PutResponsePayload put_response_payload = 7;
+  optional GetResponsePayload get_response_payload = 8;
+  optional BranchRequestPayload branch_request_payload = 9;
+  optional RenameRequestPayload rename_request_payload = 10;
+  optional MergeRequestPayload merge_request_payload = 11;
+  optional MergeResponsePayload merge_response_payload = 12;
 }
 
 /**
@@ -57,7 +56,7 @@ message UStoreMessage {
    */
   // PUT_REQUEST payload
 message PutRequestPayload {
-    //required bytes value = 3; 
+    //required bytes value = 3;
     required Value2Payload value = 3;
 }
 
@@ -79,9 +78,9 @@ message GetResponsePayload {
     required UCellPayload meta = 1;
 }
 
-  // BRANCH_REQUEST 
+  // BRANCH_REQUEST
 message BranchRequestPayload {
-    required bytes new_branch = 1; 
+    required bytes new_branch = 1;
 }
 
   // BRANCH_RESPONSE, MOVE_RESPONSE, MERGE_RESPONSE
@@ -89,15 +88,15 @@ message BranchRequestPayload {
 
   // MOVE_REQUEST
 message RenameRequestPayload {
-    required bytes new_branch = 1;  
+    required bytes new_branch = 1;
 }
 
   // MERGE_REQUEST
 message MergeRequestPayload {
     optional bytes target_branch = 1;
-    optional bytes ref_branch = 2; 
+    optional bytes ref_branch = 2;
     optional bytes ref_version = 6;
-    //required bytes value = 3; 
+    //required bytes value = 3;
     required Value2Payload value = 3;
 }
 

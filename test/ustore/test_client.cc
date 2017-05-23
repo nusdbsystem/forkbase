@@ -58,11 +58,8 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   string_val.base = Hash::kNull;
   string_val.vals.push_back(Slice(values[idx]));
   Hash version;
-  EXPECT_EQ(client->Put(Slice(keys[idx]),
-        //Value(Blob((const byte_t*)values[idx].data(),
-        //values[idx].length())), 
-        string_val,
-        HEAD_VERSION, &version), ErrorCode::kOK);
+  EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, HEAD_VERSION, &version),
+            ErrorCode::kOK);
   LOG(INFO) << "PUT version (string): " << version.ToBase32();
 
   // put a list of 2 values
@@ -72,25 +69,22 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   list_val.vals.push_back(Slice(values[0]));
   list_val.vals.push_back(Slice(values[idx]));
   Hash version_list;
-  EXPECT_EQ(client->Put(Slice(keys[idx]),
-        //Value(Blob((const byte_t*)values[idx].data(),
-        //values[idx].length())), 
-        list_val,
-        HEAD_VERSION, &version_list), ErrorCode::kOK);
+  EXPECT_EQ(client->Put(Slice(keys[idx]), list_val, HEAD_VERSION,
+                        &version_list), ErrorCode::kOK);
   LOG(INFO) << "PUT version (list): " << version_list.ToBase32();
 
   // get the string back
   UCell string_value;
   EXPECT_EQ(client->Get(Slice(keys[idx]), version, &string_value),
-                                        ErrorCode::kOK);
-  EXPECT_EQ(string_value.type(), UType::kString); 
+            ErrorCode::kOK);
+  EXPECT_EQ(string_value.type(), UType::kString);
   LOG(INFO) << "GET datahash (string): "
-              <<  string_value.dataHash().ToBase32();
+            <<  string_value.dataHash().ToBase32();
   // get the list back
   UCell list_value;
   EXPECT_EQ(client->Get(Slice(keys[idx]), version_list, &list_value),
-                                        ErrorCode::kOK);
-  EXPECT_EQ(list_value.type(), UType::kList); 
+            ErrorCode::kOK);
+  EXPECT_EQ(list_value.type(), UType::kList);
   LOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
 
   // check GetChunk
@@ -104,29 +98,21 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
 
   // put on the new branch (string value)
   Hash branch_version;
-  EXPECT_EQ(client->Put(Slice(keys[idx]),
-      //Value(Blob((const byte_t *)values[idx].data(),
-      //values[idx].length())), 
-      string_val,
-      Slice(new_branch), &branch_version), ErrorCode::kOK);
-  
-  LOG(INFO) << "PUT version (new branch): " << branch_version.ToBase32() 
+  EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, Slice(new_branch),
+                        &branch_version), ErrorCode::kOK);
+
+  LOG(INFO) << "PUT version (new branch): " << branch_version.ToBase32()
             << std::endl;
 
   // merge
   Hash merge_version;
-  EXPECT_EQ(client->Merge(Slice(keys[idx]),
-        //Value(Blob((const byte_t *)values[idx].data(), values[idx].length())),
-        string_val,
-                Slice(new_branch), version, &merge_version), ErrorCode::kOK);
+  EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, Slice(new_branch),
+                          version, &merge_version), ErrorCode::kOK);
   LOG(INFO) << "MERGE version (w/o branch): " << merge_version.ToBase32()
             << std::endl;
 
-  EXPECT_EQ(client->Merge(Slice(keys[idx]),
-        //Value(Blob((const byte_t *)values[idx].data(), values[idx].length())),
-                string_val,
-                version, branch_version, &merge_version),
-                ErrorCode::kOK);
+  EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, version, branch_version,
+                          &merge_version), ErrorCode::kOK);
   LOG(INFO) << "MERGE version (with branch): " << merge_version.ToBase32()
             << std::endl;
 }
@@ -145,7 +131,7 @@ TEST(TestMessage, TestClient1Thread) {
     workers[i]->Init();
 
   for (int i = 0; i < workers.size(); i++)
-      worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
+    worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
 
   // launch clients
   ifstream fin_client(Env::Instance()->config()->clientservice_file());
@@ -166,9 +152,8 @@ TEST(TestMessage, TestClient1Thread) {
   client_service_thread.join();
 
   // then stop workers
-  for (WorkerService *ws : workers) {
+  for (WorkerService *ws : workers)
     ws->Stop();
-  }
   for (int i = 0; i < worker_threads.size(); i++)
     worker_threads[i].join();
 

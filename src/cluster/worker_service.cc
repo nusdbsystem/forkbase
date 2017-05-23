@@ -93,25 +93,24 @@ void WorkerService::Start() {
 Value2* WorkerService::Value2FromRequest(Value2Payload *payload) {
   Value2 *val = new Value2();
   val->type = static_cast<UType>(payload->type());
-  val->base = payload->has_base() 
+  val->base = payload->has_base()
               ? Hash(reinterpret_cast<const byte_t*>(payload->base()
-                    .data())).Clone() 
+                    .data())).Clone()
               : Hash::kNull;
   val->pos = payload->has_pos() ? payload->pos() : -1;
   val->dels = payload->has_dels() ? payload->dels() : -1;
-  
-  //TODO: a lot of memory copy in the following
+
+  // TODO(anh): a lot of memory copy in the following
+  // comment(wangsh): create Slice is cheap, so it should ok
 
   int vals_size = payload->values_size();
   // even though Slice only take pointer, the pointer
   // to keys and values will persist till the end of HandleRequest
-  for (int i=0; i<vals_size; i++)
-    (val->vals).push_back(Slice(payload->values(i).data(),
-                         payload->values(i).length()));
+  for (int i = 0; i < vals_size; i++)
+    (val->vals).push_back(Slice(payload->values(i)));
   int keys_size = payload->keys_size();
-  for (int i=0; i<keys_size; i++)
-    (val->keys).push_back(Slice(payload->keys(i).data(),
-                          payload->keys(i).length()));
+  for (int i = 0; i < keys_size; i++)
+    (val->keys).push_back(Slice(payload->keys(i)));
   return val;
 }
 void WorkerService::HandleRequest(const void *msg, int size,
@@ -128,25 +127,18 @@ void WorkerService::HandleRequest(const void *msg, int size,
   switch (ustore_msg->type()) {
     case UStoreMessage::PUT_REQUEST:
     {
-      Value2Payload *payload =
-                      ustore_msg->mutable_put_request_payload()
-                      ->mutable_value();
+      Value2Payload *payload = ustore_msg->mutable_put_request_payload()
+                                         ->mutable_value();
       Value2 *value = Value2FromRequest(payload);
       Hash new_version;
       error_code = ustore_msg->has_branch()
-        ? worker_->Put(Slice(ustore_msg->key()),
-          //Value(Blob((const byte_t*)(payload.value().data()),
-          //            (payload.value().length()))),
-          *value,
+        ? worker_->Put(Slice(ustore_msg->key()), *value,
           Slice(ustore_msg->branch()), &new_version)
-        : worker_->Put(Slice(ustore_msg->key()),
-          //Value(Blob((const byte_t*)(payload.value().data()),
-          //            (payload.value().length()))),
-          *value,
+        : worker_->Put(Slice(ustore_msg->key()), *value,
           Hash((const byte_t*)((ustore_msg->version()).data())),
           &new_version);
       PutResponsePayload *res_payload =
-                      response->mutable_put_response_payload();
+          response->mutable_put_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
       delete value;
       break;
@@ -161,21 +153,17 @@ void WorkerService::HandleRequest(const void *msg, int size,
            : worker_->Get(Slice(ustore_msg->key()),
               Hash((const byte_t*)((ustore_msg->version()).data())), &val);
 
-      GetResponsePayload *payload =
-              response->mutable_get_response_payload();
-      payload->mutable_meta()
-            ->set_value(val.chunk().head(), val.chunk().numBytes());
+      GetResponsePayload *payload = response->mutable_get_response_payload();
+      payload->mutable_meta()->set_value(val.chunk().head(),
+                                         val.chunk().numBytes());
       break;
     }
     case UStoreMessage::BRANCH_REQUEST:
     {
-      BranchRequestPayload payload =
-                    ustore_msg->branch_request_payload();
-
+      BranchRequestPayload payload = ustore_msg->branch_request_payload();
       error_code = ustore_msg->has_branch()
-        ? worker_->Branch(Slice(ustore_msg->key()),
-                      Slice(ustore_msg->branch()),
-                      Slice(payload.new_branch()))
+        ? worker_->Branch(Slice(ustore_msg->key()), Slice(ustore_msg->branch()),
+                          Slice(payload.new_branch()))
         : worker_->Branch(Slice(ustore_msg->key()),
               Hash((const byte_t*)((ustore_msg->version()).data())),
               Slice(payload.new_branch()));
@@ -184,8 +172,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
     }
     case UStoreMessage::RENAME_REQUEST:
     {
-      RenameRequestPayload payload =
-                    (ustore_msg->rename_request_payload());
+      RenameRequestPayload payload = ustore_msg->rename_request_payload();
       error_code = worker_->Rename(Slice(ustore_msg->key()),
           Slice(ustore_msg->branch()), Slice(payload.new_branch()));
       break;
@@ -193,35 +180,31 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::MERGE_REQUEST:
     {
       MergeRequestPayload *payload =
-                    ustore_msg->mutable_merge_request_payload();
+          ustore_msg->mutable_merge_request_payload();
       Value2 *value = Value2FromRequest(payload->mutable_value());
       Hash new_version;
-
       error_code = ustore_msg->has_branch()
-        ? worker_->Merge(Slice(ustore_msg->key()),
-              //Value(Blob((const byte_t*)(payload.value().data()),
+        ? worker_->Merge(Slice(ustore_msg->key()), *value,
+              // Value(Blob((const byte_t*)(payload.value().data()),
               //            (payload.value()).length())),
-              *value,
               Slice(payload->target_branch()), Slice(payload->ref_branch()),
               &new_version)
         : (payload->has_ref_version()
-              ? worker_->Merge(Slice(ustore_msg->key()),
-                //Value(Blob((const byte_t*)(payload.value().data()),
+              ? worker_->Merge(Slice(ustore_msg->key()), *value,
+                // Value(Blob((const byte_t*)(payload.value().data()),
                 //          (payload.value()).length())),
-                *value,
                 Hash((const byte_t*)((ustore_msg->version())).data()),
                 Hash((const byte_t*)((payload->ref_version())).data()),
                 &new_version)
-              : worker_->Merge(Slice(ustore_msg->key()),
-                //Value(Blob((const byte_t*)(payload.value().data()),
+              : worker_->Merge(Slice(ustore_msg->key()), *value,
+                // Value(Blob((const byte_t*)(payload.value().data()),
                 //          (payload.value()).length())),
-                *value,
                 Slice(payload->target_branch()),
                 Hash((const byte_t*)((ustore_msg->version())).data()),
                 &new_version));
 
       MergeResponsePayload *res_payload =
-                    response->mutable_merge_response_payload();
+          response->mutable_merge_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
       break;
     }
@@ -235,7 +218,6 @@ void WorkerService::HandleRequest(const void *msg, int size,
   response->SerializeToArray(serialized, response->ByteSize());
   net_->GetNetContext(source)->Send((const byte_t*)serialized,
                                     (size_t)response->ByteSize());
-
   // clean up
   delete ustore_msg;
   delete[] serialized;

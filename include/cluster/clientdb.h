@@ -68,37 +68,37 @@ class ClientDb : public DB2 {
 
   // Storage APIs. Inheritted from DB2.
   ErrorCode Get(const Slice& key, const Slice& branch,
-                        UCell* meta) override;
+                UCell* meta) override;
   ErrorCode Get(const Slice& key, const Hash& version,
-                        UCell* meta) override;
-  
+                UCell* meta) override;
+
   ErrorCode Put(const Slice& key, const Value2& value,
-                        const Slice& branch, Hash* version) override;
+                const Slice& branch, Hash* version) override;
   ErrorCode Put(const Slice& key, const Value2& value,
-                        const Hash& pre_version, Hash* version) override;
-  
+                const Hash& pre_version, Hash* version) override;
+
   ErrorCode Branch(const Slice& key, const Slice& old_branch,
-                           const Slice& new_branch) override;
+                   const Slice& new_branch) override;
   ErrorCode Branch(const Slice& key, const Hash& version,
-                           const Slice& new_branch) override;
+                   const Slice& new_branch) override;
   ErrorCode Rename(const Slice& key, const Slice& old_branch,
-                           const Slice& new_branch) override;
+                   const Slice& new_branch) override;
   ErrorCode Merge(const Slice& key, const Value2& value,
-                          const Slice& tgt_branch, const Slice& ref_branch,
-                          Hash* version) override;
+                  const Slice& tgt_branch, const Slice& ref_branch,
+                  Hash* version) override;
   ErrorCode Merge(const Slice& key, const Value2& value,
-                          const Slice& tgt_branch, const Hash& ref_version,
-                          Hash* version) override;
+                  const Slice& tgt_branch, const Hash& ref_version,
+                  Hash* version) override;
   ErrorCode Merge(const Slice& key, const Value2& value,
-                          const Hash& ref_version1, const Hash& ref_version2,
-                          Hash* version) override;
+                  const Hash& ref_version1, const Hash& ref_version2,
+                  Hash* version) override;
 
 
   // depcreated in 0.2
   ErrorCode Get(const Slice& key, const Slice& branch, Value* val) override;
   ErrorCode Get(const Slice& key, const Hash& ver, Value* val) override;
   ErrorCode Put(const Slice& key, const Value& value,
-                        const Slice& branch, Hash* version) override; 
+                        const Slice& branch, Hash* version) override;
   ErrorCode Put(const Slice& key, const Value& value,
                         const Hash& pre_version, Hash* version) override;
   ErrorCode Merge(const Slice& key, const Value& value,
@@ -127,7 +127,7 @@ class ClientDb : public DB2 {
   UStoreMessage* CreatePutRequest(const Slice &key, const Value2 &value);
   UStoreMessage* CreateGetRequest(const Slice &key);
   UStoreMessage* CreateBranchRequest(const Slice &key,
-                                    const Slice &new_branch);
+                                     const Slice &new_branch);
   UStoreMessage* CreateMergeRequest(const Slice &key, const Value2 &value,
                                     const Slice &target_branch);
   // helper methods for getting response

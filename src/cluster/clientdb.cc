@@ -8,7 +8,7 @@ namespace ustore {
 
 Message* ClientDb::WaitForResponse() {
   std::unique_lock<std::mutex> lck(res_blob_->lock);
-  //res_blob_->has_msg = false;
+  // res_blob_->has_msg = false;
   while (!(res_blob_->has_msg))
     (res_blob_->condition).wait(lck);
   CHECK(res_blob_->message);
@@ -30,7 +30,7 @@ bool ClientDb::Send(const Message *msg, const node_id_t& node_id) {
 }
 
 UStoreMessage *ClientDb::CreatePutRequest(const Slice &key,
-                                      const Value2 &value) {
+                                          const Value2 &value) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::PUT_REQUEST);
@@ -44,9 +44,9 @@ UStoreMessage *ClientDb::CreatePutRequest(const Slice &key,
   payload->set_base(value.base.value(), Hash::kByteLength);
   payload->set_pos(value.pos);
   payload->set_dels(value.dels);
-  for (Slice s : value.vals) 
+  for (const Slice& s : value.vals)
     payload->add_values(s.data(), s.len());
-  for (Slice s: value.keys)
+  for (const Slice& s : value.keys)
     payload->add_keys(s.data(), s.len());
   return request;
 }
@@ -110,8 +110,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Hash& version,
   return ErrorCode::kUnknownOp;
 }
 
-ErrorCode ClientDb::Get(const Slice& key, const Slice& branch,
-                        UCell* meta) {
+ErrorCode ClientDb::Get(const Slice& key, const Slice& branch, UCell* meta) {
   UStoreMessage *request = CreateGetRequest(key);
   // header
   request->set_branch(branch.data(), branch.len());
@@ -122,8 +121,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Slice& branch,
   return GetUCellResponse(meta);
 }
 
-ErrorCode ClientDb::Get(const Slice& key, const Hash& version,
-                        UCell* meta) {
+ErrorCode ClientDb::Get(const Slice& key, const Hash& version, UCell* meta) {
   UStoreMessage *request = CreateGetRequest(key);
   // header
   request->set_version(version.value(), Hash::kByteLength);
@@ -149,8 +147,10 @@ Chunk ClientDb::GetChunk(const Slice& key, const Hash& version) {
   UCellPayload *tmp = response->mutable_get_response_payload()
                       ->mutable_meta();
   // make a copy of the Slice object
-  byte_t* buf = new byte_t[tmp->value().length()];
-  std::memcpy(buf, tmp->value().data(), tmp->value().length());
+  // comment(wangsh):
+  //   SHOULD use unique_ptr instead of raw pointer to avoid memory leak
+  std::unique_ptr<byte_t[]> buf(new byte_t[tmp->value().length()]);
+  std::memcpy(buf.get(), tmp->value().data(), tmp->value().length());
   return Chunk(std::move(buf));
 }
 
@@ -219,19 +219,18 @@ UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
   request->set_key(key.data(), key.len());
   request->set_source(id_);
 
-  MergeRequestPayload *pl=
-    request->mutable_merge_request_payload();
+  MergeRequestPayload *pl = request->mutable_merge_request_payload();
   pl->set_target_branch(target_branch.data(), target_branch.len());
-  //pl->set_value(value.blob().data(), value.blob().size());
+  // pl->set_value(value.blob().data(), value.blob().size());
 
   Value2Payload *payload = pl->mutable_value();
   payload->set_type(static_cast<int>(value.type));
   payload->set_base(value.base.value(), Hash::kByteLength);
   payload->set_pos(value.pos);
   payload->set_dels(value.dels);
-  for (Slice s : value.vals) 
+  for (const Slice& s : value.vals)
     payload->add_values(s.data(), s.len());
-  for (Slice s: value.keys)
+  for (const Slice& s : value.keys)
     payload->add_keys(s.data(), s.len());
 
   return request;
@@ -300,14 +299,14 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,
   payload->set_base(value.base.value(), Hash::kByteLength);
   payload->set_pos(value.pos);
   payload->set_dels(value.dels);
-  for (Slice s : value.vals) 
+  for (const Slice& s : value.vals)
     payload->add_values(s.data(), s.len());
-  for (Slice s: value.keys)
+  for (const Slice& s : value.keys)
     payload->add_keys(s.data(), s.len());
 
   request->set_version(ref_version1.value(), Hash::kByteLength);
   request->mutable_merge_request_payload()
-          ->set_ref_version(ref_version2.value(), Hash::kByteLength);
+         ->set_ref_version(ref_version2.value(), Hash::kByteLength);
 
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
@@ -340,8 +339,10 @@ ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
   UCellPayload *tmp = response->mutable_get_response_payload()
                       ->mutable_meta();
   // make a copy of the Slice object
-  byte_t* buf = new byte_t[tmp->value().length()];
-  std::memcpy(buf, tmp->value().data(), tmp->value().length());
+  // comment(wangsh):
+  //   SHOULD use unique_ptr instead of raw pointer to avoid memory leak
+  std::unique_ptr<byte_t[]> buf(new byte_t[tmp->value().length()]);
+  std::memcpy(buf.get(), tmp->value().data(), tmp->value().length());
   Chunk c(std::move(buf));
   *meta = UCell(std::move(c));
   ErrorCode err = static_cast<ErrorCode>(response->status());
@@ -364,7 +365,6 @@ node_id_t WorkerList::GetWorker(const Slice& key) {
   for (const RangeInfo& ri : workers_)
     if (Slice(ri.start()) > key)
       return ri.address();
-
   return workers_[0].address();
 }
 

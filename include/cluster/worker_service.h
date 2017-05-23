@@ -6,8 +6,8 @@
 #include <vector>
 #include "net/net.h"
 #include "proto/messages.pb.h"
-#include "types/ucell.h"
 #include "spec/value.h"
+#include "types/ucell.h"
 
 namespace ustore {
 
@@ -16,7 +16,7 @@ class Worker;
 /**
  * The WorkerService receives requests from ClientService and invokes
  * the Worker to process the message.
- * Basically a simple version of ClientService. It only has as many 
+ * Basically a simple version of ClientService. It only has as many
  * processing threads as provided by the Net implementation.
  */
 class WorkerService {
@@ -29,8 +29,8 @@ class WorkerService {
     static int range_cmp(const RangeInfo& a, const RangeInfo& b);
 
     explicit WorkerService(const node_id_t& addr, const node_id_t& master):
-                                  node_addr_(addr), master_(master) {}
-    ~WorkerService();
+                           node_addr_(addr), master_(master) {}
+    virtual ~WorkerService();
 
     // initialize the network, the worker and register callback
     virtual void Init();
@@ -47,6 +47,10 @@ class WorkerService {
                                const node_id_t& source);
 
  private:
+    // helper methods for parsing request/response
+    bool CreateUCellPayload(const UCell &val, UCellPayload *payload);
+    Value2* Value2FromRequest(Value2Payload *payload);
+
     node_id_t master_;  // master node
     node_id_t node_addr_;  // this node's address
     Net *net_;
@@ -54,10 +58,6 @@ class WorkerService {
     Worker* worker_;  // where the logic happens
     std::vector<node_id_t> addresses_;  // worker addresses
     CallBack* cb_ = nullptr;
-
-    // helper methods for parsing request/response
-    bool CreateUCellPayload(const UCell &val, UCellPayload *payload);
-    Value2* Value2FromRequest(Value2Payload *payload);
 };
 }  // namespace ustore
 
