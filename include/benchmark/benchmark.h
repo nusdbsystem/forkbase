@@ -5,7 +5,7 @@
 
 #include <chrono>
 #include "benchmark/random_generator.h"
-#include "spec/db.h"
+#include "spec/object_db.h"
 #include "spec/slice.h"
 #include "spec/value.h"
 
@@ -44,7 +44,7 @@ static const char CASES_benchmark[] =
 
 class Benchmark {
  public:
-  Benchmark(DB *db, int max_len, int fix_len)
+  Benchmark(ObjectDB *db, int max_len, int fix_len)
     : db_(db), str_max_length_(max_len), str_fix_length_(fix_len) {}
   ~Benchmark() {}
 
@@ -60,7 +60,7 @@ class Benchmark {
   static constexpr int kValidationStrLen = 32;
   static constexpr int kValidationBlobSize = 8192;  // ensure blob are chunked
 
-  DB* db_;
+  ObjectDB* db_;
   int str_max_length_;
   int str_fix_length_;
   Timer timer_;

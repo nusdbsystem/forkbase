@@ -48,3 +48,25 @@ TEST(UCell, Create) {
   EXPECT_EQ(h3, ucell.preHash(true));
   EXPECT_EQ(key, ucell.key());
 }
+
+TEST(UCell, LoadFromByteArray) {
+  auto h1 = ustore::Hash::FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h2 = ustore::Hash::FromBase32("36UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h3 = ustore::Hash::FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  ustore::UType type = ustore::UType::kBlob;
+  std::string cell_key("cell_key");
+  ustore::Slice key(cell_key);
+
+  ustore::UCell ucell = ustore::UCell::Create(type, key, h1, h2, h3);
+  const auto& chunk = ucell.chunk();
+  std::unique_ptr<ustore::byte_t[]> buf(new ustore::byte_t[chunk.numBytes()]);
+  std::memcpy(buf.get(), chunk.head(), chunk.numBytes());
+  EXPECT_EQ(0, std::memcmp(buf.get(), chunk.head(), chunk.numBytes()));
+  ucell = ustore::UCell(ustore::Chunk(std::move(buf)));
+  EXPECT_EQ(type, ucell.type());
+  EXPECT_TRUE(ucell.merged());
+  EXPECT_EQ(h1, ucell.dataHash());
+  EXPECT_EQ(h2, ucell.preHash());
+  EXPECT_EQ(h3, ucell.preHash(true));
+  EXPECT_EQ(key, ucell.key());
+}

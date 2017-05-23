@@ -23,6 +23,7 @@ class UString : public BaseType {
   inline const size_t data(byte_t* buffer) const { return node_->Copy(buffer); }
   // pointer to orignal data
   inline const byte_t* data() const { return node_->Read(); }
+  inline Slice slice() const { return Slice(node_->Read(), len()); }
 
  protected:
   UString() = default;

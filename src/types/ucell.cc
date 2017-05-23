@@ -29,7 +29,8 @@ UCell::UCell(Chunk&& chunk) {
   } else if (chunk.type() == ChunkType::kCell) {
     node_.reset(new CellNode(std::move(chunk)));
   } else {
-    LOG(FATAL) << "Cannot be other chunk type for UCell";
+    LOG(FATAL) << "Cannot be other chunk type for UCell"
+               << " (actual type: " << static_cast<int>(chunk.type()) << ")";
   }
 }
 

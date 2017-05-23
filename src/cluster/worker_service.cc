@@ -102,7 +102,6 @@ Value2* WorkerService::Value2FromRequest(Value2Payload *payload) {
 
   // TODO(anh): a lot of memory copy in the following
   // comment(wangsh): create Slice is cheap, so it should ok
-
   int vals_size = payload->values_size();
   // even though Slice only take pointer, the pointer
   // to keys and values will persist till the end of HandleRequest
@@ -185,20 +184,14 @@ void WorkerService::HandleRequest(const void *msg, int size,
       Hash new_version;
       error_code = ustore_msg->has_branch()
         ? worker_->Merge(Slice(ustore_msg->key()), *value,
-              // Value(Blob((const byte_t*)(payload.value().data()),
-              //            (payload.value()).length())),
               Slice(payload->target_branch()), Slice(payload->ref_branch()),
               &new_version)
         : (payload->has_ref_version()
               ? worker_->Merge(Slice(ustore_msg->key()), *value,
-                // Value(Blob((const byte_t*)(payload.value().data()),
-                //          (payload.value()).length())),
                 Hash((const byte_t*)((ustore_msg->version())).data()),
                 Hash((const byte_t*)((payload->ref_version())).data()),
                 &new_version)
               : worker_->Merge(Slice(ustore_msg->key()), *value,
-                // Value(Blob((const byte_t*)(payload.value().data()),
-                //          (payload.value()).length())),
                 Slice(payload->target_branch()),
                 Hash((const byte_t*)((ustore_msg->version())).data()),
                 &new_version));

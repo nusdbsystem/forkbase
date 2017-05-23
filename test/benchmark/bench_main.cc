@@ -5,9 +5,10 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include "benchmark/benchmark.h"
 #include "cluster/remote_client_service.h"
 #include "cluster/worker_service.h"
-#include "benchmark/benchmark.h"
+#include "spec/object_db.h"
 #include "utils/env.h"
 #include "worker/worker.h"
 
@@ -21,7 +22,8 @@ constexpr int fixed_blob_size = 4096;
 
 void BenchmarkWorker() {
   Worker worker {27};
-  Benchmark bm(&worker, max_str_len, fixed_str_len);
+  ObjectDB db(&worker);
+  Benchmark bm(&db, max_str_len, fixed_str_len);
 
   bm.SliceValidation(val_size);
   bm.BlobValidation(val_size);
@@ -55,10 +57,13 @@ void BenchmarkClient() {
   sleep(1);
 
   ClientDb *client = service->CreateClientDb();
-
-  Benchmark bm(client, max_str_len, fixed_str_len);
+  ObjectDB db(client);
+  Benchmark bm(&db, max_str_len, fixed_str_len);
+  bm.SliceValidation(val_size);
   bm.BlobValidation(val_size);
+  bm.FixedString(fixed_str_len);
   bm.FixedBlob(max_blob_size);
+  bm.RandomString(max_str_len);
   bm.RandomBlob(fixed_blob_size);
 
   service->Stop();

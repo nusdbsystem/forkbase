@@ -4,8 +4,10 @@
 #include <iterator>
 #include <iostream>
 #include "benchmark/benchmark.h"
-#include "utils/logging.h"
 #include "store/chunk_store.h"
+#include "types/client/vblob.h"
+#include "types/client/vstring.h"
+#include "utils/logging.h"
 
 namespace ustore {
 
@@ -17,13 +19,11 @@ void Benchmark::SliceValidation(int n) {
 
   const Slice branch("Branch");
   for (int i = 0; i < keys.size(); ++i) {
-    Hash ver;
     const Slice s_a(slices[i]);
-    Value v_b;
-    db_->Put(Slice(keys[i]), Value(s_a), branch, &ver);
-    db_->Get(Slice(keys[i]), branch, &v_b);
-    CHECK(s_a == v_b.slice());
-    v_b.Release();
+    auto meta = db_->Put(Slice(keys[i]), VString(s_a), branch);
+    meta = db_->Get(Slice(keys[i]), branch);
+    VString s = meta.String();
+    CHECK(s_a == s.slice());
   }
 
   std::cout << "Validated Slice put/get APIs on " << n << " instances!\n";
@@ -37,13 +37,13 @@ void Benchmark::BlobValidation(int n) {
 
   const Slice branch("Branch");
   for (int i = 0; i < keys.size(); ++i) {
-    Hash ver;
-    const Blob b_a(blobs[i]);
-    Value v_b;
-    db_->Put(Slice(keys[i]), Value(b_a), branch, &ver);
-    db_->Get(Slice(keys[i]), branch, &v_b);
-    CHECK(b_a == v_b.blob());
-    v_b.Release();
+    const Slice b_a(blobs[i]);
+    auto meta = db_->Put(Slice(keys[i]), VBlob(b_a), branch);
+    meta = db_->Get(Slice(keys[i]), branch);
+    VBlob b = meta.Blob();
+    std::unique_ptr<byte_t[]> buf(new byte_t[b.size()]);
+    b.Read(0, b.size(), buf.get());
+    CHECK(b_a == Slice(buf.get(), b.size()));
   }
 
   std::cout << "Validated Blob put/get APIs on " << n << " instances!\n";
@@ -60,16 +60,15 @@ void Benchmark::FixedString(int length) {
   Timer timer;
   timer.Reset();
   for (int i = 0; i < keys.size(); ++i) {
-    Hash ver;
-    db_->Put(Slice(keys[i]), Value(Slice(slices[i])), branch, &ver);
+    db_->Put(Slice(keys[i]), VString(Slice(slices[i])), branch);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
+  // TODO(zhongle): it seems that Get always get the latest version
   for (int i = 0; i < keys.size(); ++i) {
-    Value v_b;
-    db_->Get(Slice(keys[i]), branch, &v_b);
-    v_b.Release();
+    auto meta = db_->Get(Slice(keys[i]), branch);
+    VString b = meta.String();
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
@@ -85,20 +84,16 @@ void Benchmark::FixedBlob(int size) {
   Timer timer;
   timer.Reset();
   for (int i = 0; i < keys.size(); ++i) {
-    Hash ver;
-    Value v_b;
-    db_->Put(Slice(keys[i]), Value(Blob(blobs[i])), branch, &ver);
-    // Print storage status
-    // if(i % 2000 == 0) 
-    //   store::GetChunkStore()->GetInfo().Print();
+    db_->Put(Slice(keys[i]), VBlob(Slice(blobs[i])), branch);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
   for (int i = 0; i < keys.size(); ++i) {
-    Value v_b;
-    db_->Get(Slice(keys[i]), branch, &v_b);
-    v_b.Release();
+    auto meta = db_->Get(Slice(keys[i]), branch);
+    VBlob b = meta.Blob();
+    std::unique_ptr<byte_t[]> buf(new byte_t[b.size()]);
+    b.Read(0, b.size(), buf.get());
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
@@ -114,16 +109,14 @@ void Benchmark::RandomString(int length) {
   Timer timer;
   timer.Reset();
   for (int i = 0; i < keys.size(); ++i) {
-    Hash ver;
-    db_->Put(Slice(keys[i]), Value(Slice(slices[i])), branch, &ver);
+    db_->Put(Slice(keys[i]), VString(Slice(slices[i])), branch);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
   for (int i = 0; i < keys.size(); ++i) {
-    Value v_b;
-    db_->Get(Slice(keys[i]), branch, &v_b);
-    v_b.Release();
+    auto meta = db_->Get(Slice(keys[i]), branch);
+    VString b = meta.String();
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
@@ -139,20 +132,16 @@ void Benchmark::RandomBlob(int size) {
   Timer timer;
   timer.Reset();
   for (int i = 0; i < keys.size(); ++i) {
-    Hash ver;
-    Value v_b;
-    db_->Put(Slice(keys[i]), Value(Blob(blobs[i])), branch, &ver);
-    // Print storage status
-    // if(i % 2000 == 0)
-    //   store::GetChunkStore()->GetInfo().Print();
+    db_->Put(Slice(keys[i]), VBlob(Slice(blobs[i])), branch);
   }
   std::cout << "Put Time: " << timer.Elapse() << " ms\n";
 
   timer.Reset();
   for (int i = 0; i < keys.size(); ++i) {
-    Value v_b;
-    db_->Get(Slice(keys[i]), branch, &v_b);
-    v_b.Release();
+    auto meta = db_->Get(Slice(keys[i]), branch);
+    VBlob b = meta.Blob();
+    std::unique_ptr<byte_t[]> buf(new byte_t[b.size()]);
+    b.Read(0, b.size(), buf.get());
   }
   std::cout << "Get Time: " << timer.Elapse() << " ms\n";
 }
