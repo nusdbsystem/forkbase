@@ -41,9 +41,10 @@ void Benchmark::BlobValidation(int n) {
     auto meta = db_->Put(Slice(keys[i]), VBlob(b_a), branch);
     meta = db_->Get(Slice(keys[i]), branch);
     VBlob b = meta.Blob();
-    std::unique_ptr<byte_t[]> buf(new byte_t[b.size()]);
-    b.Read(0, b.size(), buf.get());
-    CHECK(b_a == Slice(buf.get(), b.size()));
+    byte_t* buf = new byte_t[b.size()];
+    b.Read(0, b.size(), buf);
+    CHECK(b_a == Slice(buf, b.size()));
+    delete[] buf;
   }
 
   std::cout << "Validated Blob put/get APIs on " << n << " instances!\n";
@@ -92,10 +93,18 @@ void Benchmark::FixedBlob(int size) {
   for (int i = 0; i < keys.size(); ++i) {
     auto meta = db_->Get(Slice(keys[i]), branch);
     VBlob b = meta.Blob();
-    std::unique_ptr<byte_t[]> buf(new byte_t[b.size()]);
-    b.Read(0, b.size(), buf.get());
   }
-  std::cout << "Get Time: " << timer.Elapse() << " ms\n";
+  std::cout << "Get Meta Time: " << timer.Elapse() << " ms\n";
+
+  timer.Reset();
+  for (int i = 0; i < keys.size(); ++i) {
+    auto meta = db_->Get(Slice(keys[i]), branch);
+    VBlob b = meta.Blob();
+    byte_t* buf = new byte_t[b.size()];
+    b.Read(0, b.size(), buf);
+    delete[] buf;
+  }
+  std::cout << "Get Data Time: " << timer.Elapse() << " ms\n";
 }
 
 void Benchmark::RandomString(int length) {
@@ -140,10 +149,18 @@ void Benchmark::RandomBlob(int size) {
   for (int i = 0; i < keys.size(); ++i) {
     auto meta = db_->Get(Slice(keys[i]), branch);
     VBlob b = meta.Blob();
-    std::unique_ptr<byte_t[]> buf(new byte_t[b.size()]);
-    b.Read(0, b.size(), buf.get());
   }
-  std::cout << "Get Time: " << timer.Elapse() << " ms\n";
+  std::cout << "Get Meta Time: " << timer.Elapse() << " ms\n";
+
+  timer.Reset();
+  for (int i = 0; i < keys.size(); ++i) {
+    auto meta = db_->Get(Slice(keys[i]), branch);
+    VBlob b = meta.Blob();
+    byte_t* buf = new byte_t[b.size()];
+    b.Read(0, b.size(), buf);
+    delete[] buf;
+  }
+  std::cout << "Get Data Time: " << timer.Elapse() << " ms\n";
 }
 
 }  // namespace ustore

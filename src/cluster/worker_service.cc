@@ -163,7 +163,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       GetResponsePayload *payload =
               response->mutable_get_response_payload();
       Chunk c = worker_->GetChunk(Slice(ustore_msg->key()),
-               Hash((const byte_t*)((ustore_msg->version()).data())));          
+               Hash((const byte_t*)((ustore_msg->version()).data())));
       payload->mutable_meta()->set_value(c.head(), c.numBytes());
       break;
     }
