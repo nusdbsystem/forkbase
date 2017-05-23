@@ -98,6 +98,15 @@ UStoreMessage *ClientDb::CreateGetRequest(const Slice &key) {
   return request;
 }
 
+UStoreMessage *ClientDb::CreateGetChunkRequest(const Slice &key) {
+  UStoreMessage *request = new UStoreMessage();
+  // header
+  request->set_type(UStoreMessage::GET_CHUNK_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_source(id_);
+  return request;
+}
+
 ErrorCode ClientDb::Get(const Slice& key, const Slice& branch,
                         Value* value) {
   LOG(FATAL) << "Deprecated in v0.2";
@@ -133,7 +142,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Hash& version, UCell* meta) {
 }
 
 Chunk ClientDb::GetChunk(const Slice& key, const Hash& version) {
-  UStoreMessage *request = CreateGetRequest(key);
+  UStoreMessage *request = CreateGetChunkRequest(key);
   // header
   request->set_version(version.value(), Hash::kByteLength);
   // send

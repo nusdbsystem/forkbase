@@ -126,6 +126,7 @@ class ClientDb : public DB2 {
   // helper methods for creating messages
   UStoreMessage* CreatePutRequest(const Slice &key, const Value2 &value);
   UStoreMessage* CreateGetRequest(const Slice &key);
+  UStoreMessage* CreateGetChunkRequest(const Slice &key);
   UStoreMessage* CreateBranchRequest(const Slice &key,
                                      const Slice &new_branch);
   UStoreMessage* CreateMergeRequest(const Slice &key, const Value2 &value,

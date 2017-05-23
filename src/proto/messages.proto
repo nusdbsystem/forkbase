@@ -25,6 +25,7 @@ message UStoreMessage {
     RENAME_RESPONSE = 8;
     MERGE_REQUEST = 9;
     MERGE_RESPONSE = 10;
+    GET_CHUNK_REQUEST = 11;
   }
 
   /**

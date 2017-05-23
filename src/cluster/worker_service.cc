@@ -157,6 +157,17 @@ void WorkerService::HandleRequest(const void *msg, int size,
                                          val.chunk().numBytes());
       break;
     }
+    case UStoreMessage::GET_CHUNK_REQUEST:
+    {
+      error_code = ErrorCode::kOK;
+      GetResponsePayload *payload =
+              response->mutable_get_response_payload();
+      Chunk c = worker_->GetChunk(Slice(ustore_msg->key()),
+               Hash((const byte_t*)((ustore_msg->version()).data())));          
+      payload->mutable_meta()->set_value(c.head(), c.numBytes());
+      break;
+    }
+
     case UStoreMessage::BRANCH_REQUEST:
     {
       BranchRequestPayload payload = ustore_msg->branch_request_payload();
