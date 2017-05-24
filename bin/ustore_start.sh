@@ -28,6 +28,8 @@ ustore_sshrun="cd $USTORE_HOME; $ustore_run"
 host_file=$USTORE_CONF/workers
 # old_IFS=$IFS
 # IFS=$'\n'
+echo ""
+echo "------------- Starting workers -------------"
 for i in `cat $host_file` ; do
   host=`echo $i | cut -d ':' -f 1`
   port=`echo $i | cut -d ':' -f 2`
@@ -39,7 +41,7 @@ for i in `cat $host_file` ; do
     ssh $ssh_options $host $ustore_sshrun --node_id $i >> $USTORE_LOG/worker-$host-$port.log 2>&1 &
   fi
 done
-echo "-------------Started all the workers------------"
+echo "----------- All workers started ------------"
 echo ""
 
 ## start all the client services

@@ -13,7 +13,7 @@
 namespace ustore {
 
 using node_id_t = std::string;
-const string kCloseMsg = "+close";
+const char kCloseMsg[] = "+close";
 
 /**
  * Callback functor that is invoked on receiving of a message.
@@ -54,7 +54,7 @@ class Net : private Noncopyable {
     if (netmap_.count(id)) {
       DeleteNetContext(netmap_.at(id));
       netmap_.erase(id);
-      LOG(INFO) << "Delete NetContext " << id;
+      DLOG(INFO) << "Delete NetContext " << id;
     }
   }
 
@@ -80,10 +80,10 @@ class Net : private Noncopyable {
    * func: the callback function
    * handler: pointer to a object that handle this request
    *
-   * anh: originally this is a member of NetContext. But moved here to make 
-   * it cleaner. First, it needs to registered only once, instead of for as many as 
+   * anh: originally this is a member of NetContext. But moved here to make
+   * it cleaner. First, it needs to registered only once, instead of for as many as
    * the number of connections. Second, there is no concurrency problem, because the
-   * received socket is read by only one (the main) thread. 
+   * received socket is read by only one (the main) thread.
    */
   inline void RegisterRecv(CallBack* cb) {
     cb_ = cb;

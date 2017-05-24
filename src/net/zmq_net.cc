@@ -6,6 +6,7 @@
 #include <gflags/gflags.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <cstring>
 #include <string>
 #include <set>
 #include <thread>
@@ -30,7 +31,7 @@ void ServerThread(void *args);
 Net::~Net() {
   for (auto val : netmap_)
     delete val.second;
-  LOG(INFO) << "destroy Net ";
+  DLOG(INFO) << "Destroy Net ";
 }
 
 void Net::CreateNetContexts(const vector<node_id_t>& nodes) {
@@ -181,7 +182,7 @@ ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest)
 }
 
 ZmqNetContext::~ZmqNetContext() {
-  Send(kCloseMsg.c_str(), kCloseMsg.length());
+  Send(kCloseMsg, std::strlen(kCloseMsg));
   zsock_destroy((zsock_t **)&send_sock_);
 }
 
@@ -201,8 +202,8 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
 
 void ZmqNet::Dispatch(const node_id_t& source, const void *msg, int size) {
   // recv_lock_.lock();
-  if (memcmp(kCloseMsg.c_str(), msg, size) == 0) {
-    LOG(WARNING) << "close ZmqNetContext " << source;
+  if (memcmp(kCloseMsg, msg, size) == 0) {
+    DLOG(WARNING) << "Close ZmqNetContext " << source;
     DeleteNetContext(source);
     return;
   }
