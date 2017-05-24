@@ -11,7 +11,7 @@ namespace ustore {
 // Used by end-user
 class ObjectDB {
  public:
-  explicit ObjectDB(DB2* db) noexcept : db_(db) {}
+  explicit ObjectDB(DB* db) noexcept : db_(db) {}
 
   // Get Object
   VMeta Get(const Slice& key, const Slice& branch);
@@ -36,7 +36,7 @@ class ObjectDB {
                    const Slice& new_branch);
 
  private:
-  DB2* db_;
+  DB* db_;
 };
 
 }  // namespace ustore

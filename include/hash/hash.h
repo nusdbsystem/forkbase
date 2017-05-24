@@ -47,17 +47,17 @@ class Hash {
   }
 
   friend inline bool operator<(const Hash& lhs, const Hash& rhs) noexcept {
-    CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+    if(!lhs.value_ || !rhs.value_ ) return lhs.value_ < rhs.value_;
     return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) < 0;
   }
 
   friend inline bool operator>(const Hash& lhs, const Hash& rhs) noexcept {
-    CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+    if(!lhs.value_ || !rhs.value_ ) return lhs.value_ > rhs.value_;
     return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) > 0;
   }
 
   friend inline bool operator==(const Hash& lhs, const Hash& rhs) noexcept {
-    CHECK(lhs.value_ != nullptr && rhs.value_ != nullptr);
+    if(!lhs.value_ || !rhs.value_ ) return lhs.value_ == rhs.value_;
     return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) == 0;
   }
 

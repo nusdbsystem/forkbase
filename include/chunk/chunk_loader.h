@@ -43,7 +43,7 @@ class ServerChunkLoader : public ChunkLoader {
 class ClientChunkLoader : public ChunkLoader {
  public:
   // need a db instance
-  ClientChunkLoader(DB2* db, const Slice& key)
+  ClientChunkLoader(DB* db, const Slice& key)
     : db_(db), key_(key.ToString()) {}
   // Delete all chunks
   ~ClientChunkLoader() = default;
@@ -53,7 +53,7 @@ class ClientChunkLoader : public ChunkLoader {
 
  private:
   std::string key_;
-  DB2* db_;
+  DB* db_;
 };
 
 }  // namespace ustore

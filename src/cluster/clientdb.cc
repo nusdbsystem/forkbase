@@ -51,18 +51,6 @@ UStoreMessage *ClientDb::CreatePutRequest(const Slice &key,
   return request;
 }
 
-ErrorCode ClientDb::Put(const Slice& key, const Value& value,
-                        const Hash& pre_version, Hash* version) {
-  LOG(FATAL) << "Deprecated in v0.2";
-  return ErrorCode::kUnknownOp;
-}
-
-ErrorCode ClientDb::Put(const Slice& key, const Value& value,
-                        const Slice& branch, Hash* version) {
-  LOG(FATAL) << "Deprecated in v0.2";
-  return ErrorCode::kUnknownOp;
-}
-
 ErrorCode ClientDb::Put(const Slice& key, const Value2& value,
                         const Hash& pre_version, Hash* version) {
   // use the heap, since the message can be big
@@ -105,18 +93,6 @@ UStoreMessage *ClientDb::CreateGetChunkRequest(const Slice &key) {
   request->set_key(key.data(), key.len());
   request->set_source(id_);
   return request;
-}
-
-ErrorCode ClientDb::Get(const Slice& key, const Slice& branch,
-                        Value* value) {
-  LOG(FATAL) << "Deprecated in v0.2";
-  return ErrorCode::kUnknownOp;
-}
-
-ErrorCode ClientDb::Get(const Slice& key, const Hash& version,
-                        Value* value) {
-  LOG(FATAL) << "Deprecated in v0.2";
-  return ErrorCode::kUnknownOp;
 }
 
 ErrorCode ClientDb::Get(const Slice& key, const Slice& branch, UCell* meta) {
@@ -243,27 +219,6 @@ UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
     payload->add_keys(s.data(), s.len());
 
   return request;
-}
-
-ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
-                          const Slice& tgt_branch, const Slice& ref_branch,
-                          Hash* version) {
-  LOG(FATAL) << "Deprecated in v0.2";
-  return ErrorCode::kUnknownOp;
-}
-
-ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
-                          const Slice& tgt_branch, const Hash& ref_version,
-                          Hash* version) {
-  LOG(FATAL) << "Deprecated in v0.2";
-  return ErrorCode::kUnknownOp;
-}
-
-ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
-                          const Hash& ref_version1, const Hash& ref_version2,
-                          Hash* version) {
-  LOG(FATAL) << "Deprecated in v0.2";
-  return ErrorCode::kUnknownOp;
 }
 
 ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,

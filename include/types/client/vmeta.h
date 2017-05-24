@@ -18,9 +18,9 @@ namespace ustore {
 // TODO(wangsh): modify DB api and remove version in VMeta
 class VMeta : private Noncopyable {
  public:
-  VMeta(DB2* db, ErrorCode code, UCell&& cell)
+  VMeta(DB* db, ErrorCode code, UCell&& cell)
       : db_(db), code_(code), cell_(std::move(cell)) {}
-  VMeta(DB2* db, ErrorCode code, Hash&& version)
+  VMeta(DB* db, ErrorCode code, Hash&& version)
       : db_(db), code_(code), version_(std::move(version)) {}
   // moveable
   VMeta(VMeta&& other) {
@@ -50,7 +50,7 @@ class VMeta : private Noncopyable {
   VMap Map() const;
 
  private:
-  DB2* db_;
+  DB* db_;
   ErrorCode code_;
   UCell cell_;
   Hash version_;

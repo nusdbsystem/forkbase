@@ -101,13 +101,18 @@ struct Value2 {
   // Type of the value
   UType type;
   // Hash::kNull if it is a new insertion
+  // Otherwise, it is an update from the content that has the Hash
   Hash base;
-  // only used for an update
+  // Only used for an update
+  // Indicate where to start the insertion/deletion
   size_t pos;
+  // Number of deletions
   size_t dels;
-  // size = 1 for Blob/String, size > 1 for Map/List
+  // Content of Insertions
+  // size = 1 for Blob/String
+  // size > 1 for Map/List
   std::vector<Slice> vals;
-  // for Map only
+  // Only used my Map, and has keys.size() = vals.size()
   std::vector<Slice> keys;
 };
 

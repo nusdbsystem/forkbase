@@ -59,14 +59,14 @@ struct ResponseBlob {
  *
  */
 
-class ClientDb : public DB2 {
+class ClientDb : public DB {
  public:
   ClientDb(const node_id_t& master, int id, Net *net, ResponseBlob *blob,
       WorkerList* workers)
     : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
   ~ClientDb();
 
-  // Storage APIs. Inheritted from DB2.
+  // Storage APIs. Inheritted from DB.
   ErrorCode Get(const Slice& key, const Slice& branch,
                 UCell* meta) override;
   ErrorCode Get(const Slice& key, const Hash& version,
@@ -77,12 +77,6 @@ class ClientDb : public DB2 {
   ErrorCode Put(const Slice& key, const Value2& value,
                 const Hash& pre_version, Hash* version) override;
 
-  ErrorCode Branch(const Slice& key, const Slice& old_branch,
-                   const Slice& new_branch) override;
-  ErrorCode Branch(const Slice& key, const Hash& version,
-                   const Slice& new_branch) override;
-  ErrorCode Rename(const Slice& key, const Slice& old_branch,
-                   const Slice& new_branch) override;
   ErrorCode Merge(const Slice& key, const Value2& value,
                   const Slice& tgt_branch, const Slice& ref_branch,
                   Hash* version) override;
@@ -93,23 +87,12 @@ class ClientDb : public DB2 {
                   const Hash& ref_version1, const Hash& ref_version2,
                   Hash* version) override;
 
-
-  // depcreated in 0.2
-  ErrorCode Get(const Slice& key, const Slice& branch, Value* val) override;
-  ErrorCode Get(const Slice& key, const Hash& ver, Value* val) override;
-  ErrorCode Put(const Slice& key, const Value& value,
-                        const Slice& branch, Hash* version) override;
-  ErrorCode Put(const Slice& key, const Value& value,
-                        const Hash& pre_version, Hash* version) override;
-  ErrorCode Merge(const Slice& key, const Value& value,
-                          const Slice& tgt_branch, const Slice& ref_branch,
-                          Hash* version) override;
-  ErrorCode Merge(const Slice& key, const Value& value,
-                          const Slice& tgt_branch, const Hash& ref_version,
-                          Hash* version) override;
-  ErrorCode Merge(const Slice& key, const Value& value,
-                          const Hash& ref_version1, const Hash& ref_version2,
-                          Hash* version) override;
+  ErrorCode Branch(const Slice& key, const Slice& old_branch,
+                   const Slice& new_branch) override;
+  ErrorCode Branch(const Slice& key, const Hash& version,
+                   const Slice& new_branch) override;
+  ErrorCode Rename(const Slice& key, const Slice& old_branch,
+                   const Slice& new_branch) override;
 
   Chunk GetChunk(const Slice& key, const Hash& version) override;
 

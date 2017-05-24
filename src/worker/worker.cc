@@ -12,18 +12,6 @@
 
 namespace ustore {
 
-ErrorCode Worker::Get(const Slice& key, const Slice& branch, Value* val) {
-  UCell ucell;
-  auto ec = Get(key, branch, &ucell);
-  return ec == ErrorCode::kOK ? Read(ucell, val) : ec;
-}
-
-ErrorCode Worker::Get(const Slice& key, const Hash& ver, Value* val) {
-  UCell ucell;
-  auto ec = Get(key, ver, &ucell);
-  return ec == ErrorCode::kOK ? Read(ucell, val) : ec;
-}
-
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
   const auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
@@ -47,95 +35,6 @@ ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) {
     return ErrorCode::kInconsistentKey;
   }
   return ErrorCode::kOK;
-}
-
-ErrorCode Worker::Read(const UCell& ucell, Value* val) const {
-  DCHECK(!ucell.empty());
-  ErrorCode ec = ErrorCode::kTypeUnsupported;
-  switch (ucell.type()) {
-    case UType::kBlob:
-      ec = ReadBlob(ucell, val);
-      break;
-    case UType::kString:
-      ec = ReadString(ucell, val);
-      break;
-    default:
-      LOG(WARNING) << "Unsupported data type: "
-                   << static_cast<int>(ucell.type());
-  }
-  return ec;
-}
-
-ErrorCode Worker::ReadBlob(const UCell& ucell, Value* val) const {
-  SBlob sblob(ucell.dataHash());
-  size_t n_bytes = sblob.size();
-  byte_t* buffer = new byte_t[n_bytes];  // Note: potential memory leak
-  n_bytes = sblob.Read(0, n_bytes, buffer);
-  DCHECK_EQ(sblob.size(), n_bytes);
-  *val = Value(Blob(buffer, n_bytes));
-  return ErrorCode::kOK;
-}
-
-ErrorCode Worker::ReadString(const UCell& ucell, Value* val) const {
-  SString sstring(ucell.dataHash());
-  size_t n_bytes = sstring.len();
-  byte_t* buffer = new byte_t[n_bytes];  // Note: potential memory leak
-  n_bytes = sstring.data(buffer);
-  DCHECK_EQ(sstring.len(), n_bytes);
-  *val = Value(Slice(buffer, n_bytes));
-  return ErrorCode::kOK;
-}
-
-ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
-                      const Hash& prev_ver, Hash* ver) {
-  if (branch.empty()) return Put(key, val, prev_ver, ver);
-  auto ec = Write(key, val, prev_ver, Hash::kNull, ver);
-  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
-  return ec;
-}
-
-ErrorCode Worker::Write(const Slice& key, const Value& val,
-                        const Hash& prev_ver1, const Hash& prev_ver2,
-                        Hash* ver) {
-  ErrorCode ec = ErrorCode::kTypeUnsupported;
-  switch (val.type()) {
-    case UType::kBlob:
-      ec = WriteBlob(key, val, prev_ver1, prev_ver2, ver);
-      break;
-    case UType::kString:
-      ec = WriteString(key, val, prev_ver1, prev_ver2, ver);
-      break;
-    default:
-      LOG(WARNING) << "Unsupported data type: " << static_cast<int>(val.type());
-  }
-  return ec;
-}
-
-ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
-                            const Hash& prev_ver1, const Hash& prev_ver2,
-                            Hash* ver) {
-  Blob blob = val.blob();
-  // TO change later
-  Slice slice(blob.data(), blob.size());
-  const SBlob sblob(slice);
-  if (sblob.empty()) {
-    LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
-    return ErrorCode::kFailedCreateSBlob;
-  }
-  return CreateUCell(key, UType::kBlob, sblob.hash(), prev_ver1, prev_ver2,
-                     ver);
-}
-
-ErrorCode Worker::WriteString(const Slice& key, const Value& val,
-                              const Hash& prev_ver1, const Hash& prev_ver2,
-                              Hash* ver) {
-  const SString sstring(val.slice());
-  if (sstring.empty()) {
-    LOG(ERROR) << "Failed to create ustring for Key \"" << key << "\"";
-    return ErrorCode::kFailedCreateSString;
-  }
-  return CreateUCell(key, UType::kString, sstring.hash(), prev_ver1, prev_ver2,
-                     ver);
 }
 
 ErrorCode Worker::Put(const Slice& key, const Value2& val, const Slice& branch,
