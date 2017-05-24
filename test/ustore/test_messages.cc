@@ -13,7 +13,7 @@ using ustore::BranchRequestPayload;
 using ustore::RenameRequestPayload;
 using ustore::MergeRequestPayload;
 using ustore::MergeResponsePayload;
-using ustore::Value2Payload;
+using ustore::ValuePayload;
 using ustore::UCellPayload;
 using ustore::UType;
 using ustore::Hash;
@@ -49,7 +49,7 @@ void populateHeader(UStoreMessage *msg, UStoreMessage::Type type) {
   msg->set_branch(branch, TEST_BRANCH_SIZE);
 
   // source: 1 (first client thread)
-  msg->set_source(1); 
+  msg->set_source(1);
 }
 
 bool checkPayload(const byte_t* original, int size_original,
@@ -71,7 +71,7 @@ TEST(TestMessage, TestPutRequest) {
 
   // add payload
   PutRequestPayload *payload = msg.mutable_put_request_payload();
-  Value2Payload *val = payload->mutable_value();
+  ValuePayload *val = payload->mutable_value();
   val->set_type(static_cast<int>(UType::kList));
   byte_t base[Hash::kByteLength];
   randomVals(base, Hash::kByteLength);
@@ -136,7 +136,7 @@ TEST(TestMessage, TestPutResponse) {
   UStoreMessage recovered_msg;
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::PUT_RESPONSE);
-  EXPECT_EQ(recovered_msg.has_status(), true); 
+  EXPECT_EQ(recovered_msg.has_status(), true);
   EXPECT_EQ(recovered_msg.status(), (int)ErrorCode::kOK);
   EXPECT_EQ(recovered_msg.has_put_response_payload(), true);
   EXPECT_EQ(checkPayload(version, TEST_VERSION_SIZE,
@@ -177,7 +177,7 @@ TEST(TestMessage, TestGetResponse) {
   GetResponsePayload *payload
     = msg.mutable_get_response_payload();
   UCellPayload *ucell = payload->mutable_meta();
-  
+
   byte_t value[TEST_VALUE_SIZE];
   randomVals(value, TEST_VALUE_SIZE);
   ucell->set_value(value, TEST_VALUE_SIZE);
@@ -196,7 +196,7 @@ TEST(TestMessage, TestGetResponse) {
   EXPECT_EQ(recovered_msg.status(), (int)ErrorCode::kOK);
   EXPECT_EQ(checkPayload((const byte_t*)recovered_msg.get_response_payload().
                         meta().value().data(), TEST_VALUE_SIZE,
-                        value, TEST_VALUE_SIZE), true); 
+                        value, TEST_VALUE_SIZE), true);
   delete[] serialized;
 }
 
@@ -232,7 +232,7 @@ TEST(TestMessage, TestBranchRequest) {
 TEST(TestMessage, TestBranchResponse) {
   UStoreMessage msg;
   populateHeader(&msg, UStoreMessage::BRANCH_RESPONSE);
-  
+
   // test another status other than SUCESS
   msg.set_status((int)ErrorCode::kInvalidRange);
   // no payload
@@ -267,8 +267,8 @@ TEST(TestMessage, TestMergeRequest) {
   randomVals(ref_branch, TEST_BRANCH_SIZE);
   payload->set_ref_branch(ref_branch, TEST_BRANCH_SIZE);
 
-  // add Value2Payload 
-  Value2Payload *val = payload->mutable_value();
+  // add ValuePayload
+  ValuePayload *val = payload->mutable_value();
   val->set_type(static_cast<int>(UType::kList));
   byte_t base[Hash::kByteLength];
   randomVals(base, Hash::kByteLength);

@@ -31,7 +31,6 @@ using ustore::Env;
 using ustore::ErrorCode;
 using ustore::ClientDb;
 using ustore::Value;
-using ustore::Value2;
 using ustore::UType;
 using ustore::UCell;
 using std::thread;
@@ -55,7 +54,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   Hash HEAD_VERSION = Hash::ComputeFrom((const byte_t*)("head"), 4);
 
   // put a string
-  Value2 string_val;
+  Value string_val;
   string_val.type = UType::kString;
   string_val.base = Hash::kNull;
   string_val.vals.push_back(Slice(values[idx]));
@@ -65,7 +64,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   LOG(INFO) << "PUT version (string): " << version.ToBase32();
 
   // put a list of 2 values
-  Value2 list_val;
+  Value list_val;
   list_val.type = UType::kList;
   list_val.base = Hash::kNull;
   list_val.vals.push_back(Slice(values[0]));

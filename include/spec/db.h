@@ -42,7 +42,7 @@ class DB {
    * @param version Returned version.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Value2& value,
+  virtual ErrorCode Put(const Slice& key, const Value& value,
                         const Slice& branch, Hash* version) = 0;
   /**
    * @brief Write a new value as the successor of a version.
@@ -53,7 +53,7 @@ class DB {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Put(const Slice& key, const Value2& value,
+  virtual ErrorCode Put(const Slice& key, const Value& value,
                         const Hash& pre_version, Hash* version) = 0;
   /**
    * @brief Merge target branch to a referring branch.
@@ -65,7 +65,7 @@ class DB {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value2& value,
+  virtual ErrorCode Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Slice& ref_branch,
                           Hash* version) = 0;
   /**
@@ -78,7 +78,7 @@ class DB {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value2& value,
+  virtual ErrorCode Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Hash& ref_version,
                           Hash* version) = 0;
   /**
@@ -91,7 +91,7 @@ class DB {
    * @param version       Returned version.
    * @return              Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Merge(const Slice& key, const Value2& value,
+  virtual ErrorCode Merge(const Slice& key, const Value& value,
                           const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) = 0;
   /**

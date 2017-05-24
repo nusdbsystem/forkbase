@@ -87,7 +87,7 @@ enum class ErrorCode : byte_t {
   kFailedCreateSList = 13,
   kFailedCreateSMap = 14,
   kInconsistentKey = 15,
-  kInvalidValue2 = 16,
+  kInvalidValue = 16,
   kFailedModifySBlob = 17,
   kFailedModifySList = 18,
   kFailedModifySMap = 19,

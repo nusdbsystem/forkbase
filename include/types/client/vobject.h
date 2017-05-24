@@ -14,10 +14,10 @@ class VObject {
 
   bool hasUpdate() const { return buffer_.type == UType::kUnknown; }
   void Clear() { buffer_ = {}; }
-  const Value2& value() const { return buffer_; }
+  const Value& value() const { return buffer_; }
 
  protected:
-  mutable Value2 buffer_;
+  mutable Value buffer_;
 };
 
 }  // namespace ustore

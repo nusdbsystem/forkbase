@@ -58,7 +58,7 @@ message UStoreMessage {
   // PUT_REQUEST payload
 message PutRequestPayload {
     //required bytes value = 3;
-    required Value2Payload value = 3;
+    required ValuePayload value = 3;
 }
 
   // PUT_RESPONSE payload
@@ -98,7 +98,7 @@ message MergeRequestPayload {
     optional bytes ref_branch = 2;
     optional bytes ref_version = 6;
     //required bytes value = 3;
-    required Value2Payload value = 3;
+    required ValuePayload value = 3;
 }
 
 /**
@@ -134,7 +134,7 @@ message UCellPayload {
   required bytes value = 1;
 }
 
-message Value2Payload {
+message ValuePayload {
   required int32 type = 1;
   optional bytes base = 2;
   optional int32 pos = 3;

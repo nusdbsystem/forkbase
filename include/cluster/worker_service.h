@@ -49,7 +49,7 @@ class WorkerService {
  private:
     // helper methods for parsing request/response
     bool CreateUCellPayload(const UCell &val, UCellPayload *payload);
-    Value2* Value2FromRequest(Value2Payload *payload);
+    Value* ValueFromRequest(ValuePayload *payload);
 
     node_id_t master_;  // master node
     node_id_t node_addr_;  // this node's address

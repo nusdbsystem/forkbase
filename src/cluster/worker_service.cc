@@ -94,8 +94,8 @@ void WorkerService::Start() {
   net_->Start();
 }
 
-Value2* WorkerService::Value2FromRequest(Value2Payload *payload) {
-  Value2 *val = new Value2();
+Value* WorkerService::ValueFromRequest(ValuePayload *payload) {
+  Value *val = new Value();
   val->type = static_cast<UType>(payload->type());
   val->base = payload->has_base()
               ? Hash(reinterpret_cast<const byte_t*>(payload->base()
@@ -130,9 +130,9 @@ void WorkerService::HandleRequest(const void *msg, int size,
   switch (ustore_msg->type()) {
     case UStoreMessage::PUT_REQUEST:
     {
-      Value2Payload *payload = ustore_msg->mutable_put_request_payload()
+      ValuePayload *payload = ustore_msg->mutable_put_request_payload()
                                          ->mutable_value();
-      Value2 *value = Value2FromRequest(payload);
+      Value *value = ValueFromRequest(payload);
       Hash new_version;
       error_code = ustore_msg->has_branch()
         ? worker_->Put(Slice(ustore_msg->key()), *value,
@@ -195,7 +195,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
     {
       MergeRequestPayload *payload =
           ustore_msg->mutable_merge_request_payload();
-      Value2 *value = Value2FromRequest(payload->mutable_value());
+      Value *value = ValueFromRequest(payload->mutable_value());
       Hash new_version;
       error_code = ustore_msg->has_branch()
         ? worker_->Merge(Slice(ustore_msg->key()), *value,

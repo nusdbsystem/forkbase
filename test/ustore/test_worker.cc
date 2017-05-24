@@ -57,7 +57,7 @@ TEST(Worker, NamedBranch_GetPutString) {
   EXPECT_EQ(0, worker.ListBranch(key[0]).size());
   EXPECT_FALSE(worker.Exists(key[0]));
 
-  Value2 val0{UType::kString, Hash::kNull, 0, 0, {vals[0]}, {}};
+  Value val0{UType::kString, Hash::kNull, 0, 0, {vals[0]}, {}};
   ec = worker.Put(key[0], val0, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[0]
@@ -66,14 +66,14 @@ TEST(Worker, NamedBranch_GetPutString) {
   EXPECT_EQ(ver[0], worker.GetBranchHead(key[0], branch[0]));
   EXPECT_TRUE(worker.IsLatest(key[0], ver[0]));
 
-  Value2 val1{UType::kString, Hash::kNull, 0, 0, {vals[1]}, {}};
+  Value val1{UType::kString, Hash::kNull, 0, 0, {vals[1]}, {}};
   ec = worker.Put(key[0], val1, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[1]
   EXPECT_FALSE(worker.IsBranchHead(key[0], branch[0], ver[0]));
   EXPECT_TRUE(worker.IsLatest(key[0], ver[1]));
 
-  Value2 val2{UType::kString, Hash::kNull, 0, 0, {vals[2]}, {}};
+  Value val2{UType::kString, Hash::kNull, 0, 0, {vals[2]}, {}};
   ec = worker.Put(key[0], val2, branch[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[2]
@@ -119,7 +119,7 @@ TEST(Worker, NamedBranch_Rename) {
 TEST(Worker, NamedBranch_Merge) {
   Hash version;
 
-  Value2 val3{UType::kString, Hash::kNull, 0, 0, {vals[3]}, {}};
+  Value val3{UType::kString, Hash::kNull, 0, 0, {vals[3]}, {}};
   worker.Merge(key[0], val3, branch[3], branch[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[3]
@@ -128,7 +128,7 @@ TEST(Worker, NamedBranch_Merge) {
   EXPECT_EQ(3, worker.ListBranch(key[0]).size());
   EXPECT_EQ(1, worker.GetLatestVersions(key[0]).size());
 
-  Value2 val4{UType::kString, Hash::kNull, 0, 0, {vals[4]}, {}};
+  Value val4{UType::kString, Hash::kNull, 0, 0, {vals[4]}, {}};
   worker.Merge(key[0], val4, branch[1], ver[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[4]
@@ -148,13 +148,13 @@ TEST(Worker, NamedBranch_Merge) {
 TEST(Worker, UnnamedBranch_GetPutBlob) {
   Hash version;
 
-  Value2 val5{UType::kBlob, Hash::kNull, 0, 0, {vals[5]}, {}};
+  Value val5{UType::kBlob, Hash::kNull, 0, 0, {vals[5]}, {}};
   worker.Put(key[1], val5, Hash::kNull, &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[5]
   EXPECT_EQ(1, worker.GetLatestVersions(key[1]).size());
 
-  Value2 val6{UType::kBlob, Hash::kNull, 0, 0, {vals[6]}, {}};
+  Value val6{UType::kBlob, Hash::kNull, 0, 0, {vals[6]}, {}};
   worker.Put(key[1], val6, ver[5], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[6]
@@ -162,13 +162,13 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
   EXPECT_FALSE(worker.IsLatest(key[1], ver[5]));
   EXPECT_TRUE(worker.IsLatest(key[1], ver[6]));
 
-  Value2 val7{UType::kBlob, Hash::kNull, 0, 0, {vals[7]}, {}};
+  Value val7{UType::kBlob, Hash::kNull, 0, 0, {vals[7]}, {}};
   worker.Put(key[1], val7, ver[5], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[7]
   EXPECT_EQ(2, worker.GetLatestVersions(key[1]).size());
 
-  Value2 val8{UType::kBlob, Hash::kNull, 0, 0, {vals[8]}, {}};
+  Value val8{UType::kBlob, Hash::kNull, 0, 0, {vals[8]}, {}};
   worker.Put(key[1], val8, ver[7], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[8]
@@ -210,13 +210,13 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
 TEST(Worker, UnnamedBranch_Merge) {
   Hash version;
 
-  Value2 val9{UType::kBlob, Hash::kNull, 0, 0, {vals[9]}, {}};
+  Value val9{UType::kBlob, Hash::kNull, 0, 0, {vals[9]}, {}};
   worker.Merge(key[1], val9, ver[6], ver[7], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[9]
   EXPECT_EQ(2, worker.GetLatestVersions(key[1]).size());
 
-  Value2 val10{UType::kBlob, Hash::kNull, 0, 0, {vals[10]}, {}};
+  Value val10{UType::kBlob, Hash::kNull, 0, 0, {vals[10]}, {}};
   worker.Merge(key[1], val10, ver[8], ver[9], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[10]
@@ -241,11 +241,11 @@ TEST(Worker, UnnamedBranch_Merge) {
   EXPECT_EQ(vals[10], Slice(buf.get(), blob.size()));
 }
 
-TEST(Worker, NamedBranch_GetPutList_Value2) {
+TEST(Worker, NamedBranch_GetPutList_Value) {
   Hash version;
   UCell ucell;
 
-  Value2 val;
+  Value val;
   val.type = UType::kList;
   EXPECT_EQ(0, val.vals.size());
 
@@ -333,11 +333,11 @@ TEST(Worker, NamedBranch_GetPutList_Value2) {
   EXPECT_FALSE(itr_diff.next());
 }
 
-TEST(Worker, NamedBranch_GetPutMap_Value2) {
+TEST(Worker, NamedBranch_GetPutMap_Value) {
   Hash version;
   UCell ucell;
 
-  Value2 val;
+  Value val;
   val.type = UType::kMap;
   EXPECT_EQ(0, val.keys.size());
   EXPECT_EQ(0, val.vals.size());

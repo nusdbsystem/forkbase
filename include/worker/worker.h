@@ -85,12 +85,12 @@ class Worker : public DB, private Noncopyable {
    * @param version Returned version.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  inline ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
+  inline ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                        Hash* ver) override {
     return Put(key, val, branch, GetBranchHead(key, branch), ver);
   }
 
-  ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch) {
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch) {
     static Hash ver;
     return Put(key, val, branch, &ver);
   }
@@ -104,12 +104,12 @@ class Worker : public DB, private Noncopyable {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::kOK for success)
    */
-  inline ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver,
+  inline ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
                        Hash* ver) override {
     return Write(key, val, prev_ver, Hash::kNull, ver);
   }
 
-  ErrorCode Put(const Slice& key, const Value2& val, const Hash& prev_ver) {
+  ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver) {
     static Hash ver;
     return Put(key, val, prev_ver, &ver);
   }
@@ -155,16 +155,13 @@ class Worker : public DB, private Noncopyable {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::kOK for success)
    */
-  inline ErrorCode Merge(const Slice& key, const Value2& val,
-                         const Slice& tgt_branch, const Slice& ref_branch,
-                         Hash* ver) override {
-    return MergeImpl(key, val, tgt_branch, ref_branch, ver);
-  }
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Slice& ref_branch, Hash* ver) override;
 
-  ErrorCode Merge(const Slice& key, const Value2& val,
-                  const Slice& tgt_branch, const Slice& ref_branch) {
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Slice& ref_branch) {
     static Hash ver;
-    return MergeImpl(key, val, tgt_branch, ref_branch, &ver);
+    return Merge(key, val, tgt_branch, ref_branch, &ver);
   }
 
   /**
@@ -177,16 +174,13 @@ class Worker : public DB, private Noncopyable {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::kOK for success)
    */
-  inline ErrorCode Merge(const Slice& key, const Value2& val,
-                         const Slice& tgt_branch, const Hash& ref_ver,
-                         Hash* ver) override {
-    return MergeImpl(key, val, tgt_branch, ref_ver, ver);
-  }
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Hash& ref_ver, Hash* ver) override;
 
-  ErrorCode Merge(const Slice& key, const Value2& val,
-                  const Slice& tgt_branch, const Hash& ref_ver) {
+  ErrorCode Merge(const Slice& key, const Value& val, const Slice& tgt_branch,
+                  const Hash& ref_ver) {
     static Hash ver;
-    return MergeImpl(key, val, tgt_branch, ref_ver, &ver);
+    return Merge(key, val, tgt_branch, ref_ver, &ver);
   }
 
   /**
@@ -199,16 +193,13 @@ class Worker : public DB, private Noncopyable {
    * @param version       Returned version.
    * @return              Error code. (ErrorCode::kOK for success)
    */
-  inline ErrorCode Merge(const Slice& key, const Value2& val,
-                         const Hash& ref_ver1, const Hash& ref_ver2,
-                         Hash* ver) override {
-    return MergeImpl(key, val, ref_ver1, ref_ver2, ver);
-  }
+  ErrorCode Merge(const Slice& key, const Value& val, const Hash& ref_ver1,
+                  const Hash& ref_ver2, Hash* ver) override;
 
-  ErrorCode Merge(const Slice& key, const Value2& val,
+  ErrorCode Merge(const Slice& key, const Value& val,
                   const Hash& ref_ver1, const Hash& ref_ver2) {
     static Hash ver;
-    return MergeImpl(key, val, ref_ver1, ref_ver2, &ver);
+    return Merge(key, val, ref_ver1, ref_ver2, &ver);
   }
 
   Chunk GetChunk(const Slice& key, const Hash& ver) override;
@@ -220,72 +211,24 @@ class Worker : public DB, private Noncopyable {
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Hash& utype_hash, const Hash& prev_ver1,
                         const Hash& prev_ver2, Hash* ver);
-  ErrorCode Write(const Slice& key, const Value2& val, const Hash& prev_ver1,
+  ErrorCode Write(const Slice& key, const Value& val, const Hash& prev_ver1,
                   const Hash& prev_ver2, Hash* ver);
-  ErrorCode WriteBlob(const Slice& key, const Value2& val, const Hash& prev_ver1,
+  ErrorCode WriteBlob(const Slice& key, const Value& val, const Hash& prev_ver1,
                       const Hash& prev_ver2, Hash* ver);
-  ErrorCode WriteString(const Slice& key, const Value2& val,
+  ErrorCode WriteString(const Slice& key, const Value& val,
                         const Hash& prev_ver1, const Hash& prev_ver2,
                         Hash* ver);
-  ErrorCode WriteList(const Slice& key, const Value2& val,
+  ErrorCode WriteList(const Slice& key, const Value& val,
                       const Hash& prev_ver1, const Hash& prev_ver2,
                       Hash* ver);
-  ErrorCode WriteMap(const Slice& key, const Value2& val,
+  ErrorCode WriteMap(const Slice& key, const Value& val,
                      const Hash& prev_ver1, const Hash& prev_ver2,
                      Hash* ver);
-  ErrorCode Put(const Slice& key, const Value2& val, const Slice& branch,
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
-
-  template<class T>
-  ErrorCode MergeImpl(const Slice& key, const T& val,
-                      const Slice& tgt_branch, const Slice& ref_branch,
-                      Hash* ver);
-  template<class T>
-  ErrorCode MergeImpl(const Slice& key, const T& val,
-                      const Slice& tgt_branch, const Hash& ref_ver,
-                      Hash* ver);
-  template<class T>
-  ErrorCode MergeImpl(const Slice& key, const T& val,
-                      const Hash& ref_ver1, const Hash& ref_ver2,
-                      Hash* ver);
 
   const WorkerID id_;
 };
-
-template<class T>
-ErrorCode Worker::MergeImpl(const Slice& key, const T& val,
-                            const Slice& tgt_branch, const Slice& ref_branch,
-                            Hash* ver) {
-  const auto& ref_ver_opt = head_ver_.GetBranch(key, ref_branch);
-  if (!ref_ver_opt) {
-    LOG(ERROR) << "Branch \"" << ref_branch << "\" for Key \"" << key
-               << "\" does not exist!";
-    return ErrorCode::kBranchNotExists;
-  }
-  return Merge(key, val, tgt_branch, *ref_ver_opt, ver);
-}
-
-template<class T>
-ErrorCode Worker::MergeImpl(const Slice& key, const T& val,
-                            const Slice& tgt_branch, const Hash& ref_ver,
-                            Hash* ver) {
-  const auto& tgt_ver_opt = head_ver_.GetBranch(key, tgt_branch);
-  if (!tgt_ver_opt) {
-    LOG(ERROR) << "Branch \"" << tgt_branch << "\" for Key \"" << key
-               << "\" does not exist!";
-    return ErrorCode::kBranchNotExists;
-  }
-  ErrorCode ec = Write(key, val, *tgt_ver_opt, ref_ver, ver);
-  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, tgt_branch, *ver);
-  return ec;
-}
-
-template<class T>
-ErrorCode Worker::MergeImpl(const Slice& key, const T& val,
-                            const Hash& ref_ver1, const Hash& ref_ver2,
-                            Hash* ver) {
-  return Write(key, val, ref_ver1, ref_ver2, ver);
-}
 
 }  // namespace ustore
 

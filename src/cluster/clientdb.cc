@@ -30,7 +30,7 @@ bool ClientDb::Send(const Message *msg, const node_id_t& node_id) {
 }
 
 UStoreMessage *ClientDb::CreatePutRequest(const Slice &key,
-                                          const Value2 &value) {
+                                          const Value &value) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::PUT_REQUEST);
@@ -38,7 +38,7 @@ UStoreMessage *ClientDb::CreatePutRequest(const Slice &key,
   request->set_source(id_);
 
   // payload;
-  Value2Payload *payload =
+  ValuePayload *payload =
       request->mutable_put_request_payload()->mutable_value();
   payload->set_type(static_cast<int>(value.type));
   payload->set_base(value.base.value(), Hash::kByteLength);
@@ -51,7 +51,7 @@ UStoreMessage *ClientDb::CreatePutRequest(const Slice &key,
   return request;
 }
 
-ErrorCode ClientDb::Put(const Slice& key, const Value2& value,
+ErrorCode ClientDb::Put(const Slice& key, const Value& value,
                         const Hash& pre_version, Hash* version) {
   // use the heap, since the message can be big
   UStoreMessage *request = CreatePutRequest(key, value);
@@ -64,7 +64,7 @@ ErrorCode ClientDb::Put(const Slice& key, const Value2& value,
   return GetVersionResponse(version);
 }
 
-ErrorCode ClientDb::Put(const Slice& key, const Value2& value,
+ErrorCode ClientDb::Put(const Slice& key, const Value& value,
                         const Slice& branch, Hash* version) {
   // use the heap, since the message can be big
   UStoreMessage *request = CreatePutRequest(key, value);
@@ -197,7 +197,7 @@ ErrorCode ClientDb::Rename(const Slice& key, const Slice& old_branch,
 }
 
 UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
-    const Value2 &value, const Slice &target_branch) {
+    const Value &value, const Slice &target_branch) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::MERGE_REQUEST);
@@ -208,7 +208,7 @@ UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
   pl->set_target_branch(target_branch.data(), target_branch.len());
   // pl->set_value(value.blob().data(), value.blob().size());
 
-  Value2Payload *payload = pl->mutable_value();
+  ValuePayload *payload = pl->mutable_value();
   payload->set_type(static_cast<int>(value.type));
   payload->set_base(value.base.value(), Hash::kByteLength);
   payload->set_pos(value.pos);
@@ -221,7 +221,7 @@ UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
   return request;
 }
 
-ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,
+ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Slice& ref_branch,
                           Hash* version) {
   UStoreMessage *request = CreateMergeRequest(key, value, tgt_branch);
@@ -236,7 +236,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,
   return GetVersionResponse(version);
 }
 
-ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,
+ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Hash& ref_version,
                           Hash* version) {
   UStoreMessage *request = CreateMergeRequest(key, value, tgt_branch);
@@ -248,7 +248,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,
   return GetVersionResponse(version);
 }
 
-ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,
+ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
                           const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) {
   UStoreMessage *request = new UStoreMessage();
@@ -257,7 +257,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value2& value,
   request->set_key(key.data(), key.len());
   request->set_source(id_);
 
-  Value2Payload *payload = request->mutable_merge_request_payload()
+  ValuePayload *payload = request->mutable_merge_request_payload()
                             ->mutable_value();
   payload->set_type(static_cast<int>(value.type));
   payload->set_base(value.base.value(), Hash::kByteLength);

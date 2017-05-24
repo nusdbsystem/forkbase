@@ -72,18 +72,18 @@ class ClientDb : public DB {
   ErrorCode Get(const Slice& key, const Hash& version,
                 UCell* meta) override;
 
-  ErrorCode Put(const Slice& key, const Value2& value,
+  ErrorCode Put(const Slice& key, const Value& value,
                 const Slice& branch, Hash* version) override;
-  ErrorCode Put(const Slice& key, const Value2& value,
+  ErrorCode Put(const Slice& key, const Value& value,
                 const Hash& pre_version, Hash* version) override;
 
-  ErrorCode Merge(const Slice& key, const Value2& value,
+  ErrorCode Merge(const Slice& key, const Value& value,
                   const Slice& tgt_branch, const Slice& ref_branch,
                   Hash* version) override;
-  ErrorCode Merge(const Slice& key, const Value2& value,
+  ErrorCode Merge(const Slice& key, const Value& value,
                   const Slice& tgt_branch, const Hash& ref_version,
                   Hash* version) override;
-  ErrorCode Merge(const Slice& key, const Value2& value,
+  ErrorCode Merge(const Slice& key, const Value& value,
                   const Hash& ref_version1, const Hash& ref_version2,
                   Hash* version) override;
 
@@ -107,12 +107,12 @@ class ClientDb : public DB {
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
   // helper methods for creating messages
-  UStoreMessage* CreatePutRequest(const Slice &key, const Value2 &value);
+  UStoreMessage* CreatePutRequest(const Slice &key, const Value &value);
   UStoreMessage* CreateGetRequest(const Slice &key);
   UStoreMessage* CreateGetChunkRequest(const Slice &key);
   UStoreMessage* CreateBranchRequest(const Slice &key,
                                      const Slice &new_branch);
-  UStoreMessage* CreateMergeRequest(const Slice &key, const Value2 &value,
+  UStoreMessage* CreateMergeRequest(const Slice &key, const Value &value,
                                     const Slice &target_branch);
   // helper methods for getting response
   ErrorCode GetEmptyResponse();

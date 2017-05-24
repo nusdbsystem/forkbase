@@ -37,7 +37,7 @@ ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) {
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::Put(const Slice& key, const Value2& val, const Slice& branch,
+ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
                       const Hash& prev_ver, Hash* ver) {
   if (branch.empty()) return Put(key, val, prev_ver, ver);
   ErrorCode ec = Write(key, val, prev_ver, Hash::kNull, ver);
@@ -45,7 +45,39 @@ ErrorCode Worker::Put(const Slice& key, const Value2& val, const Slice& branch,
   return ec;
 }
 
-ErrorCode Worker::Write(const Slice& key, const Value2& val,
+ErrorCode Worker::Merge(const Slice& key, const Value& val,
+                        const Slice& tgt_branch, const Slice& ref_branch,
+                        Hash* ver) {
+  const auto& ref_ver_opt = head_ver_.GetBranch(key, ref_branch);
+  if (!ref_ver_opt) {
+    LOG(ERROR) << "Branch \"" << ref_branch << "\" for Key \"" << key
+               << "\" does not exist!";
+    return ErrorCode::kBranchNotExists;
+  }
+  return Merge(key, val, tgt_branch, *ref_ver_opt, ver);
+}
+
+ErrorCode Worker::Merge(const Slice& key, const Value& val,
+                        const Slice& tgt_branch, const Hash& ref_ver,
+                        Hash* ver) {
+  const auto& tgt_ver_opt = head_ver_.GetBranch(key, tgt_branch);
+  if (!tgt_ver_opt) {
+    LOG(ERROR) << "Branch \"" << tgt_branch << "\" for Key \"" << key
+               << "\" does not exist!";
+    return ErrorCode::kBranchNotExists;
+  }
+  ErrorCode ec = Write(key, val, *tgt_ver_opt, ref_ver, ver);
+  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, tgt_branch, *ver);
+  return ec;
+}
+
+ErrorCode Worker::Merge(const Slice& key, const Value& val,
+                        const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver) {
+  return Write(key, val, ref_ver1, ref_ver2, ver);
+}
+
+
+ErrorCode Worker::Write(const Slice& key, const Value& val,
                         const Hash& prev_ver1, const Hash& prev_ver2,
                         Hash* ver) {
   ErrorCode ec = ErrorCode::kTypeUnsupported;
@@ -68,11 +100,11 @@ ErrorCode Worker::Write(const Slice& key, const Value2& val,
   return ec;
 }
 
-ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
+ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
                             const Hash& prev_ver1, const Hash& prev_ver2,
                             Hash* ver) {
   DCHECK(val.type == UType::kBlob);
-  if (val.vals.size() != 1) return ErrorCode::kInvalidValue2;
+  if (val.vals.size() != 1) return ErrorCode::kInvalidValue;
   Slice slice = val.vals.front();
   if (val.base == Hash::kNull) {  // new insertion
     SBlob sblob(slice);
@@ -91,11 +123,11 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value2& val,
   }
 }
 
-ErrorCode Worker::WriteString(const Slice& key, const Value2& val,
+ErrorCode Worker::WriteString(const Slice& key, const Value& val,
                               const Hash& prev_ver1, const Hash& prev_ver2,
                               Hash* ver) {
   DCHECK(val.type == UType::kString);
-  if (val.vals.size() != 1) return ErrorCode::kInvalidValue2;
+  if (val.vals.size() != 1) return ErrorCode::kInvalidValue;
   SString sstr(val.vals.front());
   if (sstr.empty()) {
     LOG(ERROR) << "Failed to create SString for Key \"" << key << "\"";
@@ -105,7 +137,7 @@ ErrorCode Worker::WriteString(const Slice& key, const Value2& val,
                      ver);
 }
 
-ErrorCode Worker::WriteList(const Slice& key, const Value2& val,
+ErrorCode Worker::WriteList(const Slice& key, const Value& val,
                             const Hash& prev_ver1, const Hash& prev_ver2,
                             Hash* ver) {
   DCHECK(val.type == UType::kList);
@@ -126,12 +158,12 @@ ErrorCode Worker::WriteList(const Slice& key, const Value2& val,
   }
 }
 
-ErrorCode Worker::WriteMap(const Slice& key, const Value2& val,
+ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
                            const Hash& prev_ver1, const Hash& prev_ver2,
                            Hash* ver) {
   DCHECK(val.type == UType::kMap);
   if (val.base == Hash::kNull) {  // new insertion
-    if (val.keys.size() != val.vals.size()) return ErrorCode::kInvalidValue2;
+    if (val.keys.size() != val.vals.size()) return ErrorCode::kInvalidValue;
     SMap map(val.keys, val.vals);
     if (map.empty()) {
       LOG(ERROR) << "Failed to create SMap for Key \"" << key << "\"";
@@ -141,7 +173,7 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value2& val,
                        ver);
   } else {  // update
     if (val.keys.size() != 1 || val.keys.size() < val.vals.size())
-      return ErrorCode::kInvalidValue2;
+      return ErrorCode::kInvalidValue;
     auto mkey = val.keys.front();
     SMap map(val.base);
     Hash data_hash;
