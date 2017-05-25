@@ -14,7 +14,7 @@ class VList : public UList, public VObject {
   friend class VMeta;
 
  public:
-  VList() = default;
+  VList() noexcept : VList(std::vector<Slice>()) {}
   VList(VList&& rhs) = default;
   // Create new VList
   explicit VList(const std::vector<Slice>& elements) noexcept;

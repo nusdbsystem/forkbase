@@ -31,9 +31,13 @@ class Chunk : private Noncopyable {
   // allocate a new chunk with usable capacity (excluding meta data)
   Chunk(ChunkType type, uint32_t capacity);
   // create chunk but not own the data
-  explicit inline Chunk(const byte_t* head) noexcept : head_(head) {}
+  explicit Chunk(const byte_t* head) noexcept : head_(head) {}
   // create chunk and let it own the data
   explicit Chunk(std::unique_ptr<byte_t[]> head) noexcept;
+  // create chunk with existing hash
+  // used by lst store
+  Chunk(const byte_t* head, const byte_t* hash) noexcept
+    : head_(head), hash_(hash) {}
   // movable
   Chunk(Chunk&& other) noexcept : own_(std::move(other.own_)),
     hash_(std::move(other.hash_)), head_(other.head_) {

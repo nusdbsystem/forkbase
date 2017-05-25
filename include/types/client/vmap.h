@@ -14,7 +14,7 @@ class VMap : public UMap, public VObject {
   friend class VMeta;
 
  public:
-  VMap() = default;
+  VMap() noexcept : VMap(std::vector<Slice>(), std::vector<Slice>()) {}
   VMap(VMap&& rhs) = default;
   // Create new VMap
   VMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals) noexcept;

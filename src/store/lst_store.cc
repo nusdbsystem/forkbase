@@ -385,14 +385,15 @@ void LSTStore::Load(void* address) {
 
 Chunk LSTStore::Get(const Hash& key) {
   LSTHash hash(key.value());
-  if (chunk_map_.count(hash) == 1) return Chunk(chunk_map_.at(hash).chunk_);
+  auto it = chunk_map_.find(hash);
+  if (it != chunk_map_.end())
+    return Chunk(it->second.chunk_, it->first.hash_);
   LOG(WARNING) << "Key: " << key << " does not exist in chunk store";
   return Chunk();
 }
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   // if key already exists, return without error
-  // CHECK_EQ(this->chunk_map_.count(key.value()), 0);
   if (chunk_map_.find(key.value()) != chunk_map_.end()) {
     // DLOG(WARNING) << "key:" << key.ToBase32() << " already exists";
     return true;

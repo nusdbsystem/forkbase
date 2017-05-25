@@ -13,7 +13,7 @@ class VString : public UString, public VObject {
   friend class VMeta;
 
  public:
-  VString() = default;
+  VString() noexcept : VString(Slice()) {}
   VString(VString && rhs) = default;
   // Create new VString
   explicit VString(const Slice& slice) noexcept;

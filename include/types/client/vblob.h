@@ -13,7 +13,7 @@ class VBlob : public UBlob, public VObject {
   friend class VMeta;
 
  public:
-  VBlob() = default;
+  VBlob() noexcept : VBlob(Slice()) {}
   VBlob(VBlob&& rhs) = default;
   // Create new VBlob
   explicit VBlob(const Slice& slice) noexcept;

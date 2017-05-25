@@ -153,7 +153,7 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
 
   reference operator*() const {
     DCHECK(CheckPolicy<MapType>::check(map_, ptr_));
-    return Chunk(ptr_ + Hash::kByteLength);
+    return Chunk(ptr_ + Hash::kByteLength, ptr_);
   }
 
  protected:
