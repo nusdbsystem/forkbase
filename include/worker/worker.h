@@ -44,19 +44,6 @@ class Worker : public DB, private Noncopyable {
   }
 
   /**
-   * @brief Update latest version by a UCell.
-   *
-   * @param key Data key.
-   * @param ucell The referring UCell object.
-   */
-  inline void UpdateLatestVersion(const UCell& ucell) {
-    const auto& prev_ver1 = ucell.preHash();
-    const auto& prev_ver2 = ucell.preHash(true);
-    const auto& ver = ucell.hash();
-    head_ver_.PutLatest(ucell.key(), prev_ver1, prev_ver2, ver);
-  }
-
-  /**
    * @brief Read the value which is the head of a branch.
    *
    * @param key     Target key.
@@ -204,6 +191,26 @@ class Worker : public DB, private Noncopyable {
 
   Chunk GetChunk(const Slice& key, const Hash& ver) override;
 
+  // TODO(linqian): implement methods below
+  ErrorCode ListKeys(std::vector<std::string>* versions)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode Exist(const Slice& key, bool* exist)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode Exist(const Slice& key, const Slice& branch, bool* exist)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode GetBranchHead(const Slice& key, const Slice& branch, Hash* version)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
+                         const Hash& version, bool* isHead)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* versions)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
+                            bool* isLatest)
+      override { return ErrorCode::kUnknownOp; }
+
  protected:
   HeadVersion head_ver_;
 
@@ -226,6 +233,12 @@ class Worker : public DB, private Noncopyable {
                      Hash* ver);
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
+  inline void UpdateLatestVersion(const UCell& ucell) {
+    const auto& prev_ver1 = ucell.preHash();
+    const auto& prev_ver2 = ucell.preHash(true);
+    const auto& ver = ucell.hash();
+    head_ver_.PutLatest(ucell.key(), prev_ver1, prev_ver2, ver);
+  }
 
   const WorkerID id_;
 };

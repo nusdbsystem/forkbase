@@ -98,6 +98,26 @@ class ClientDb : public DB {
 
   inline int id() const noexcept { return id_; }
 
+  // TODO(anh): implement methods below
+  ErrorCode ListKeys(std::vector<std::string>* versions)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode Exist(const Slice& key, bool* exist)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode Exist(const Slice& key, const Slice& branch, bool* exist)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode GetBranchHead(const Slice& key, const Slice& branch, Hash* version)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
+                         const Hash& version, bool* isHead)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* versions)
+      override { return ErrorCode::kUnknownOp; }
+  ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
+                            bool* isLatest)
+      override { return ErrorCode::kUnknownOp; }
+
  private:
   // send request to a node. Return false if there are
   // errors with network communication.

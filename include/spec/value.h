@@ -8,7 +8,6 @@
 #include <vector>
 #include "hash/hash.h"
 #include "types/type.h"
-#include "spec/blob.h"
 #include "spec/slice.h"
 #include "utils/logging.h"
 

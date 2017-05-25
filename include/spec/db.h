@@ -95,6 +95,83 @@ class DB {
                           const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) = 0;
   /**
+   * @brief List all keys.
+   *
+   * @param keys  Returned set of keys.
+   * @return      Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode ListKeys(std::vector<std::string>* versions) = 0;
+  /**
+   * @brief List all branches of the specified key.
+   *
+   * @param keys      Target key.
+   * @param branches  Returned set of branches.
+   * @return          Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode ListBranches(const Slice& key,
+                                 std::vector<std::string>* branches) = 0;
+  /**
+   * @brief Check for the existence of the specified key.
+   *
+   * @param key    Requested key.
+   * @param exist  True if the specified key exists.
+   * @return       Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode Exist(const Slice& key, bool* exist) = 0;
+  /**
+   * @brief Check for the existence of the specified branch.
+   *
+   * @param key     Target key.
+   * @param branch  Requested branch.
+   * @param exist   True if the specified branch exists.
+   * @return        Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode Exist(const Slice& key, const Slice& branch,
+                          bool* exist) = 0;
+  /**
+   * @brief Obtain the head version of the specified branch.
+   *
+   * @param key      Target key.
+   * @param branch   Target branch.
+   * @param version  Returned head version of the branch; Hash::kNull if the
+   *                 requesting head version is unavailable.
+   * @return         Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
+                                  Hash* version) = 0;
+  /**
+   * @brief Check whether the given version is the head version of the
+   *        specified branch.
+   *
+   * @param key      Target key.
+   * @param branch   Target branch.
+   * @param version  Requested version.
+   * @param isHead   True if the given version is the head.
+   * @return         Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
+                                 const Hash& version, bool* isHead) = 0;
+  /**
+   * @brief Obtain all latest versions of the specified key.
+   *
+   * @param key       Target key.
+   * @param versions  Returned set of latest versions.
+   * @return          Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode GetLatestVersions(const Slice& key,
+                                      std::vector<Hash>* versions) = 0;
+  /**
+   * @brief Check whether the given version is the head version of the
+   *        specified branch.
+   *
+   * @param key       Target key.
+   * @param version   Requested version.
+   * @param isLatest  True if the given version is the latest.
+   * @return          Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
+                                    bool* isLatest) = 0;
+  /**
    * @brief Create a new branch which points to the head of a branch.
    *
    * @param key         Target key.

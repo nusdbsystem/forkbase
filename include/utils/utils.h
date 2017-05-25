@@ -16,7 +16,6 @@
 #include "types/type.h"
 #include "types/server/slist.h"
 #include "types/server/smap.h"
-#include "spec/value.h"
 
 namespace ustore {
 

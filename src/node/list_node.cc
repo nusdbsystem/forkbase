@@ -37,10 +37,8 @@ ChunkInfo ListChunker::Make(const std::vector<const Segment*>& segments) const {
   OrderedKey paddingKey(0);
   std::unique_ptr<const byte_t[]> meta_data(MetaEntry::Encode(
       1, num_entries, chunk.hash(), paddingKey, &me_num_bytes));
-
   std::unique_ptr<const Segment> meta_seg(
       new VarSegment(std::move(meta_data), me_num_bytes, {0}));
-
   return {std::move(chunk), std::move(meta_seg)};
 }
 
@@ -53,59 +51,48 @@ std::unique_ptr<const Segment> ListNode::Encode(
     // Leave the first 4 bytes to encode element size
     offset += sizeof(uint32_t) + element.len();
   }
+
   size_t seg_num_bytes = offset;
-
   byte_t* seg_data = new byte_t[seg_num_bytes];
-
   offset = 0;
   for (const auto& element : elements) {
     // Count the first bytes for element sizee
     uint32_t usize = static_cast<uint32_t>(element.len() + sizeof(uint32_t));
-
-    std::memcpy(seg_data + offset,
-                &usize, sizeof(uint32_t));
-
-    std::memcpy(seg_data + offset + sizeof(uint32_t),
-                element.data(), element.len());
-
+    std::memcpy(seg_data + offset, &usize, sizeof(uint32_t));
+    std::memcpy(seg_data + offset + sizeof(uint32_t), element.data(),
+                element.len());
     offset += sizeof(uint32_t) + element.len();
   }
 
-  const Segment* seg =
-      new VarSegment(std::unique_ptr<const byte_t[]>(seg_data),
-                     seg_num_bytes, std::move(offsets));
-
+  const Segment* seg = new VarSegment(std::unique_ptr<const byte_t[]>(seg_data),
+                                      seg_num_bytes, std::move(offsets));
   return std::unique_ptr<const Segment>(seg);
 }
 
 Slice ListNode::Decode(const byte_t* data) {
-  size_t element_size = static_cast<size_t>(
-                            *reinterpret_cast<const uint32_t*>(data))
-                        // does not count the first 4 bytes
-                        - sizeof(uint32_t);
+  size_t element_size =
+      static_cast<size_t>(*reinterpret_cast<const uint32_t*>(data))
+                          // does not count the first 4 bytes
+                          - sizeof(uint32_t);
 
   const char* cdata = reinterpret_cast<const char*>(data + sizeof(uint32_t));
-
   return Slice(cdata, element_size);
 }
 
 const byte_t* ListNode::data(size_t idx) const {
   CHECK_LT(idx, numEntries());
-
   size_t offset = offsets_[idx];
   return chunk_->data() + offset;
 }
 
 size_t ListNode::len(size_t idx) const {
   DCHECK_LT(idx, numEntries());
-
   size_t preOffset = 0;
   if (idx == numEntries() - 1) {
     preOffset = chunk_->capacity();
   } else {
     preOffset = offsets_[idx + 1];
   }
-
   return preOffset - offsets_[idx];
 }
 

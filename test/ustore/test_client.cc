@@ -15,7 +15,6 @@
 #include "cluster/remote_client_service.h"
 #include "hash/hash.h"
 #include "spec/slice.h"
-#include "spec/blob.h"
 #include "spec/value.h"
 #include "utils/logging.h"
 
@@ -26,7 +25,6 @@ using ustore::RemoteClientService;
 using ustore::Config;
 using ustore::Slice;
 using ustore::Hash;
-using ustore::Blob;
 using ustore::Env;
 using ustore::ErrorCode;
 using ustore::ClientDb;

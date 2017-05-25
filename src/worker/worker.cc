@@ -3,7 +3,6 @@
 #include "worker/worker.h"
 
 #include <memory>
-#include "spec/blob.h"
 #include "types/server/sblob.h"
 #include "types/server/slist.h"
 #include "types/server/smap.h"

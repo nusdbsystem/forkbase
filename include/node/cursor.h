@@ -97,9 +97,7 @@ class NodeCursor {
     idx_ = idx;
   }
 
-  inline const SeqNode* node() {
-    return seq_node_.get();
-  }
+  inline const SeqNode* node() { return seq_node_.get(); }
 
  private:
   // Init cursor given parent cursor

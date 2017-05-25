@@ -24,7 +24,6 @@ ChunkInfo MapChunker::Make(const std::vector<const Segment*>& segments) const {
   uint32_t unum_entries = static_cast<uint32_t>(num_entries);
   std::memcpy(chunk.m_data(), &unum_entries, sizeof(uint32_t));
   size_t seg_offset = sizeof(uint32_t);
-
   OrderedKey preKey;
   bool firstKey = true;
 
@@ -46,41 +45,32 @@ ChunkInfo MapChunker::Make(const std::vector<const Segment*>& segments) const {
   size_t me_num_bytes;
   std::unique_ptr<const byte_t[]> meta_data(MetaEntry::Encode(
       1, num_entries, chunk.hash(), preKey, &me_num_bytes));
-
   std::unique_ptr<const Segment> meta_seg(
       new VarSegment(std::move(meta_data), me_num_bytes, {0}));
-
   return {std::move(chunk), std::move(meta_seg)};
 }
 
-const byte_t* MapNode::key(const byte_t* entry,
-                           size_t* key_size) {
+const byte_t* MapNode::key(const byte_t* entry, size_t* key_size) {
   // Skip the first 4 bytes for item size
   size_t key_size_offset = sizeof(uint32_t);
   *key_size = static_cast<size_t>(*reinterpret_cast<const uint32_t*>
                                   (entry + key_size_offset));
-
   // Skip the next 4 bytes for key size
   size_t key_offset = key_size_offset + sizeof(uint32_t);
   return entry + key_offset;
 }
 
-const byte_t* MapNode::value(const byte_t* entry,
-                             size_t* value_size) {
+const byte_t* MapNode::value(const byte_t* entry, size_t* value_size) {
   uint32_t entry_size = *reinterpret_cast<const uint32_t*>(entry);
 
   // Skip the first 4 bytes for item size
   size_t key_size_offset = sizeof(uint32_t);
   uint32_t key_size = *reinterpret_cast<const uint32_t*>(entry
                                                          + key_size_offset);
-
   // Skip the next 4 bytes for key size
-  size_t value_offset = key_size_offset
-                        + sizeof(uint32_t)
-                        + key_size;
+  size_t value_offset = key_size_offset + sizeof(uint32_t) + key_size;
 
   *value_size = entry_size - value_offset;
-
   return entry + value_offset;
 }
 
@@ -90,11 +80,9 @@ const KVItem MapNode::kvitem(const byte_t* entry, size_t* item_num_bytes) {
   const byte_t* key_data = MapNode::key(entry, &key_num_bytes);
   const byte_t* val_data = MapNode::value(entry, &val_num_bytes);
 
-  *item_num_bytes = sizeof(uint32_t)  //  4 bytes for item size
-                    + sizeof(uint32_t)  // 4 bytes for key size
-                    + key_num_bytes
+  //  4 bytes for item size, 4 bytes for key size
+  *item_num_bytes = sizeof(uint32_t) + sizeof(uint32_t) + key_num_bytes
                     + val_num_bytes;
-
   return {{key_data, key_num_bytes}, {val_data, val_num_bytes}};
 }
 
@@ -105,7 +93,6 @@ size_t MapNode::Encode(byte_t* buffer, const KVItem& kv_item) {
   const size_t val_offset = key_offset + kv_item.key.len();
 
   const size_t item_num_bytes = MapNode::EncodeNumBytes(kv_item);
-
   uint32_t uitem_num_bytes = static_cast<uint32_t>(item_num_bytes);
   uint32_t ukey_num_bytes = static_cast<uint32_t>(kv_item.key.len());
 
@@ -113,19 +100,17 @@ size_t MapNode::Encode(byte_t* buffer, const KVItem& kv_item) {
   std::memcpy(buffer + key_byte_offset, &ukey_num_bytes, sizeof(uint32_t));
   std::memcpy(buffer + key_offset, kv_item.key.data(), kv_item.key.len());
   std::memcpy(buffer + val_offset, kv_item.val.data(), kv_item.val.len());
-
   return item_num_bytes;
 }
 
 size_t MapNode::EncodeNumBytes(const KVItem& kv_item) {
-  return sizeof(uint32_t)  // 4 bytes for entry length
-         + sizeof(uint32_t)  // 4 bytes for key size
-         + kv_item.key.len()
+  //  4 bytes for entry length, 4 bytes for key size
+  return sizeof(uint32_t) + sizeof(uint32_t) + kv_item.key.len()
          + kv_item.val.len();
 }
 
 std::unique_ptr<const Segment> MapNode::Encode(
-        const std::vector<KVItem>& items) {
+    const std::vector<KVItem>& items) {
   CHECK_GT(items.size(), 0);
   // Calcuate into number of bytes required
   // Meanwhile check key is in strict increasing order
@@ -140,7 +125,6 @@ std::unique_ptr<const Segment> MapNode::Encode(
   }
 
   byte_t* buffer = new byte_t[total_num_bytes];
-
   // Concat multiple kvitems into a segment
   size_t offset = 0;
   std::vector<size_t> offsets;
@@ -150,31 +134,26 @@ std::unique_ptr<const Segment> MapNode::Encode(
   }
 
   std::unique_ptr<const byte_t[]> udata(buffer);
-
   std::unique_ptr<const Segment> seg(
       new VarSegment(std::move(udata), offset, std::move(offsets)));
-
   return seg;
 }
 
 
 const byte_t* MapNode::data(size_t idx) const {
   CHECK_LT(idx, numEntries());
-
   size_t offset = offsets_[idx];
   return chunk_->data() + offset;
 }
 
 size_t MapNode::len(size_t idx) const {
   DCHECK_LT(idx, numEntries());
-
   size_t preOffset = 0;
   if (idx == numEntries() - 1) {
     preOffset = chunk_->capacity();
   } else {
     preOffset = offsets_[idx + 1];
   }
-
   return preOffset - offsets_[idx];
 }
 
@@ -195,7 +174,6 @@ size_t MapNode::GetIdxForKey(const OrderedKey& key) const {
     }
     ++idx;
   }
-
   return idx;
 }
 
@@ -219,7 +197,6 @@ void MapNode::PrecomputeOffsets() {
     OrderedKey currKey = MapNode::orderedKey(chunk_->data() + byte_offset);
     if (i > 0) {CHECK(preKey < currKey); }
     preKey = currKey;
-
     byte_offset += item_num_bytes;
   }
 }
