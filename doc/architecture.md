@@ -1,34 +1,31 @@
 # System Architecture
 
-![architecture figure](architecture.jpg)
-### Request Handler
-All user requests will be collected/queued by Request Handler.
-In other to send request to worker nodes, it need first fetch worker list and key-range assignment from Master.
-It will cache Worker list, unless it detect the cache is out of date, and then re-fetch it from Master.
-To forward a request, it need to first retrieve the corresponding Worker that manages that key range.
+![UStore Architecture](arch.jpg)
 
-### Master
-Master monitors all Workers in the cluster.
-It is also responsible for assigning/re-assigning key ranges to Workers.
-If a Worker fails, the Master need to re-assign the key-range to aother Worker.
+## Remote Client Service
+``Remote Client Service`` receives all requests from application,
+and forwards the requests to the corresponding workers to process.
+The requests are dispatched based on the hash value of the request key.
 
-### Worker
-Worker handles requests forwared from Request Handler.
-It maintains a table containing the current head version of each (key, branch).
-Upon receive a request, it first retrieves the target version from head table (if necessary).
-It then load corresponding UNode from Data Type Manager.
-From the UNode, it might also load other embeded data types (string, blob, etc...).
-It operate updates on the data and create a new UNode for update.
-It keep the head table update-to-date after each update.
+## Worker
+``Worker``s process requests from disjoint subsets of keys.
 
-### Data Type Manager
-Data Type Manager hides the Chunk Storage and internal data type representation from Worker logics.
-When load an object, it will first load corresponding data chunk from Chunk Storage, and de-serialize it.
-Data types may support different operations.
-after all update operations are done, the object will finalize its own chunk organization (Prolly Tree).
-When finally commit the object, it will write only new chunks to Chunk Storage.
+## Worker Service
+``Worker Service`` receives requests from the client service and translates the request messages
+to the corresponding data structures.
 
-### Chunk Storage
-Chunk Storage is a distributed storage across the whole cluster.
-It handles all read/write chunk requests from Data Types.
-The storage will prefer to write new chunks in local node, unless the node is over-loaded already.
+## Access Control
+``Access Control`` checks the permission of each request before it is further processed.
+Unauthorized requests will be rejected directly.
+
+## Head Version Table
+``Head Version Table`` maintains the up-to-date head information for all named and unnamed branches.
+Each update of a branch head is captured in the table and persisted on disk.
+
+## Data Type Manager
+``Data Type Manager`` hides chunk storage and internal data representation from worker logics.
+When loading an object, it loads the corresponding data chunks and de-serializes them.
+After an update operation is done, the object will be chunked and only new chunks are written back to chunk storage.
+
+## Chunk Storage
+``Chunk Storage`` is distributed across the cluster. It handles read/write chunk requests from the data type manager.

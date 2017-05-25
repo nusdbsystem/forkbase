@@ -1,7 +1,7 @@
 # Development Guideline
 
 ## NOTE
- 
+
 * Do **NOT** directly work on your master branch. Your master branch should **ONLY** be
 updated by merging with latest codebase.
 
@@ -14,7 +14,7 @@ updated by merging with latest codebase.
   git clone https://github.com/YOUR_GITHUB_ACCOUNT/USTORE.git
 ```
 
-## Code for a Task 
+## Code for a Task
 
 * Sync your local master branch with latest codebase:
 ```
@@ -44,7 +44,7 @@ updated by merging with latest codebase.
 * Check coding style of changed files:
 ```
   # at USTORE root dir
-  tool/cpplint.py FILE_NAME 
+  tool/cpplint.py FILE_NAME
 ```
 
 * Rebase your local commits into one or several well-maintained commits
@@ -58,8 +58,12 @@ updated by merging with latest codebase.
 ```
   # fetch latest master codebase
   git fetch nusdbsystem master
-  # rebase to latest codebase and resolve conflict 
-  git rebase FETCH_HEAD
+  # update local master to latest codebase
+  git checkout master
+  git merge --no-commit FETCH_HEAD
+  # rebase to latest codebase and resolve conflict
+  git checkout feature-foo
+  git rebase master
 ```
 
 ## Submit Pull Request
