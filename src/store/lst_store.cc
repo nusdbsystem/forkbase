@@ -385,8 +385,9 @@ void LSTStore::Load(void* address) {
 
 Chunk LSTStore::Get(const Hash& key) {
   LSTHash hash(key.value());
-  CHECK_EQ(this->chunk_map_.count(hash), 1);
-  return Chunk(chunk_map_.at(hash).chunk_);
+  if (chunk_map_.count(hash) == 1) return Chunk(chunk_map_.at(hash).chunk_);
+  LOG(WARNING) << "Key: " << key << " does not exist in chunk store";
+  return Chunk();
 }
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
