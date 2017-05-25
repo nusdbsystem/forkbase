@@ -182,7 +182,7 @@ class DB {
   virtual ErrorCode Branch(const Slice& key, const Slice& old_branch,
                            const Slice& new_branch) = 0;
   /**
-   * @brief Create a new branch which points to a existing version.
+   * @brief Create a new branch which points to an existing version.
    *
    * @param key         Target key.
    * @param version     Existing version.

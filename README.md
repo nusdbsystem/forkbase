@@ -6,5 +6,6 @@
 
 [Dependencies](doc/dependencies.md)
 
-[Pull Request Guide](doc/pr_guide.md)
+[Http RESTful API](doc/http_restful.md)
 
+[Pull Request Guide](doc/pr_guide.md)
