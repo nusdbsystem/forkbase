@@ -114,6 +114,11 @@ class MetaChunker : public Singleton<MetaChunker>, public Chunker {
   ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
 
+  Chunk MakeEmpty() const override {
+    LOG(FATAL) << "Not Supported. ";
+    return Chunk();
+  }
+
  private:
   MetaChunker() {}
   ~MetaChunker() {}

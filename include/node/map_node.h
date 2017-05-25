@@ -24,6 +24,16 @@ class MapChunker : public Singleton<MapChunker>, public Chunker {
   ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
 
+  Chunk MakeEmpty() const override {
+    size_t num_entries = 0;
+    size_t chunk_num_bytes = sizeof(uint32_t);
+
+    Chunk chunk(ChunkType::kMap, chunk_num_bytes);
+    uint32_t unum_entries = static_cast<uint32_t>(num_entries);
+    std::memcpy(chunk.m_data(), &unum_entries, sizeof(uint32_t));
+    return chunk;
+  }
+
  private:
   MapChunker() = default;
   ~MapChunker() = default;

@@ -19,6 +19,37 @@ ustore::Worker worker_vlist(17);
 const char key_vlist[] = "key_vlist";
 const char branch_vlist[] = "branch_vlist";
 
+TEST(VList, CreateFromEmpty) {
+  ustore::ObjectDB db(&worker_vlist);
+  std::vector<Slice> slice_data;
+  // create buffered new list
+  ustore::VList list(slice_data);
+  // put new list
+  Hash hash = db.Put(Slice(key_vlist), list, Slice(branch_vlist)).version();
+  // get list
+  auto v = db.Get(Slice(key_vlist), Slice(branch_vlist)).List();
+  // update list
+  std::string delta = " delta";
+  slice_data.push_back(Slice(delta));
+  v.Append({Slice(delta)});
+  VMeta update = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == update.code());
+  EXPECT_TRUE(update.cell().empty());
+  EXPECT_FALSE(update.version().empty());
+  // get updated list
+  VMeta get = db.Get(Slice(key_vlist), Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == get.code());
+  EXPECT_FALSE(get.cell().empty());
+  EXPECT_TRUE(get.version().empty());
+  v = get.List();
+  // check data
+
+  ustore::Slice actual_val = v.Get(0);
+  ASSERT_TRUE(delta == actual_val);
+  ASSERT_EQ(1, v.numElements());
+}
+
+
 TEST(VList, CreateNewVList) {
   ustore::ObjectDB db(&worker_vlist);
   std::vector<Slice> slice_data;

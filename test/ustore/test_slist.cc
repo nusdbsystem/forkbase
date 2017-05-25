@@ -25,6 +25,21 @@ inline void CheckIdenticalElements(
   ASSERT_TRUE(it->end());
 }
 
+TEST(SList, Empty) {
+  std::vector<ustore::Slice> e;
+  ustore::SList slist(e);
+
+  ASSERT_EQ(0, slist.numElements());
+  ASSERT_TRUE(slist.Get(0).empty());
+
+  const ustore::Slice expected_e1("e1", 2);
+
+  ustore::SList new_slist1(slist.Splice(0 , 0, {expected_e1}));
+  ASSERT_EQ(1, new_slist1.numElements());
+  ustore::Slice actual_e1 = new_slist1.Get(0);
+  EXPECT_TRUE(expected_e1 == actual_e1);
+}
+
 
 TEST(SList, Small) {
   const ustore::Slice e1("e1", 2);

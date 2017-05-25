@@ -8,7 +8,6 @@
 #include "utils/utils.h"
 
 namespace ustore {
-
 SMap::SMap(const Hash& root_hash) noexcept :
     UMap(std::make_shared<ServerChunkLoader>()) {
   SetNodeForHash(root_hash);
@@ -17,17 +16,26 @@ SMap::SMap(const Hash& root_hash) noexcept :
 SMap::SMap(const std::vector<Slice>& keys,
            const std::vector<Slice>& vals) noexcept :
     UMap(std::make_shared<ServerChunkLoader>()) {
-  CHECK_GT(keys.size(), 0);
+  CHECK_GE(keys.size(), 0);
   CHECK_EQ(vals.size(), keys.size());
-  NodeBuilder nb(MapChunker::Instance(), false);
-  std::vector<KVItem> kv_items;
 
-  for (size_t i : Utils::SortIndexes<Slice>(keys)) {
-    kv_items.push_back({keys[i], vals[i]});
+  if (keys.size() == 0) {
+    Chunk chunk = MapChunker::Instance()->MakeEmpty();
+
+    Hash hash = chunk.hash().Clone();
+    store::GetChunkStore()->Put(hash, chunk);
+    SetNodeForHash(hash);
+  } else {
+    NodeBuilder nb(MapChunker::Instance(), false);
+    std::vector<KVItem> kv_items;
+
+    for (size_t i : Utils::SortIndexes<Slice>(keys)) {
+      kv_items.push_back({keys[i], vals[i]});
+    }
+    std::unique_ptr<const Segment> seg = MapNode::Encode(kv_items);
+    nb.SpliceElements(0, seg.get());
+    SetNodeForHash(nb.Commit());
   }
-  std::unique_ptr<const Segment> seg = MapNode::Encode(kv_items);
-  nb.SpliceElements(0, seg.get());
-  SetNodeForHash(nb.Commit());
 }
 
 Hash SMap::Set(const Slice& key, const Slice& val) const {

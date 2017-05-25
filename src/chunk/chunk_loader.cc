@@ -5,6 +5,7 @@
 namespace ustore {
 
 const Chunk* ChunkLoader::Load(const Hash& key) {
+  CHECK(!key.empty());
   auto it = cache_.find(key);
   if (it != cache_.end()) return &(it->second);
   cache_.emplace(key.Clone(), GetChunk(key));

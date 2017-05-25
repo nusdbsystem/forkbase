@@ -14,11 +14,18 @@ SList::SList(const Hash& root_hash) noexcept :
 
 SList::SList(const std::vector<Slice>& elements) noexcept:
     UList(std::make_shared<ServerChunkLoader>()) {
-  CHECK_GT(elements.size(), 0);
-  NodeBuilder nb(ListChunker::Instance(), false);
-  std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
-  nb.SpliceElements(0, seg.get());
-  SetNodeForHash(nb.Commit());
+  CHECK_GE(elements.size(), 0);
+  if (elements.size() == 0) {
+    Chunk chunk = ListChunker::Instance()->MakeEmpty();
+
+    store::GetChunkStore()->Put(chunk.hash(), chunk);
+    SetNodeForHash(chunk.hash());
+  } else {
+    NodeBuilder nb(ListChunker::Instance(), false);
+    std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
+    nb.SpliceElements(0, seg.get());
+    SetNodeForHash(nb.Commit());
+  }
 }
 
 Hash SList::Splice(size_t start_idx, size_t num_to_delete,

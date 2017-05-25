@@ -87,7 +87,9 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
     parent_builder_ = new NodeBuilder(cursor_->parent(), level + 1,
                                       MetaChunker::Instance(), false);
   }
-  Resume();
+  if (cursor_->node()->numEntries() > 0) {
+    Resume();
+  }
 }
 
 void NodeBuilder::Resume() {
