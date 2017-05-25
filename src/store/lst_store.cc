@@ -169,6 +169,8 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
       AppendInteger(segment, prev_segment_offset, next_segment_offset);
       FdWriteThenSync(fd, segment, kSegmentSize);
     }
+    delete[] buf1;
+    delete[] buf2;
     LOG(INFO) << "init segments done";
   }
 

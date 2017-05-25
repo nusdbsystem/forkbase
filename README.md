@@ -1,13 +1,13 @@
 # USTORE
 
-[Introduction](doc/introduction.md)
+[Introduction](doc/intro.md)
 
-[Architecture](doc/architecture.md)
+[Architecture](doc/arch.md)
 
-[Dependencies](doc/dependencies.md)
+[Dependencies](doc/depend.md)
 
-[Commandline Console API](doc/cmd_console.md)
+[Commandline Console API](doc/api_cmd.md)
 
-[Http RESTful API](doc/http_restful.md)
+[Http RESTful API](doc/api_http.md)
 
 [Pull Request Guide](doc/pr_guide.md)

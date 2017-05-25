@@ -83,7 +83,7 @@ std::string Hash::ToBase32() const {
     return std::string();
   }
   std::string ret;
-  uint64_t tmp;
+  uint64_t tmp = 0;
   for (size_t i = 0; i < kByteLength; i += 5) {
     tmp = 0;
     for (size_t j = 0; j < 5; ++j) tmp = (tmp << 8) + uint64_t(value_[i + j]);
@@ -97,8 +97,10 @@ std::string Hash::ToBase32() const {
 
 Hash Hash::Clone() const {
   Hash hash;
-  hash.Alloc();
-  std::memcpy(hash.own_.get(), value_, kByteLength);
+  if (!empty()) {
+    hash.Alloc();
+    std::memcpy(hash.own_.get(), value_, kByteLength);
+  }
   return hash;
 }
 
