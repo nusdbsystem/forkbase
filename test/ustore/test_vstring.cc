@@ -36,3 +36,24 @@ TEST(VString, CreateNewVString) {
   // check data
   EXPECT_EQ(0, memcmp(raw_data, v.data(), v.len()));
 }
+
+TEST(VString, CreateFromEmpty) {
+  ustore::ObjectDB db(&worker_vstring);
+  Slice empty;
+  ustore::VString string(empty);
+
+  VMeta put = db.Put(Slice(key_vstring), string, Slice(branch_vstring));
+  EXPECT_TRUE(ErrorCode::kOK == put.code());
+  EXPECT_TRUE(put.cell().empty());
+  EXPECT_FALSE(put.version().empty());
+  // get string
+  VMeta get = db.Get(Slice(key_vstring), Slice(branch_vstring));
+  EXPECT_TRUE(ErrorCode::kOK == get.code());
+  EXPECT_FALSE(get.cell().empty());
+  EXPECT_TRUE(get.version().empty());
+  auto v = get.String();
+
+  // check data
+  EXPECT_EQ(0, v.len());
+  EXPECT_EQ(nullptr, v.data());
+}

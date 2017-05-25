@@ -320,3 +320,19 @@ TEST(SimpleSBlob, Load) {
   EXPECT_EQ(ustore::byte2str(raw_data, len), ustore::byte2str(buffer, len));
   delete[] buffer;
 }
+
+TEST(SBlob, Empty) {
+  ustore::Slice empty;
+  ustore::SBlob sblob(empty);
+
+  ASSERT_EQ(0, sblob.numElements());
+
+  // Append 3 elements
+  ustore::byte_t d[] = "abc";
+  ustore::SBlob s1(sblob.Append(d, 3));
+  ASSERT_EQ(3, s1.numElements());
+
+  // Remove the only 3 elements
+  ustore::SBlob s2(s1.Delete(0, 3));
+  ASSERT_EQ(0, s2.numElements());
+}

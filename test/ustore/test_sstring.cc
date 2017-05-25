@@ -77,3 +77,11 @@ TEST(SString, Create) {
 
   ASSERT_EQ(expected_str, buf_str);
 }
+
+TEST(SString, Empty) {
+  ustore::Slice empty;
+  ustore::SString sstring(empty);
+
+  ASSERT_EQ(0, sstring.len());
+  ASSERT_EQ(nullptr, sstring.data());
+}

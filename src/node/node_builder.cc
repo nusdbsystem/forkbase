@@ -357,8 +357,12 @@ Hash NodeBuilder::Commit() {
   // Comment the following line out
   //   because current NodeBuilder is allowed to commit for once.
   // commited_ = true;
-
-  CHECK(!last_created_chunk.empty());
+  // CHECK(!last_created_chunk.empty());
+  if (last_created_chunk.empty()) {
+    // This occurs when the resulting prolly tree does not contain
+    //   any elements, create an empty chunk
+    last_created_chunk = HandleBoundary({});
+  }
   // upper node builder would build a tree node with a single metaentry
   //   This node will be excluded from final prolley tree
   // DLOG(INFO) << "Finish one level commiting.\n";

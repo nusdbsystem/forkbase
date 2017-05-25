@@ -50,6 +50,16 @@ TEST(VMap, CreateFromEmpty) {
   ustore::Slice actual_val = v.Get(Slice(delta_key));
   ASSERT_TRUE(delta_val == actual_val);
   ASSERT_EQ(1, v.numElements());
+
+  // remove the only key
+  v.Remove(Slice(delta_key));
+  VMeta update1 = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == update1.code());
+
+  VMeta get1 = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == get1.code());
+  v = get1.Map();
+  ASSERT_EQ(0, v.numElements());
 }
 
 TEST(VMap, CreateNewVMap) {

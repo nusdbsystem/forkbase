@@ -35,21 +35,27 @@ inline void CheckIdenticalItems(
   ASSERT_TRUE(it->end());
 }
 
-TEST(SMap, EmptyMap) {
+TEST(SMap, Empty) {
   ustore::SMap smap({}, {});
   ASSERT_EQ(0, smap.numElements());
 
   const ustore::Slice k1("k1", 2);
   const ustore::Slice expected_v1("v1", 2);
 
-  // Get an non-existent key
+  // Get an non-existent key from an empty map
   ASSERT_TRUE(smap.Get(k1).empty());
 
+  // Set a kv pair
   ustore::SMap new_smap1(smap.Set(k1, expected_v1));
   ASSERT_EQ(1, new_smap1.numElements());
 
   ustore::Slice actual_v1 = new_smap1.Get(k1);
   ASSERT_TRUE(expected_v1 == actual_v1);
+
+  // remove a kv pair to result an empty map
+  ustore::SMap new_smap2(new_smap1.Remove(k1));
+  ASSERT_TRUE(new_smap2.Get(k1).empty());
+  ASSERT_EQ(0, new_smap2.numElements());
 }
 
 TEST(SMap, Small) {

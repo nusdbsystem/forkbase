@@ -16,11 +16,6 @@ class BlobChunker : public Singleton<BlobChunker>, public Chunker {
   ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
 
-  Chunk MakeEmpty() const override {
-    LOG(FATAL) << "Not Supported. ";
-    return Chunk();
-  }
-
  private:
   BlobChunker() {}
   ~BlobChunker() {}

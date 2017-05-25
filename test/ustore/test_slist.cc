@@ -34,10 +34,15 @@ TEST(SList, Empty) {
 
   const ustore::Slice expected_e1("e1", 2);
 
+  // Insert a new element
   ustore::SList new_slist1(slist.Splice(0 , 0, {expected_e1}));
   ASSERT_EQ(1, new_slist1.numElements());
   ustore::Slice actual_e1 = new_slist1.Get(0);
   EXPECT_TRUE(expected_e1 == actual_e1);
+
+  // Remove the only element
+  ustore::SList new_slist2(new_slist1.Delete(0 , 1));
+  ASSERT_EQ(0, new_slist2.numElements());
 }
 
 

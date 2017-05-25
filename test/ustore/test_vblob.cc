@@ -18,6 +18,53 @@ ustore::Worker worker_vblob(17);
 const char key_vblob[] = "key_vblob";
 const char branch_vblob[] = "branch_vblob";
 
+TEST(VBlob, CreateFromEmpty) {
+  ustore::ObjectDB db(&worker_vblob);
+  // create empty
+  ustore::Slice empty;
+  ustore::VBlob blob{Slice(empty)};
+  // put new blob
+  Hash hash = db.Put(Slice(key_vblob), blob, Slice(branch_vblob)).version();
+  // get blob
+  auto v = db.Get(Slice(key_vblob), Slice(branch_vblob)).Blob();
+  // update blob
+  std::string s = "delta";
+  v.Append(reinterpret_cast<const byte_t*>(s.c_str()), s.length());
+  VMeta update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == update.code());
+  EXPECT_TRUE(update.cell().empty());
+  EXPECT_FALSE(update.version().empty());
+  // get updated blob
+  VMeta get = db.Get(Slice(key_vblob), Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == get.code());
+  EXPECT_FALSE(get.cell().empty());
+  EXPECT_TRUE(get.version().empty());
+  v = get.Blob();
+  // check data
+  ustore::byte_t* buf = new ustore::byte_t[v.size()];
+  v.Read(0, v.size(), buf);
+  EXPECT_EQ(0, memcmp(s.data(), buf, s.length()));
+  delete[] buf;
+
+  // remove all bytes from the blob
+  v = db.Get(Slice(key_vblob), Slice(branch_vblob)).Blob();
+  // update blob
+  v.Delete(0, s.length());
+  update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == update.code());
+  EXPECT_TRUE(update.cell().empty());
+  EXPECT_FALSE(update.version().empty());
+
+  // get updated blob
+  get = db.Get(Slice(key_vblob), Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == get.code());
+  EXPECT_FALSE(get.cell().empty());
+  EXPECT_TRUE(get.version().empty());
+  v = get.Blob();
+  // check data
+  EXPECT_EQ(0, v.size());
+}
+
 TEST(VBlob, CreateNewVBlob) {
   ustore::ObjectDB db(&worker_vblob);
   // create buffered new blob

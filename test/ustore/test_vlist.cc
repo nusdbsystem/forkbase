@@ -47,6 +47,16 @@ TEST(VList, CreateFromEmpty) {
   ustore::Slice actual_val = v.Get(0);
   ASSERT_TRUE(delta == actual_val);
   ASSERT_EQ(1, v.numElements());
+
+  // remove the only element
+  v.Delete(0, 1);
+  VMeta update1 = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == update1.code());
+
+  VMeta get1 = db.Get(Slice(key_vlist), Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == get1.code());
+  v = get1.List();
+  ASSERT_EQ(0, v.numElements());
 }
 
 

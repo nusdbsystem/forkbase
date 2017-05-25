@@ -20,11 +20,9 @@ SMap::SMap(const std::vector<Slice>& keys,
   CHECK_EQ(vals.size(), keys.size());
 
   if (keys.size() == 0) {
-    Chunk chunk = MapChunker::Instance()->MakeEmpty();
-
-    Hash hash = chunk.hash().Clone();
-    store::GetChunkStore()->Put(hash, chunk);
-    SetNodeForHash(hash);
+    ChunkInfo chunk_info = MapChunker::Instance()->Make({});
+    store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
+    SetNodeForHash(chunk_info.chunk.hash());
   } else {
     NodeBuilder nb(MapChunker::Instance(), false);
     std::vector<KVItem> kv_items;

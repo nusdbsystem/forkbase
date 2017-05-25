@@ -14,11 +14,17 @@ SBlob::SBlob(const Hash& root_hash) noexcept :
 
 SBlob::SBlob(const Slice& data) noexcept :
     UBlob(std::make_shared<ServerChunkLoader>()) {
-  NodeBuilder nb(BlobChunker::Instance(), true);
-  FixedSegment seg(data.data(), data.len(), 1);
-  nb.SpliceElements(0, &seg);
-  Hash root_hash(nb.Commit());
-  SetNodeForHash(root_hash);
+  if (data.empty()) {
+    ChunkInfo chunk_info = BlobChunker::Instance()->Make({});
+    store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
+    SetNodeForHash(chunk_info.chunk.hash());
+  } else {
+    NodeBuilder nb(BlobChunker::Instance(), true);
+    FixedSegment seg(data.data(), data.len(), 1);
+    nb.SpliceElements(0, &seg);
+    Hash root_hash(nb.Commit());
+    SetNodeForHash(root_hash);
+  }
 }
 
 Hash SBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,

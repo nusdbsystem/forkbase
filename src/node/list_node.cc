@@ -13,7 +13,6 @@ namespace ustore {
 
 ChunkInfo ListChunker::Make(const std::vector<const Segment*>& segments) const {
   // Caculate the total number of entries and bytes for all segments
-  CHECK_GT(segments.size(), 0);
   size_t num_entries = 0;
   size_t chunk_num_bytes = sizeof(uint32_t);
   for (const auto& seg : segments) {

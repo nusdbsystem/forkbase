@@ -28,8 +28,10 @@ class StringNode : public UNode {
   size_t Copy(byte_t* buffer) const;
 
   // return the pointer to the string first byte
+  //   nullptr if len is 0
   inline const byte_t* Read() const {
-    return chunk_->data() + sizeof(uint32_t);
+    return len() ? chunk_->data() + sizeof(uint32_t)
+                 : nullptr;
   }
 };
 }  // namespace ustore

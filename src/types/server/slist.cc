@@ -16,10 +16,9 @@ SList::SList(const std::vector<Slice>& elements) noexcept:
     UList(std::make_shared<ServerChunkLoader>()) {
   CHECK_GE(elements.size(), 0);
   if (elements.size() == 0) {
-    Chunk chunk = ListChunker::Instance()->MakeEmpty();
-
-    store::GetChunkStore()->Put(chunk.hash(), chunk);
-    SetNodeForHash(chunk.hash());
+    ChunkInfo chunk_info = ListChunker::Instance()->Make({});
+    store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
+    SetNodeForHash(chunk_info.chunk.hash());
   } else {
     NodeBuilder nb(ListChunker::Instance(), false);
     std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
