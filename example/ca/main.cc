@@ -1,32 +1,38 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include <utility>
-#include "hash/hash.h"
-#include "spec/slice.h"
-#include "spec/value.h"
-#include "types/type.h"
-#include "utils/logging.h"
 #include "worker/worker_ext.h"
 
 #include "ca/analytics.h"
 #include "ca/config.h"
+#include "ca/relational.h"
 #include "ca/utils.h"
 
 namespace ustore {
 namespace example {
 namespace ca {
 
-WorkerExt db(Config::kWorkID);
+WorkerExt db(43);
+ColumnStore cs(&db);
+
+int RunSample() {
+  std::cout << std::endl
+            << "-------------[ Sample Analytics ]------------" << std::endl;
+  GUARD_INT(SampleAnalytics("sample", cs).Compute(nullptr));
+  std::cout << "---------------------------------------------" << std::endl;
+  return 0;
+}
 
 int LoadDataset() {
   std::cout << std::endl
             << "-------------[ Loading Dataset ]-------------" << std::endl;
-  auto ana = DataLoading("master", db, Config::n_columns, Config::n_records);
-  StringSet aff_cols;
+  auto ana = DataLoading("master", cs, Config::n_columns, Config::n_records);
+  std::unordered_set<std::string> aff_cols;
   GUARD_INT(ana.Compute(&aff_cols));
-  for (const auto& c : aff_cols)
-    for (const auto& b : db.ListBranch(Slice(c)))
-      USTORE_GUARD_INT(Utils::Print(c, b, db));
+  for (const auto& col_name : aff_cols) {
+    Column col;
+    USTORE_GUARD_INT(cs.GetColumn("Sample", "master", col_name, &col));
+    Utils::Print("Sample", "master", col_name, col);
+  }
   std::cout << "---------------------------------------------" << std::endl;
   return 0;
 }
@@ -34,12 +40,13 @@ int LoadDataset() {
 int RunPoissonAnalytics(const double mean) {
   std::cout << std::endl
             << "------------[ Poisson Analytics ]------------" << std::endl;
-  const std::string branch("poi_ana");
-  StringSet aff_cols;
-  GUARD_INT(PoissonAnalytics(branch, db, mean).Compute(&aff_cols));
+  std::unordered_set<std::string> aff_cols;
+  GUARD_INT(PoissonAnalytics("poi_ana", cs, mean).Compute(&aff_cols));
   std::cout << ">>> Affected Columns <<<" << std::endl;
-  for (const auto& c : aff_cols) {
-    USTORE_GUARD_INT(Utils::Print(c, branch, db));
+  for (const auto& col_name : aff_cols) {
+    Column col;
+    USTORE_GUARD_INT(cs.GetColumn("Sample", "poi_ana", col_name, &col));
+    Utils::Print("Sample", "poi_ana", col_name, col);
   }
   std::cout << "---------------------------------------------" << std::endl;
   return 0;
@@ -48,12 +55,13 @@ int RunPoissonAnalytics(const double mean) {
 int RunBinomialAnalytics(const double p) {
   std::cout << std::endl
             << "-----------[ Binomial Analytics ]------------" << std::endl;
-  const std::string branch("bin_ana");
-  StringSet aff_cols;
-  GUARD_INT(BinomialAnalytics(branch, db, p).Compute(&aff_cols));
+  std::unordered_set<std::string> aff_cols;
+  GUARD_INT(BinomialAnalytics("bin_ana", cs, p).Compute(&aff_cols));
   std::cout << ">>> Affected Columns <<<" << std::endl;
-  for (const auto& c : aff_cols) {
-    USTORE_GUARD_INT(Utils::Print(c, branch, db));
+  for (const auto& col_name : aff_cols) {
+    Column col;
+    USTORE_GUARD_INT(cs.GetColumn("Sample", "bin_ana", col_name, &col));
+    Utils::Print("Sample", "bin_ana", col_name, col);
   }
   std::cout << "---------------------------------------------" << std::endl;
   return 0;
@@ -62,15 +70,14 @@ int RunBinomialAnalytics(const double p) {
 int MergeResults() {
   std::cout << std::endl
             << "-------------[ Merging Results ]-------------" << std::endl;
-  auto ana = MergeAnalytics("master", db);
-  const Slice col_name("distr");
-  std::cout << ">>> Before Merging <<<" << std::endl;
-  USTORE_GUARD_INT(Utils::Print(col_name, "master", db));
-  StringSet aff_cols;
-  GUARD_INT(ana.Compute(nullptr));
-  std::cout << ">>> After Merging <<<" << std::endl;
-  for (const auto& branch : db.ListBranch(col_name)) {
-    USTORE_GUARD_INT(Utils::Print(col_name, branch, db));
+  auto ana = MergeAnalytics("master", cs);
+  std::unordered_set<std::string> aff_cols;
+  GUARD_INT(ana.Compute(&aff_cols));
+  std::cout << ">>> Affected Columns <<<" << std::endl;
+  for (const auto& col_name : aff_cols) {
+    Column col;
+    USTORE_GUARD_INT(cs.GetColumn("Sample", "master", col_name, &col));
+    Utils::Print("Sample", "master", col_name, col);
   }
   std::cout << "---------------------------------------------" << std::endl;
   return 0;
@@ -86,6 +93,7 @@ int MergeResults() {
 
 int main(int argc, char* argv[]) {
   if (Config::ParseCmdArgs(argc, argv)) {
+    MAIN_GUARD(RunSample());
     MAIN_GUARD(LoadDataset());
     MAIN_GUARD(RunPoissonAnalytics(Config::p * Config::n_records));
     MAIN_GUARD(RunBinomialAnalytics(Config::p));

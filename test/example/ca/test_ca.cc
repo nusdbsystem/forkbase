@@ -8,7 +8,7 @@
 using ustore::example::ca::ColumnStore;
 using ustore::example::ca::Column;
 
-void ASSERT_SUCCEEDED(ustore::ErrorCode code) {
+inline void ASSERT_SUCCEEDED(ustore::ErrorCode code) {
   ASSERT_EQ(code, ustore::ErrorCode::kOK);
 }
 

@@ -43,6 +43,10 @@ class Utils {
   template<typename T>
   static inline std::string ToString(const T& obj);
 
+  static inline const std::string& ToString(const std::string& str) {
+    return str;
+  }
+
   template<typename T>
   static inline std::string ToStringPair(
     const T& a, const T& b, const std::string& lsymbol = "(",

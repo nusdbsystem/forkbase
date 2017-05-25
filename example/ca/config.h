@@ -5,12 +5,7 @@
 
 #include <boost/program_options.hpp>
 #include <iostream>
-#include <list>
-#include <map>
-#include <sstream>
 #include <string>
-#include <unordered_set>
-#include "worker/worker.h"
 
 #include "ca/utils.h"
 
@@ -18,16 +13,10 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-#define MAP std::map
-
-using StringList = std::list<std::string>;
-using StringSet = std::unordered_set<std::string>;
-
 namespace po = boost::program_options;
 
 class Config {
  public:
-  static const WorkerID kWorkID;
   static const size_t kDefaultNumColumns;
   static const size_t kDefaultNumRecords;
   static const size_t kDefaultNumIterations;
