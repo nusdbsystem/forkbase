@@ -25,12 +25,13 @@ DuallyDiffKeyIterator UMap::DuallyDiff(
 
 Slice UMap::Get(const Slice& key) const {
   auto orderedkey = OrderedKey::FromSlice(key);
-  NodeCursor* cursor = NodeCursor::GetCursorByKey(root_node_->hash(),
-                         orderedkey, chunk_loader_.get());
+  NodeCursor cursor(root_node_->hash(),
+                    orderedkey,
+                    chunk_loader_.get());
 
-  if (!cursor->isEnd() && orderedkey == cursor->currentKey()) {
+  if (!cursor.isEnd() && orderedkey == cursor.currentKey()) {
     size_t value_size;
-    auto value_data = MapNode::value(cursor->current(), &value_size);
+    auto value_data = MapNode::value(cursor.current(), &value_size);
     return Slice(value_data, value_size);
   } else {
     return Slice();

@@ -27,14 +27,13 @@ DuallyDiffIndexIterator UList::DuallyDiff(
 
 Slice UList::Get(uint64_t idx) const {
   CHECK(!empty());
-  auto cursor = std::unique_ptr<NodeCursor>
-                    (NodeCursor::GetCursorByIndex(root_node_->hash(),
-                    idx, chunk_loader_.get()));
+  NodeCursor cursor(root_node_->hash(),
+                    idx, chunk_loader_.get());
 
-  if (cursor == nullptr || cursor->isEnd()) {
+  if (cursor.empty() || cursor.isEnd()) {
     return Slice();
   } else {
-    return ListNode::Decode(cursor->current());
+    return ListNode::Decode(cursor.current());
   }
 }
 

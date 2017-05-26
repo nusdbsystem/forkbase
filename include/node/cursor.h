@@ -43,6 +43,13 @@ class NodeCursor {
   // Need to recursively copy the parent NodeCursor
   NodeCursor(const NodeCursor& cursor) noexcept;
 
+
+  // move ctor
+  NodeCursor(NodeCursor&& cursor) noexcept;
+
+  // move assignment
+  NodeCursor& operator=(NodeCursor&& cursor) noexcept;
+
   ~NodeCursor() = default;
 
   // Advance the pointer by one element,

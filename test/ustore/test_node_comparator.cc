@@ -35,23 +35,21 @@ class IndexComparatorSmallEnv : public ::testing::Test {
 TEST_F(IndexComparatorSmallEnv, Basic) {
   // lhs is constructed by replacing 3 elements starting at 10th with xxx
   //   And removing the last two elements in the end and append y
-  ustore::NodeBuilder* nb1 = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-      rhs_root_, 10, loader_.get(), ustore::BlobChunker::Instance(), true);
+  ustore::NodeBuilder nb1(rhs_root_, 10, loader_.get(),
+                          ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data1[] = "xxx";
   ustore::FixedSegment seg1(lhs_data1, 3, 1);
-  nb1->SpliceElements(3, &seg1);
-  ustore::Hash lhs_temporal = nb1->Commit();
-  delete nb1;
+  nb1.SpliceElements(3, &seg1);
+  ustore::Hash lhs_temporal = nb1.Commit();
 
-  ustore::NodeBuilder* nb2 = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-      lhs_temporal, 18, loader_.get(), ustore::BlobChunker::Instance(), true);
+  ustore::NodeBuilder nb2(lhs_temporal, 18, loader_.get(),
+                          ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data2[] = "y";
   ustore::FixedSegment seg2(lhs_data2, 1, 1);
-  nb2->SpliceElements(2, &seg2);
-  ustore::Hash lhs = nb2->Commit();
-  delete nb2;
+  nb2.SpliceElements(2, &seg2);
+  ustore::Hash lhs = nb2.Commit();
 
   // lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
@@ -79,14 +77,13 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
 
 TEST_F(IndexComparatorSmallEnv, Insertion) {
   // lhs is constructed by inserting 3 elements at 10th of rhs with xxx
-  ustore::NodeBuilder* nb = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-      rhs_root_, 10, loader_.get(), ustore::BlobChunker::Instance(), true);
+  ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(),
+                         ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data[] = "xxx";
   ustore::FixedSegment seg(lhs_data, 3, 1);
-  nb->SpliceElements(0, &seg);
-  ustore::Hash lhs = nb->Commit();
-  delete nb;
+  nb.SpliceElements(0, &seg);
+  ustore::Hash lhs = nb.Commit();
 
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
@@ -108,14 +105,15 @@ TEST_F(IndexComparatorSmallEnv, Insertion) {
 
 TEST_F(IndexComparatorSmallEnv, Deletion) {
   // lhs is constructed by removing 3 elements at 10th of rhs with xxx
-  ustore::NodeBuilder* nb = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-      rhs_root_, 10, loader_.get(), ustore::BlobChunker::Instance(), true);
+  ustore::NodeBuilder nb(rhs_root_, 10,
+                         loader_.get(),
+                         ustore::BlobChunker::Instance(),
+                         true);
 
   constexpr ustore::byte_t* lhs_data = nullptr;
   ustore::FixedSegment seg(lhs_data, 0, 1);
-  nb->SpliceElements(3, &seg);
-  ustore::Hash lhs = nb->Commit();
-  delete nb;
+  nb.SpliceElements(3, &seg);
+  ustore::Hash lhs = nb.Commit();
 
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
@@ -198,24 +196,24 @@ class IndexComparatorBigEnv : public ::testing::Test {
 TEST_F(IndexComparatorBigEnv, Basic) {
   // lhs is constructed by replacing 10 elements starting at 60th
   //   And removing the last 5 elements in the end and append 10
-  ustore::NodeBuilder* nb1 = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-      rhs_root_, 60, loader_.get(), ustore::BlobChunker::Instance(), true);
+  ustore::NodeBuilder nb1(rhs_root_, 60,
+                          loader_.get(),
+                          ustore::BlobChunker::Instance(),
+                          true);
 
   constexpr ustore::byte_t lhs_data1[] = "9999999999";  // 10 9s
   ustore::FixedSegment seg1(lhs_data1, 10, 1);
-  nb1->SpliceElements(10, &seg1);
-  ustore::Hash lhs_temporal = nb1->Commit();
-  delete nb1;
+  nb1.SpliceElements(10, &seg1);
+  ustore::Hash lhs_temporal = nb1.Commit();
 
-  ustore::NodeBuilder* nb2 = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-      lhs_temporal, rhs_len_ - 5, loader_.get(),
-      ustore::BlobChunker::Instance(), true);
+  ustore::NodeBuilder nb2(lhs_temporal, rhs_len_ - 5,
+                          loader_.get(),
+                          ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data2[] = "9999999999";  // 10 9s
   ustore::FixedSegment seg2(lhs_data2, 10, 1);
-  nb2->SpliceElements(5, &seg2);
-  ustore::Hash lhs = nb2->Commit();
-  delete nb2;
+  nb2.SpliceElements(5, &seg2);
+  ustore::Hash lhs = nb2.Commit();
 
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
@@ -330,46 +328,45 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 
 
 // replacing k2 with new v2, remove kv3
-  ustore::NodeBuilder* nb1 = ustore::NodeBuilder::NewNodeBuilderAtKey(
-      rhs_root_, key2, loader_.get(), ustore::MapChunker::Instance(),
+  ustore::NodeBuilder nb1(
+      rhs_root_, key2, loader_.get(),
+      ustore::MapChunker::Instance(),
       false);
 
 
   std::unique_ptr<const ustore::Segment> seg1 =
       ustore::MapNode::Encode({new_kv2});
 
-  nb1->SpliceElements(2, seg1.get());
-  ustore::Hash lhs_t1 = nb1->Commit();
+  nb1.SpliceElements(2, seg1.get());
+  ustore::Hash lhs_t1 = nb1.Commit();
 
   ASSERT_EQ(6, numElements(lhs_t1));
-  delete nb1;
-
 
 // replace kv5 with new_kv5
-  ustore::NodeBuilder* nb2 = ustore::NodeBuilder::NewNodeBuilderAtKey(
+  ustore::NodeBuilder nb2(
       lhs_t1, key5, loader_.get(), ustore::MapChunker::Instance(),
       false);
 
   std::unique_ptr<const ustore::Segment> seg2 =
       ustore::MapNode::Encode({new_kv5});
 
-  nb2->SpliceElements(1, seg2.get());
-  ustore::Hash lhs_t2 = nb2->Commit();
-  delete nb2;
+  nb2.SpliceElements(1, seg2.get());
+  ustore::Hash lhs_t2 = nb2.Commit();
   ASSERT_EQ(6, numElements(lhs_t2));
 
 
 // remove k6 and append kv7 and kv8
-  ustore::NodeBuilder* nb3 = ustore::NodeBuilder::NewNodeBuilderAtKey(
-      lhs_t2, key7, loader_.get(), ustore::MapChunker::Instance(),
+  ustore::NodeBuilder nb3(
+      lhs_t2, key7, loader_.get(),
+      ustore::MapChunker::Instance(),
       false);
 
   std::unique_ptr<const ustore::Segment> seg3 =
       ustore::MapNode::Encode({kv8, kv9});
 
-  nb3->SpliceElements(1, seg3.get());
-  ustore::Hash lhs = nb3->Commit();
-  delete nb3;
+  nb3.SpliceElements(1, seg3.get());
+  ustore::Hash lhs = nb3.Commit();
+
   ASSERT_EQ(7, numElements(lhs));
 
   //  lhs DIFF rhs
@@ -479,40 +476,35 @@ TEST_F(KeyComparatorBigEnv, Basic) {
   }
   auto seg1 = ustore::MapNode::Encode(new_items);
 
-  ustore::NodeBuilder* nb1 = ustore::NodeBuilder::NewNodeBuilderAtKey(
-      rhs_root_, key400, loader_.get(), ustore::MapChunker::Instance(),
+  ustore::NodeBuilder nb1(
+      rhs_root_, key400,
+      loader_.get(),
+      ustore::MapChunker::Instance(),
       false);
 
 
-  nb1->SpliceElements(100, seg1.get());
-  ustore::Hash lhs_t = nb1->Commit();
-  delete nb1;
+  nb1.SpliceElements(100, seg1.get());
+  ustore::Hash lhs_t = nb1.Commit();
   ASSERT_EQ(num_items_, numElements(lhs_t));
-
 
 
   const ustore::OrderedKey key100{false, keys_[100], entry_size_};
 
-  ustore::NodeBuilder* nb2 = ustore::NodeBuilder::NewNodeBuilderAtKey(
-      lhs_t, key100, loader_.get(), ustore::MapChunker::Instance(),
+  ustore::NodeBuilder nb2(
+      lhs_t, key100, loader_.get(),
+      ustore::MapChunker::Instance(),
       false);
 
 
   ustore::VarSegment seg2(nullptr, 0, {});
 
-  nb2->SpliceElements(200, &seg2);
-  ustore::Hash lhs = nb2->Commit();
-  delete nb2;
+  nb2.SpliceElements(200, &seg2);
+  ustore::Hash lhs = nb2.Commit();
   ASSERT_EQ(num_items_ - 200, numElements(lhs));
 
 
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
-
-  for (auto range : df_ranges) {
-    LOG(INFO) << range.start_idx << " "
-              << range.num_subsequent;
-  }
 
   ASSERT_EQ(1, df_ranges.size());
 

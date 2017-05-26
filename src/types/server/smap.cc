@@ -39,14 +39,15 @@ SMap::SMap(const std::vector<Slice>& keys,
 Hash SMap::Set(const Slice& key, const Slice& val) const {
   CHECK(!empty());
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
-  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtKey(hash(), orderedKey,
-    chunk_loader_.get(), MapChunker::Instance(), false);
+  NodeBuilder nb(hash(), orderedKey,
+                 chunk_loader_.get(),
+                 MapChunker::Instance(),
+                 false);
 
   // Try to find whether this key already exists
-  NodeCursor *cursor = NodeCursor::GetCursorByKey(hash(), orderedKey,
-                                                  chunk_loader_.get());
-  bool foundKey = (!cursor->isEnd() && orderedKey == cursor->currentKey());
-  delete cursor;
+  NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
+  bool foundKey = (!cursor.isEnd() && orderedKey == cursor.currentKey());
+
   size_t num_splice = foundKey? 1: 0;
 
   // If the item with identical key exists,
@@ -54,9 +55,8 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
   KVItem kv_item = {key, val};
 
   std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
-  nb->SpliceElements(num_splice, seg.get());
-  Hash root_hash = nb->Commit();
-  delete nb;
+  nb.SpliceElements(num_splice, seg.get());
+  Hash root_hash = nb.Commit();
 
   return root_hash;
 }
@@ -66,10 +66,8 @@ Hash SMap::Remove(const Slice& key) const {
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
 
   // Use cursor to find whether that key exists
-  NodeCursor *cursor = NodeCursor::GetCursorByKey(hash(), orderedKey,
-                                                  chunk_loader_.get());
-  bool foundKey = (!cursor->isEnd() && orderedKey == cursor->currentKey());
-  delete cursor;
+  NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
+  bool foundKey = (!cursor.isEnd() && orderedKey == cursor.currentKey());
 
   if (!foundKey) {
     LOG(WARNING) << "Try to remove a non-existent key "
@@ -81,11 +79,11 @@ Hash SMap::Remove(const Slice& key) const {
 
   // Create an empty segment
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr), 0, {});
-  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtKey(hash(), orderedKey,
-    chunk_loader_.get(), MapChunker::Instance(), false);
-  nb->SpliceElements(1, &seg);
-  Hash hash = nb->Commit();
-  delete nb;
+  NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
+                 MapChunker::Instance(), false);
+  nb.SpliceElements(1, &seg);
+  Hash hash = nb.Commit();
+
   return hash;
 }
 

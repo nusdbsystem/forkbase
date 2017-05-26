@@ -44,23 +44,21 @@ size_t UBlob::Read(size_t pos, size_t len, byte_t* buffer) const {
     LOG(WARNING) << "Read Pos exceeds Blob Size. ";
     return 0;
   }
-  NodeCursor* cursor = NodeCursor::GetCursorByIndex(root_node_->hash(), pos,
-                                                    chunk_loader_.get());
+  NodeCursor cursor(root_node_->hash(), pos, chunk_loader_.get());
   size_t total_copy_byte = 0;
   do {
     size_t pre_copy_byte = total_copy_byte;
     size_t chunk_copy_byte = 0;
-    const byte_t* chunk_copy_start = cursor->current();
+    const byte_t* chunk_copy_start = cursor.current();
     do {
-      chunk_copy_byte += cursor->numCurrentBytes();
-      total_copy_byte += cursor->numCurrentBytes();
+      chunk_copy_byte += cursor.numCurrentBytes();
+      total_copy_byte += cursor.numCurrentBytes();
       if (total_copy_byte == len) break;
-    } while (cursor->Advance(false));
+    } while (cursor.Advance(false));
     std::memcpy(buffer + pre_copy_byte, chunk_copy_start, chunk_copy_byte);
     if (total_copy_byte == len) break;
-  } while (cursor->Advance(true));
+  } while (cursor.Advance(true));
 
-  delete cursor;
   return total_copy_byte;
 }
 

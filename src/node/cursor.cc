@@ -119,14 +119,33 @@ NodeCursor::NodeCursor(const Hash& hash,
 }
 
 
-// copy cosntructor
+// copy ctor
 NodeCursor::NodeCursor(const NodeCursor& cursor) noexcept
     : parent_cr_(nullptr),
       seq_node_(cursor.seq_node_),
       chunk_loader_(cursor.chunk_loader_),
       idx_(cursor.idx_) {
-  if (cursor.parent_cr_ != nullptr) {
+  if (cursor.parent_cr_) {
     this->parent_cr_.reset(new NodeCursor(*(cursor.parent_cr_)));
+  }
+}
+
+NodeCursor& NodeCursor::operator=(NodeCursor&& cursor) noexcept {
+  seq_node_ = std::move(cursor.seq_node_);
+  chunk_loader_ = cursor.chunk_loader_;
+  idx_ = cursor.idx_;
+  parent_cr_ = std::move(cursor.parent_cr_);
+
+  return *this;
+}
+
+NodeCursor::NodeCursor(NodeCursor&& cursor) noexcept
+    : parent_cr_(nullptr),
+      seq_node_(std::move(cursor.seq_node_)),
+      chunk_loader_(cursor.chunk_loader_),
+      idx_(cursor.idx_) {
+  if (cursor.parent_cr_) {
+    this->parent_cr_ = std::move(cursor.parent_cr_);
   }
 }
 

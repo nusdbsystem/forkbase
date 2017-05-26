@@ -20,7 +20,7 @@ namespace ustore {
 struct IndexTrait {
   // return the key of element pointed by the given cursor and that
   //   element index
-  static OrderedKey Key(const NodeCursor* cursor, uint64_t idx) {
+  static OrderedKey Key(const NodeCursor& cursor, uint64_t idx) {
     return OrderedKey(idx);
   }
 
@@ -43,8 +43,8 @@ struct IndexTrait {
 };
 
 struct OrderedKeyTrait {
-  static OrderedKey Key(const NodeCursor* cursor, uint64_t idx) {
-    return cursor->currentKey();
+  static OrderedKey Key(const NodeCursor& cursor, uint64_t idx) {
+    return cursor.currentKey();
   }
 
   static OrderedKey MaxKey(const MetaEntry* me, uint64_t idx) {
@@ -328,8 +328,8 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateIntersect(
 
   std::vector<IndexRange> results;
 
-  NodeCursor* lhs_cursor = NodeCursor::GetCursorByIndex(lhs, 0, loader);
-  NodeCursor* rhs_cursor = NodeCursor::GetCursorByIndex(rhs, 0, loader);
+  NodeCursor lhs_cursor(lhs, 0, loader);
+  NodeCursor rhs_cursor(rhs, 0, loader);
 
   uint64_t lhs_idx = lhs_start_idx;
   uint64_t rhs_idx = rhs_start_idx;
@@ -338,20 +338,20 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateIntersect(
   //   this curr_cr is invalid.
   IndexRange curr_cr{0, 0};
 
-  while (!lhs_cursor->isEnd() && !rhs_cursor->isEnd()) {
+  while (!lhs_cursor.isEnd() && !rhs_cursor.isEnd()) {
     OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
     OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
 
     if (lhs_key > rhs_key) {
       ++rhs_idx;
-      rhs_cursor->Advance(true);
+      rhs_cursor.Advance(true);
     } else if (lhs_key == rhs_key) {
-      size_t lhs_len = lhs_cursor->numCurrentBytes();
-      size_t rhs_len = rhs_cursor->numCurrentBytes();
+      size_t lhs_len = lhs_cursor.numCurrentBytes();
+      size_t rhs_len = rhs_cursor.numCurrentBytes();
 
       if (lhs_len == rhs_len &&
-          std::memcmp(lhs_cursor->current(),
-                      rhs_cursor->current(),
+          std::memcmp(lhs_cursor.current(),
+                      rhs_cursor.current(),
                       lhs_len) == 0) {
       // Identical elements
         if (curr_cr.num_subsequent == 0) {
@@ -369,8 +369,8 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateIntersect(
 
       ++lhs_idx;
       ++rhs_idx;
-      lhs_cursor->Advance(true);
-      rhs_cursor->Advance(true);
+      lhs_cursor.Advance(true);
+      rhs_cursor.Advance(true);
     } else {
       // lhs_idx < rhs_idx
       //   element pointed by lhs cursor
@@ -380,16 +380,13 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateIntersect(
         curr_cr.num_subsequent = 0;
       }  // end if
       ++lhs_idx;
-      lhs_cursor->Advance(true);
+      lhs_cursor.Advance(true);
     }
   }  // end while
 
   if (curr_cr.num_subsequent != 0) {
     results.push_back(curr_cr);
   }  // end if
-
-  delete lhs_cursor;
-  delete rhs_cursor;
 
   return results;
 }
@@ -406,8 +403,8 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
 
   std::vector<IndexRange> results;
 
-  NodeCursor* lhs_cursor = NodeCursor::GetCursorByIndex(lhs, 0, loader);
-  NodeCursor* rhs_cursor = NodeCursor::GetCursorByIndex(rhs, 0, loader);
+  NodeCursor lhs_cursor(lhs, 0, loader);
+  NodeCursor rhs_cursor(rhs, 0, loader);
 
   uint64_t lhs_idx = lhs_start_idx;
   uint64_t rhs_idx = rhs_start_idx;
@@ -416,20 +413,20 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
   //   mark whether this curr_cr is valid or not.
   IndexRange curr_cr{0, 0};
 
-  while (!lhs_cursor->isEnd() && !rhs_cursor->isEnd()) {
+  while (!lhs_cursor.isEnd() && !rhs_cursor.isEnd()) {
     const OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
     const OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
 
     if (lhs_key > rhs_key) {
       ++rhs_idx;
-      rhs_cursor->Advance(true);
+      rhs_cursor.Advance(true);
     } else if (lhs_key == rhs_key) {
-      size_t lhs_len = lhs_cursor->numCurrentBytes();
-      size_t rhs_len = rhs_cursor->numCurrentBytes();
+      size_t lhs_len = lhs_cursor.numCurrentBytes();
+      size_t rhs_len = rhs_cursor.numCurrentBytes();
 
       if (lhs_len == rhs_len &&
-          std::memcmp(lhs_cursor->current(),
-                      rhs_cursor->current(),
+          std::memcmp(lhs_cursor.current(),
+                      rhs_cursor.current(),
                       lhs_len) == 0) {
       // Identical elements,
       //   Stop updating curr_cr if valid
@@ -452,8 +449,8 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
 
       ++lhs_idx;
       ++rhs_idx;
-      lhs_cursor->Advance(true);
-      rhs_cursor->Advance(true);
+      lhs_cursor.Advance(true);
+      rhs_cursor.Advance(true);
     } else {
       // lhs_idx < rhs_idx
       //   rhs does not contain the element pointed by lhs
@@ -464,7 +461,7 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
         ++curr_cr.num_subsequent;
       }
       ++lhs_idx;
-      lhs_cursor->Advance(true);
+      lhs_cursor.Advance(true);
     }
   }  // end while
 
@@ -472,7 +469,7 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
   //   the rest of elements are not contained in rhs
   // Include all of them in index range
 
-  if (!lhs_cursor->isEnd()) {
+  if (!lhs_cursor.isEnd()) {
     if (curr_cr.num_subsequent == 0) {
       curr_cr.start_idx = lhs_idx;
       curr_cr.num_subsequent = 0;
@@ -483,15 +480,12 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
       // DLOG(INFO) << "  Incrementing for idx " << lhs_idx
       //            << " to " << curr_cr.num_subsequent;
       ++lhs_idx;
-    } while (lhs_cursor->Advance(true));  // end while
+    } while (lhs_cursor.Advance(true));  // end while
   }  // end if
 
   if (curr_cr.num_subsequent != 0) {
     results.push_back(curr_cr);
   }  // end if
-
-  delete lhs_cursor;
-  delete rhs_cursor;
 
   return results;
 }

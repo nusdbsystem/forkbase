@@ -28,27 +28,24 @@ class NodeBuilderEnv : public ::testing::Test {
                          ustore::ChunkLoader* loader,
                          const ustore::byte_t* expected_data) {
     // currently the leaf_node is only blob type
-    ustore::NodeCursor* leaf_cursor =
-        ustore::NodeCursor::GetCursorByIndex(root_hash, 0, loader);
-    ASSERT_TRUE(leaf_cursor != nullptr);
-    ASSERT_EQ(0, leaf_cursor->idx());
-    ASSERT_FALSE(leaf_cursor->isEnd());
+    ustore::NodeCursor leaf_cursor(root_hash, 0, loader);
+    ASSERT_TRUE(!leaf_cursor.empty());
+    ASSERT_EQ(0, leaf_cursor.idx());
+    ASSERT_FALSE(leaf_cursor.isEnd());
 
     size_t offset = 0;
     do {
-      ASSERT_EQ(*(expected_data + offset), *leaf_cursor->current())
+      ASSERT_EQ(*(expected_data + offset), *leaf_cursor.current())
           << "At offset: " << offset;
       ++offset;
-    } while (leaf_cursor->Advance(true));
-
-    delete leaf_cursor;
+    } while (leaf_cursor.Advance(true));
   }
 
   // Testing created prolly tree satisfiying desired property
   void Test_Tree_Integrity(const ustore::Hash& root_hash,
                            ustore::ChunkLoader* loader) {
-    ustore::NodeCursor* leaf_cursor =
-        ustore::NodeCursor::GetCursorByIndex(root_hash, 0, loader);
+    ustore::NodeCursor* leaf_cursor = new
+        ustore::NodeCursor(root_hash, 0, loader);
     // go through created chunks from lowest level until root
     // check rolling hasher boundary pattern is only detected
     //   at end of chunk, except the last chunk.

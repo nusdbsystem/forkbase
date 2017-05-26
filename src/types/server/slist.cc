@@ -30,14 +30,13 @@ SList::SList(const std::vector<Slice>& elements) noexcept:
 Hash SList::Splice(size_t start_idx, size_t num_to_delete,
                    const std::vector<Slice>& entries) const {
   CHECK(!empty());
-  NodeBuilder* nb = NodeBuilder::NewNodeBuilderAtIndex(hash(), start_idx,
-    chunk_loader_.get(), ListChunker::Instance(), false);
-  std::unique_ptr<const Segment> seg = ListNode::Encode({entries});
-  nb->SpliceElements(num_to_delete, seg.get());
-  Hash root_hash = nb->Commit();
-  delete nb;
+  NodeBuilder nb(hash(), start_idx,
+                 chunk_loader_.get(),
+                 ListChunker::Instance(), false);
 
-  return root_hash;
+  std::unique_ptr<const Segment> seg = ListNode::Encode({entries});
+  nb.SpliceElements(num_to_delete, seg.get());
+  return nb.Commit();
 }
 
 }  // namespace ustore
