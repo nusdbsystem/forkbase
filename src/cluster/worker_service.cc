@@ -79,7 +79,8 @@ void WorkerService::Init() {
 #ifdef USE_RDMA
   net_ = new RdmaNet(node_addr_, Env::Instance()->config()->recv_threads());
 #else
-  net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
+  // net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
+  net_ = new ServerZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
 #endif
 
   fin.close();

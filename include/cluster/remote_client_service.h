@@ -26,8 +26,8 @@ class RemoteClientService {
   static void ResponseDispatch(const void *msg, int size, void *handler,
                                const node_id_t& source);
 
-  RemoteClientService(const node_id_t& addr, const node_id_t& master)
-      : node_addr_(addr), master_(master), is_running_(false), nclients_(0) {}
+  RemoteClientService(const node_id_t& master)
+      : node_addr_(""), master_(master), is_running_(false), nclients_(0) {}
   ~RemoteClientService();
 
   // initialize the network, register callback
