@@ -69,4 +69,8 @@ ErrorCode ObjectDB::Rename(const Slice& key, const Slice& old_branch,
   return db_->Rename(key, old_branch, new_branch);
 }
 
+ErrorCode ObjectDB::Delete(const Slice& key, const Slice& branch) {
+  return db_->Delete(key, branch);
+}
+
 }  // namespace ustore
