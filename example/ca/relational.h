@@ -28,8 +28,8 @@ class ColumnStore {
                         const std::string& branch_name);
 
   ErrorCode BranchTable(const std::string& table_name,
-                        const std::string& tgt_branch_name,
-                        const std::string& ref_branch_name);
+                        const std::string& old_branch_name,
+                        const std::string& new_branch_name);
 
   ErrorCode DiffTable(const std::string& lhs_table_name,
                       const std::string& lhs_branch_name,

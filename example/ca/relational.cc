@@ -9,7 +9,11 @@ namespace ca {
 
 ErrorCode ColumnStore::CreateTable(const std::string& table_name,
                                    const std::string& branch_name) {
-  return odb_.Put(Slice(table_name), Table(), Slice(branch_name)).code();
+  //TODO(ruanpc): need to PERFECTLY support empty map.
+  Slice tab_name(table_name);
+  Table tab({tab_name}, {tab_name});
+  return odb_.Put(tab_name, tab, Slice(branch_name)).code();
+  // return odb_.Put(Slice(table_name), Table(), Slice(branch_name)).code();
 }
 
 ErrorCode ColumnStore::BranchTable(const std::string& table_name,
@@ -23,6 +27,9 @@ ErrorCode ColumnStore::BranchTable(const std::string& table_name,
   USTORE_GUARD(
     GetTable(table_name, old_branch_name, &tab));
   for (auto it = tab.Scan(); !it.end(); it.next()) {
+    //TODO(ruanpc): remove this if empty map is perfectly supported.
+    if (it.key() == table_name) continue;
+
     auto col_key = GlobalKey(table_name, it.key());
     USTORE_GUARD(
       odb_.Branch(Slice(col_key), old_branch, new_branch));
