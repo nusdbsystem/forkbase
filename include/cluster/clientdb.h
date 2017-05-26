@@ -117,6 +117,8 @@ class ClientDb : public DB {
   ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
                             bool* isLatest)
       override { return ErrorCode::kUnknownOp; }
+  ErrorCode Delete(const Slice& key, const Slice& branch) 
+      override { return ErrorCode::kUnknownOp; }
 
  private:
   // send request to a node. Return false if there are

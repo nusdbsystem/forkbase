@@ -239,6 +239,16 @@ ErrorCode Worker::Rename(const Slice& key, const Slice& old_branch,
   return ErrorCode::kOK;
 }
 
+ErrorCode Worker::Delete(const Slice& key, const Slice& branch) {
+  if (!head_ver_.Exists(key, branch)) {
+    LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
+                 << "\" does not exist!";
+    return ErrorCode::kBranchNotExists;
+  }
+  head_ver_.RemoveBranch(key, branch);
+  return ErrorCode::kOK;
+}
+
 Chunk Worker::GetChunk(const Slice& key, const Hash& ver) {
   static const auto chunk_store = store::GetChunkStore();
   return chunk_store->Get(ver);

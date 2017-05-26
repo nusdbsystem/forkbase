@@ -202,6 +202,16 @@ class DB {
    */
   virtual ErrorCode Rename(const Slice& key, const Slice& old_branch,
                            const Slice& new_branch) = 0;
+
+  /**
+   * @brief Delete the branch.
+   *
+   * @param key Data key.
+   * @param branch The to-be-deleted branch.
+   * @return Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode Delete(const Slice& key, const Slice& branch) = 0;
+
   /**
    * @brief Read a chunk from a chunk id.
    *

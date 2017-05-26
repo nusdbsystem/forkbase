@@ -456,3 +456,10 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
   }
   EXPECT_EQ(2, n_diffs);
 }
+
+TEST(Worker, DeleteBranch) {
+  ec = worker.Delete(key[0], branch[1]);
+  EXPECT_EQ(ErrorCode::kOK, ec);
+  worker.Exist(key[0], branch[1], &exist);
+  EXPECT_FALSE(exist);
+}

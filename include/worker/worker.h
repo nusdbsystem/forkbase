@@ -133,6 +133,15 @@ class Worker : public DB, private Noncopyable {
                    const Slice& new_branch) override;
 
   /**
+   * @brief Delete the branch.
+   *
+   * @param key Data key.
+   * @param branch The to-be-deleted branch.
+   * @return Error code. (0 for success)
+   */
+  ErrorCode Delete(const Slice& key, const Slice& branch) override;
+
+  /**
    * @brief Merge target branch to a referring branch.
    *
    * @param key         Target key.
