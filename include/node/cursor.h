@@ -32,18 +32,18 @@ class NodeCursor {
   //   cursor points to the end of sequence.
   // if idx > total_num_elements
   //   return nullptr
-  static NodeCursor* GetCursorByIndex(const Hash& hash, size_t idx,
-                                      ChunkLoader* ch_loader);
+  NodeCursor(const Hash& hash, size_t idx,
+             ChunkLoader* ch_loader) noexcept;
 
-  // Init Cursor to point a element at leaf in a tree
-  // The element has the smallest key no smaller than the parameter key
-  static NodeCursor* GetCursorByKey(const Hash& hash, const OrderedKey& key,
-                                    ChunkLoader* ch_loader);
+  NodeCursor(const Hash& hash,
+             const OrderedKey& key,
+             ChunkLoader* ch_loader) noexcept;
 
   // Copy constructor used to clone a NodeCursor
   // Need to recursively copy the parent NodeCursor
-  NodeCursor(const NodeCursor& cursor);
-  ~NodeCursor();
+  NodeCursor(const NodeCursor& cursor) noexcept;
+
+  ~NodeCursor() = default;
 
   // Advance the pointer by one element,
   // Allow to cross the boundary and advance to the start of next node
@@ -85,7 +85,7 @@ class NodeCursor {
   // cursor places at seq start
   inline bool isBegin() const { return idx_ == -1; }
 
-  inline NodeCursor* parent() const { return parent_cr_; }
+  inline NodeCursor* parent() const { return parent_cr_.get(); }
 
   // value is -1 when pointing to seq start
   inline int32_t idx() const { return idx_; }
@@ -97,17 +97,20 @@ class NodeCursor {
     idx_ = idx;
   }
 
-  inline const SeqNode* node() { return seq_node_.get(); }
+  inline const SeqNode* node() const {return seq_node_.get(); }
+
+  inline bool empty() const {return !seq_node_.get(); }
 
  private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively
   // TODO(wangji/pingcheng): check if really need to share SeqNode
-  NodeCursor(std::shared_ptr<const SeqNode> seq_node, size_t idx,
-             ChunkLoader* chunk_loader, NodeCursor* parent_cr);
+  NodeCursor(std::shared_ptr<const SeqNode> seq_node,
+             size_t idx,
+             ChunkLoader* chunk_loader,
+             NodeCursor* parent_cr);
 
-  // responsible to delete during destruction
-  NodeCursor* parent_cr_ = nullptr;
+  std::unique_ptr<NodeCursor> parent_cr_;
   // the pointed sequence
   std::shared_ptr<const SeqNode> seq_node_;
   ChunkLoader* chunk_loader_;

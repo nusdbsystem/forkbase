@@ -16,25 +16,23 @@
 namespace ustore {
 class NodeBuilder : Noncopyable {
  public:
-  // TODO(wangji): if a chunker is binded to only fixed or unfixed length,
-  //               it is better to move isFixedEntryLen inside chunker impl
-  // Perform operation at idx-th element at leaf rooted at root_hash
-  static NodeBuilder* NewNodeBuilderAtIndex(const Hash& root_hash, size_t idx,
-                                            ChunkLoader* chunk_loader,
-                                            const Chunker* chunker,
-                                            bool isFixedEntryLen);
+  // Perform operation at element with key at leaf rooted at root_hash
+  NodeBuilder(const Hash& root_hash,
+              const OrderedKey& key,
+              ChunkLoader* chunk_loader,
+              const Chunker* chunker,
+              bool isFixedEntryLen) noexcept;
 
-  // TODO(wangji/pingcheng): return nullptr instead of found flag
   // Perform operation at idx-th element at leaf rooted at root_hash
-  static NodeBuilder* NewNodeBuilderAtKey(const Hash& root_hash,
-                                          const OrderedKey& key,
-                                          ChunkLoader* chunk_loader,
-                                          const Chunker* chunker,
-                                          bool isFixedEntryLen);
+  NodeBuilder(const Hash& root_hash, size_t idx,
+              ChunkLoader* chunk_loader,
+              const Chunker* chunker,
+              bool isFixedEntryLen) noexcept;
+
   // Construct a node builder to construct a fresh new Prolly Tree
-  explicit NodeBuilder(const Chunker* chunker, bool isFixedEntryLen);
+  NodeBuilder(const Chunker* chunker, bool isFixedEntryLen) noexcept;
 
-  ~NodeBuilder();
+  ~NodeBuilder() = default;
 
   // First delete num_delete elements from cursor and then
   // Append elements in Segment in byte array
@@ -48,10 +46,13 @@ class NodeBuilder : Noncopyable {
  private:
   // Internal constructor used to recursively construct Parent NodeBuilder
   // is_leaf shall set to FALSE
-  NodeBuilder(NodeCursor* cursor, size_t level, const Chunker* chunker,
-              bool isFixedEntryLen);
+  NodeBuilder(std::unique_ptr<NodeCursor>&& cursor,
+              size_t level, const Chunker* chunker,
+              bool isFixedEntryLen) noexcept;
 
-  NodeBuilder(size_t level, const Chunker* chunker, bool isFixedEntryLen);
+  NodeBuilder(size_t level, const Chunker* chunker,
+              bool isFixedEntryLen) noexcept;
+
   // Remove elements from cursor
   // Return the number of elements actually removed
   size_t SkipEntries(size_t num_elements);
@@ -88,15 +89,15 @@ class NodeBuilder : Noncopyable {
   NodeBuilder* parent_builder();
 
  private:
-  NodeCursor* cursor_;           // shall be deleted during destruction
-  NodeBuilder* parent_builder_;  // shall be deleted during destruction
+  std::unique_ptr<NodeCursor> cursor_;
+  std::unique_ptr<NodeBuilder> parent_builder_;
   // a vector of appended segments for chunking
   std::vector<const Segment*> appended_segs_;
   // A vector to collect and own segs created by this nodebuilder
   std::vector<std::unique_ptr<const Segment>> created_segs_;
 
   Segment* pre_cursor_seg_;
-  RollingHasher* rhasher_;  // shall be deleted
+  std::unique_ptr<RollingHasher> rhasher_;
   bool commited_ = true;    // false if exists operation to commit
   size_t num_skip_entries_ = 0;
   size_t level_ = 0;

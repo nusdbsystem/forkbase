@@ -165,14 +165,13 @@ class NodeBuilderSimple : public NodeBuilderEnv {
                    size_t num_insert_bytes, size_t num_delete_bytes,
                    bool isVerbose = false) {
     verbose = isVerbose;
-    ustore::NodeBuilder* b = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-        root_chunk->hash(), splice_idx, loader_,
-        ustore::BlobChunker::Instance(), true);
+    ustore::NodeBuilder b(root_chunk->hash(), splice_idx, loader_,
+                          ustore::BlobChunker::Instance(), true);
 
     ustore::FixedSegment seg(insert_bytes, num_insert_bytes, 1);
 
-    b->SpliceElements(num_delete_bytes, &seg);
-    const ustore::Chunk* c = loader_->Load(b->Commit());
+    b.SpliceElements(num_delete_bytes, &seg);
+    const ustore::Chunk* c = loader_->Load(b.Commit());
 
     Test_Tree_Integrity(c->hash(), loader_);
     const ustore::byte_t* expected_data =
@@ -181,13 +180,11 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     Test_Same_Content(c->hash(), loader_, expected_data);
 
     delete[] expected_data;
-    delete b;
   }
 
   virtual void TearDown() {
     NodeBuilderEnv::TearDown();
     delete[] original_content_;
-    delete root_chunk;
   }
 
   const ustore::Chunk* root_chunk;
@@ -339,13 +336,13 @@ class NodeBuilderComplex : public NodeBuilderEnv {
                         size_t append_num_bytes, size_t num_delete) {
     const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
 
-    ustore::NodeBuilder* b = ustore::NodeBuilder::NewNodeBuilderAtIndex(
+    ustore::NodeBuilder b(
         root_hash, splice_idx, loader_, chunker, true);
 
     ustore::FixedSegment seg(append_data, append_num_bytes, 1);
 
-    b->SpliceElements(num_delete, &seg);
-    const ustore::Chunk* c = loader_->Load(b->Commit());
+    b.SpliceElements(num_delete, &seg);
+    const ustore::Chunk* c = loader_->Load(b.Commit());
 
     Test_Tree_Integrity(c->hash(), loader_);
     const ustore::byte_t* d =
@@ -354,7 +351,6 @@ class NodeBuilderComplex : public NodeBuilderEnv {
 
     Test_Same_Content(c->hash(), loader_, d);
 
-    delete b;
     delete[] d;
   }
 

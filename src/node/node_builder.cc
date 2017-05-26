@@ -12,34 +12,27 @@
 #include "utils/logging.h"
 
 namespace ustore {
+NodeBuilder::NodeBuilder(const Hash& root_hash,
+                         const OrderedKey& key,
+                         ChunkLoader* chunk_loader,
+                         const Chunker* chunker,
+                         bool isFixedEntryLen) noexcept :
+    NodeBuilder(std::unique_ptr<NodeCursor>(
+                    new NodeCursor(root_hash, key, chunk_loader)),
+                0, chunker, isFixedEntryLen) {}
 
-NodeBuilder* NodeBuilder::NewNodeBuilderAtIndex(const Hash& root_hash,
-                                                size_t idx,
-                                                ChunkLoader* chunk_loader,
-                                                const Chunker* chunker,
-                                                bool isFixedEntryLen) {
-  NodeCursor* cursor =
-      NodeCursor::GetCursorByIndex(root_hash, idx, chunk_loader);
-  NodeBuilder* builder = new NodeBuilder(cursor, 0, chunker, isFixedEntryLen);
-  delete cursor;
-  return builder;
-}
-
-NodeBuilder* NodeBuilder::NewNodeBuilderAtKey(const Hash& root_hash,
-                                              const OrderedKey& key,
-                                              ChunkLoader* chunk_loader,
-                                              const Chunker* chunker,
-                                              bool isFixedEntryLen) {
-  NodeCursor* cursor = NodeCursor::GetCursorByKey(root_hash, key,
-                                                  chunk_loader);
-  // cursor now points to the leaf node
-  NodeBuilder* builder = new NodeBuilder(cursor, 0, chunker, isFixedEntryLen);
-  delete cursor;
-  return builder;
+// Perform operation at idx-th element at leaf rooted at root_hash
+NodeBuilder::NodeBuilder(const Hash& root_hash, size_t idx,
+                         ChunkLoader* chunk_loader,
+                         const Chunker* chunker,
+                         bool isFixedEntryLen) noexcept :
+    NodeBuilder(std::unique_ptr<NodeCursor>(
+                    new NodeCursor(root_hash, idx, chunk_loader)),
+                0, chunker, isFixedEntryLen) {
 }
 
 NodeBuilder::NodeBuilder(size_t level, const Chunker* chunker,
-                         bool isFixedEntryLen)
+                         bool isFixedEntryLen) noexcept
     : cursor_(nullptr),
       parent_builder_(nullptr),
       appended_segs_(),
@@ -58,18 +51,12 @@ NodeBuilder::NodeBuilder(size_t level, const Chunker* chunker,
   // do nothing
 }
 
-NodeBuilder::NodeBuilder(const Chunker* chunker, bool isFixedEntryLen)
+NodeBuilder::NodeBuilder(const Chunker* chunker, bool isFixedEntryLen) noexcept
     : NodeBuilder(0, chunker, isFixedEntryLen) {}
 
-NodeBuilder::~NodeBuilder() {
-  delete rhasher_;
-  delete cursor_;
-  delete parent_builder_;
-}
-
-NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
-                         const Chunker* chunker, bool isFixedEntryLen)
-    : cursor_(new NodeCursor(*cursor)),
+NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
+                         const Chunker* chunker, bool isFixedEntryLen) noexcept
+    : cursor_(std::move(cursor)),
       parent_builder_(nullptr),
       appended_segs_(),
       created_segs_(),
@@ -85,9 +72,12 @@ NodeBuilder::NodeBuilder(NodeCursor* cursor, size_t level,
       chunker_(chunker),
       isFixedEntryLen_(isFixedEntryLen) {
   if (cursor_->parent() != nullptr) {
+    // copy this node builder's parent cursor
+    std::unique_ptr<NodeCursor> parent_cr(new NodeCursor(*cursor_->parent()));
+
     // non-leaf builder must work on MetaNode, which is of var len entry
-    parent_builder_ = new NodeBuilder(cursor_->parent(), level + 1,
-                                      MetaChunker::Instance(), false);
+    parent_builder_.reset(new NodeBuilder(std::move(parent_cr), level + 1,
+                          MetaChunker::Instance(), false));
   }
   if (cursor_->node()->numEntries() > 0) {
     Resume();
@@ -184,10 +174,10 @@ void NodeBuilder::SpliceElements(size_t num_delete,
 
 NodeBuilder* NodeBuilder::parent_builder() {
   if (parent_builder_ == nullptr) {
-    parent_builder_ =
-        new NodeBuilder(level_ + 1, MetaChunker::Instance(), false);
+    parent_builder_.reset(
+        new NodeBuilder(level_ + 1, MetaChunker::Instance(), false));
   }
-  return parent_builder_;
+  return parent_builder_.get();
 }
 
 Chunk NodeBuilder::HandleBoundary(

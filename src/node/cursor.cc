@@ -37,47 +37,54 @@ std::vector<IndexRange> IndexRange::Compact(
   return result;
 }
 
-NodeCursor* NodeCursor::GetCursorByIndex(const Hash& hash, uint64_t idx,
-                                         ChunkLoader* ch_loader) {
+NodeCursor::NodeCursor(const Hash& hash, size_t idx,
+                       ChunkLoader* ch_loader) noexcept {
   NodeCursor* parent_cursor = nullptr;
   size_t element_idx = idx;
   size_t entry_idx = 0;
   const Chunk* chunk = ch_loader->Load(hash);
 
   std::shared_ptr<const SeqNode> seq_node(SeqNode::CreateFromChunk(chunk));
-  if (seq_node->numElements() < idx) return nullptr;
-
-  while (!seq_node->isLeaf()) {
-    const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node.get());
-    Hash child_hash = mnode->GetChildHashByIndex(element_idx, &entry_idx);
-    if (child_hash.empty()) {
-      CHECK_EQ(entry_idx, mnode->numEntries());
-      // idx exceeds the number of total elements
-      //  child_hash = child hash of last entry
-      //  entry_idx = idx of the last entry
-      child_hash = mnode->GetChildHashByEntry(mnode->numEntries() - 1);
-      entry_idx = mnode->numEntries() - 1;
+  if (idx <= seq_node->numElements()) {
+    while (!seq_node->isLeaf()) {
+      const MetaNode* mnode = dynamic_cast<const MetaNode*>(seq_node.get());
+      Hash child_hash = mnode->GetChildHashByIndex(element_idx, &entry_idx);
+      if (child_hash.empty()) {
+        CHECK_EQ(entry_idx, mnode->numEntries());
+        // idx exceeds the number of total elements
+        //  child_hash = child hash of last entry
+        //  entry_idx = idx of the last entry
+        child_hash = mnode->GetChildHashByEntry(mnode->numEntries() - 1);
+        entry_idx = mnode->numEntries() - 1;
+      }
+      parent_cursor =
+          new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
+      element_idx -= mnode->numElementsUntilEntry(entry_idx);
+      chunk = ch_loader->Load(child_hash);
+      seq_node = SeqNode::CreateFromChunk(chunk);
     }
-    parent_cursor =
-        new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
-    element_idx -= mnode->numElementsUntilEntry(entry_idx);
-    chunk = ch_loader->Load(child_hash);
-    seq_node = SeqNode::CreateFromChunk(chunk);
-  }
-  // if the element_idx > num of elements at leaf
-  //   make cursor point to the end of leaf
-  //   entry_idx = numEntries()
-  const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node.get());
-  if (element_idx > lnode->numEntries()) {
-    entry_idx = lnode->numElements();
+    // if the element_idx > num of elements at leaf
+    //   make cursor point to the end of leaf
+    //   entry_idx = numEntries()
+    const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node.get());
+    if (element_idx > lnode->numEntries()) {
+      entry_idx = lnode->numElements();
+    } else {
+      entry_idx = element_idx;
+    }
+    seq_node_ = seq_node;
+    idx_ = entry_idx;
+    chunk_loader_ = ch_loader;
+    parent_cr_.reset(parent_cursor);
   } else {
-    entry_idx = element_idx;
+    // idx > # of total elements
+    // do nothing
   }
-  return new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
 }
 
-NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
-                                       ChunkLoader* ch_loader) {
+NodeCursor::NodeCursor(const Hash& hash,
+                       const OrderedKey& key,
+                       ChunkLoader* ch_loader) noexcept {
   NodeCursor* parent_cursor = nullptr;
   size_t entry_idx = 0;
   const Chunk* chunk = ch_loader->Load(hash);
@@ -105,22 +112,22 @@ NodeCursor* NodeCursor::GetCursorByKey(const Hash& hash, const OrderedKey& key,
   const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node.get());
   entry_idx = lnode->GetIdxForKey(key);
 
-  return new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
+  seq_node_ = seq_node;
+  idx_ = entry_idx;
+  chunk_loader_ = ch_loader;
+  parent_cr_.reset(parent_cursor);
 }
+
+
 // copy cosntructor
-NodeCursor::NodeCursor(const NodeCursor& cursor)
+NodeCursor::NodeCursor(const NodeCursor& cursor) noexcept
     : parent_cr_(nullptr),
       seq_node_(cursor.seq_node_),
       chunk_loader_(cursor.chunk_loader_),
       idx_(cursor.idx_) {
   if (cursor.parent_cr_ != nullptr) {
-    this->parent_cr_ = new NodeCursor(*(cursor.parent_cr_));
+    this->parent_cr_.reset(new NodeCursor(*(cursor.parent_cr_)));
   }
-}
-
-NodeCursor::~NodeCursor() {
-  // delete parent cursor recursively
-  delete parent_cr_;
 }
 
 NodeCursor::NodeCursor(std::shared_ptr<const SeqNode> seq_node, size_t idx,
