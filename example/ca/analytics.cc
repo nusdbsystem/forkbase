@@ -1,7 +1,8 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include <vector>
 #include "ca/analytics.h"
+
+#include <vector>
 
 namespace ustore {
 namespace example {

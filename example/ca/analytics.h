@@ -7,11 +7,12 @@
 #include <iostream>
 #include <random>
 #include <string>
-#include "types/type.h"
+#include <unordered_set>
 
 #include "ca/config.h"
 #include "ca/relational.h"
 #include "ca/utils.h"
+#include "types/type.h"
 
 namespace ustore {
 namespace example {
