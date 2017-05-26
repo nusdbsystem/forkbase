@@ -19,7 +19,10 @@ class NodeBuilderEnv : public ::testing::Test {
  protected:
   virtual void SetUp() { loader_ = new ustore::ServerChunkLoader(); }
 
-  virtual void TearDown() { delete loader_; }
+  virtual void TearDown() {
+    delete loader_;
+    delete rhasher_;
+  }
 
   void Test_Same_Content(const ustore::Hash& root_hash,
                          ustore::ChunkLoader* loader,
@@ -162,9 +165,9 @@ class NodeBuilderSimple : public NodeBuilderEnv {
                    size_t num_insert_bytes, size_t num_delete_bytes,
                    bool isVerbose = false) {
     verbose = isVerbose;
-    const ustore::BlobChunker* chunker = ustore::BlobChunker::Instance();
     ustore::NodeBuilder* b = ustore::NodeBuilder::NewNodeBuilderAtIndex(
-        root_chunk->hash(), splice_idx, loader_, chunker, true);
+        root_chunk->hash(), splice_idx, loader_,
+        ustore::BlobChunker::Instance(), true);
 
     ustore::FixedSegment seg(insert_bytes, num_insert_bytes, 1);
 
@@ -184,6 +187,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
   virtual void TearDown() {
     NodeBuilderEnv::TearDown();
     delete[] original_content_;
+    delete root_chunk;
   }
 
   const ustore::Chunk* root_chunk;

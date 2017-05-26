@@ -21,6 +21,7 @@ NodeBuilder* NodeBuilder::NewNodeBuilderAtIndex(const Hash& root_hash,
   NodeCursor* cursor =
       NodeCursor::GetCursorByIndex(root_hash, idx, chunk_loader);
   NodeBuilder* builder = new NodeBuilder(cursor, 0, chunker, isFixedEntryLen);
+  delete cursor;
   return builder;
 }
 
@@ -33,6 +34,7 @@ NodeBuilder* NodeBuilder::NewNodeBuilderAtKey(const Hash& root_hash,
                                                   chunk_loader);
   // cursor now points to the leaf node
   NodeBuilder* builder = new NodeBuilder(cursor, 0, chunker, isFixedEntryLen);
+  delete cursor;
   return builder;
 }
 

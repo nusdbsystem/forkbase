@@ -25,4 +25,5 @@ TEST(StringNode, Basic) {
       chunk.data() + sizeof(uint32_t), chunk.capacity() - sizeof(uint32_t));
 
   ASSERT_EQ(chunk_str, buf_str);
+  delete[] buffer;
 }

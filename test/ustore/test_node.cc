@@ -151,6 +151,10 @@ TEST(MetaNode, Basic) {
   EXPECT_EQ(num_elements1 + num_elements2 + num_elements3, me.numElements());
   EXPECT_EQ(me.orderedKey(), key3);
 
+  delete[] me_bytes1;
+  delete[] me_bytes2;
+  delete[] me_bytes3;
+
   delete[] seg_data1;
   delete[] seg_data2;
 }

@@ -64,6 +64,7 @@ TEST(MapNode, Codec) {
             memcmp(key_data, kvitem.key.data(), key_num_bytes));
   EXPECT_EQ(0,
             memcmp(val_data, kvitem.val.data(), val_num_bytes));
+  delete[] buffer;
 }
 
 TEST(MapNode, Basic) {

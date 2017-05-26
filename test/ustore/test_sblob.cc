@@ -109,6 +109,7 @@ TEST_F(SBlobEnv, Splice) {
   EXPECT_EQ(ustore::byte2str(expected_bytes, expected_len),
             ustore::byte2str(actual_bytes, expected_len));
 
+  delete[] actual_bytes;
   delete[] expected_bytes;
 }
 
@@ -137,6 +138,7 @@ TEST_F(SBlobEnv, SpliceOverflow) {
   EXPECT_EQ(ustore::byte2str(expected_bytes, expected_len),
             ustore::byte2str(actual_bytes, expected_len));
 
+  delete[] actual_bytes;
   delete[] expected_bytes;
 }
 
@@ -160,6 +162,7 @@ TEST_F(SBlobEnv, Insert) {
   EXPECT_EQ(ustore::byte2str(expected_bytes, expected_len),
             ustore::byte2str(actual_bytes, expected_len));
 
+  delete[] actual_bytes;
   delete[] expected_bytes;
 }
 
@@ -182,6 +185,7 @@ TEST_F(SBlobEnv, Delete) {
   EXPECT_EQ(ustore::byte2str(expected_bytes, expected_len),
             ustore::byte2str(actual_bytes, expected_len));
 
+  delete[] actual_bytes;
   delete[] expected_bytes;
 }
 
@@ -207,6 +211,7 @@ TEST_F(SBlobEnv, DeleteOverflow) {
   EXPECT_EQ(ustore::byte2str(expected_bytes, expected_len),
             ustore::byte2str(actual_bytes, expected_len));
 
+  delete[] actual_bytes;
   delete[] expected_bytes;
 }
 
@@ -227,6 +232,7 @@ TEST_F(SBlobEnv, Append) {
   EXPECT_EQ(ustore::byte2str(expected_bytes, expected_len),
             ustore::byte2str(actual_bytes, expected_len));
 
+  delete[] actual_bytes;
   delete[] expected_bytes;
 }
 

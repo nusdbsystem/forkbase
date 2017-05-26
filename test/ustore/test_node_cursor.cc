@@ -10,6 +10,28 @@
 #include "node/map_node.h"
 #include "node/node_builder.h"
 
+TEST(NodeCursor, Basic) {
+  // Construct a tree with only a root blob node
+  const ustore::byte_t ra[] = "abc";
+
+  size_t ra_num_bytes = sizeof(ra) - 1;  // excluding trailing \0
+  ustore::Chunk ca(ustore::ChunkType::kBlob, ra_num_bytes);
+  std::copy(ra, ra + ra_num_bytes, ca.m_data());
+
+  ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
+  // Write the constructed chunk to storage
+  EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
+
+  ustore::ServerChunkLoader loader;
+  ustore::NodeCursor* cr =
+      ustore::NodeCursor::GetCursorByIndex(ca.hash(), 1, &loader);
+
+  ASSERT_EQ('b', *(cr->current()));
+  EXPECT_EQ(1, cr->numCurrentBytes());
+
+  delete cr;
+}
+
 TEST(NodeCursor, SingleNode) {
   // Construct a tree with only a root blob node
   const ustore::byte_t ra[] = "abc";
@@ -233,6 +255,8 @@ TEST(NodeCursor, Tree) {
 
   delete leaf_cursor;
   delete cr_copy;
+  delete[] me_a;
+  delete[] me_b;
   delete cur2;
   delete cur3;
   delete cur4;
@@ -289,7 +313,7 @@ TEST(NodeCursor, SingleNodeByKey) {
   EXPECT_EQ(0, cursor->idx());
   delete cursor;
 
-  // Find the non-exact key
+  // // Find the non-exact key
   found = true;
   constexpr ustore::byte_t k12[] = "k12";
   const ustore::OrderedKey key12(false, k12, 3);
@@ -297,13 +321,16 @@ TEST(NodeCursor, SingleNodeByKey) {
   EXPECT_EQ(1, cursor->idx());
   delete cursor;
 
-  // Find the non-exact key
+  // // Find the non-exact key
   found = true;
   constexpr ustore::byte_t k4[] = "k4";
   const ustore::OrderedKey key4(false, k4, 2);
   cursor = ustore::NodeCursor::GetCursorByKey(chunk.hash(), key4, &loader);
   EXPECT_EQ(3, cursor->idx());
   delete cursor;
+
+  delete[] seg_data12;
+  delete[] seg_data3;
 }
 
 TEST(NodeCursor, TreeByKey) {
@@ -393,6 +420,10 @@ TEST(NodeCursor, TreeByKey) {
   cursor = ustore::NodeCursor::GetCursorByKey(root_hash, key4, &loader);
   EXPECT_EQ(2, cursor->idx());
   delete cursor;
+
+  delete[] seg_data1;
+  delete[] seg_data2;
+  delete[] seg_data3;
 }
 
 TEST(NodeCursor, MultiStep) {
@@ -546,4 +577,6 @@ TEST(NodeCursor, MultiStep) {
   ASSERT_EQ(num_bytes + 1, cr10->RetreatSteps(num_bytes + 5));
   ASSERT_TRUE(cr10->isBegin());
   delete cr10;
+
+  delete[] content;
 }

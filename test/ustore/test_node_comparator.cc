@@ -53,7 +53,7 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
   ustore::Hash lhs = nb2->Commit();
   delete nb2;
 
-  //  lhs DIFF rhs
+  // lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
 
   ASSERT_EQ(2, df_ranges.size());
@@ -335,7 +335,6 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
       false);
 
 
-
   std::unique_ptr<const ustore::Segment> seg1 =
       ustore::MapNode::Encode({new_kv2});
 
@@ -351,8 +350,6 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
       lhs_t1, key5, loader_.get(), ustore::MapChunker::Instance(),
       false);
 
-
-
   std::unique_ptr<const ustore::Segment> seg2 =
       ustore::MapNode::Encode({new_kv5});
 
@@ -367,8 +364,6 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
       lhs_t2, key7, loader_.get(), ustore::MapChunker::Instance(),
       false);
 
-
-
   std::unique_ptr<const ustore::Segment> seg3 =
       ustore::MapNode::Encode({kv8, kv9});
 
@@ -376,7 +371,6 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ustore::Hash lhs = nb3->Commit();
   delete nb3;
   ASSERT_EQ(7, numElements(lhs));
-
 
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
