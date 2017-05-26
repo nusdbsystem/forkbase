@@ -76,6 +76,7 @@ TEST(SString, Create) {
   std::string expected_str = ustore::byte2str(raw_data, sizeof(raw_data));
 
   ASSERT_EQ(expected_str, buf_str);
+  delete[] buffer;
 }
 
 TEST(SString, Empty) {

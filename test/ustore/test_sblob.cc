@@ -247,6 +247,7 @@ TEST_F(SBlobEnv, Read) {
   EXPECT_EQ(len, sblob.Read(pos, len, buffer));
 
   EXPECT_EQ(ustore::byte2str(data_ + pos, len), ustore::byte2str(buffer, len));
+  delete[] buffer;
 
   // Read ALL
   len = data_bytes_;
@@ -265,7 +266,6 @@ TEST_F(SBlobEnv, Read) {
 
   EXPECT_EQ(ustore::byte2str(data_ + pos, real_len),
             ustore::byte2str(buffer, real_len));
-
   delete[] buffer;
 }
 
