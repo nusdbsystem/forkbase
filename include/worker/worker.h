@@ -3,6 +3,7 @@
 #ifndef USTORE_WORKER_WORKER_H_
 #define USTORE_WORKER_WORKER_H_
 
+#include <string>
 #include <unordered_set>
 #include <vector>
 #include "chunk/chunk.h"

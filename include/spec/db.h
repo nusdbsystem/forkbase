@@ -3,6 +3,9 @@
 #ifndef USTORE_SPEC_DB_H_
 #define USTORE_SPEC_DB_H_
 
+#include <string>
+#include <vector>
+
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"
@@ -202,7 +205,6 @@ class DB {
    */
   virtual ErrorCode Rename(const Slice& key, const Slice& old_branch,
                            const Slice& new_branch) = 0;
-
   /**
    * @brief Delete the branch.
    *
@@ -211,7 +213,6 @@ class DB {
    * @return Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Delete(const Slice& key, const Slice& branch) = 0;
-
   /**
    * @brief Read a chunk from a chunk id.
    *

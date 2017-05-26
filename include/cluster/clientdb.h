@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <string>
 #include <vector>
 #include "net/net.h"
 #include "proto/messages.pb.h"
@@ -117,7 +118,7 @@ class ClientDb : public DB {
   ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
                             bool* isLatest)
       override { return ErrorCode::kUnknownOp; }
-  ErrorCode Delete(const Slice& key, const Slice& branch) 
+  ErrorCode Delete(const Slice& key, const Slice& branch)
       override { return ErrorCode::kUnknownOp; }
 
  private:
