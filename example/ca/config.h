@@ -6,7 +6,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <string>
-
+#include "utils/logging.h"
 #include "ca/utils.h"
 
 namespace ustore {
@@ -17,12 +17,14 @@ namespace po = boost::program_options;
 
 class Config {
  public:
+  static const int kDefaultTaskID;
   static const size_t kDefaultNumColumns;
   static const size_t kDefaultNumRecords;
   static const size_t kDefaultNumIterations;
   static const double kDefaultProbability;
 
   static bool is_help;
+  static int task_id;
   static size_t n_columns;
   static size_t n_records;
   static double p;
@@ -113,10 +115,10 @@ template<typename T>
 bool Config::CheckArg(const T& var, const bool expr,
                       const std::string& title, const std::string& expect) {
   if (expr) {
-    std::cout << "[ARG] " << title << ": " << var << std::endl;
+    LOG(INFO) << "[ARG] " << title << ": " << var;
   } else {
-    std::cerr << "[ERROR ARG] " << title << ": " << "[Actual] " << var
-              << ", [Expected] " << expect << std::endl;
+    LOG(ERROR) << "[ERROR ARG] " << title << ": " << "[Actual] " << var
+               << ", [Expected] " << expect;
   }
   return expr;
 }

@@ -83,7 +83,14 @@ int MergeResults() {
   return 0;
 }
 
-#define MAIN_GUARD(op) do { \
+std::vector<std::function<int()>> task = {
+  []() { return LoadDataset(); },
+  []() { return RunPoissonAnalytics(Config::p * Config::n_records); },
+  []() { return RunBinomialAnalytics(Config::p); },
+  []() { return MergeResults(); }
+};
+
+#define TASK_GUARD(op) do { \
   auto ec = op; \
   if (ec != 0) { \
     std::cerr << "[FAILURE] Error code: " << ec << std::endl; \
@@ -91,13 +98,23 @@ int MergeResults() {
   } \
 } while (0)
 
+int RunTask(const int task_id) {
+  if (task_id < 0 || task_id > task.size()) {
+    std::cerr << "[FAILURE] Unknown task ID: " << task_id << std::endl;
+    return -2;
+  } else if (task_id == 0) {
+    for (auto& t : task) TASK_GUARD(t());
+  } else {
+    //TODO: run the specified task only
+    for (int i = 0; i < task_id; ++i) TASK_GUARD(task[i]());
+  }
+  return 0;
+}
+
 int main(int argc, char* argv[]) {
+  SetStderrLogging(WARNING);
   if (Config::ParseCmdArgs(argc, argv)) {
-    MAIN_GUARD(RunSample());
-    MAIN_GUARD(LoadDataset());
-    MAIN_GUARD(RunPoissonAnalytics(Config::p * Config::n_records));
-    MAIN_GUARD(RunBinomialAnalytics(Config::p));
-    MAIN_GUARD(MergeResults());
+    GUARD_INT(RunTask(Config::task_id));
   } else if (Config::is_help) {
     DLOG(INFO) << "Help messages have been printed";
   } else {

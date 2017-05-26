@@ -6,12 +6,14 @@ namespace ustore {
 namespace example {
 namespace ca {
 
+const int Config::kDefaultTaskID = 0;
 const size_t Config::kDefaultNumColumns = 3;
 const size_t Config::kDefaultNumRecords = 10;
 const size_t Config::kDefaultNumIterations = 1000;
 const double Config::kDefaultProbability = 0.01;
 
 bool Config::is_help = false;
+int Config::task_id = Config::kDefaultTaskID;
 size_t Config::n_columns = Config::kDefaultNumColumns;
 size_t Config::n_records = Config::kDefaultNumRecords;
 double Config::p = Config::kDefaultProbability;
@@ -20,6 +22,10 @@ size_t Config::iters = Config::kDefaultNumIterations;
 bool Config::ParseCmdArgs(const int& argc, char* argv[]) {
   po::variables_map vm;
   if (!ParseCmdArgs(argc, argv, vm)) return false;
+
+  const auto arg_task_id = vm["task"].as<int>();
+  GUARD(CheckArgGE(arg_task_id, 0, "Task ID"));
+  task_id = arg_task_id;
 
   const auto arg_columns = vm["columns"].as<int>();
   GUARD(CheckArgGE(arg_columns, 3, "Number of columns"));
@@ -46,6 +52,8 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
     po::options_description desc("Allowed options", 120);
     desc.add_options()
     ("help,?", "print usage message")
+    ("task,t", po::value<int>()->default_value(kDefaultTaskID),
+     "ID of analytics task [REQUIRED]")
     ("columns,c", po::value<int>()->default_value(kDefaultNumColumns),
      "number of columns in a simple table")
     ("records,n", po::value<int>()->default_value(kDefaultNumRecords),
@@ -62,6 +70,8 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
       std::cout << desc << std::endl;
       return false;
     }
+
+    po::notify(vm);
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return false;
