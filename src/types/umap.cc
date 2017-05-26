@@ -39,20 +39,35 @@ Slice UMap::Get(const Slice& key) const {
 }
 
 UMap::Iterator UMap::Scan() const {
-  IndexRange all_range{0, numElements()};
-  return UMap::Iterator(hash(), {all_range}, chunk_loader_.get());
+  if (numElements() == 0) {
+    return UMap::Iterator(hash(), {}, chunk_loader_.get());
+  } else {
+    IndexRange all_range{0, numElements()};
+    return UMap::Iterator(hash(), {all_range}, chunk_loader_.get());
+  }
 }
 
 UMap::Iterator UMap::Diff(const UMap& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
-  KeyComparator cmptor(rhs.hash(), chunk_loader_);
-  return UMap::Iterator(hash(), cmptor.Diff(hash()), chunk_loader_.get());
+  if (this->numElements() == 0) {
+    return UMap::Iterator(hash(), {}, chunk_loader_.get());
+  } else if (rhs.numElements() == 0) {
+    return UMap::Iterator(hash(), {{0, numElements()}}, chunk_loader_.get());
+  } else {
+    KeyComparator cmptor(rhs.hash(), chunk_loader_);
+    return UMap::Iterator(hash(), cmptor.Diff(hash()), chunk_loader_.get());
+  }
 }
 
 UMap::Iterator UMap::Intersect(const UMap& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
-  KeyComparator cmptor(rhs.hash(), chunk_loader_);
-  return UMap::Iterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get());
+  if (this->numElements() == 0 || rhs.numElements() == 0) {
+    return UMap::Iterator(hash(), {}, chunk_loader_.get());
+  } else {
+    KeyComparator cmptor(rhs.hash(), chunk_loader_);
+    return UMap::Iterator(hash(), cmptor.Intersect(hash()),
+                          chunk_loader_.get());
+  }
 }
 
 bool UMap::SetNodeForHash(const Hash& root_hash) {

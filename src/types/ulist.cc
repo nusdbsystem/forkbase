@@ -67,8 +67,12 @@ Hash UList::Append(const std::vector<Slice>& entries) const {
 }
 
 UList::Iterator UList::Scan() const {
-  IndexRange all_range{0, numElements()};
-  return Iterator(hash(), {all_range}, chunk_loader_.get());
+  if (numElements() == 0) {
+    return Iterator(hash(), {}, chunk_loader_.get());
+  } else {
+    IndexRange all_range{0, numElements()};
+    return Iterator(hash(), {all_range}, chunk_loader_.get());
+  }
 }
 
 UList::Iterator UList::Diff(const UList& rhs) const {

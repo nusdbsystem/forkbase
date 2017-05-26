@@ -9,6 +9,11 @@ bool UIterator::next() {
     LOG(WARNING) << "Can not move forward as already at seq head. ";
     return false;
   }
+  if (empty()) {
+    curr_idx_in_range_ = 0;
+    curr_range_idx_ = 0;
+    return false;
+  }
   if (head()) {
     curr_idx_in_range_ = 0;
     curr_range_idx_ = 0;
@@ -50,6 +55,11 @@ bool UIterator::next() {
 bool UIterator::previous() {
   if (head()) {
     LOG(WARNING) << "Can not move backward as already at seq head. ";
+    return false;
+  }
+  if (empty()) {
+    curr_range_idx_ = -1;
+    curr_idx_in_range_ = 0;
     return false;
   }
   if (end()) {

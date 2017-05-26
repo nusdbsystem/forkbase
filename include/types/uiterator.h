@@ -29,14 +29,14 @@ class UIterator : private Noncopyable {
       : ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
-        cursor_(root, index(), loader) {}
+        cursor_(root, empty()?0:index(), loader) {}
 
   UIterator(const Hash& root, std::vector<IndexRange>&& ranges,
             ChunkLoader* loader) noexcept
       : ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
-        cursor_(root, index(), loader) {}
+        cursor_(root, empty()?0:index(), loader) {}
 
   virtual ~UIterator() = default;
 
@@ -87,10 +87,12 @@ class UIterator : private Noncopyable {
 
  protected:
   inline const byte_t* data() const {
+    CHECK(!empty() && !head() && !end());
     return cursor_.current();
   }
 
   inline size_t numBytes() const {
+    CHECK(!empty() && !head() && !end());
     return cursor_.numCurrentBytes();
   }
 

@@ -42,4 +42,5 @@ TEST(Chunk, LoadChunk) {
   // check chunk hash
   ustore::Hash h = ustore::Hash::ComputeFrom(chunk.head(), chunk.numBytes());
   EXPECT_EQ(h.ToBase32(), chunk.hash().ToBase32());
+  delete[] buffer;
 }
