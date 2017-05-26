@@ -43,6 +43,8 @@ class HeadVersion : private Noncopyable {
   void RenameBranch(const Slice& key, const Slice& old_branch,
                     const Slice& new_branch);
 
+  std::vector<Slice> ListKey() const;
+
   inline bool Exists(const Slice& key) const {
     return latest_ver_.find(key) != latest_ver_.end();
   }

@@ -109,11 +109,17 @@ bool HeadVersion::IsLatest(const Slice& key, const Hash& ver) const {
   return lv_key.find(ver) != lv_key.end();
 }
 
+std::vector<Slice> HeadVersion::ListKey() const {
+  std::vector<Slice> keys;
+  for (auto& lv : latest_ver_) keys.emplace_back(lv.first);
+  return keys;
+}
+
 std::vector<Slice> HeadVersion::ListBranch(const Slice& key) const {
   std::vector<Slice> branchs;
   if (branch_ver_.find(key) != branch_ver_.end()) {
     for (const auto& bv : branch_ver_.at(key)) {
-      branchs.push_back(bv.first);
+      branchs.emplace_back(bv.first);
     }
   }
   return branchs;

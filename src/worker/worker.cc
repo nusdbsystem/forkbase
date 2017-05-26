@@ -244,4 +244,21 @@ Chunk Worker::GetChunk(const Slice& key, const Hash& ver) {
   return chunk_store->Get(ver);
 }
 
+ErrorCode Worker::ListKeys(std::vector<std::string>* keys) {
+  keys->clear();
+  for (auto& k : head_ver_.ListKey()) {
+    keys->emplace_back(k.ToString());
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode Worker::ListBranches(const Slice& key,
+                               std::vector<std::string>* branches) {
+  branches->clear();
+  for (auto& b : head_ver_.ListBranch(key)) {
+    branches->emplace_back(b.ToString());
+  }
+  return ErrorCode::kOK;
+}
+
 }  // namespace ustore

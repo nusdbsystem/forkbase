@@ -43,6 +43,12 @@ const ValueVec vals {
 
 HashVec ver;
 ErrorCode ec{ErrorCode::kUnknownOp};
+std::vector<std::string> branches;
+bool exist;
+Hash head;
+bool is_head;
+std::vector<Hash> latest;
+bool is_latest;
 
 const WorkerID worker_id{14};
 WorkerExt worker{worker_id};
@@ -54,30 +60,39 @@ TEST(Worker, Meta) {
 TEST(Worker, NamedBranch_GetPutString) {
   Hash version;
 
-  EXPECT_EQ(0, worker.ListBranch(key[0]).size());
-  EXPECT_FALSE(worker.Exists(key[0]));
+  worker.ListBranches(key[0], &branches);
+  EXPECT_EQ(0, branches.size());
+  worker.Exist(key[0], &exist);
+  EXPECT_FALSE(exist);
 
   Value val0{UType::kString, Hash::kNull, 0, 0, {vals[0]}, {}};
   ec = worker.Put(key[0], val0, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[0]
-  EXPECT_TRUE(worker.Exists(key[0]));
-  EXPECT_EQ(1, worker.ListBranch(key[0]).size());
-  EXPECT_EQ(ver[0], worker.GetBranchHead(key[0], branch[0]));
-  EXPECT_TRUE(worker.IsLatest(key[0], ver[0]));
+  worker.Exist(key[0], &exist);
+  EXPECT_TRUE(exist);
+  worker.ListBranches(key[0], &branches);
+  EXPECT_EQ(1, branches.size());
+  worker.GetBranchHead(key[0], branch[0], &head);
+  EXPECT_EQ(ver[0], head);
+  worker.IsLatestVersion(key[0], ver[0], &is_latest);
+  EXPECT_TRUE(is_latest);
 
   Value val1{UType::kString, Hash::kNull, 0, 0, {vals[1]}, {}};
   ec = worker.Put(key[0], val1, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[1]
-  EXPECT_FALSE(worker.IsBranchHead(key[0], branch[0], ver[0]));
-  EXPECT_TRUE(worker.IsLatest(key[0], ver[1]));
+  worker.IsBranchHead(key[0], branch[0], ver[0], &is_head);
+  EXPECT_FALSE(is_head);
+  worker.IsLatestVersion(key[0], ver[1], &is_latest);
+  EXPECT_TRUE(is_latest);
 
   Value val2{UType::kString, Hash::kNull, 0, 0, {vals[2]}, {}};
   ec = worker.Put(key[0], val2, branch[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[2]
-  EXPECT_EQ(2, worker.ListBranch(key[0]).size());
+  worker.ListBranches(key[0], &branches);
+  EXPECT_EQ(2, branches.size());
 
   UCell value;
 
@@ -92,28 +107,35 @@ TEST(Worker, NamedBranch_GetPutString) {
   ec = worker.Get(key[0], branch[1], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   EXPECT_EQ(vals[2], SString(value.dataHash()).slice());
-  EXPECT_EQ(ver[2], worker.GetBranchHead(key[0], branch[1]));
+  worker.GetBranchHead(key[0], branch[1], &head);
+  EXPECT_EQ(ver[2], head);
 }
 
 TEST(Worker, NamedBranch_Branch) {
   ec = worker.Branch(key[0], branch[0], branch[2]);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(3, worker.ListBranch(key[0]).size());
+  worker.ListBranches(key[0], &branches);
+  EXPECT_EQ(3, branches.size());
   EXPECT_EQ(worker.GetBranchHead(key[0], branch[0]),
             worker.GetBranchHead(key[0], branch[2]));
-  EXPECT_EQ(2, worker.GetLatestVersions(key[0]).size());
+  worker.GetLatestVersions(key[0], &latest);
+  EXPECT_EQ(2, latest.size());
 }
 
 TEST(Worker, NamedBranch_Rename) {
-  const auto version = worker.GetBranchHead(key[0], branch[0]);
-  EXPECT_EQ(ver[1], version);
+  worker.GetBranchHead(key[0], branch[0], &head);
+  EXPECT_EQ(ver[1], head);
   ec = worker.Rename(key[0], branch[0], branch[3]);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(version, worker.GetBranchHead(key[0], branch[3]));
-  EXPECT_EQ(3, worker.ListBranch(key[0]).size());
-  EXPECT_FALSE(worker.Exists(key[0], branch[0]));
-  EXPECT_TRUE(worker.Exists(key[0], branch[3]));
-  EXPECT_EQ(2, worker.GetLatestVersions(key[0]).size());
+  EXPECT_EQ(head, worker.GetBranchHead(key[0], branch[3]));
+  worker.ListBranches(key[0], &branches);
+  EXPECT_EQ(3, branches.size());
+  worker.Exist(key[0], branch[0], &exist);
+  EXPECT_FALSE(exist);
+  worker.Exist(key[0], branch[3], &exist);
+  EXPECT_TRUE(exist);
+  worker.GetLatestVersions(key[0], &latest);
+  EXPECT_EQ(2, latest.size());
 }
 
 TEST(Worker, NamedBranch_Merge) {
@@ -123,16 +145,21 @@ TEST(Worker, NamedBranch_Merge) {
   worker.Merge(key[0], val3, branch[3], branch[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[3]
-  EXPECT_TRUE(worker.IsBranchHead(key[0], branch[3], ver[3]));
-  EXPECT_FALSE(worker.IsBranchHead(key[0], branch[1], ver[3]));
-  EXPECT_EQ(3, worker.ListBranch(key[0]).size());
-  EXPECT_EQ(1, worker.GetLatestVersions(key[0]).size());
+  worker.IsBranchHead(key[0], branch[3], ver[3], &is_head);
+  EXPECT_TRUE(is_head);
+  worker.IsBranchHead(key[0], branch[1], ver[3], &is_head);
+  EXPECT_FALSE(is_head);
+  worker.ListBranches(key[0], &branches);
+  EXPECT_EQ(3, branches.size());
+  worker.GetLatestVersions(key[0], &latest);
+  EXPECT_EQ(1, latest.size());
 
   Value val4{UType::kString, Hash::kNull, 0, 0, {vals[4]}, {}};
   worker.Merge(key[0], val4, branch[1], ver[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[4]
-  EXPECT_EQ(2, worker.GetLatestVersions(key[0]).size());
+  worker.GetLatestVersions(key[0], &latest);
+  EXPECT_EQ(2, latest.size());
 
   UCell value;
 
@@ -152,27 +179,33 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
   worker.Put(key[1], val5, Hash::kNull, &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[5]
-  EXPECT_EQ(1, worker.GetLatestVersions(key[1]).size());
+  worker.GetLatestVersions(key[1], &latest);
+  EXPECT_EQ(1, latest.size());
 
   Value val6{UType::kBlob, Hash::kNull, 0, 0, {vals[6]}, {}};
   worker.Put(key[1], val6, ver[5], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[6]
-  EXPECT_EQ(1, worker.GetLatestVersions(key[1]).size());
-  EXPECT_FALSE(worker.IsLatest(key[1], ver[5]));
-  EXPECT_TRUE(worker.IsLatest(key[1], ver[6]));
+  worker.GetLatestVersions(key[1], &latest);
+  EXPECT_EQ(1, latest.size());
+  worker.IsLatestVersion(key[1], ver[5], &is_latest);
+  EXPECT_FALSE(is_latest);
+  worker.IsLatestVersion(key[1], ver[6], &is_latest);
+  EXPECT_TRUE(is_latest);
 
   Value val7{UType::kBlob, Hash::kNull, 0, 0, {vals[7]}, {}};
   worker.Put(key[1], val7, ver[5], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[7]
-  EXPECT_EQ(2, worker.GetLatestVersions(key[1]).size());
+  worker.GetLatestVersions(key[1], &latest);
+  EXPECT_EQ(2, latest.size());
 
   Value val8{UType::kBlob, Hash::kNull, 0, 0, {vals[8]}, {}};
   worker.Put(key[1], val8, ver[7], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[8]
-  EXPECT_EQ(2, worker.GetLatestVersions(key[1]).size());
+  worker.GetLatestVersions(key[1], &latest);
+  EXPECT_EQ(2, latest.size());
 
   UCell value;
   SBlob blob;
@@ -214,13 +247,15 @@ TEST(Worker, UnnamedBranch_Merge) {
   worker.Merge(key[1], val9, ver[6], ver[7], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[9]
-  EXPECT_EQ(2, worker.GetLatestVersions(key[1]).size());
+  worker.GetLatestVersions(key[1], &latest);
+  EXPECT_EQ(2, latest.size());
 
   Value val10{UType::kBlob, Hash::kNull, 0, 0, {vals[10]}, {}};
   worker.Merge(key[1], val10, ver[8], ver[9], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[10]
-  EXPECT_EQ(1, worker.GetLatestVersions(key[1]).size());
+  worker.GetLatestVersions(key[1], &latest);
+  EXPECT_EQ(1, latest.size());
 
   UCell value;
   SBlob blob;
@@ -249,7 +284,8 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
   val.type = UType::kList;
   EXPECT_EQ(0, val.vals.size());
 
-  EXPECT_EQ(0, worker.ListBranch(key[3]).size());
+  worker.ListBranches(key[3], &branches);
+  EXPECT_EQ(0, branches.size());
 
   // construct a new list
   val.base = Hash::kNull;
@@ -260,9 +296,12 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
   ec = worker.Put(key[3], val, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[11]
-  EXPECT_EQ(1, worker.ListBranch(key[3]).size());
-  EXPECT_EQ(ver[11], worker.GetBranchHead(key[3], branch[0]));
-  EXPECT_TRUE(worker.IsLatest(key[3], ver[11]));
+  worker.ListBranches(key[3], &branches);
+  EXPECT_EQ(1, branches.size());
+  worker.GetBranchHead(key[3], branch[0], &head);
+  EXPECT_EQ(ver[11], head);
+  worker.IsLatestVersion(key[3], ver[11], &is_latest);
+  EXPECT_TRUE(is_latest);
 
   ec = worker.GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
@@ -285,9 +324,12 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
   ec = worker.Put(key[3], val, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[12]
-  EXPECT_EQ(1, worker.ListBranch(key[3]).size());
-  EXPECT_FALSE(worker.IsLatest(key[3], ver[11]));
-  EXPECT_EQ(ver[12], worker.GetBranchHead(key[3], branch[0]));
+  worker.ListBranches(key[3], &branches);
+  EXPECT_EQ(1, branches.size());
+  worker.IsLatestVersion(key[3], ver[11], &is_latest);
+  EXPECT_FALSE(is_latest);
+  worker.GetBranchHead(key[3], branch[0], &head);
+  EXPECT_EQ(ver[12], head);
 
   ec = worker.GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
@@ -342,7 +384,8 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
   EXPECT_EQ(0, val.keys.size());
   EXPECT_EQ(0, val.vals.size());
 
-  EXPECT_EQ(0, worker.ListBranch(key[4]).size());
+  worker.ListBranches(key[4], &branches);
+  EXPECT_EQ(0, branches.size());
 
   // construct a new map
   val.base = Hash::kNull;
@@ -356,9 +399,12 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
   ec = worker.Put(key[4], val, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[14]
-  EXPECT_EQ(1, worker.ListBranch(key[4]).size());
-  EXPECT_EQ(ver[14], worker.GetBranchHead(key[4], branch[0]));
-  EXPECT_TRUE(worker.IsLatest(key[4], ver[14]));
+  worker.ListBranches(key[4], &branches);
+  EXPECT_EQ(1, branches.size());
+  worker.GetBranchHead(key[4], branch[0], &head);
+  EXPECT_EQ(ver[14], head);
+  worker.IsLatestVersion(key[4], ver[14], &is_latest);
+  EXPECT_TRUE(is_latest);
 
   ec = worker.GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
@@ -376,9 +422,12 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
   ec = worker.Put(key[4], val, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[15]
-  EXPECT_EQ(1, worker.ListBranch(key[4]).size());
-  EXPECT_FALSE(worker.IsLatest(key[4], ver[14]));
-  EXPECT_EQ(ver[15], worker.GetBranchHead(key[4], branch[0]));
+  worker.ListBranches(key[4], &branches);
+  EXPECT_EQ(1, branches.size());
+  worker.IsLatestVersion(key[4], ver[14], &is_latest);
+  EXPECT_FALSE(is_latest);
+  worker.GetBranchHead(key[4], branch[0], &head);
+  EXPECT_EQ(ver[15], head);
 
   ec = worker.GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);

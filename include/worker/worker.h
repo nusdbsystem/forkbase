@@ -191,25 +191,97 @@ class Worker : public DB, private Noncopyable {
 
   Chunk GetChunk(const Slice& key, const Hash& ver) override;
 
-  // TODO(linqian): implement methods below
-  ErrorCode ListKeys(std::vector<std::string>* versions)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode Exist(const Slice& key, bool* exist)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode Exist(const Slice& key, const Slice& branch, bool* exist)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode GetBranchHead(const Slice& key, const Slice& branch, Hash* version)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
-                         const Hash& version, bool* isHead)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* versions)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
-                            bool* isLatest)
-      override { return ErrorCode::kUnknownOp; }
+  ErrorCode ListKeys(std::vector<std::string>* keys) override;
+
+  ErrorCode ListBranches(const Slice& key,
+                         std::vector<std::string>* branches) override;
+
+  inline bool Exist(const Slice& key) const {
+    return head_ver_.Exists(key);
+  }
+
+  inline ErrorCode Exist(const Slice& key, bool* exist) override {
+    *exist = Exist(key);
+    return ErrorCode::kOK;
+  }
+
+  /**
+   * @brief Check for the existence of the specified branch.
+   * @param key Data key.
+   * @param branch The specified branch.
+   * @return True if the specified branch exists for the data;
+   *         otherwise false.
+   */
+  inline bool Exist(const Slice& key, const Slice& branch) const {
+    return head_ver_.Exists(key, branch);
+  }
+
+  inline ErrorCode Exist(const Slice& key, const Slice& branch,
+                         bool* exist) override {
+    *exist = Exist(key, branch);
+    return ErrorCode::kOK;
+  }
+
+  inline ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
+                                 Hash* ver) override {
+    *ver = GetBranchHead(key, branch);
+    return ErrorCode::kOK;
+  }
+
+  /**
+   * @brief Check whether the given version is the head version of the
+   *        specified branch.
+   *
+   * @param key Data key.
+   * @param branch The operating branch.
+   * @param ver Data version.
+   * @return True if the given version is the head version of the specified
+   *         branch; otherwise false.
+   */
+  inline bool IsBranchHead(const Slice& key, const Slice& branch,
+                           const Hash& ver) const {
+    return head_ver_.IsBranchHead(key, branch, ver);
+  }
+
+  inline ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
+                                const Hash& ver, bool* is_head) override {
+    *is_head = IsBranchHead(key, branch, ver);
+    return ErrorCode::kOK;
+  }
+
+  /**
+   * @brief Obtain all the latest versions of data.
+   *
+   * @param key Data key.
+   * @return A set of all the latest versions of data.
+   */
+  // TODO(linqian): later on, we may have filters on the returned versions, e.g,
+  //  return last 10 latest versions
+  inline std::vector<Hash> GetLatestVersions(const Slice& key) const {
+    return head_ver_.GetLatest(key);
+  }
+
+  inline ErrorCode GetLatestVersions(const Slice& key,
+                                     std::vector<Hash>* vers) override {
+    *vers = GetLatestVersions(key);
+    return ErrorCode::kOK;
+  }
+
+  /**
+   * @brief Check if the given version is one of the latest versions of data.
+   *
+   * @param key Data key.
+   * @param ver Data version.
+   */
+  inline bool IsLatestVersion(const Slice& key, const Hash& ver) const {
+    return head_ver_.IsLatest(key, ver);
+  }
+
+  inline ErrorCode IsLatestVersion(const Slice& key, const Hash& ver,
+                                   bool* is_latest) override {
+    *is_latest = IsLatestVersion(key, ver);
+    return ErrorCode::kOK;
+  }
 
  protected:
   HeadVersion head_ver_;
