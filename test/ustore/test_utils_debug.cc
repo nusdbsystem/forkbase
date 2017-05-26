@@ -62,9 +62,9 @@ TEST(UtilsDebug, SpliceBytes) {
   const ustore::byte_t* result7 =
       ustore::SpliceBytes(data, 5, 10, 0, append, 3);
   const ustore::byte_t expected7[] = "abcdexyz";
-  delete[] result7;
 
   for (size_t i = 0; i < 7; i++) {
     ASSERT_EQ(*(expected7 + i), *(result7 + i));
   }
+  delete[] result7;
 }

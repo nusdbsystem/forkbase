@@ -26,19 +26,17 @@ class UIterator : private Noncopyable {
 
   UIterator(const Hash& root, const std::vector<IndexRange>& ranges,
             ChunkLoader* loader) noexcept
-      : ranges_(ranges), curr_range_idx_(0), curr_idx_in_range_(0) {
-    CHECK_LT(0, ranges_.size());
-    cursor_ = std::unique_ptr<NodeCursor>(
-                  NodeCursor::GetCursorByIndex(root, index(), loader));
-  }
+      : ranges_(std::move(ranges)),
+        curr_range_idx_(0),
+        curr_idx_in_range_(0),
+        cursor_(root, index(), loader) {}
 
   UIterator(const Hash& root, std::vector<IndexRange>&& ranges,
             ChunkLoader* loader) noexcept
-      : ranges_(std::move(ranges)), curr_range_idx_(0), curr_idx_in_range_(0) {
-    CHECK_LT(0, ranges_.size());
-    cursor_ = std::unique_ptr<NodeCursor>(
-                  NodeCursor::GetCursorByIndex(root, index(), loader));
-  }
+      : ranges_(std::move(ranges)),
+        curr_range_idx_(0),
+        curr_idx_in_range_(0),
+        cursor_(root, index(), loader) {}
 
   virtual ~UIterator() = default;
 
@@ -62,21 +60,23 @@ class UIterator : private Noncopyable {
 
   inline bool end() const {return curr_range_idx_ == ranges_.size(); }
 
+  inline bool empty() const  {return ranges_.size() == 0; }
+
   // return the idx of pointed element
   virtual inline uint64_t index() const {
-    CHECK(!head() && !end());
+    CHECK(!empty() && !head() && !end());
     return ranges_[curr_range_idx_].start_idx + curr_idx_in_range_;
   }
 
   // return the decoded slice value
   virtual inline Slice key() const {
-    CHECK(!head() && !end());
-    return cursor_->currentKey().ToSlice();
+    CHECK(!empty() && !head() && !end());
+    return cursor_.currentKey().ToSlice();
   }
 
   // return the decoded slice value
   inline Slice value() const {
-    CHECK(!head() && !end());
+    CHECK(!empty() && !head() && !end());
     return RealValue();
   }
 
@@ -87,11 +87,11 @@ class UIterator : private Noncopyable {
 
  protected:
   inline const byte_t* data() const {
-    return cursor_->current();
+    return cursor_.current();
   }
 
   inline size_t numBytes() const {
-    return cursor_->numCurrentBytes();
+    return cursor_.numCurrentBytes();
   }
 
  private:
@@ -102,7 +102,7 @@ class UIterator : private Noncopyable {
   int32_t curr_range_idx_;
   // the index of element in current IndexRange pointed by iterator
   uint64_t curr_idx_in_range_;
-  std::unique_ptr<NodeCursor> cursor_;
+  NodeCursor cursor_;
 };
 
 // TODO(pingcheng): why not derive from UIterator, or both derive from a base

@@ -12,7 +12,7 @@ bool UIterator::next() {
   if (head()) {
     curr_idx_in_range_ = 0;
     curr_range_idx_ = 0;
-    cursor_->Advance(true);
+    cursor_.Advance(true);
     return true;
   }
 
@@ -21,7 +21,7 @@ bool UIterator::next() {
   uint64_t curr_range_len = ranges_[curr_range_idx_].num_subsequent;
 
   if (curr_idx_in_range_ < curr_range_len) {
-    cursor_->Advance(true);
+    cursor_.Advance(true);
   } else if (curr_idx_in_range_ == curr_range_len) {
     // Need to advance to next IndexRange
     curr_idx_in_range_ = 0;
@@ -32,11 +32,11 @@ bool UIterator::next() {
           pre_range.start_idx + pre_range.num_subsequent - 1;
       uint64_t steps = ranges_[curr_range_idx_].start_idx
                        - pre_range_end_idx;
-      cursor_->AdvanceSteps(steps);
+      cursor_.AdvanceSteps(steps);
     } else if (curr_range_idx_ == ranges_.size()) {
       // Already at the very end of all index ranges
       // Move cursor one more step
-      cursor_->Advance(false);  // either true or false for parameter is fine
+      cursor_.Advance(false);  // either true or false for parameter is fine
     } else {
       LOG(FATAL) << "Invalid curr_range_idx_";
     }
@@ -56,14 +56,14 @@ bool UIterator::previous() {
     curr_range_idx_ = ranges_.size() - 1;
     auto last_range = ranges_[curr_range_idx_];
     curr_idx_in_range_ = last_range.num_subsequent - 1;
-    cursor_->Retreat(false);
+    cursor_.Retreat(false);
     return true;
   }
 
   uint64_t curr_range_len = ranges_[curr_range_idx_].num_subsequent;
   if (curr_idx_in_range_ > 0) {
     --curr_idx_in_range_;
-    cursor_->Retreat(true);
+    cursor_.Retreat(true);
   } else if (curr_idx_in_range_ == 0) {
     // Need to retreat to next IndexRange
     --curr_range_idx_;
@@ -73,11 +73,11 @@ bool UIterator::previous() {
                                 + ranges_[curr_range_idx_].num_subsequent - 1;
       uint64_t steps = next_range.start_idx - curr_range_end_idx;
       curr_idx_in_range_ = ranges_[curr_range_idx_].num_subsequent - 1;
-      cursor_->RetreatSteps(steps);
+      cursor_.RetreatSteps(steps);
     } else if (curr_range_idx_ == -1) {
       // Already at the head of all index ranges
       // Retreat cursor one more step
-      cursor_->Retreat(false);  // either true or false for parameter is fine
+      cursor_.Retreat(false);  // either true or false for parameter is fine
     } else {
       LOG(FATAL) << "Invalid curr_range_idx_";
     }
