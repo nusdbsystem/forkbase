@@ -48,12 +48,7 @@ void BenchmarkClient() {
   for (int i = 0; i< workers.size(); ++i)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
 
-  // no longer need to provide client address
-  //// std::ifstream fin_client(Env::Instance()->config()->clientservice_file());
-  //// std::string clientservice_addr;
-  //// fin_client >> clientservice_addr;
   RemoteClientService *service = new RemoteClientService("");
-    //= new RemoteClientService(clientservice_addr, "");
   service->Init();
   std::thread client_service_thread(&RemoteClientService::Start, service);
   sleep(1);

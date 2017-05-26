@@ -133,12 +133,7 @@ TEST(TestMessage, TestClient1Thread) {
     worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
 
   // launch clients
-  // need no client address
-  //// ifstream fin_client(Env::Instance()->config()->clientservice_file());
-  //// string clientservice_addr;
-  //// fin_client >> clientservice_addr;
   RemoteClientService *service = new RemoteClientService("");
-    //= new RemoteClientService(clientservice_addr, "");
 
   service->Init();
   // service->Start();

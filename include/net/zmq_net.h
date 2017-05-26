@@ -14,24 +14,24 @@ namespace ustore {
 // Common network interface, extended by Client and Server
 class ZmqNet : public Net {
  public:
-  explicit ZmqNet(const node_id_t& id, int nthreads = 1) : 
+  explicit ZmqNet(const node_id_t& id, int nthreads = 1) :
       Net(id), nthreads_(nthreads) {}
-  ~ZmqNet() {}
+  ~ZmqNet() = default;
 
-  NetContext* CreateNetContext(const node_id_t& id);
-
-  virtual void Start(){}
+  NetContext* CreateNetContext(const node_id_t& id) override;
+  virtual void Start() {}
   void Stop() override;
-
   // process the received msg
   void Dispatch(const node_id_t& source, const void *msg, int size);
+
+ protected:
   void *recv_sock_, *backend_sock_;  // router and backend socket
   std::string inproc_ep_;  // endpoint for ipc
   int nthreads_;  // number of processing threads
   std::vector<std::thread> backend_threads_;
 };
 
-/** 
+/**
  * Client side of the network. One DEALER socket per connection to each
  * worker. The main thread polls these sockets and forwards messages to
  * backend socket. A number of ClientThread connects to the backend socket
@@ -40,37 +40,35 @@ class ZmqNet : public Net {
 class ClientZmqNet : public ZmqNet {
  public:
   explicit ClientZmqNet(int nthreads = 1);
-  ~ClientZmqNet() {}
+  ~ClientZmqNet() = default;
 
   void Start() override;
-
   // receive thread
   void ClientThread();
 };
 
-/** 
+/**
  * Server side of the network. One ROUTER socket to accept and receive all
- * client messages. Processing threads are embedded in ServerZmqNetContext, 
+ * client messages. Processing threads are embedded in ServerZmqNetContext,
  * each connects to a backend socket (at inproc_ep_) to receive requests.
  * Reponses from these threads are written to another backend socket
- * (result_ep_). 
+ * (result_ep_).
  * The main thread polls the ROUTER socket and result_ep_ socket to forward
  * messages to the backend and to the client respectively.
  */
 class ServerZmqNet : public ZmqNet {
  public:
   explicit ServerZmqNet(const node_id_t& id, int nthreads = 1);
-  ~ServerZmqNet() {}
+  ~ServerZmqNet() = default;
 
   void Start() override;
-
   std::string result_ep_;  // ipc endpoint for sending results
 
  private:
   void *result_sock_;
 };
 
-// Client side's network context. Each contains a connection to a 
+// Client side's network context. Each contains a connection to a
 // remote worker
 class ZmqNetContext : public NetContext {
  public:
@@ -78,8 +76,8 @@ class ZmqNetContext : public NetContext {
   ~ZmqNetContext();
 
   ssize_t Send(const void* ptr, size_t len, CallBack* func = nullptr) override;
-  
   void *GetSocket() { return send_sock_; }
+
  private:
   std::mutex send_lock_;
   void *send_sock_;
@@ -91,10 +89,10 @@ class ServerZmqNetContext : public NetContext {
  public:
   ServerZmqNetContext(const node_id_t& src, const node_id_t& dest,
           const string& ipc_ep, const string& result_ep, const string& id);
-  ~ServerZmqNetContext() {}
+  ~ServerZmqNetContext() = default;
 
   ssize_t Send(const void* ptr, size_t len, CallBack* func = nullptr) override;
-  
+
   // processing thread
   void Start(ServerZmqNet *net);
  private:
@@ -102,7 +100,6 @@ class ServerZmqNetContext : public NetContext {
   void *send_sock_, *recv_sock_, *client_id_ = nullptr;
   string id_;
 };
-
 
 }  // namespace ustore
 

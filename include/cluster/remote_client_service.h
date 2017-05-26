@@ -12,12 +12,12 @@ namespace ustore {
  * Service that handle remote client requests to the database.
  * Multiple clients/threads share the same service, thus avoiding
  * creating one connection for each client.
- * 
+ *
  * To interact with the database, the user first creates a ClientDb
  * object via CreateClientDb().
  *
  * The database servers (Worker) knows about every RemoteClientService
- * in the system, and can send responses asynchronously. 
+ * in the system, and can send responses asynchronously.
  */
 class RemoteClientService {
  public:
@@ -26,7 +26,7 @@ class RemoteClientService {
   static void ResponseDispatch(const void *msg, int size, void *handler,
                                const node_id_t& source);
 
-  RemoteClientService(const node_id_t& master)
+  explicit RemoteClientService(const node_id_t& master)
       : node_addr_(""), master_(master), is_running_(false), nclients_(0) {}
   ~RemoteClientService();
 
@@ -40,9 +40,9 @@ class RemoteClientService {
   /**
    * Handle a response from workers:
    * 1. It parse msg into a UStoreMessage
-   * 2. Wake up the appropriate ResponseBlob, based on the source 
+   * 2. Wake up the appropriate ResponseBlob, based on the source
    *    field, which is in [0..nthreads). No lock is needed here, because
-   *    clients are synchronous (there cannot be two response to the same 
+   *    clients are synchronous (there cannot be two response to the same
    *    client.
    * 3. Hand-off the message to whatever thread is waiting for it.
    */
@@ -50,7 +50,7 @@ class RemoteClientService {
                               const node_id_t& source);
 
   /**
-   * Create a new ClientDb connecting to the database. 
+   * Create a new ClientDb connecting to the database.
    * Interaction with the database is through this object.
    */
   virtual ClientDb* CreateClientDb();

@@ -42,7 +42,7 @@ class NetContext;
  */
 class Net : private Noncopyable {
  public:
-  virtual ~Net() = 0;
+  virtual ~Net();
 
   // create the NetContext of idth node
   virtual NetContext* CreateNetContext(const node_id_t& id) = 0;
@@ -103,11 +103,11 @@ class Net : private Noncopyable {
  */
 class NetContext {
  public:
-  NetContext() {}
+  NetContext() = default;
   // Initialize connection to another node
   NetContext(const node_id_t& src, const node_id_t& dest)
       : src_id_(src), dest_id_(dest) {}
-  virtual ~NetContext() {}
+  virtual ~NetContext() = default;
 
   // Non-blocking APIs
   /*

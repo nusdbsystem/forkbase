@@ -28,7 +28,6 @@ const string kID0 = "localhost:2235";
 const string kID1 = "localhost:2236";
 const string kID2 = "localhost:2237";
 
-
 class TestCallBack : public CallBack {
  public:
   explicit TestCallBack(void* handler = nullptr): CallBack(handler) {}
