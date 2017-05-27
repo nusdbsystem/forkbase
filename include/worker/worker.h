@@ -44,6 +44,12 @@ class Worker : public DB, private Noncopyable {
     return ver_opt ? *ver_opt : Hash::kNull;
   }
 
+  inline ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
+                                 Hash* ver) override {
+    *ver = GetBranchHead(key, branch);
+    return *ver == Hash::kNull ? ErrorCode::kBranchNotExists : ErrorCode::kOK;
+  }
+
   /**
    * @brief Read the value which is the head of a branch.
    *
@@ -229,12 +235,6 @@ class Worker : public DB, private Noncopyable {
   inline ErrorCode Exists(const Slice& key, const Slice& branch,
                           bool* exist) override {
     *exist = Exists(key, branch);
-    return ErrorCode::kOK;
-  }
-
-  inline ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
-                                 Hash* ver) override {
-    *ver = GetBranchHead(key, branch);
     return ErrorCode::kOK;
   }
 

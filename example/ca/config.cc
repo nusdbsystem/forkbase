@@ -21,8 +21,8 @@ size_t Config::iters = Config::kDefaultNumIterations;
 
 bool Config::ParseCmdArgs(const int& argc, char* argv[]) {
   po::variables_map vm;
-  if (!ParseCmdArgs(argc, argv, vm)) return false;
-
+  GUARD(ParseCmdArgs(argc, argv, vm));
+  
   const auto arg_task_id = vm["task"].as<int>();
   GUARD(CheckArgGE(arg_task_id, 0, "Task ID"));
   task_id = arg_task_id;

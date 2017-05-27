@@ -8,7 +8,6 @@
 #include <random>
 #include <string>
 #include <unordered_set>
-
 #include "ca/config.h"
 #include "ca/relational.h"
 #include "ca/utils.h"

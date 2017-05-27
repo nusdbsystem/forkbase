@@ -58,7 +58,8 @@ class Utils {
   template<typename T>
   static inline std::string ToStringSeq(
     const T& begin, const T& end, const std::string& lsymbol = "[",
-    const std::string& rsymbol = "]", const std::string& sep = ", ");
+    const std::string& rsymbol = "]", const std::string& sep = ", ",
+    const bool elem_in_quote = false);
 
   template<class T>
   static inline std::string ToString(const std::list<T>& list) {
@@ -132,14 +133,16 @@ std::string Utils::ToStringPair(
 template<typename T>
 std::string Utils::ToStringSeq(
   const T& begin, const T& end, const std::string& lsymbol,
-  const std::string& rsymbol, const std::string& sep) {
+  const std::string& rsymbol, const std::string& sep,
+  const bool elem_in_quote) {
+  const auto quote = elem_in_quote ? "\"" : "";
   std::stringstream ss;
   ss << lsymbol;
   auto it = begin;
   if (it != end) {
-    ss << *it++;
-    for (; it != end; ++it) {
-      ss << sep << *it;
+    ss << quote << *it++ << quote;
+    while (it != end) {
+      ss << sep << quote << *it++ << quote;
     }
   }
   ss << rsymbol;
@@ -172,6 +175,11 @@ std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
 
 inline std::ostream& operator<<(std::ostream& os, const UType& obj) {
   os << Utils::ToString(obj);
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const ErrorCode& obj) {
+  os << static_cast<int>(obj);
   return os;
 }
 

@@ -29,12 +29,17 @@ class UString : public BaseType {
   UString() = default;
   UString(UString&& rhs) = default;
   explicit UString(std::shared_ptr<ChunkLoader> loader) noexcept :
-      BaseType(loader) {}
+    BaseType(loader) {}
   ~UString() = default;
 
   UString& operator=(UString&& rhs) = default;
 
   bool SetNodeForHash(const Hash& hash) override;
+
+  friend inline std::ostream& operator<<(std::ostream& os, const UString& obj) {
+    os << obj.slice();
+    return os;
+  }
 
  private:
   // Responsible to remove during destructing

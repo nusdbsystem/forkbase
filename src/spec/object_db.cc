@@ -82,7 +82,7 @@ Result<bool> ObjectDB::Exists(const Slice& key, const Slice& branch) {
 Result<Hash> ObjectDB::GetBranchHead(const Slice& key, const Slice& branch) {
   Hash hash;
   ErrorCode code = db_->GetBranchHead(key, branch, &hash);
-  return {hash, code};
+  return {std::move(hash), code};
 }
 
 Result<bool> ObjectDB::IsBranchHead(const Slice& key, const Slice& branch,
@@ -95,7 +95,7 @@ Result<bool> ObjectDB::IsBranchHead(const Slice& key, const Slice& branch,
 Result<std::vector<Hash>> ObjectDB::GetLatestVersions(const Slice& key) {
   std::vector<Hash> versions;
   ErrorCode code = db_->GetLatestVersions(key, &versions);
-  return {versions, code};
+  return {std::move(versions), code};
 }
 
 Result<bool> ObjectDB::IsLatestVersion(const Slice& key, const Hash& version) {
