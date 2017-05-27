@@ -62,14 +62,14 @@ TEST(Worker, NamedBranch_GetPutString) {
 
   worker.ListBranches(key[0], &branches);
   EXPECT_EQ(0, branches.size());
-  worker.Exist(key[0], &exist);
+  worker.Exists(key[0], &exist);
   EXPECT_FALSE(exist);
 
   Value val0{UType::kString, Hash::kNull, 0, 0, {vals[0]}, {}};
   ec = worker.Put(key[0], val0, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[0]
-  worker.Exist(key[0], &exist);
+  worker.Exists(key[0], &exist);
   EXPECT_TRUE(exist);
   worker.ListBranches(key[0], &branches);
   EXPECT_EQ(1, branches.size());
@@ -130,9 +130,9 @@ TEST(Worker, NamedBranch_Rename) {
   EXPECT_EQ(head, worker.GetBranchHead(key[0], branch[3]));
   worker.ListBranches(key[0], &branches);
   EXPECT_EQ(3, branches.size());
-  worker.Exist(key[0], branch[0], &exist);
+  worker.Exists(key[0], branch[0], &exist);
   EXPECT_FALSE(exist);
-  worker.Exist(key[0], branch[3], &exist);
+  worker.Exists(key[0], branch[3], &exist);
   EXPECT_TRUE(exist);
   worker.GetLatestVersions(key[0], &latest);
   EXPECT_EQ(2, latest.size());
@@ -460,6 +460,6 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
 TEST(Worker, DeleteBranch) {
   ec = worker.Delete(key[0], branch[1]);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  worker.Exist(key[0], branch[1], &exist);
+  worker.Exists(key[0], branch[1], &exist);
   EXPECT_FALSE(exist);
 }

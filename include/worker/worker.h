@@ -206,12 +206,12 @@ class Worker : public DB, private Noncopyable {
   ErrorCode ListBranches(const Slice& key,
                          std::vector<std::string>* branches) override;
 
-  inline bool Exist(const Slice& key) const {
+  inline bool Exists(const Slice& key) const {
     return head_ver_.Exists(key);
   }
 
-  inline ErrorCode Exist(const Slice& key, bool* exist) override {
-    *exist = Exist(key);
+  inline ErrorCode Exists(const Slice& key, bool* exist) override {
+    *exist = Exists(key);
     return ErrorCode::kOK;
   }
 
@@ -222,13 +222,13 @@ class Worker : public DB, private Noncopyable {
    * @return True if the specified branch exists for the data;
    *         otherwise false.
    */
-  inline bool Exist(const Slice& key, const Slice& branch) const {
+  inline bool Exists(const Slice& key, const Slice& branch) const {
     return head_ver_.Exists(key, branch);
   }
 
-  inline ErrorCode Exist(const Slice& key, const Slice& branch,
-                         bool* exist) override {
-    *exist = Exist(key, branch);
+  inline ErrorCode Exists(const Slice& key, const Slice& branch,
+                          bool* exist) override {
+    *exist = Exists(key, branch);
     return ErrorCode::kOK;
   }
 

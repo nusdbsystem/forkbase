@@ -33,7 +33,7 @@ struct ResponseBlob {
   std::mutex lock;
   std::condition_variable condition;
   bool has_msg;
-  Message *message = nullptr;
+  Message* message = nullptr;
 };
 
 /**
@@ -62,8 +62,8 @@ struct ResponseBlob {
 
 class ClientDb : public DB {
  public:
-  ClientDb(const node_id_t& master, int id, Net *net, ResponseBlob *blob,
-      WorkerList* workers)
+  ClientDb(const node_id_t& master, int id, Net* net, ResponseBlob* blob,
+           WorkerList* workers)
     : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
   ~ClientDb();
 
@@ -101,42 +101,42 @@ class ClientDb : public DB {
 
   // TODO(anh): implement methods below
   ErrorCode ListKeys(std::vector<std::string>* versions)
-      override { return ErrorCode::kUnknownOp; }
+  override { return ErrorCode::kUnknownOp; }
   ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode Exist(const Slice& key, bool* exist)
-      override { return ErrorCode::kUnknownOp; }
-  ErrorCode Exist(const Slice& key, const Slice& branch, bool* exist)
-      override { return ErrorCode::kUnknownOp; }
+  override { return ErrorCode::kUnknownOp; }
+  ErrorCode Exists(const Slice& key, bool* exist)
+  override { return ErrorCode::kUnknownOp; }
+  ErrorCode Exists(const Slice& key, const Slice& branch, bool* exist)
+  override { return ErrorCode::kUnknownOp; }
   ErrorCode GetBranchHead(const Slice& key, const Slice& branch, Hash* version)
-      override { return ErrorCode::kUnknownOp; }
+  override { return ErrorCode::kUnknownOp; }
   ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
                          const Hash& version, bool* isHead)
-      override { return ErrorCode::kUnknownOp; }
+  override { return ErrorCode::kUnknownOp; }
   ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* versions)
-      override { return ErrorCode::kUnknownOp; }
+  override { return ErrorCode::kUnknownOp; }
   ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
                             bool* isLatest)
-      override { return ErrorCode::kUnknownOp; }
+  override { return ErrorCode::kUnknownOp; }
   ErrorCode Delete(const Slice& key, const Slice& branch)
-      override { return ErrorCode::kUnknownOp; }
+  override { return ErrorCode::kUnknownOp; }
 
  private:
   // send request to a node. Return false if there are
   // errors with network communication.
-  bool Send(const Message *msg, const node_id_t& node_id);
+  bool Send(const Message* msg, const node_id_t& node_id);
   // wait for response, and take ownership of the message.
   Message* WaitForResponse();
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
   // helper methods for creating messages
-  UStoreMessage* CreatePutRequest(const Slice &key, const Value &value);
-  UStoreMessage* CreateGetRequest(const Slice &key);
-  UStoreMessage* CreateGetChunkRequest(const Slice &key);
-  UStoreMessage* CreateBranchRequest(const Slice &key,
-                                     const Slice &new_branch);
-  UStoreMessage* CreateMergeRequest(const Slice &key, const Value &value,
-                                    const Slice &target_branch);
+  UStoreMessage* CreatePutRequest(const Slice& key, const Value& value);
+  UStoreMessage* CreateGetRequest(const Slice& key);
+  UStoreMessage* CreateGetChunkRequest(const Slice& key);
+  UStoreMessage* CreateBranchRequest(const Slice& key,
+                                     const Slice& new_branch);
+  UStoreMessage* CreateMergeRequest(const Slice& key, const Value& value,
+                                    const Slice& target_branch);
   // helper methods for getting response
   ErrorCode GetEmptyResponse();
   ErrorCode GetVersionResponse(Hash* version);
@@ -144,10 +144,10 @@ class ClientDb : public DB {
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
-  Net *net_ = nullptr;  // for network communication
-  WorkerList *workers_ = nullptr;  // lists of workers to which requests are
-                                   // dispatched
-  ResponseBlob *res_blob_ = nullptr;  // response blob
+  Net* net_ = nullptr;  // for network communication
+  WorkerList* workers_ = nullptr;  // lists of workers to which requests are
+  // dispatched
+  ResponseBlob* res_blob_ = nullptr;  // response blob
 };
 
 /**
@@ -161,24 +161,24 @@ class ClientDb : public DB {
  */
 class WorkerList {
  public:
-    explicit WorkerList(const std::vector<RangeInfo> &workers);
-    ~WorkerList() {}
+  explicit WorkerList(const std::vector<RangeInfo>& workers);
+  ~WorkerList() {}
 
-    /**
-     * Invoked whenever the list is out of date.
-     */
-    bool Update(const std::vector<RangeInfo> &workers);
-    /**
-     * Return the ID (address string) of the worker node whose key range
-     * contains the given key.
-     * It always returns a valid ID, but the node may have gone offline. The calling
-     * function is responsible for updating the list.
-     */
-    node_id_t GetWorker(const Slice& key);
+  /**
+   * Invoked whenever the list is out of date.
+   */
+  bool Update(const std::vector<RangeInfo>& workers);
+  /**
+   * Return the ID (address string) of the worker node whose key range
+   * contains the given key.
+   * It always returns a valid ID, but the node may have gone offline. The calling
+   * function is responsible for updating the list.
+   */
+  node_id_t GetWorker(const Slice& key);
 
  private:
-    // should be sorted by the range
-    std::vector<RangeInfo> workers_;
+  // should be sorted by the range
+  std::vector<RangeInfo> workers_;
 };
 }  // namespace ustore
 

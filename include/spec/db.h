@@ -120,7 +120,7 @@ class DB {
    * @param exist  True if the specified key exists.
    * @return       Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Exist(const Slice& key, bool* exist) = 0;
+  virtual ErrorCode Exists(const Slice& key, bool* exist) = 0;
   /**
    * @brief Check for the existence of the specified branch.
    *
@@ -129,8 +129,8 @@ class DB {
    * @param exist   True if the specified branch exists.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Exist(const Slice& key, const Slice& branch,
-                          bool* exist) = 0;
+  virtual ErrorCode Exists(const Slice& key, const Slice& branch,
+                           bool* exist) = 0;
   /**
    * @brief Obtain the head version of the specified branch.
    *
