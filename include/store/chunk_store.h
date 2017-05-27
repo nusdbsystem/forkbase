@@ -48,6 +48,8 @@ class ChunkStore {
 // wrap global functions inside a namespace
 namespace store {
 
+// have to be called before calling GetChunkStore(), otherwise has no effect
+ChunkStore* SetChunkStorePath(const std::string& dir, const std::string& file);
 ChunkStore* GetChunkStore();
 
 }  // namespace store

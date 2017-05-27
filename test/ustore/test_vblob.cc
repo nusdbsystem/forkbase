@@ -14,7 +14,7 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vblob(17);
+ustore::Worker worker_vblob(2017);
 const char key_vblob[] = "key_vblob";
 const char branch_vblob[] = "branch_vblob";
 

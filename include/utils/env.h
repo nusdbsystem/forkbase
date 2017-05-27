@@ -25,13 +25,14 @@ class Env : public Singleton<Env>, private Noncopyable {
   friend class Singleton<Env>;
  public:
   static const char* kDefaultConfigFile;
-  
-  const Config* config() { return &config_; }
- 
+
+  const Config& config() { return config_; }
+  Config& m_config() { return config_; }
+
  private:
   Env();
-  ~Env() {}
-  
+  ~Env() = default;
+
   Config config_;
 };
 

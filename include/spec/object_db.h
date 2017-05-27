@@ -34,7 +34,6 @@ class ObjectDB {
   // Rename Branch
   ErrorCode Rename(const Slice& key, const Slice& old_branch,
                    const Slice& new_branch);
-
   // Delete Branch
   ErrorCode Delete(const Slice& key, const Slice& branch);
 

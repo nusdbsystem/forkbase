@@ -7,9 +7,17 @@
 #include "types/server/slist.h"
 #include "types/server/smap.h"
 #include "types/server/sstring.h"
+#include "utils/env.h"
 #include "utils/logging.h"
 
 namespace ustore {
+
+Worker::Worker(const WorkerID& id) : id_(id) {
+  // set data file path
+  auto& c = Env::Instance()->config();
+  std::string file_name = c.data_file_pattern() + "_" + std::to_string(id);
+  store::SetChunkStorePath(c.data_dir(), file_name);
+}
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
   const auto& version_opt = head_ver_.GetBranch(key, branch);

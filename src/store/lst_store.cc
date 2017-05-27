@@ -131,16 +131,15 @@ static void initStoreInfo(StoreInfo* info, int segments) {
  *
  * @return the address of the memory region where the log file is mapped into
  */
-void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
-  fs::path path;
-  if (dir == nullptr)
-    path = fs::current_path();
-  else
-    path = fs::path(dir);
-  path /= std::string(file);
+void* LSTStore::MmapUstoreLogFile(const std::string& dir,
+                                  const std::string& file) {
+  fs::path path(dir);
+  // create dir if not found
+  fs::create_directory(path);
+  path /= file + ".dat";
 
   int fd;
-  if (fs::exists(path) && fs::file_size(path) == kLogFileSize) {
+  if (fs::exists(path) && fs::file_size(path) == log_file_size_) {
     fd = ::open(path.c_str(), O_RDWR, S_IRWXU);
   } else {
     // init the log
@@ -159,12 +158,12 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
     FdWriteThenSync(fd, meta, kMetaLogSize);
 
     LOG(INFO) << "init data segments...";
-    for (int i = 0; i < kNumSegments; ++i) {
+    for (int i = 0; i < num_segments_; ++i) {
       DLOG(INFO) << "init the " << i << "-th segment";
       size_t prev_segment_offset = 0, next_segment_offset = 0;
       if (i > 0)
         prev_segment_offset = (i - 1) * kSegmentSize + kMetaLogSize;
-      if (i < kNumSegments - 1)
+      if (i < num_segments_ - 1)
         next_segment_offset = (i + 1) * kSegmentSize + kMetaLogSize;
       AppendInteger(segment, prev_segment_offset, next_segment_offset);
       FdWriteThenSync(fd, segment, kSegmentSize);
@@ -175,15 +174,15 @@ void* LSTStore::MmapUstoreLogFile(const char* dir, const char* file) {
   }
 
   CHECK_GE(fd, 0);
-  void* address = ::mmap(nullptr, kLogFileSize, PROT_READ | PROT_WRITE,
+  void* address = ::mmap(nullptr, log_file_size_, PROT_READ | PROT_WRITE,
                          MAP_SHARED, fd, 0);
   LOG_LST_STORE_FATAL_ERROR_IF(address == reinterpret_cast<void*>(-1),
                                "NMAP ERROR: ");
 
   // lock the mmap'ed memory to guarantee in-memory access
-  ::mlock(address, kLogFileSize);
+  ::mlock(address, log_file_size_);
   LSTSegment::base_addr_ = address;
-  initStoreInfo(&storeInfo, kNumSegments);
+  initStoreInfo(&storeInfo, num_segments_);
   this->Load(address);
   return address;
 }

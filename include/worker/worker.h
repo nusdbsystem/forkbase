@@ -26,8 +26,8 @@ using WorkerID = uint32_t;
  */
 class Worker : public DB, private Noncopyable {
  public:
-  explicit Worker(const WorkerID& id) : id_(id) {}
-  ~Worker() {}
+  explicit Worker(const WorkerID& id);
+  ~Worker() = default;
 
   inline WorkerID id() const { return id_; }
 

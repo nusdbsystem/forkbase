@@ -24,7 +24,7 @@ Currently, we only support ``VString`` related object operations.
     // put a value referring a branch
     POST -d "key=XXX&branch=XXX&value=XXX"
 
-    // put a value referring an exisiting version
+    // put a value referring an existing version
     POST -d "key=XXX&version=XXX&value=XXX"
 ```
 

@@ -11,8 +11,8 @@
 #include "recovery/log_worker.h"
 
 const char log_dir[] = ".";
-const char log_file[] = "testlog.rec";
-const char log_path[] = "./testlog.rec";
+const char log_file[] = "ustore_test.log";
+const char log_path[] = "./ustore_test.log";
 const ustore::byte_t raw_str[] = "The quick brown fox jumps over the lazy dog";
 const char name_data[] = "I am a branch name";
 const char new_name[] = "I am a new name";

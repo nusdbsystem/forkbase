@@ -11,7 +11,7 @@
 namespace ustore {
 
 // Change the following path if you do not have permissions
-LDBStore::LDBStore() : LDBStore("/tmp/ustore-testdb") {}
+LDBStore::LDBStore() : LDBStore("ustore_ldb") {}
 
 LDBStore::LDBStore(const std::string& dbpath) {
   opt_.create_if_missing = true;

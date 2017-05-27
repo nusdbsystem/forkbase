@@ -30,9 +30,9 @@ TEST(ConfigTest, ConfigFile) {
 
 TEST(ConfigTest, ConfigParse) {
   // load the config file
-  const Config* c = Env::Instance()->config();
-  CHECK_EQ(c->worker_file(), kDefaultWorkerFile);
-  CHECK_EQ(c->clientservice_file(), kDefaultClientServiceFile);
-  CHECK_EQ(c->recv_threads(), kDefaultRecvThreads);  // default value
-  CHECK_EQ(c->service_threads(), kDefaultServiceThreads);  // default value
+  const Config& c = Env::Instance()->config();
+  CHECK_EQ(c.worker_file(), kDefaultWorkerFile);
+  CHECK_EQ(c.clientservice_file(), kDefaultClientServiceFile);
+  CHECK_EQ(c.recv_threads(), kDefaultRecvThreads);  // default value
+  CHECK_EQ(c.service_threads(), kDefaultServiceThreads);  // default value
 }

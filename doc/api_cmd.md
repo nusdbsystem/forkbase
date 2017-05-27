@@ -23,7 +23,7 @@ Currently, we only support ``VString`` related object operations.
     // put a value referring a branch
     put $KEY $VALUE -b $BRANCH
 
-    // put a value referring an exisiting version
+    // put a value referring an existing version
     put $KEY $VALUE -v $VERSION
 ```
 

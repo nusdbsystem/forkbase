@@ -35,9 +35,9 @@ int RemoteClientService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
 // for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void RemoteClientService::Init() {
   // init the network: connects to the workers
-  std::ifstream fin(Env::Instance()->config()->worker_file());
+  std::ifstream fin(Env::Instance()->config().worker_file());
   CHECK(fin) << "Cannot find worker file: "
-             << Env::Instance()->config()->worker_file();
+             << Env::Instance()->config().worker_file();
   node_id_t worker_addr;
   std::vector<RangeInfo> workers;
   Hash h;
@@ -53,10 +53,10 @@ void RemoteClientService::Init() {
   std::sort(workers.begin(), workers.end(), RemoteClientService::range_cmp);
 
 #ifdef USE_RDMA
-  net_ = new RdmaNet(node_addr_, Env::Instance()->config()->recv_threads());
+  net_ = new RdmaNet(node_addr_, Env::Instance()->config().recv_threads());
 #else
-  // net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
-  net_ = new ClientZmqNet(Env::Instance()->config()->recv_threads());
+  // net_ = new ZmqNet(node_addr_, Env::Instance()->config().recv_threads());
+  net_ = new ClientZmqNet(Env::Instance()->config().recv_threads());
 #endif
   fin.close();
 

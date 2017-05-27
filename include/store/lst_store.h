@@ -17,6 +17,7 @@
 #include "store/chunk_store.h"
 #include "types/type.h"
 #include "utils/chars.h"
+#include "utils/env.h"
 #include "utils/noncopyable.h"
 #include "utils/singleton.h"
 #include "utils/type_traits.h"
@@ -56,8 +57,6 @@ namespace lst_store {
 
 constexpr size_t kMetaLogSize = 4096;
 constexpr size_t kSegmentSize = (1<<22); // 4M
-constexpr size_t kNumSegments = 64;
-constexpr size_t kLogFileSize = kSegmentSize * kNumSegments + kMetaLogSize;
 constexpr size_t kMaxPendingSyncChunks = 1024;
 constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;
 
@@ -267,9 +266,11 @@ class LSTStore
 
  private:
   // TODO(qingchao): add a remove-old-log flag to ease unit test
-  inline LSTStore(const char* dir = nullptr,
-                  const char* log_file = "ustore.dat") {
-    MmapUstoreLogFile(dir, log_file);
+  LSTStore() : LSTStore(".", "ustore_default") {}
+  LSTStore(const std::string& dir, const std::string& file)
+    : num_segments_(Env::Instance()->config().num_segments()),
+      log_file_size_(kSegmentSize * num_segments_ + kMetaLogSize) {
+    MmapUstoreLogFile(dir, file);
   }
   ~LSTStore() noexcept(false);
 
@@ -288,7 +289,7 @@ class LSTStore
   void Load(void*);
   size_t LoadFromValidSegment(LSTSegment*);
   size_t LoadFromLastSegment(LSTSegment*);
-  void* MmapUstoreLogFile(const char* dir, const char* log_file);
+  void* MmapUstoreLogFile(const std::string& dir, const std::string& file);
   LSTSegment* Allocate(LSTSegment*);
   LSTSegment* AllocateMajor();
   LSTSegment* AllocateMinor();
@@ -299,6 +300,8 @@ class LSTStore
   LSTSegment *current_minor_segment_;
   size_t major_segment_offset_;
   size_t minor_segment_offset_;
+  const size_t num_segments_ = 64;
+  const size_t log_file_size_ = kSegmentSize * num_segments_ + kMetaLogSize;
 
   StoreInfo storeInfo;
 };

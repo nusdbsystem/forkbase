@@ -92,6 +92,15 @@ void StoreInfo::Print() const {
 
 namespace store {
 
+ChunkStore* SetChunkStorePath(const std::string& dir, const std::string& file) {
+#ifdef USE_LEVELDB
+  return LDBStore::MakeSingleton(file+"_ldb");
+#endif
+  return lst_store::LSTStore::MakeSingleton(dir, file);
+  LOG(FATAL) << "No chunk storage impl";
+  return nullptr;
+}
+
 ChunkStore* GetChunkStore() {
 #ifdef USE_LEVELDB
   return LDBStore::Instance();

@@ -14,7 +14,7 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vstring(17);
+ustore::Worker worker_vstring(404);
 const char key_vstring[] = "key_vstring";
 const char branch_vstring[] = "branch_vstring";
 

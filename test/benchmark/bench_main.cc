@@ -22,7 +22,7 @@ constexpr int fixed_blob_size = 4096;
 constexpr int kSleepTime = 100000;
 
 void BenchmarkWorker() {
-  Worker worker {27};
+  Worker worker {2018};
   ObjectDB db(&worker);
   Benchmark bm(&db, max_str_len, fixed_str_len);
 
@@ -35,7 +35,7 @@ void BenchmarkWorker() {
 }
 
 void BenchmarkClient() {
-  std::ifstream fin_worker(Env::Instance()->config()->worker_file());
+  std::ifstream fin_worker(Env::Instance()->config().worker_file());
   std::string worker_addr;
   std::vector<WorkerService*> workers;
   while (fin_worker >> worker_addr)
@@ -78,7 +78,9 @@ void BenchmarkClient() {
 
 int main() {
   // remove ustore data before benchmark
-  std::remove("ustore.dat");
+  std::remove("ustore_data/ustore_2018.dat");
+  // set num_segments large enough for all test cases
+  Env::Instance()->m_config().set_num_segments(64);
 
   std::cout << "============================\n";
   std::cout << "Benchmarking worker.......\n";

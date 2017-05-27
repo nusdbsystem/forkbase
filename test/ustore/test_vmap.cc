@@ -17,7 +17,7 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vmap(17);
+ustore::Worker worker_vmap(2017);
 const char key_vmap[] = "key_vmap";
 const char branch_vmap[] = "branch_vmap";
 

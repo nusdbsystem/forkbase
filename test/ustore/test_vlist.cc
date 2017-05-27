@@ -15,7 +15,7 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vlist(17);
+ustore::Worker worker_vlist(2017);
 const char key_vlist[] = "key_vlist";
 const char branch_vlist[] = "branch_vlist";
 
