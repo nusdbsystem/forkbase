@@ -12,22 +12,19 @@
 #include "utils/logging.h"
 
 namespace ustore {
-NodeBuilder::NodeBuilder(const Hash& root_hash,
-                         const OrderedKey& key,
-                         ChunkLoader* chunk_loader,
-                         const Chunker* chunker,
-                         bool isFixedEntryLen) noexcept :
-    NodeBuilder(std::unique_ptr<NodeCursor>(
-                    new NodeCursor(root_hash, key, chunk_loader)),
+NodeBuilder::NodeBuilder(const Hash& root_hash, const OrderedKey& key,
+                         ChunkLoader* chunk_loader, const Chunker* chunker,
+                         bool isFixedEntryLen) noexcept
+  : NodeBuilder(std::unique_ptr<NodeCursor>(
+                new NodeCursor(root_hash, key, chunk_loader)),
                 0, chunker, isFixedEntryLen) {}
 
 // Perform operation at idx-th element at leaf rooted at root_hash
 NodeBuilder::NodeBuilder(const Hash& root_hash, size_t idx,
-                         ChunkLoader* chunk_loader,
-                         const Chunker* chunker,
-                         bool isFixedEntryLen) noexcept :
-    NodeBuilder(std::unique_ptr<NodeCursor>(
-                    new NodeCursor(root_hash, idx, chunk_loader)),
+                         ChunkLoader* chunk_loader, const Chunker* chunker,
+                         bool isFixedEntryLen) noexcept
+  : NodeBuilder(std::unique_ptr<NodeCursor>(
+                new NodeCursor(root_hash, idx, chunk_loader)),
                 0, chunker, isFixedEntryLen) {
 }
 

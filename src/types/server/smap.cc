@@ -39,26 +39,20 @@ SMap::SMap(const std::vector<Slice>& keys,
 Hash SMap::Set(const Slice& key, const Slice& val) const {
   CHECK(!empty());
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
-  NodeBuilder nb(hash(), orderedKey,
-                 chunk_loader_.get(),
-                 MapChunker::Instance(),
-                 false);
+  NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
+                 MapChunker::Instance(), false);
 
   // Try to find whether this key already exists
   NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
   bool foundKey = (!cursor.isEnd() && orderedKey == cursor.currentKey());
-
   size_t num_splice = foundKey? 1: 0;
-
   // If the item with identical key exists,
   //   remove it to replace
   KVItem kv_item = {key, val};
 
   std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
   nb.SpliceElements(num_splice, seg.get());
-  Hash root_hash = nb.Commit();
-
-  return root_hash;
+  return nb.Commit();
 }
 
 Hash SMap::Remove(const Slice& key) const {
@@ -82,9 +76,7 @@ Hash SMap::Remove(const Slice& key) const {
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
                  MapChunker::Instance(), false);
   nb.SpliceElements(1, &seg);
-  Hash hash = nb.Commit();
-
-  return hash;
+  return nb.Commit();
 }
 
 }  // namespace ustore

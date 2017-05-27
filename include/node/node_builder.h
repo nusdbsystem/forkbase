@@ -17,16 +17,13 @@ namespace ustore {
 class NodeBuilder : Noncopyable {
  public:
   // Perform operation at element with key at leaf rooted at root_hash
-  NodeBuilder(const Hash& root_hash,
-              const OrderedKey& key,
-              ChunkLoader* chunk_loader,
-              const Chunker* chunker,
+  NodeBuilder(const Hash& root_hash, const OrderedKey& key,
+              ChunkLoader* chunk_loader, const Chunker* chunker,
               bool isFixedEntryLen) noexcept;
 
   // Perform operation at idx-th element at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, size_t idx,
-              ChunkLoader* chunk_loader,
-              const Chunker* chunker,
+              ChunkLoader* chunk_loader, const Chunker* chunker,
               bool isFixedEntryLen) noexcept;
 
   // Construct a node builder to construct a fresh new Prolly Tree

@@ -30,10 +30,11 @@ SList::SList(const std::vector<Slice>& elements) noexcept:
 Hash SList::Splice(size_t start_idx, size_t num_to_delete,
                    const std::vector<Slice>& entries) const {
   CHECK(!empty());
-  NodeBuilder nb(hash(), start_idx,
-                 chunk_loader_.get(),
+  NodeBuilder nb(hash(), start_idx, chunk_loader_.get(),
                  ListChunker::Instance(), false);
-
+  // TODO(pingcheng): can directly init a segment instance instead of unique_ptr
+  //   only need to make SplicElements take const seqment& as parameter
+  //   hance we can avoid `new` operation
   std::unique_ptr<const Segment> seg = ListNode::Encode({entries});
   nb.SpliceElements(num_to_delete, seg.get());
   return nb.Commit();

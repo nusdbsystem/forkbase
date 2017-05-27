@@ -18,16 +18,12 @@ DuallyDiffKeyIterator UMap::DuallyDiff(
   rhs_diff_it->previous();
 
   DCHECK(lhs_diff_it->head() && rhs_diff_it->head());
-
-  return DuallyDiffKeyIterator(std::move(lhs_diff_it),
-                               std::move(rhs_diff_it));
+  return DuallyDiffKeyIterator(std::move(lhs_diff_it), std::move(rhs_diff_it));
 }
 
 Slice UMap::Get(const Slice& key) const {
   auto orderedkey = OrderedKey::FromSlice(key);
-  NodeCursor cursor(root_node_->hash(),
-                    orderedkey,
-                    chunk_loader_.get());
+  NodeCursor cursor(root_node_->hash(), orderedkey, chunk_loader_.get());
 
   if (!cursor.isEnd() && orderedkey == cursor.currentKey()) {
     size_t value_size;

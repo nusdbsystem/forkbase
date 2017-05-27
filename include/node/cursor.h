@@ -32,25 +32,18 @@ class NodeCursor {
   //   cursor points to the end of sequence.
   // if idx > total_num_elements
   //   return nullptr
-  NodeCursor(const Hash& hash, size_t idx,
+  NodeCursor(const Hash& hash, size_t idx, ChunkLoader* ch_loader) noexcept;
+  NodeCursor(const Hash& hash, const OrderedKey& key,
              ChunkLoader* ch_loader) noexcept;
-
-  NodeCursor(const Hash& hash,
-             const OrderedKey& key,
-             ChunkLoader* ch_loader) noexcept;
-
   // Copy constructor used to clone a NodeCursor
   // Need to recursively copy the parent NodeCursor
   NodeCursor(const NodeCursor& cursor) noexcept;
-
-
   // move ctor
-  NodeCursor(NodeCursor&& cursor) noexcept;
+  NodeCursor(NodeCursor&& cursor) = default;
+  ~NodeCursor() = default;
 
   // move assignment
-  NodeCursor& operator=(NodeCursor&& cursor) noexcept;
-
-  ~NodeCursor() = default;
+  NodeCursor& operator=(NodeCursor&& cursor) = default;
 
   // Advance the pointer by one element,
   // Allow to cross the boundary and advance to the start of next node
@@ -104,18 +97,16 @@ class NodeCursor {
     idx_ = idx;
   }
 
-  inline const SeqNode* node() const {return seq_node_.get(); }
+  inline const SeqNode* node() const { return seq_node_.get(); }
 
-  inline bool empty() const {return !seq_node_.get(); }
+  inline bool empty() const { return !seq_node_.get(); }
 
  private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively
   // TODO(wangji/pingcheng): check if really need to share SeqNode
-  NodeCursor(std::shared_ptr<const SeqNode> seq_node,
-             size_t idx,
-             ChunkLoader* chunk_loader,
-             NodeCursor* parent_cr);
+  NodeCursor(std::shared_ptr<const SeqNode> seq_node, size_t idx,
+             ChunkLoader* chunk_loader, std::unique_ptr<NodeCursor> parent_cr);
 
   std::unique_ptr<NodeCursor> parent_cr_;
   // the pointed sequence

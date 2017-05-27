@@ -57,8 +57,8 @@ NodeCursor::NodeCursor(const Hash& hash, size_t idx,
         child_hash = mnode->GetChildHashByEntry(mnode->numEntries() - 1);
         entry_idx = mnode->numEntries() - 1;
       }
-      parent_cursor =
-          new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
+      parent_cursor = new NodeCursor(seq_node, entry_idx, ch_loader,
+                            std::unique_ptr<NodeCursor>(parent_cursor));
       element_idx -= mnode->numElementsUntilEntry(entry_idx);
       chunk = ch_loader->Load(child_hash);
       seq_node = SeqNode::CreateFromChunk(chunk);
@@ -82,8 +82,7 @@ NodeCursor::NodeCursor(const Hash& hash, size_t idx,
   }
 }
 
-NodeCursor::NodeCursor(const Hash& hash,
-                       const OrderedKey& key,
+NodeCursor::NodeCursor(const Hash& hash, const OrderedKey& key,
                        ChunkLoader* ch_loader) noexcept {
   NodeCursor* parent_cursor = nullptr;
   size_t entry_idx = 0;
@@ -101,8 +100,8 @@ NodeCursor::NodeCursor(const Hash& hash,
       child_hash = mnode->GetChildHashByEntry(mnode->numEntries() - 1);
       entry_idx = mnode->numEntries() - 1;
     }
-    parent_cursor =
-        new NodeCursor(seq_node, entry_idx, ch_loader, parent_cursor);
+    parent_cursor = new NodeCursor(seq_node, entry_idx, ch_loader,
+                          std::unique_ptr<NodeCursor>(parent_cursor));
     chunk = ch_loader->Load(child_hash);
     seq_node = SeqNode::CreateFromChunk(chunk);
   }
@@ -118,7 +117,6 @@ NodeCursor::NodeCursor(const Hash& hash,
   parent_cr_.reset(parent_cursor);
 }
 
-
 // copy ctor
 NodeCursor::NodeCursor(const NodeCursor& cursor) noexcept
     : parent_cr_(nullptr),
@@ -130,28 +128,10 @@ NodeCursor::NodeCursor(const NodeCursor& cursor) noexcept
   }
 }
 
-NodeCursor& NodeCursor::operator=(NodeCursor&& cursor) noexcept {
-  seq_node_ = std::move(cursor.seq_node_);
-  chunk_loader_ = cursor.chunk_loader_;
-  idx_ = cursor.idx_;
-  parent_cr_ = std::move(cursor.parent_cr_);
-
-  return *this;
-}
-
-NodeCursor::NodeCursor(NodeCursor&& cursor) noexcept
-    : parent_cr_(nullptr),
-      seq_node_(std::move(cursor.seq_node_)),
-      chunk_loader_(cursor.chunk_loader_),
-      idx_(cursor.idx_) {
-  if (cursor.parent_cr_) {
-    this->parent_cr_ = std::move(cursor.parent_cr_);
-  }
-}
-
 NodeCursor::NodeCursor(std::shared_ptr<const SeqNode> seq_node, size_t idx,
-                       ChunkLoader* chunk_loader, NodeCursor* parent_cr)
-    : parent_cr_(parent_cr),
+                       ChunkLoader* chunk_loader,
+                       std::unique_ptr<NodeCursor> parent_cr)
+    : parent_cr_(std::move(parent_cr)),
       seq_node_(seq_node),
       chunk_loader_(chunk_loader),
       idx_(idx) {

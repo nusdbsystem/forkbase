@@ -29,14 +29,10 @@ SBlob::SBlob(const Slice& data) noexcept :
 
 Hash SBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
                    size_t num_append) const {
-  NodeBuilder nb(root_node_->hash(), pos,
-                 chunk_loader_.get(),
-                 BlobChunker::Instance(),
-                 true);
-
+  NodeBuilder nb(root_node_->hash(), pos, chunk_loader_.get(),
+                 BlobChunker::Instance(), true);
   FixedSegment seg(data, num_append, 1);
   nb.SpliceElements(num_delete, &seg);
-
   return nb.Commit();
 }
 
