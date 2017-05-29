@@ -135,11 +135,11 @@ class ClientDb : public DB {
   UStoreMessage* CreateGetChunkRequest(const Slice& key);
   UStoreMessage* CreateBranchRequest(const Slice& key,
                                      const Slice& new_branch);
-  UStoreMessage* CreateMergeRequest(const Slice& key, const Value& value,
-                                    const Slice& target_branch);
+  UStoreMessage* CreateMergeRequest(const Slice& key, const Value& value);
   // helper methods for getting response
   ErrorCode GetEmptyResponse();
-  ErrorCode GetVersionResponse(Hash* version);
+  ErrorCode GetPutResponse(Hash* version);
+  ErrorCode GetMergeResponse(Hash* version);
   ErrorCode GetUCellResponse(UCell* value);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread

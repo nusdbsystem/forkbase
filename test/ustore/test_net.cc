@@ -45,8 +45,6 @@ void Start(Net* net) {
 
 // test putting two value from node0 to node1 and node2
 TEST(NetTest, MsgTest) {
-  ustore::SetStderrLogging(ustore::WARNING);
-
 #ifdef USE_RDMA
   Net* net0 = new RdmaNet(kID0);
   Net* net1 = new RdmaNet(kID1);

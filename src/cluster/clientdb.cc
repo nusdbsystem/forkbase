@@ -61,7 +61,7 @@ ErrorCode ClientDb::Put(const Slice& key, const Value& value,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  return GetVersionResponse(version);
+  return GetPutResponse(version);
 }
 
 ErrorCode ClientDb::Put(const Slice& key, const Value& value,
@@ -74,22 +74,13 @@ ErrorCode ClientDb::Put(const Slice& key, const Value& value,
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  return GetVersionResponse(version);
+  return GetPutResponse(version);
 }
 
 UStoreMessage *ClientDb::CreateGetRequest(const Slice &key) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::GET_REQUEST);
-  request->set_key(key.data(), key.len());
-  request->set_source(id_);
-  return request;
-}
-
-UStoreMessage *ClientDb::CreateGetChunkRequest(const Slice &key) {
-  UStoreMessage *request = new UStoreMessage();
-  // header
-  request->set_type(UStoreMessage::GET_CHUNK_REQUEST);
   request->set_key(key.data(), key.len());
   request->set_source(id_);
   return request;
@@ -116,6 +107,16 @@ ErrorCode ClientDb::Get(const Slice& key, const Hash& version, UCell* meta) {
   delete request;
   return GetUCellResponse(meta);
 }
+
+UStoreMessage *ClientDb::CreateGetChunkRequest(const Slice &key) {
+  UStoreMessage *request = new UStoreMessage();
+  // header
+  request->set_type(UStoreMessage::GET_CHUNK_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_source(id_);
+  return request;
+}
+
 
 Chunk ClientDb::GetChunk(const Slice& key, const Hash& version) {
   UStoreMessage *request = CreateGetChunkRequest(key);
@@ -185,29 +186,23 @@ ErrorCode ClientDb::Rename(const Slice& key, const Slice& old_branch,
   request.set_key(key.data(), key.len());
   request.set_branch(old_branch.data(), old_branch.len());
   request.set_source(id_);
-
   // payload;
   RenameRequestPayload *payload =
                         request.mutable_rename_request_payload();
   payload->set_new_branch(new_branch.data(), new_branch.len());
-
   // send
   Send(&request, dest);
   return GetEmptyResponse();
 }
 
 UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
-    const Value &value, const Slice &target_branch) {
+                                            const Value &value) {
   UStoreMessage *request = new UStoreMessage();
   // header
   request->set_type(UStoreMessage::MERGE_REQUEST);
   request->set_key(key.data(), key.len());
   request->set_source(id_);
-
   MergeRequestPayload *pl = request->mutable_merge_request_payload();
-  pl->set_target_branch(target_branch.data(), target_branch.len());
-  // pl->set_value(value.blob().data(), value.blob().size());
-
   ValuePayload *payload = pl->mutable_value();
   payload->set_type(static_cast<int>(value.type));
   payload->set_base(value.base.value(), Hash::kByteLength);
@@ -217,65 +212,52 @@ UStoreMessage *ClientDb::CreateMergeRequest(const Slice &key,
     payload->add_values(s.data(), s.len());
   for (const Slice& s : value.keys)
     payload->add_keys(s.data(), s.len());
-
   return request;
 }
 
 ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Slice& ref_branch,
                           Hash* version) {
-  UStoreMessage *request = CreateMergeRequest(key, value, tgt_branch);
-  // payload;
-  MergeRequestPayload *payload =
-                                request->mutable_merge_request_payload();
+  UStoreMessage *request = CreateMergeRequest(key, value);
+  // payload
+  MergeRequestPayload *payload = request->mutable_merge_request_payload();
+  request->set_branch(tgt_branch.data(), tgt_branch.len());
   payload->set_ref_branch(ref_branch.data(), ref_branch.len());
   // send
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  return GetVersionResponse(version);
+  return GetMergeResponse(version);
 }
 
 ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
                           const Slice& tgt_branch, const Hash& ref_version,
                           Hash* version) {
-  UStoreMessage *request = CreateMergeRequest(key, value, tgt_branch);
-  request->set_version(ref_version.value(), Hash::kByteLength);
-
+  UStoreMessage *request = CreateMergeRequest(key, value);
+  // payload
+  MergeRequestPayload *payload = request->mutable_merge_request_payload();
+  request->set_branch(tgt_branch.data(), tgt_branch.len());
+  payload->set_ref_version(ref_version.value(), Hash::kByteLength);
+  // send
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  return GetVersionResponse(version);
+  return GetMergeResponse(version);
 }
 
 ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
                           const Hash& ref_version1, const Hash& ref_version2,
                           Hash* version) {
-  UStoreMessage *request = new UStoreMessage();
-  // header
-  request->set_type(UStoreMessage::MERGE_REQUEST);
-  request->set_key(key.data(), key.len());
-  request->set_source(id_);
-
-  ValuePayload *payload = request->mutable_merge_request_payload()
-                            ->mutable_value();
-  payload->set_type(static_cast<int>(value.type));
-  payload->set_base(value.base.value(), Hash::kByteLength);
-  payload->set_pos(value.pos);
-  payload->set_dels(value.dels);
-  for (const Slice& s : value.vals)
-    payload->add_values(s.data(), s.len());
-  for (const Slice& s : value.keys)
-    payload->add_keys(s.data(), s.len());
-
+  UStoreMessage *request = CreateMergeRequest(key, value);
+  // payload
+  MergeRequestPayload *payload = request->mutable_merge_request_payload();
   request->set_version(ref_version1.value(), Hash::kByteLength);
-  request->mutable_merge_request_payload()
-         ->set_ref_version(ref_version2.value(), Hash::kByteLength);
-
+  payload->set_ref_version(ref_version2.value(), Hash::kByteLength);
+  // send
   node_id_t dest = workers_->GetWorker(key);
   Send(request, dest);
   delete request;
-  return GetVersionResponse(version);
+  return GetMergeResponse(version);
 }
 
 ErrorCode ClientDb::GetEmptyResponse() {
@@ -286,11 +268,21 @@ ErrorCode ClientDb::GetEmptyResponse() {
   return err;
 }
 
-ErrorCode ClientDb::GetVersionResponse(Hash* version) {
+ErrorCode ClientDb::GetPutResponse(Hash* version) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
   *version = Hash(reinterpret_cast<const byte_t *>(
     response->put_response_payload().new_version().data())).Clone();
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+  delete response;
+  return err;
+}
+
+ErrorCode ClientDb::GetMergeResponse(Hash* version) {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+  *version = Hash(reinterpret_cast<const byte_t *>(
+    response->merge_response_payload().new_version().data())).Clone();
   ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
   return err;

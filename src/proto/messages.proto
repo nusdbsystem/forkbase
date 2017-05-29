@@ -94,9 +94,8 @@ message RenameRequestPayload {
 
   // MERGE_REQUEST
 message MergeRequestPayload {
-    optional bytes target_branch = 1;
-    optional bytes ref_branch = 2;
-    optional bytes ref_version = 6;
+    optional bytes ref_branch = 1;
+    optional bytes ref_version = 2;
     //required bytes value = 3;
     required ValuePayload value = 3;
 }

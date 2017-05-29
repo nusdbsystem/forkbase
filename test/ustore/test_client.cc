@@ -59,7 +59,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   Hash version;
   EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, HEAD_VERSION, &version),
             ErrorCode::kOK);
-  LOG(INFO) << "PUT version (string): " << version.ToBase32();
+  DLOG(INFO) << "PUT version (string): " << version.ToBase32();
 
   // put a list of 2 values
   Value list_val;
@@ -70,21 +70,21 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   Hash version_list;
   EXPECT_EQ(client->Put(Slice(keys[idx]), list_val, HEAD_VERSION,
                         &version_list), ErrorCode::kOK);
-  LOG(INFO) << "PUT version (list): " << version_list.ToBase32();
+  DLOG(INFO) << "PUT version (list): " << version_list.ToBase32();
 
   // get the string back
   UCell string_value;
   EXPECT_EQ(client->Get(Slice(keys[idx]), version, &string_value),
             ErrorCode::kOK);
   EXPECT_EQ(string_value.type(), UType::kString);
-  LOG(INFO) << "GET datahash (string): "
+  DLOG(INFO) << "GET datahash (string): "
             <<  string_value.dataHash().ToBase32();
   // get the list back
   UCell list_value;
   EXPECT_EQ(client->Get(Slice(keys[idx]), version_list, &list_value),
             ErrorCode::kOK);
   EXPECT_EQ(list_value.type(), UType::kList);
-  LOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
+  DLOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
 
   // check GetChunk
   EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list).numBytes(),
@@ -100,24 +100,21 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, Slice(new_branch),
                         &branch_version), ErrorCode::kOK);
 
-  LOG(INFO) << "PUT version (new branch): " << branch_version.ToBase32()
+  DLOG(INFO) << "PUT version (new branch): " << branch_version.ToBase32()
             << std::endl;
 
   // merge
   Hash merge_version;
   EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, Slice(new_branch),
                           version, &merge_version), ErrorCode::kOK);
-  LOG(INFO) << "MERGE version (w/o branch): " << merge_version.ToBase32()
-            << std::endl;
+  DLOG(INFO) << "MERGE version (w/o branch): " << merge_version.ToBase32();
 
   EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, version, branch_version,
                           &merge_version), ErrorCode::kOK);
-  LOG(INFO) << "MERGE version (with branch): " << merge_version.ToBase32()
-            << std::endl;
+  DLOG(INFO) << "MERGE version (with branch): " << merge_version.ToBase32();
 }
 
 TEST(TestMessage, TestClient1Thread) {
-  ustore::SetStderrLogging(ustore::WARNING);
   // launch workers
   ifstream fin(Env::Instance()->config().worker_file());
   string worker_addr;

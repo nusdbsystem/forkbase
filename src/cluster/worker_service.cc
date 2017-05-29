@@ -199,20 +199,20 @@ void WorkerService::HandleRequest(const void *msg, int size,
           ustore_msg->mutable_merge_request_payload();
       Value *value = ValueFromRequest(payload->mutable_value());
       Hash new_version;
-      error_code = ustore_msg->has_branch()
+      error_code = ustore_msg->has_version()
         ? worker_->Merge(Slice(ustore_msg->key()), *value,
-              Slice(payload->target_branch()), Slice(payload->ref_branch()),
+              Hash((const byte_t*)((ustore_msg->version())).data()),
+              Hash((const byte_t*)((payload->ref_version())).data()),
               &new_version)
         : (payload->has_ref_version()
               ? worker_->Merge(Slice(ustore_msg->key()), *value,
-                Hash((const byte_t*)((ustore_msg->version())).data()),
+                Slice(ustore_msg->branch()),
                 Hash((const byte_t*)((payload->ref_version())).data()),
                 &new_version)
               : worker_->Merge(Slice(ustore_msg->key()), *value,
-                Slice(payload->target_branch()),
-                Hash((const byte_t*)((ustore_msg->version())).data()),
+                Slice(ustore_msg->branch()),
+                Slice(payload->ref_branch()),
                 &new_version));
-
       MergeResponsePayload *res_payload =
           response->mutable_merge_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);

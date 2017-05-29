@@ -198,7 +198,6 @@ TEST_F(NodeBuilderSimple, InitTree) {
 
 TEST_F(NodeBuilderSimple, SpliceStart) {
   // Test on insertion at start point
-  ustore::InitLogging("");
   ustore::byte_t insert_slice[] = "xyz";
   // insert only
   // "abcdefghijklmn" ==> "xyzabcdefghijklmn";

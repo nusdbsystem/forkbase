@@ -260,9 +260,6 @@ TEST(TestMessage, TestMergeRequest) {
   // add payload
   MergeRequestPayload *payload
     = msg.mutable_merge_request_payload();
-  byte_t target_branch[TEST_BRANCH_SIZE];
-  randomVals(target_branch, TEST_BRANCH_SIZE);
-  payload->set_target_branch(target_branch, TEST_BRANCH_SIZE);
   byte_t ref_branch[TEST_BRANCH_SIZE];
   randomVals(ref_branch, TEST_BRANCH_SIZE);
   payload->set_ref_branch(ref_branch, TEST_BRANCH_SIZE);
@@ -295,9 +292,6 @@ TEST(TestMessage, TestMergeRequest) {
   EXPECT_EQ(recovered_msg.ParseFromArray(serialized, msg_size), true);
   EXPECT_EQ(recovered_msg.type(), UStoreMessage::MERGE_REQUEST);
   EXPECT_EQ(recovered_msg.has_merge_request_payload(), true);
-  EXPECT_EQ(checkPayload(target_branch, TEST_BRANCH_SIZE,
-    (const byte_t*)recovered_msg.merge_request_payload().target_branch().data(),
-    recovered_msg.merge_request_payload().target_branch().length()), true);
   EXPECT_EQ(checkPayload(ref_branch, TEST_BRANCH_SIZE,
     (const byte_t*)recovered_msg.merge_request_payload().ref_branch().data(),
     recovered_msg.merge_request_payload().ref_branch().length()), true);
