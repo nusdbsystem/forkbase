@@ -18,20 +18,24 @@ class UMap : public ChunkableType {
   static DuallyDiffKeyIterator DuallyDiff(const UMap& lhs, const UMap& rhs);
 
   class Iterator : public CursorIterator {
+   friend class UMap;
    public:
-    Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
-             ChunkLoader* loader) noexcept
-      : CursorIterator(root, ranges, loader) {}
-    Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
-             ChunkLoader* loader) noexcept
-      : CursorIterator(root, std::move(ranges), loader) {}
-
     inline uint64_t index() const override {
       LOG(WARNING) << "Index not supported for Map";
       return 0;
     }
 
    private:
+    // Only used by UMap
+    Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
+             ChunkLoader* loader) noexcept
+      : CursorIterator(root, ranges, loader) {}
+
+    // Only used by UMap
+    Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
+             ChunkLoader* loader) noexcept
+      : CursorIterator(root, std::move(ranges), loader) {}
+
     inline Slice RealValue() const override {
       size_t value_num_bytes = 0;
       const char* value = reinterpret_cast<const char*>(

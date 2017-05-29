@@ -9,6 +9,43 @@
 #include "utils/logging.h"
 
 namespace ustore {
+bool UBlob::ChunkIterator::next() {
+  if (head()) {
+    cursor_.Advance(true);
+    DCHECK_EQ(0, cursor_.idx());
+    return true;
+  } else if (end()) {
+    LOG(WARNING) << "Blob ChunkIterator already at end.";
+    return false;
+  } else {
+    // cursor must point to chunk head
+    DCHECK_EQ(0, cursor_.idx());
+    size_t num_chunk_bytes = NumChunkBytes();
+    cursor_.AdvanceSteps(static_cast<uint64_t>(num_chunk_bytes));
+    DCHECK(end() || cursor_.idx() == 0);
+    return !end();
+  }
+}
+
+bool UBlob::ChunkIterator::previous() {
+  // cursor must point to chunk head
+  if (head()) {
+    LOG(WARNING) << "Blob ChunkIterator already at head.";
+    return false;
+  } else if (cursor_.idx() == 0) {
+    if (cursor_.Retreat(true)) {
+      cursor_.seek(0);
+    }
+    return !head();
+  } else if (end()) {
+    cursor_.seek(0);
+    return true;
+  } else {
+    LOG(FATAL) << "Shall not arrive here"
+               << "Cursor must points to chunk start.";
+    return false;
+  }
+}
 
 bool UBlob::SetNodeForHash(const Hash& root_hash) {
   const Chunk* chunk = chunk_loader_->Load(root_hash);

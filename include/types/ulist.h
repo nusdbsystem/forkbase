@@ -16,21 +16,24 @@ namespace ustore {
 class UList : public ChunkableType {
  public:
   class Iterator : public CursorIterator {
+   friend class UList;
    public:
-    Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
-                 ChunkLoader* loader) noexcept :
-        CursorIterator(root, ranges, loader) {}
-
-    Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
-                 ChunkLoader* loader) noexcept :
-        CursorIterator(root, std::move(ranges), loader) {}
-
     inline Slice key() const override {
       LOG(WARNING) << "Key not supported for list";
       return Slice();
     }
 
    private:
+    // Only used by UList
+    Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
+                 ChunkLoader* loader) noexcept :
+        CursorIterator(root, ranges, loader) {}
+
+    // Only used by UList
+    Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
+                 ChunkLoader* loader) noexcept :
+        CursorIterator(root, std::move(ranges), loader) {}
+
     inline Slice RealValue() const override {
       return ListNode::Decode(data());
     }

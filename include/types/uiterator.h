@@ -20,16 +20,6 @@ UIterator is a genric Iterator interface that shall be inherited
  and overrided for the API.
 */
  public:
-  UIterator() = default;
-
-  UIterator(UIterator&& rhs) noexcept {}
-
-  UIterator& operator=(UIterator&& rhs) noexcept {
-    return *this;
-  }
-
-  virtual ~UIterator() = default;
-
   // point to next element
   //  return false if cursor points to end after movement
   virtual bool next() = 0;
@@ -50,6 +40,16 @@ UIterator is a genric Iterator interface that shall be inherited
   }
 
  protected:
+  UIterator() = default;
+
+  UIterator(UIterator&& rhs) noexcept {}
+
+  UIterator& operator=(UIterator&& rhs) noexcept {
+    return *this;
+  }
+
+  virtual ~UIterator() = default;
+
   // Override this method to return actual value
   virtual Slice RealValue() const = 0;
 };

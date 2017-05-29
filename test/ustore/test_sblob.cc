@@ -86,6 +86,75 @@ class SBlobEnv : public ::testing::Test {
   ustore::Hash blob_hash_;
 };
 
+TEST_F(SBlobEnv, Iterator) {
+  const ustore::SBlob sblob(blob_hash_);
+  auto it = sblob.Scan();
+
+  const ustore::byte_t* data_ptr = data_;
+  do {
+    ustore::Slice expected_val(data_ptr, 1);
+    ustore::Slice actual_val = it.value();
+    ASSERT_TRUE(expected_val == actual_val);
+
+    ++data_ptr;
+  } while (it.next());
+
+  auto chunk_it = sblob.ScanChunk();
+
+#ifdef TEST_NODEBUILDER
+// Leaf Chunks are organized as the following
+//   only if using the tested node builder environment
+
+  data_ptr = data_;
+  // Refer to node/node_builder.cc for constructed tree structure
+  std::vector<size_t> leaf_chunk_bytes
+      {67, 38, 193, 183, 512, 320, 53, 55, 74, 256 };
+
+  size_t offset = 0;
+
+  // Iterating forwards
+  for (size_t leaf_idx = 0;
+       leaf_idx < leaf_chunk_bytes.size(); ++leaf_idx) {
+    ASSERT_TRUE(ustore::Slice(data_ptr + offset,
+                              leaf_chunk_bytes[leaf_idx])
+                == chunk_it.value())
+        << " Fail at leaf " << leaf_idx;
+
+    ASSERT_FALSE(chunk_it.head());
+    ASSERT_FALSE(chunk_it.end());
+    offset += leaf_chunk_bytes[leaf_idx];
+    chunk_it.next();
+  }
+  ASSERT_FALSE(chunk_it.head());
+  ASSERT_TRUE(chunk_it.end());
+
+  // Iterating Backwards
+  for (size_t leaf_idx = leaf_chunk_bytes.size();
+       leaf_idx > 0 ; --leaf_idx) {
+    ASSERT_TRUE(chunk_it.previous());
+    offset -= leaf_chunk_bytes[leaf_idx - 1];
+    ASSERT_TRUE(ustore::Slice(data_ptr + offset,
+                              leaf_chunk_bytes[leaf_idx - 1])
+                == chunk_it.value())
+        << " Fail at leaf " << leaf_idx;
+
+    ASSERT_FALSE(chunk_it.head());
+    ASSERT_FALSE(chunk_it.end());
+  }
+
+  // Retreat to cursor head
+  ASSERT_FALSE(chunk_it.previous());
+  ASSERT_TRUE(chunk_it.head());
+  ASSERT_FALSE(chunk_it.end());
+
+  // Advance to first leaf chunk
+  ASSERT_TRUE(chunk_it.next());
+  ASSERT_TRUE(ustore::Slice(data_ptr,
+                            leaf_chunk_bytes[0])
+              == chunk_it.value());
+#endif  // Test NodeBuilder
+}
+
 TEST_F(SBlobEnv, Splice) {
   const ustore::SBlob sblob(blob_hash_);
 
@@ -341,4 +410,31 @@ TEST(SBlob, Empty) {
   // Remove the only 3 elements
   ustore::SBlob s2(s1.Delete(0, 3));
   ASSERT_EQ(0, s2.numElements());
+
+  // Test on normal iterator
+  auto it = s2.Scan();
+  ASSERT_TRUE(it.end());
+  ASSERT_FALSE(it.next());
+
+  ASSERT_TRUE(it.end());
+  ASSERT_FALSE(it.head());
+
+  ASSERT_FALSE(it.previous());
+
+  ASSERT_FALSE(it.end());
+  ASSERT_TRUE(it.head());
+
+  // Test on chunk iterator
+  auto chunk_it = s2.ScanChunk();
+
+  ASSERT_TRUE(chunk_it.end());
+  ASSERT_FALSE(chunk_it.next());
+
+  ASSERT_TRUE(chunk_it.end());
+  ASSERT_FALSE(chunk_it.head());
+
+  ASSERT_FALSE(chunk_it.previous());
+
+  ASSERT_FALSE(chunk_it.end());
+  ASSERT_TRUE(chunk_it.head());
 }

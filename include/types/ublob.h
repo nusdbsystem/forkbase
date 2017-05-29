@@ -5,13 +5,86 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "types/base.h"
+#include "types/uiterator.h"
+
+#include "utils/logging.h"
 
 namespace ustore {
 
 class UBlob : public ChunkableType {
  public:
+  class Iterator : public CursorIterator {
+  /*
+  The normal Iterator for UBlob iterator the specified bytes
+  in the vector of index ranges
+  */
+   friend class UBlob;
+   public:
+    inline Slice key() const override {
+      LOG(WARNING) << "Key not supported for blob";
+      return Slice();
+    }
+
+   private:
+    // Only used by UBlob
+    Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
+             ChunkLoader* loader) noexcept
+      : CursorIterator(root, ranges, loader) {}
+
+    // Only used by UBlob
+    Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
+             ChunkLoader* loader) noexcept
+      : CursorIterator(root, std::move(ranges), loader) {}
+  };
+
+  class ChunkIterator : public UIterator {
+  /*
+  The Ublob's ChunkIterator iterates one chunk at a time.
+  The returned value is a slice
+  */
+   friend class UBlob;
+   public:
+    bool next() override;
+
+    bool previous() override;
+
+    inline bool head() const override {
+      return cursor_.isBegin();
+    }
+
+    inline bool end() const override {
+      return cursor_.isEnd();
+    }
+
+    inline bool empty() const override {
+      // A Blob with no bytes contain a single empty chunk
+      // , which is not empty
+      return false;
+    }
+
+   protected:
+    inline Slice RealValue() const override {
+      // number of bytes stored in this chunk
+      DCHECK_EQ(0, cursor_.idx());
+      return Slice(cursor_.current(), NumChunkBytes());
+    }
+
+   private:
+    // Only used by UBlob
+    ChunkIterator(const Hash& root, ChunkLoader* loader) noexcept
+      : UIterator(),
+        cursor_(root, 0, loader) {}
+
+    size_t NumChunkBytes() const {
+      return cursor_.node()->numEntries();
+    }
+
+    NodeCursor cursor_;
+  };
+
   // Return the number of bytes in this Blob
   inline size_t size() const { return root_node_->numElements(); }
   /** Read the blob data and copy into buffer
@@ -50,6 +123,19 @@ class UBlob : public ChunkableType {
    *  Use Splice internally
    */
   Hash Append(const byte_t* data, size_t num_insert) const;
+
+  inline UBlob::Iterator Scan() const {
+    if (numElements() == 0) {
+      return Iterator(hash(), {}, chunk_loader_.get());
+    } else {
+      IndexRange all_range{0, numElements()};
+      return Iterator(hash(), {all_range}, chunk_loader_.get());
+    }
+  }
+
+  inline UBlob::ChunkIterator ScanChunk() const {
+    return ChunkIterator(hash(), chunk_loader_.get());
+  }
 
  protected:
   UBlob() = default;
