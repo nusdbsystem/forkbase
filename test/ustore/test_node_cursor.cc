@@ -10,6 +10,44 @@
 #include "node/map_node.h"
 #include "node/node_builder.h"
 
+TEST(NodeCursor, EmptyNode) {
+  // Test on the behavior of a cursor
+  //   that points to an empty node
+  ustore::Chunk ca(ustore::ChunkType::kBlob, 0);
+
+  ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
+  // Write the constructed chunk to storage
+  EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
+
+  ustore::ServerChunkLoader loader;
+
+  ustore::NodeCursor cr2empty(ca.hash(), 0, &loader);
+  ASSERT_FALSE(cr2empty.empty());
+  ASSERT_TRUE(cr2empty.isEnd());
+  ASSERT_FALSE(cr2empty.isBegin());
+
+  ASSERT_FALSE(cr2empty.Advance(true));
+
+  ASSERT_TRUE(cr2empty.isEnd());
+  ASSERT_FALSE(cr2empty.isBegin());
+
+  ASSERT_FALSE(cr2empty.Retreat(true));
+
+
+  ASSERT_FALSE(cr2empty.isEnd());
+  ASSERT_TRUE(cr2empty.isBegin());
+
+  ASSERT_EQ(0, cr2empty.RetreatSteps(2));
+
+  ASSERT_FALSE(cr2empty.isEnd());
+  ASSERT_TRUE(cr2empty.isBegin());
+
+  ASSERT_EQ(1, cr2empty.AdvanceSteps(2));
+
+  ASSERT_TRUE(cr2empty.isEnd());
+  ASSERT_FALSE(cr2empty.isBegin());
+}
+
 TEST(NodeCursor, SingleNode) {
   // Construct a tree with only a root blob node
   const ustore::byte_t ra[] = "abc";
