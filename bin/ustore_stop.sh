@@ -10,7 +10,10 @@ cd $USTORE_HOME
 ssh_options="-oStrictHostKeyChecking=no \
              -oUserKnownHostsFile=/dev/null \
              -oLogLevel=quiet"
-ustore_kill="killall -q -s SIGKILL -r ustored"
+ustore_kill="killall -q -s SIGTERM -r ustored"
+ustore_fkill="killall -q -s SIGKILL -r ustored"
+httpc_kill="killall -q -s SIGTERM -r http_client"
+httpc_fkill="killall -q -s SIGKILL -r http_client"
 
 # kill ustore worker processes
 host_file=$USTORE_CONF/workers
@@ -19,23 +22,18 @@ for i in ${hosts[@]}; do
   echo Kill ustore @ $i ...
   if [ $i == localhost ]; then
     $ustore_kill
+    sleep 1
+    $ustore_fkill
   else
     ssh $ssh_options $i $ustore_kill
+    sleep 1
+    $ustore_fkill
   fi
 done
-echo "----------- All workers stopped ------------"
 
-## kill ustore client service processes
-#host_file=$USTORE_CONF/client_services
-#hosts=`cat $host_file | cut -d ':' -f 1`
-#for i in ${hosts[@]}; do
-#  echo Kill ustore @ $i ...
-#  if [ $i == localhost ]; then
-#    $ustore_kill
-#  else
-#    ssh $ssh_options $i $ustore_kill
-#  fi
-#done
-
-# wait for killall command
-sleep 2
+# kill ustore http client service 
+echo "stop http client"
+$httpc_kill
+sleep 1
+$httpc_fkill
+echo "----------- All processes stopped ------------"

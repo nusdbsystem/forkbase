@@ -8,10 +8,10 @@
 
 using ustore::WorkerService;
 using ustore::RemoteClientService;
-using ustore::WARNING;
+using ustore::INFO;
 
 DEFINE_string(node_id, "", "ip address of this node (ib0 interface)");
-DEFINE_int32(loglevel, ustore::WARNING, "logging severity level");
+DEFINE_int32(loglevel, ustore::INFO, "logging severity level");
 
 int main(int argc, char **argv) {
   if (argc < 2) {

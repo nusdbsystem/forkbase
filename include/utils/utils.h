@@ -19,6 +19,9 @@
 
 namespace ustore {
 
+#define likely(x)   __builtin_expect(!!(x), 1)
+#define unlikely(x)   __builtin_expect(!!(x), 0)
+
 #define EQUAL_OR_ELSE_RETURN(expr, expected) do { \
   auto v = expr; \
   if (v != expected) return v; \

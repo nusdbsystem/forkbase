@@ -24,4 +24,5 @@ message Config {
   /* clientdb related */
   optional int32 recv_threads = 21 [default = 2]; // number of receiving threads
   optional int32 service_threads = 22 [default = 1]; // number of server threads
+  optional int32 http_port = 5 [default = 60000]; // the port for the http client
 }

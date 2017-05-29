@@ -325,10 +325,11 @@ node_id_t WorkerList::GetWorker(const Slice& key) {
 }
 
 ClientDb::~ClientDb() {
-  if (net_)
-    delete net_;
-  if (workers_)
-    delete workers_;
+  // zhanghao: bug here? RemoteClientService destructor already free these data
+//  if (net_)
+//    delete net_;
+//  if (workers_)
+//    delete workers_;
   if (res_blob_)
     delete res_blob_;
 }

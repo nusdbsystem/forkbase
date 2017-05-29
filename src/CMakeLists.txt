@@ -86,6 +86,9 @@ LIST(APPEND ustore_srcs ${utils_source})
 AUX_SOURCE_DIRECTORY(worker worker_source)
 LIST(APPEND ustore_srcs ${worker_source})
 
+AUX_SOURCE_DIRECTORY(http http_source)
+LIST(APPEND ustore_srcs ${http_source})
+
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 ADD_DEPENDENCIES(ustore_objs copy_protobuf)
 
@@ -110,3 +113,9 @@ ADD_DEPENDENCIES(ustored copy_protobuf)
 ADD_DEPENDENCIES(ustored ustore)
 TARGET_LINK_LIBRARIES(ustored ustore)
 SET_TARGET_PROPERTIES(ustored PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+
+ADD_EXECUTABLE(http_client "http/main.cc")
+ADD_DEPENDENCIES(http_client copy_protobuf)
+ADD_DEPENDENCIES(http_client ustore)
+TARGET_LINK_LIBRARIES(http_client ustore)
+SET_TARGET_PROPERTIES(http_client PROPERTIES LINK_FLAGS "${LINK_FLAGS}")

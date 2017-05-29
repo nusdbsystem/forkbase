@@ -7,3 +7,4 @@ clientservice_file: "conf/client_services"
 
 recv_threads: 1
 service_threads: 1
+http_port: 60000
