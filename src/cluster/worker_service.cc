@@ -13,6 +13,8 @@
 #include "worker/worker.h"
 #include "utils/logging.h"
 
+using std::vector;
+using std::string;
 namespace ustore {
 
 class WSCallBack : public CallBack {
@@ -127,8 +129,8 @@ void WorkerService::HandleRequest(const void *msg, int size,
   response->set_source(ustore_msg->source());
 
   ErrorCode error_code;
-  CHECK(ustore_msg->has_branch() || ustore_msg->has_version());
-  CHECK(!(ustore_msg->has_branch() && ustore_msg->has_version()));
+  //CHECK(ustore_msg->has_branch() || ustore_msg->has_version());
+  //CHECK(!(ustore_msg->has_branch() && ustore_msg->has_version()));
   switch (ustore_msg->type()) {
     case UStoreMessage::PUT_REQUEST:
     {
@@ -216,6 +218,90 @@ void WorkerService::HandleRequest(const void *msg, int size,
       MergeResponsePayload *res_payload =
           response->mutable_merge_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
+      break;
+    }
+    case UStoreMessage::LIST_KEY_REQUEST:
+    {
+      vector<string> keys;
+      error_code = worker_->ListKeys(&keys);
+      MultiVersionResponsePayload *res_payload =
+          response->mutable_multi_version_response_payload();
+      for (auto k : keys)
+        res_payload->add_versions(k.data(), k.length());
+      break;
+    }
+    case UStoreMessage::LIST_BRANCH_REQUEST:
+    {
+      vector<string> branches;
+      error_code = worker_->ListBranches(Slice(ustore_msg->key()),
+                                                  &branches);
+      MultiVersionResponsePayload *res_payload =
+          response->mutable_multi_version_response_payload();
+      for (auto b : branches)
+        res_payload->add_versions(b.data(), b.length());
+      break;
+    }
+    case UStoreMessage::EXISTS_REQUEST:
+    {
+      bool exists;
+      error_code = ustore_msg->has_branch()
+          ? worker_->Exists(Slice(ustore_msg->key()), 
+                  Slice(ustore_msg->branch()), &exists)
+          : worker_->Exists(Slice(ustore_msg->key()), &exists);
+      BoolResponsePayload *bool_res =
+          response->mutable_bool_response_payload();
+      bool_res->set_value(exists);
+      break;
+    }
+    case UStoreMessage::GET_BRANCH_HEAD_REQUEST:
+    {
+      Hash version;
+      error_code = worker_->GetBranchHead(
+              Slice(ustore_msg->key()), Slice(ustore_msg->branch()), &version);
+      BranchVersionResponsePayload *res_payload =
+            response->mutable_branch_version_response_payload();
+      res_payload->set_version(version.value(), Hash::kByteLength);
+      break;
+    }
+    case UStoreMessage::IS_BRANCH_HEAD_REQUEST:
+    {
+      bool is_head;
+      error_code = worker_->IsBranchHead(
+        Slice(ustore_msg->key()), Slice(ustore_msg->branch()),
+        Hash(reinterpret_cast<const byte_t *>(ustore_msg->version().data())),
+        &is_head);
+      BoolResponsePayload *bool_res =
+          response->mutable_bool_response_payload();
+      bool_res->set_value(is_head);
+      break;
+    }
+    case UStoreMessage::GET_LATEST_VERSION_REQUEST:
+    {
+      vector<Hash> versions;
+      error_code = worker_->GetLatestVersions(
+                      Slice(ustore_msg->key()), &versions);
+      MultiVersionResponsePayload *res_payload =
+          response->mutable_multi_version_response_payload();
+      for (auto k : versions)
+        res_payload->add_versions(k.value(), Hash::kByteLength);
+      break;
+    }
+    case UStoreMessage::IS_LATEST_VERSION_REQUEST:
+    {
+      bool is_latest;
+      error_code = worker_->IsLatestVersion(
+          Slice(ustore_msg->key()),
+          Hash(reinterpret_cast<const byte_t *>(ustore_msg->version().data())),
+          &is_latest);
+      BoolResponsePayload *bool_res =
+          response->mutable_bool_response_payload();
+      bool_res->set_value(is_latest);
+      break;
+    }
+    case UStoreMessage::DELETE_REQUEST:
+    {
+      error_code = worker_->Delete(Slice(ustore_msg->key()),
+                                  Slice(ustore_msg->branch()));
       break;
     }
     default:

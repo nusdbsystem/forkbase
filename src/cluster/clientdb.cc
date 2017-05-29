@@ -4,6 +4,8 @@
 #include "proto/messages.pb.h"
 #include "utils/logging.h"
 
+using std::vector;
+using std::string;
 namespace ustore {
 
 Message* ClientDb::WaitForResponse() {
@@ -306,6 +308,170 @@ ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
   return err;
 }
 
+ErrorCode ClientDb::GetStringList(vector<string> *vals) {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+
+  MultiVersionResponsePayload *payload = 
+    response->mutable_multi_version_response_payload();
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+
+  for (int i=0; i < payload->versions_size(); i++)  
+    vals->push_back(string((payload->versions(i)).data(),
+                                (payload->versions(i)).length()));
+  delete response; 
+  return err; 
+}
+
+ErrorCode ClientDb::GetVersionList(vector<Hash> *versions) {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+
+  MultiVersionResponsePayload *payload = 
+    response->mutable_multi_version_response_payload();
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+
+  for (int i=0; i < payload->versions_size(); i++) 
+    versions->push_back(Hash(reinterpret_cast<const byte_t *>
+                          (payload->versions(i).data())).Clone());
+  delete response; 
+  return err; 
+}
+
+ErrorCode ClientDb::GetBranchHeadVersion(Hash *version) {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+
+  BranchVersionResponsePayload *payload = 
+    response->mutable_branch_version_response_payload();
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+
+  *version = Hash(reinterpret_cast<const byte_t *>(
+                      payload->version().data())).Clone();
+
+  delete response; 
+  return err; 
+}
+
+ErrorCode ClientDb::GetBool(bool *value) {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+
+  BoolResponsePayload *payload = 
+    response->mutable_bool_response_payload();
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+  *value = payload->value();
+  delete response; 
+  return err;
+}
+
+ErrorCode ClientDb::ListKeys(std::vector<std::string>* keys) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::LIST_KEY_REQUEST);
+  request->set_source(id_);
+  ErrorCode err = ErrorCode::kOK;
+  // go through all workers to retrieve keys
+  for (node_id_t dest : workers_->GetWorkerIds()) {
+    Send(request, dest);
+    err = GetStringList(keys);
+    if (err != ErrorCode::kOK) {
+      delete request;
+      return err;
+    }
+  }
+  delete request;
+  return err;
+}
+
+ErrorCode ClientDb::ListBranches(const Slice& key, std::vector<std::string>* branches) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::LIST_BRANCH_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetStringList(branches);
+}
+  
+ErrorCode ClientDb::Exists(const Slice& key, bool* exist) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::EXISTS_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetBool(exist);
+}
+
+ErrorCode ClientDb::Exists(const Slice& key, const Slice& branch, bool* exist) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::EXISTS_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_branch(branch.data(), branch.len());
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetBool(exist);
+}
+
+ErrorCode ClientDb::GetBranchHead(const Slice& key, const Slice& branch, Hash* version) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::GET_BRANCH_HEAD_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_branch(branch.data(), branch.len());
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetBranchHeadVersion(version);
+}
+
+ErrorCode ClientDb::IsBranchHead(const Slice& key, const Slice& branch,
+                         const Hash& version, bool* isHead) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::IS_BRANCH_HEAD_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_branch(branch.data(), branch.len());
+  request->set_version(version.value(), Hash::kByteLength);
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetBool(isHead);
+}
+
+ErrorCode ClientDb::GetLatestVersions(const Slice& key, std::vector<Hash>* versions) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::GET_LATEST_VERSION_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetVersionList(versions);
+}
+
+ErrorCode ClientDb::IsLatestVersion(const Slice& key, const Hash& version,
+                            bool* isLatest) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::IS_LATEST_VERSION_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_version(version.value(), Hash::kByteLength);
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetBool(isLatest);
+}
+
+ErrorCode ClientDb::Delete(const Slice& key, const Slice& branch) {
+  UStoreMessage *request = new UStoreMessage();
+  request->set_type(UStoreMessage::DELETE_REQUEST);
+  request->set_key(key.data(), key.len());
+  request->set_branch(branch.data(), branch.len());
+  request->set_source(id_);
+  Send(request, workers_->GetWorker(key));
+  delete request;
+  return GetEmptyResponse();
+
+}
+
 WorkerList::WorkerList(const std::vector<RangeInfo> &workers) {
   Update(workers);
 }
@@ -322,6 +488,13 @@ node_id_t WorkerList::GetWorker(const Slice& key) {
     if (Slice(ri.start()) > key)
       return ri.address();
   return workers_[0].address();
+}
+
+vector<node_id_t> WorkerList::GetWorkerIds() {
+  vector<node_id_t> ids;
+  for (auto ri : workers_)
+    ids.push_back(ri.address());
+  return ids;
 }
 
 ClientDb::~ClientDb() {
