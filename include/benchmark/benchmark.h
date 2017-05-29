@@ -71,16 +71,23 @@ class Benchmark {
   // static constexpr int kStringLength = 10;
   // static constexpr int kBlobSize = 10;  // ensure blob are chunked
 
-  std::vector<Hash> PutString(const Slice& key, const Slice& branch,
+  std::vector<Hash> PutString(const std::vector<std::string>& keys,
+                              const Slice& branch,
                               const std::vector<std::string>& values);
-  std::vector<Hash> PutBlob(const Slice& key, const Slice& branch,
+  std::vector<Hash> PutBlob(const std::vector<std::string>& keys,
+                            const Slice& branch,
                             const std::vector<std::string>& values);
-  void GetBlobMeta(const Slice& key, const std::vector<Hash>& versions);
-  void GetString(const Slice& key, const std::vector<Hash>& versions);
-  void GetBlob(const Slice& key, const std::vector<Hash>& versions);
-  void ValidateString(const Slice& key, const std::vector<Hash>& versions,
+  void GetBlobMeta(const std::vector<std::string>& keys,
+                   const std::vector<Hash>& versions);
+  void GetBlob(const std::vector<std::string>& keys,
+               const std::vector<Hash>& versions);
+  void GetString(const std::vector<std::string>& keys,
+                 const std::vector<Hash>& versions);
+  void ValidateString(const std::vector<std::string>& keys,
+                      const std::vector<Hash>& versions,
                       const std::vector<std::string>& values);
-  void ValidateBlob(const Slice& key, const std::vector<Hash>& versions,
+  void ValidateBlob(const std::vector<std::string>& keys,
+                    const std::vector<Hash>& versions,
                     const std::vector<std::string>& values);
 
   ObjectDB* db_;

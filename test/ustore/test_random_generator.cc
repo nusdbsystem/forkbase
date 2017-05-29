@@ -12,7 +12,7 @@ int blob_size = 4096;
 
 TEST(RandomGenerator, RG_SequentialNumString) {
   RandomGenerator rg;
-  Vec keys = rg.SequentialNumString(test_size);
+  Vec keys = rg.SequentialNumString("", test_size);
   EXPECT_EQ(test_size, keys.capacity());
   EXPECT_EQ(1, keys[1].length());
 }

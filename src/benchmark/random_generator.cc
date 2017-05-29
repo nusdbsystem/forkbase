@@ -58,13 +58,13 @@ std::vector<std::string> RandomGenerator::NRandomString(
 }
 
 std::vector<std::string> RandomGenerator::SequentialNumString(
-  int size) {
+    const std::string& prefix, int size) {
   std::vector<std::string> keys;
 
   keys.reserve(size);
   int k = 0;
-  std::generate_n(std::back_inserter(keys), (keys).capacity(), [&k]() {
-    return std::to_string(++k); });
+  std::generate_n(std::back_inserter(keys), (keys).capacity(), [&k, &prefix]() {
+    return prefix + std::to_string(++k); });
   return keys;
 }
 

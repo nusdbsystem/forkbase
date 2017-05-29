@@ -26,7 +26,8 @@ class RandomGenerator {
   std::vector<std::string> NFixedString(int size, int length);
   std::string RandomString(int maxLength);
   std::vector<std::string> NRandomString(int size, int maxLength);
-  std::vector<std::string> SequentialNumString(int size);
+  std::vector<std::string> SequentialNumString(const std::string& prefix,
+                                               int size);
 
  private:
   std::default_random_engine engine_;
