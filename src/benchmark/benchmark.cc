@@ -11,156 +11,163 @@
 
 namespace ustore {
 
-void Benchmark::SliceValidation(int n) {
-  std::cout << "Validating Slice put/get APIs......\n";
-
-  std::vector<std::string> slices = rg_.NRandomString(n, kValidationStrLen);
-  std::vector<std::string> keys = rg_.SequentialNumString(n);
-
-  const Slice branch("Branch");
-  for (int i = 0; i < keys.size(); ++i) {
-    const Slice s_a(slices[i]);
-    auto meta = db_->Put(Slice(keys[i]), VString(s_a), branch);
-    meta = db_->Get(Slice(keys[i]), branch);
-    VString s = meta.String();
-    CHECK(s_a == s.slice());
-  }
-
-  std::cout << "Validated Slice put/get APIs on " << n << " instances!\n";
+void Benchmark::RunAll() {
+  // Validation
+  StringValidation(kNumValidations, kStringLength);
+  BlobValidation(kNumValidations, kBlobSize);
+  // String
+  FixedString(kNumStrings, kStringLength);
+  RandomString(kNumStrings, kStringLength);
+  // Blob
+  FixedBlob(kNumBlobs, kBlobSize);
+  RandomBlob(kNumBlobs, kBlobSize);
 }
 
-void Benchmark::BlobValidation(int n) {
-  std::cout << "Validating Blob put/get APIs......\n";
+// String Benchmarks
 
-  std::vector<std::string> blobs = rg_.NRandomString(n, kValidationBlobSize);
-  std::vector<std::string> keys = rg_.SequentialNumString(n);
-
-  const Slice branch("Branch");
-  for (int i = 0; i < keys.size(); ++i) {
-    const Slice b_a(blobs[i]);
-    auto meta = db_->Put(Slice(keys[i]), VBlob(b_a), branch);
-    meta = db_->Get(Slice(keys[i]), branch);
-    VBlob b = meta.Blob();
-    byte_t* buf = new byte_t[b.size()];
-    b.Read(0, b.size(), buf);
-    CHECK(b_a == Slice(buf, b.size()));
-    delete[] buf;
+std::vector<Hash> Benchmark::PutString(const Slice& key, const Slice& branch,
+                                       const std::vector<std::string>& values) {
+  Timer timer;
+  std::vector<Hash> versions;
+  timer.Reset();
+  for (auto& value : values) {
+    versions.push_back(db_->Put(key, VString(Slice(value)), branch).version());
   }
-
-  std::cout << "Validated Blob put/get APIs on " << n << " instances!\n";
+  std::cout << "Put String Time: " << timer.Elapse() << " ms" << std::endl;
+  return versions;
 }
 
-void Benchmark::FixedString(int length) {
-  std::cout << "Benchmarking put/get APIs with Fixed Length (" <<
-    length << ") Strings\n";
-
-  std::vector<std::string> slices = rg_.NFixedString(kNumOfInstances, length);
-  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
-
-  const Slice branch("Branch");
+void Benchmark::GetString(const Slice& key, const std::vector<Hash>& versions) {
   Timer timer;
   timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    db_->Put(Slice(keys[i]), VString(Slice(slices[i])), branch);
+  for (auto& version : versions) {
+    VString s = db_->Get(key, version).String();
   }
-  std::cout << "Put Time: " << timer.Elapse() << " ms\n";
-
-  timer.Reset();
-  // TODO(zhongle): it seems that Get always get the latest version
-  for (int i = 0; i < keys.size(); ++i) {
-    auto meta = db_->Get(Slice(keys[i]), branch);
-    VString b = meta.String();
-  }
-  std::cout << "Get Time: " << timer.Elapse() << " ms\n";
+  std::cout << "Get String Time: " << timer.Elapse() << " ms" << std::endl;
 }
 
-void Benchmark::FixedBlob(int size) {
-  std::cout << "Benchmarking put/get APIs with Fixed Size (" <<
-    size << " bytes) Blobs\n";
-
-  std::vector<std::string> blobs = rg_.NFixedString(kNumOfInstances, size);
-  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
-
-  const Slice branch("Branch");
+void Benchmark::ValidateString(const Slice& key,
+                               const std::vector<Hash>& versions,
+                               const std::vector<std::string>& values) {
   Timer timer;
   timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    db_->Put(Slice(keys[i]), VBlob(Slice(blobs[i])), branch);
+  for (int i = 0; i < versions.size(); ++i) {
+    VString s = db_->Get(key, versions[i]).String();
+    CHECK(Slice(values[i]) == s.slice());
   }
-  std::cout << "Put Time: " << timer.Elapse() << " ms\n";
-
-  timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    auto meta = db_->Get(Slice(keys[i]), branch);
-    VBlob b = meta.Blob();
-  }
-  std::cout << "Get Meta Time: " << timer.Elapse() << " ms\n";
-
-  timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    auto meta = db_->Get(Slice(keys[i]), branch);
-    VBlob b = meta.Blob();
-    byte_t* buf = new byte_t[b.size()];
-    b.Read(0, b.size(), buf);
-    delete[] buf;
-  }
-  std::cout << "Get Data Time: " << timer.Elapse() << " ms\n";
+  std::cout << "Validate String Time: " << timer.Elapse() << " ms" << std::endl;
 }
 
-void Benchmark::RandomString(int length) {
-  std::cout << "Benchmarking put/get APIs with Random Length (max=" <<
-    length << ") Strings\n";
-
-  std::vector<std::string> slices = rg_.NRandomString(kNumOfInstances, length);
-  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
-
-  const Slice branch("Branch");
-  Timer timer;
-  timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    db_->Put(Slice(keys[i]), VString(Slice(slices[i])), branch);
-  }
-  std::cout << "Put Time: " << timer.Elapse() << " ms\n";
-
-  timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    auto meta = db_->Get(Slice(keys[i]), branch);
-    VString b = meta.String();
-  }
-  std::cout << "Get Time: " << timer.Elapse() << " ms\n";
+void Benchmark::StringValidation(int n, int len) {
+  std::cout << "Validating " << n << " Strings with Fixed Length ("
+            << len << ")......" << std::endl;
+  Slice key("String");
+  Slice branch("Validation");
+  std::vector<std::string> values = rg_.NRandomString(n, len);
+  auto versions = PutString(key, branch, values);
+  ValidateString(key, versions, values);
 }
 
-void Benchmark::RandomBlob(int size) {
-  std::cout << "Benchmarking put/get APIs with Random Size (max=" <<
-    size << " bytes) Blobs\n";
+void Benchmark::FixedString(int n, int len) {
+  std::cout << "Benchmarking " << n << " Strings with Fixed Length ("
+            << len << ")......" << std::endl;
+  Slice key("String");
+  Slice branch("Fixed");
+  std::vector<std::string> values = rg_.NFixedString(n, len);
+  auto versions = PutString(key, branch, values);
+  GetString(key, versions);
+}
 
-  std::vector<std::string> blobs = rg_.NRandomString(kNumOfInstances, size);
-  std::vector<std::string> keys = rg_.SequentialNumString(kNumOfInstances);
+void Benchmark::RandomString(int n, int len) {
+  std::cout << "Benchmarking " << n << " Strings with Random Length (max="
+            << len << ")......" << std::endl;
+  Slice key("String");
+  Slice branch("Random");
+  std::vector<std::string> values = rg_.NRandomString(n, len);
+  auto versions = PutString(key, branch, values);
+  GetString(key, versions);
+}
 
-  const Slice branch("Branch");
+// Blob Benchmarks
+
+std::vector<Hash> Benchmark::PutBlob(const Slice& key, const Slice& branch,
+                                     const std::vector<std::string>& values) {
+  Timer timer;
+  std::vector<Hash> versions;
+  timer.Reset();
+  for (auto& value : values) {
+    versions.push_back(db_->Put(key, VBlob(Slice(value)), branch).version());
+  }
+  std::cout << "Put Blob Time: " << timer.Elapse() << " ms\n";
+  return versions;
+}
+
+void Benchmark::GetBlobMeta(const Slice& key,
+                            const std::vector<Hash>& versions) {
   Timer timer;
   timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    db_->Put(Slice(keys[i]), VBlob(Slice(blobs[i])), branch);
+  for (auto& version : versions) {
+    VBlob b = db_->Get(key, version).Blob();
   }
-  std::cout << "Put Time: " << timer.Elapse() << " ms\n";
+  std::cout << "Get Blob Meta Time: " << timer.Elapse() << " ms\n";
+}
 
+void Benchmark::GetBlob(const Slice& key, const std::vector<Hash>& versions) {
+  Timer timer;
   timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    auto meta = db_->Get(Slice(keys[i]), branch);
-    VBlob b = meta.Blob();
-  }
-  std::cout << "Get Meta Time: " << timer.Elapse() << " ms\n";
-
-  timer.Reset();
-  for (int i = 0; i < keys.size(); ++i) {
-    auto meta = db_->Get(Slice(keys[i]), branch);
-    VBlob b = meta.Blob();
+  for (auto& version : versions) {
+    VBlob b = db_->Get(key, version).Blob();
     byte_t* buf = new byte_t[b.size()];
     b.Read(0, b.size(), buf);
     delete[] buf;
   }
-  std::cout << "Get Data Time: " << timer.Elapse() << " ms\n";
+  std::cout << "Get Blob Time: " << timer.Elapse() << " ms\n";
 }
 
+void Benchmark::ValidateBlob(const Slice& key,
+                             const std::vector<Hash>& versions,
+                             const std::vector<std::string>& values) {
+  Timer timer;
+  timer.Reset();
+  for (int i = 0; i < versions.size(); ++i) {
+    VBlob b = db_->Get(key, versions[i]).Blob();
+    byte_t* buf = new byte_t[b.size()];
+    b.Read(0, b.size(), buf);
+    CHECK(Slice(values[i]) == Slice(buf, b.size()));
+    delete[] buf;
+  }
+  std::cout << "Validate Blob Time: " << timer.Elapse() << " ms\n";
+}
+
+void Benchmark::BlobValidation(int n, int size) {
+  std::cout << "Validating " << n << " Blobs with Fixed Size ("
+            << size << ")......" << std::endl;
+  Slice key("Blob");
+  Slice branch("Validation");
+  std::vector<std::string> values = rg_.NRandomString(n, size);
+  auto versions = PutBlob(key, branch, values);
+  ValidateBlob(key, versions, values);
+}
+
+void Benchmark::FixedBlob(int n, int size) {
+  std::cout << "Benchmarking " << n << " Blobs with Fixed Size ("
+            << size << ")......" << std::endl;
+  Slice key("Blob");
+  Slice branch("Fixed");
+  std::vector<std::string> values = rg_.NFixedString(n, size);
+  auto versions = PutBlob(key, branch, values);
+  GetBlobMeta(key, versions);
+  GetBlob(key, versions);
+}
+
+void Benchmark::RandomBlob(int n, int size) {
+  std::cout << "Benchmarking " << n << " Blobs with Random Size (max="
+            << size << ")......" << std::endl;
+  Slice key("Blob");
+  Slice branch("Random");
+  std::vector<std::string> values = rg_.NRandomString(n, size);
+  auto versions = PutBlob(key, branch, values);
+  GetBlobMeta(key, versions);
+  GetBlob(key, versions);
+}
 }  // namespace ustore

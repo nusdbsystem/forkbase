@@ -4,10 +4,11 @@
 #define USTORE_BENCHMARK_BENCHMARK_H_
 
 #include <chrono>
+#include <string>
+#include <vector>
 #include "benchmark/random_generator.h"
 #include "spec/object_db.h"
 #include "spec/slice.h"
-#include "spec/value.h"
 
 namespace ustore {
 
@@ -44,25 +45,40 @@ static const char CASES_benchmark[] =
 
 class Benchmark {
  public:
-  Benchmark(ObjectDB *db, int max_len, int fix_len)
-    : db_(db), str_max_length_(max_len), str_fix_length_(fix_len) {}
-  ~Benchmark() {}
+  explicit Benchmark(ObjectDB *db) : db_(db) {}
+  ~Benchmark() = default;
 
-  void SliceValidation(int n);
-  void BlobValidation(int n);
-  void FixedString(int length);
-  void FixedBlob(int size);
-  void RandomString(int length);
-  void RandomBlob(int size);
+  void RunAll();
+  // Correctness Validation
+  void StringValidation(int n, int len);
+  void BlobValidation(int n, int size);
+  // String
+  void FixedString(int n, int len);
+  void RandomString(int n, int len);
+  // Blob
+  void RandomBlob(int n, int size);
+  void FixedBlob(int n, int size);
 
  private:
-  static constexpr int kNumOfInstances = 10000;
-  static constexpr int kValidationStrLen = 32;
-  static constexpr int kValidationBlobSize = 8192;  // ensure blob are chunked
+  static constexpr int kNumValidations = 100;
+  static constexpr int kNumStrings = 100000;
+  static constexpr int kNumBlobs = 5000;
+  static constexpr int kStringLength = 64;
+  static constexpr int kBlobSize = 8192;  // ensure blob are chunked
+
+  std::vector<Hash> PutString(const Slice& key, const Slice& branch,
+                              const std::vector<std::string>& values);
+  std::vector<Hash> PutBlob(const Slice& key, const Slice& branch,
+                            const std::vector<std::string>& values);
+  void GetBlobMeta(const Slice& key, const std::vector<Hash>& versions);
+  void GetString(const Slice& key, const std::vector<Hash>& versions);
+  void GetBlob(const Slice& key, const std::vector<Hash>& versions);
+  void ValidateString(const Slice& key, const std::vector<Hash>& versions,
+                      const std::vector<std::string>& values);
+  void ValidateBlob(const Slice& key, const std::vector<Hash>& versions,
+                    const std::vector<std::string>& values);
 
   ObjectDB* db_;
-  int str_max_length_;
-  int str_fix_length_;
   Timer timer_;
   RandomGenerator rg_;
 };

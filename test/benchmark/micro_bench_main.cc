@@ -24,44 +24,34 @@ constexpr int kSleepTime = 100000;
 void BenchmarkWorker() {
   Worker worker {2018};
   ObjectDB db(&worker);
-  Benchmark bm(&db, max_str_len, fixed_str_len);
-
-  bm.SliceValidation(val_size);
-  bm.BlobValidation(val_size);
-  bm.FixedString(fixed_str_len);
-  bm.FixedBlob(max_blob_size);
-  bm.RandomString(max_str_len);
-  bm.RandomBlob(fixed_blob_size);
+  Benchmark bm(&db);
+  bm.RunAll();
 }
 
 void BenchmarkClient() {
+  // create worker service
   std::ifstream fin_worker(Env::Instance()->config().worker_file());
   std::string worker_addr;
   std::vector<WorkerService*> workers;
   while (fin_worker >> worker_addr)
     workers.push_back(new WorkerService(worker_addr, ""));
-
   std::vector<std::thread> worker_threads;
   for (int i = 0; i < workers.size(); ++i)
     workers[i]->Init();
-
   for (int i = 0; i< workers.size(); ++i)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
 
+  // create client service
   RemoteClientService *service = new RemoteClientService("");
   service->Init();
   std::thread client_service_thread(&RemoteClientService::Start, service);
   sleep(1);
 
+  // create client
   ClientDb *client = service->CreateClientDb();
   ObjectDB db(client);
-  Benchmark bm(&db, max_str_len, fixed_str_len);
-  bm.SliceValidation(val_size);
-  bm.BlobValidation(val_size);
-  bm.FixedString(fixed_str_len);
-  bm.FixedBlob(max_blob_size);
-  bm.RandomString(max_str_len);
-  bm.RandomBlob(fixed_blob_size);
+  Benchmark bm(&db);
+  bm.RunAll();
 
   service->Stop();
   client_service_thread.join();

@@ -24,8 +24,7 @@ class VMeta : private Noncopyable {
       : db_(db), code_(code), version_(std::move(version)) {}
   // moveable
   VMeta(VMeta&& other) {
-    db_ = other.db_;
-    code_ = other.code_;
+    db_ = other.db_; code_ = other.code_;
     std::swap(cell_, other.cell_);
     std::swap(version_, other.version_);
   }
@@ -33,15 +32,14 @@ class VMeta : private Noncopyable {
 
   // moveable
   VMeta& operator=(VMeta&& other) {
-    db_ = other.db_;
-    code_ = other.code_;
+    db_ = other.db_; code_ = other.code_;
     std::swap(cell_, other.cell_);
     std::swap(version_, other.version_);
     return *this;
   }
 
   inline const UCell& cell() const { return cell_; }
-  inline const Hash& version() const { return version_; }
+  inline Hash version() const { return version_.Clone(); }
   inline ErrorCode code() const { return code_; }
 
   VBlob Blob() const;
