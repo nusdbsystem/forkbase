@@ -26,7 +26,7 @@ class Env : public Singleton<Env>, private Noncopyable {
  public:
   static const char* kDefaultConfigFile;
 
-  const Config& config() { return config_; }
+  const Config& config() const { return config_; }
   Config& m_config() { return config_; }
 
  private:
