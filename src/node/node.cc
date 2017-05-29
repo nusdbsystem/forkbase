@@ -83,6 +83,15 @@ uint64_t MetaNode::numElements() const {
   return numElementsUntilEntry(numEntries());
 }
 
+uint32_t MetaNode::numLeaves() const {
+  uint32_t total_num_leaves = 0;
+  for (size_t entry_idx = 0; entry_idx < numEntries(); ++entry_idx) {
+    MetaEntry me(chunk_->data() + entryOffset(entry_idx));
+    total_num_leaves += me.numLeaves();
+  }
+  return total_num_leaves;
+}
+
 uint64_t MetaNode::numElementsUntilEntry(size_t entry_idx) const {
   CHECK_GE(entry_idx, 0);
   CHECK_LE(entry_idx, numEntries());

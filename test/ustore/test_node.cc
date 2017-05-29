@@ -108,6 +108,7 @@ TEST(MetaNode, Basic) {
   ustore::MetaNode mnode(&chunk_info.chunk);
 
   EXPECT_FALSE(mnode.isLeaf());
+  EXPECT_EQ(num_leaves1 + num_leaves2 + num_leaves3, mnode.numLeaves());
   EXPECT_EQ(3, mnode.numEntries());
   EXPECT_EQ(55, mnode.numElements());
   EXPECT_EQ(30, mnode.numElementsUntilEntry(2));

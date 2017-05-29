@@ -41,8 +41,12 @@ class SeqNode : public UNode {
   // If this is MetaNode, return the number of containing MetaEntries
   // If this is a leaf, return the number of containing elements
   virtual size_t numEntries() const = 0;
-  // number of elements at leaves rooted at this MetaSeq
+
+  // number of elements at leaves rooted at this SeqNode
   virtual uint64_t numElements() const = 0;
+
+  // number of leaves rooted at this SeqNode
+  virtual uint32_t numLeaves() const = 0;
 
   // return the byte pointer for the idx-th entry in this node
   virtual const byte_t* data(size_t idx) const = 0;
@@ -68,6 +72,7 @@ class MetaNode : public SeqNode {
   inline bool isLeaf() const override { return false; }
   size_t numEntries() const override;
   uint64_t numElements() const override;
+  uint32_t numLeaves() const override;
 
   // the total number of elements from the first
   // to the entryidx-th entry (exclusive)
@@ -170,6 +175,8 @@ class LeafNode : public SeqNode {
   inline uint64_t numElements() const { return numEntries(); }
 
   inline bool isLeaf() const override { return true; }
+
+  inline uint32_t numLeaves() const override { return 1; }
   // Get #bytes from start-th element (inclusive) to end-th element (exclusive)
   virtual size_t GetLength(size_t start, size_t end) const = 0;
   // Copy num_bytes bytes from start-th element (inclusive)
