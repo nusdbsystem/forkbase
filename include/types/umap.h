@@ -18,7 +18,7 @@ class UMap : public ChunkableType {
   static DuallyDiffKeyIterator DuallyDiff(const UMap& lhs, const UMap& rhs);
 
   class Iterator : public CursorIterator {
-   friend class UMap;
+    friend class UMap;
    public:
     inline uint64_t index() const override {
       LOG(WARNING) << "Index not supported for Map";
@@ -69,7 +69,6 @@ class UMap : public ChunkableType {
   UMap& operator=(UMap&& rhs) = default;
 
   bool SetNodeForHash(const Hash& hash) override;
-
 };
 
 }  // namespace ustore

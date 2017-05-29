@@ -16,7 +16,7 @@ namespace ustore {
 class UList : public ChunkableType {
  public:
   class Iterator : public CursorIterator {
-   friend class UList;
+    friend class UList;
    public:
     inline Slice key() const override {
       LOG(WARNING) << "Key not supported for list";
@@ -26,12 +26,12 @@ class UList : public ChunkableType {
    private:
     // Only used by UList
     Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
-                 ChunkLoader* loader) noexcept :
+             ChunkLoader* loader) noexcept :
         CursorIterator(root, ranges, loader) {}
 
     // Only used by UList
     Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
-                 ChunkLoader* loader) noexcept :
+             ChunkLoader* loader) noexcept :
         CursorIterator(root, std::move(ranges), loader) {}
 
     inline Slice RealValue() const override {
@@ -39,8 +39,7 @@ class UList : public ChunkableType {
     }
   };
 
-  static DuallyDiffIndexIterator DuallyDiff(
-      const UList& lhs, const UList& rhs);
+  static DuallyDiffIndexIterator DuallyDiff(const UList& lhs, const UList& rhs);
 
   // For idx > total # of elements
   //    return empty slice

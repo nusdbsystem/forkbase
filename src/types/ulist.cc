@@ -11,8 +11,7 @@
 
 namespace ustore {
 
-DuallyDiffIndexIterator UList::DuallyDiff(
-    const UList& lhs, const UList& rhs) {
+DuallyDiffIndexIterator UList::DuallyDiff(const UList& lhs, const UList& rhs) {
   std::unique_ptr<CursorIterator> lhs_diff_it(
       new UList::Iterator(lhs.Diff(rhs)));
   std::unique_ptr<CursorIterator> rhs_diff_it(
@@ -22,21 +21,18 @@ DuallyDiffIndexIterator UList::DuallyDiff(
   rhs_diff_it->previous();
 
   DCHECK(lhs_diff_it->head() && rhs_diff_it->head());
-
   return DuallyDiffIndexIterator(std::move(lhs_diff_it),
                                  std::move(rhs_diff_it));
 }
 
 Slice UList::Get(uint64_t idx) const {
   CHECK(!empty());
-  NodeCursor cursor(root_node_->hash(),
-                    idx, chunk_loader_.get());
+  NodeCursor cursor(root_node_->hash(), idx, chunk_loader_.get());
 
-  if (cursor.empty() || cursor.isEnd()) {
+  if (cursor.empty() || cursor.isEnd())
     return Slice();
-  } else {
+  else
     return ListNode::Decode(cursor.current());
-  }
 }
 
 bool UList::SetNodeForHash(const Hash& root_hash) {

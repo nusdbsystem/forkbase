@@ -28,7 +28,6 @@ class SeqNode : public UNode {
      Its subclass is either be a internal node containing meta-data
      Or it can be a leaf node containing blob chunk data
   */
-
  public:
   static std::unique_ptr<const SeqNode> CreateFromChunk(const Chunk* chunk);
 

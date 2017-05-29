@@ -21,8 +21,11 @@ class UBlob : public ChunkableType {
   The normal Iterator for UBlob iterator the specified bytes
   in the vector of index ranges
   */
-   friend class UBlob;
+    friend class UBlob;
    public:
+    Iterator(Iterator&& other) = default;
+    Iterator& operator=(Iterator&& other) = default;
+
     inline Slice key() const override {
       LOG(WARNING) << "Key not supported for blob";
       return Slice();
@@ -45,19 +48,21 @@ class UBlob : public ChunkableType {
   The Ublob's ChunkIterator iterates one chunk at a time.
   The returned value is a slice
   */
-   friend class UBlob;
+    friend class UBlob;
    public:
-    bool next() override;
+    ChunkIterator(ChunkIterator&& other) noexcept
+      : cursor_(std::move(other.cursor_)) {}
 
+    ChunkIterator& operator=(ChunkIterator&& other) {
+      std::swap(cursor_, other.cursor_);
+      return *this;
+    }
+
+    bool next() override;
     bool previous() override;
 
-    inline bool head() const override {
-      return cursor_.isBegin();
-    }
-
-    inline bool end() const override {
-      return cursor_.isEnd();
-    }
+    inline bool head() const override { return cursor_.isBegin(); }
+    inline bool end() const override { return cursor_.isEnd(); }
 
     inline bool empty() const override {
       // A Blob with no bytes contain a single empty chunk
@@ -75,12 +80,9 @@ class UBlob : public ChunkableType {
    private:
     // Only used by UBlob
     ChunkIterator(const Hash& root, ChunkLoader* loader) noexcept
-      : UIterator(),
-        cursor_(root, 0, loader) {}
+      : cursor_(root, 0, loader) {}
 
-    size_t NumChunkBytes() const {
-      return cursor_.node()->numEntries();
-    }
+    inline size_t NumChunkBytes() const { return cursor_.node()->numEntries(); }
 
     NodeCursor cursor_;
   };
