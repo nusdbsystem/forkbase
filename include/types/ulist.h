@@ -15,15 +15,15 @@ namespace ustore {
 
 class UList : public ChunkableType {
  public:
-  class Iterator : public UIterator {
+  class Iterator : public CursorIterator {
    public:
     Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
                  ChunkLoader* loader) noexcept :
-        UIterator(root, ranges, loader) {}
+        CursorIterator(root, ranges, loader) {}
 
     Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
                  ChunkLoader* loader) noexcept :
-        UIterator(root, std::move(ranges), loader) {}
+        CursorIterator(root, std::move(ranges), loader) {}
 
     inline Slice key() const override {
       LOG(WARNING) << "Key not supported for list";

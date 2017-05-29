@@ -7,7 +7,7 @@
 #include "store/chunk_store.h"
 #include "types/uiterator.h"
 
-TEST(UIterator, Basic) {
+TEST(CursorIterator, Basic) {
   const ustore::byte_t c[] = "abcdeg";
 
   ustore::FixedSegment seg(c, 6, 1);
@@ -31,7 +31,7 @@ TEST(UIterator, Basic) {
   ustore::IndexRange range3{5, 1};
 
 // Test on next()
-  ustore::UIterator it(hash, {range1, range2, range3}, &loader);
+  ustore::CursorIterator it(hash, {range1, range2, range3}, &loader);
   ASSERT_EQ(0, it.index());
 
   ustore::Slice actual_c0 = it.value();
@@ -121,8 +121,8 @@ TEST(UIterator, Basic) {
 
 
   // test for move assignment
-  ustore::UIterator it1(hash, {range1, range2, range3}, &loader);
-  ustore::UIterator it2 = std::move(it1);
+  ustore::CursorIterator it1(hash, {range1, range2, range3}, &loader);
+  ustore::CursorIterator it2 = std::move(it1);
 
   ASSERT_EQ(0, it2.index());
 
@@ -130,7 +130,7 @@ TEST(UIterator, Basic) {
   ASSERT_EQ(c[0], *actual_c0.data());
   ASSERT_EQ(1, actual_c0.len());
 
-  ustore::UIterator it3(std::move(it2));
+  ustore::CursorIterator it3(std::move(it2));
 
   ASSERT_EQ(0, it3.index());
 

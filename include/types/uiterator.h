@@ -15,32 +15,80 @@
 namespace ustore {
 
 class UIterator : private Noncopyable {
+/*
+UIterator is a genric Iterator interface that shall be inherited
+ and overrided for the API.
+*/
  public:
   UIterator() = default;
 
-  UIterator(UIterator&& rhs) noexcept :
+  UIterator(UIterator&& rhs) noexcept {}
+
+  UIterator& operator=(UIterator&& rhs) noexcept {
+    return *this;
+  }
+
+  virtual ~UIterator() = default;
+
+  // point to next element
+  //  return false if cursor points to end after movement
+  virtual bool next() = 0;
+
+  // point to previous element
+  //  return false if cursor points to head after movement
+  virtual bool previous() = 0;
+
+  virtual bool head() const = 0;
+
+  virtual bool end() const = 0;
+
+  virtual bool empty() const = 0;
+
+  inline Slice value() const {
+    CHECK(!empty() && !head() && !end());
+    return RealValue();
+  }
+
+ protected:
+  // Override this method to return actual value
+  virtual Slice RealValue() const = 0;
+};
+
+class CursorIterator : public UIterator {
+/*
+A CursorIterator iterator the elements pointed by a NodeCursor.
+The valid elements are specified by a vector of IndexRange.
+*/
+ public:
+  CursorIterator() = default;
+
+  CursorIterator(CursorIterator&& rhs) noexcept :
+      ustore::UIterator(std::move(rhs)),
       ranges_(std::move(rhs.ranges_)),
       curr_range_idx_(rhs.curr_range_idx_),
       curr_idx_in_range_(rhs.curr_idx_in_range_),
       cursor_(std::move(rhs.cursor_)) {}
 
-  UIterator(const Hash& root, const std::vector<IndexRange>& ranges,
+  CursorIterator(const Hash& root, const std::vector<IndexRange>& ranges,
             ChunkLoader* loader) noexcept
-      : ranges_(std::move(ranges)),
+      : UIterator(),
+        ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
         cursor_(root, empty() ? 0 : index(), loader) {}
 
-  UIterator(const Hash& root, std::vector<IndexRange>&& ranges,
+  CursorIterator(const Hash& root, std::vector<IndexRange>&& ranges,
             ChunkLoader* loader) noexcept
-      : ranges_(std::move(ranges)),
+      : UIterator(),
+        ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
         cursor_(root, empty() ? 0 : index(), loader) {}
 
-  virtual ~UIterator() = default;
+  virtual ~CursorIterator() = default;
 
-  UIterator& operator=(UIterator&& rhs) noexcept {
+  CursorIterator& operator=(CursorIterator&& rhs) noexcept {
+    UIterator::operator=(std::move(rhs));
     ranges_ = std::move(rhs.ranges_);
     curr_range_idx_ = rhs.curr_range_idx_;
     curr_idx_in_range_ = rhs.curr_idx_in_range_;
@@ -50,17 +98,23 @@ class UIterator : private Noncopyable {
 
   // point to next element
   //  return false if cursor points to end after movement
-  bool next();
+  bool next() override;
 
   // point to previous element
   //  return false if cursor points to head after movement
-  bool previous();
+  bool previous() override;
 
-  inline bool head() const { return curr_range_idx_ == -1; }
+  inline bool head() const override {
+    return curr_range_idx_ == -1;
+  }
 
-  inline bool end() const {return curr_range_idx_ == ranges_.size(); }
+  inline bool end() const override {
+    return curr_range_idx_ == ranges_.size();
+  }
 
-  inline bool empty() const  {return ranges_.size() == 0; }
+  inline bool empty() const override {
+    return ranges_.size() == 0;
+  }
 
   // return the idx of pointed element
   virtual inline uint64_t index() const {
@@ -74,18 +128,11 @@ class UIterator : private Noncopyable {
     return cursor_.currentKey().ToSlice();
   }
 
-  // return the decoded slice value
-  inline Slice value() const {
-    CHECK(!empty() && !head() && !end());
-    return RealValue();
-  }
-
-  // Override this method to return d
-  virtual Slice RealValue() const {
+ protected:
+  inline Slice RealValue() const override {
     return Slice(data(), numBytes());
   }
 
- protected:
   inline const byte_t* data() const {
     CHECK(!empty() && !head() && !end());
     return cursor_.current();
@@ -107,8 +154,6 @@ class UIterator : private Noncopyable {
   NodeCursor cursor_;
 };
 
-// TODO(pingcheng): why not derive from UIterator, or both derive from a base
-//  type containing next, begin, end, etc.
 // TODO(pingcheng, qingchao): can we have a base iterator abstract for both
 //  utypes and chunk store?
 template <class iterator_trait>
@@ -120,8 +165,8 @@ class DuallyDiffIterator {
   DuallyDiffIterator() = default;
   DuallyDiffIterator(DuallyDiffIterator&& rhs) = default;
 
-  DuallyDiffIterator(std::unique_ptr<UIterator> lhs_diff_it,
-                     std::unique_ptr<UIterator> rhs_diff_it) noexcept :
+  DuallyDiffIterator(std::unique_ptr<CursorIterator> lhs_diff_it,
+                     std::unique_ptr<CursorIterator> rhs_diff_it) noexcept :
       lhs_diff_it_(std::move(lhs_diff_it)),
       rhs_diff_it_(std::move(rhs_diff_it)),
       just_advanced(true) {
@@ -200,8 +245,8 @@ class DuallyDiffIterator {
     return 0;
   }
 
-  std::unique_ptr<UIterator> lhs_diff_it_;
-  std::unique_ptr<UIterator> rhs_diff_it_;
+  std::unique_ptr<CursorIterator> lhs_diff_it_;
+  std::unique_ptr<CursorIterator> rhs_diff_it_;
 
   // -1 to indicate lhs_diff is valid
   // 0 to indicate both valid
@@ -388,7 +433,7 @@ int8_t DuallyDiffIterator<iterator_trait>::update_flag(bool isGreaterValid) {
 }
 
 struct iterator_index_trait {
-  static uint64_t key(const UIterator& it) {
+  static uint64_t key(const CursorIterator& it) {
     return it.index();
   }
 
@@ -397,7 +442,7 @@ struct iterator_index_trait {
 };
 
 struct iterator_key_trait {
-  static Slice key(const UIterator& it) {
+  static Slice key(const CursorIterator& it) {
     return it.key();
   }
 

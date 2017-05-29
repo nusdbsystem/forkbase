@@ -8,7 +8,7 @@
 inline void CheckIdenticalElements(
   const std::vector<uint64_t>& expected_idxs,
   const std::vector<ustore::Slice>& expected_elements,
-  ustore::UIterator* it) {
+  ustore::CursorIterator* it) {
   for (size_t i = 0; i < expected_elements.size(); i++) {
     auto expected_element = expected_elements[i];
     auto actual_element = it->value();

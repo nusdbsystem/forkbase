@@ -4,7 +4,7 @@
 
 namespace ustore {
 
-bool UIterator::next() {
+bool CursorIterator::next() {
   if (end()) {
     LOG(WARNING) << "Can not move forward as already at seq head. ";
     return false;
@@ -52,7 +52,7 @@ bool UIterator::next() {
   return !end();
 }
 
-bool UIterator::previous() {
+bool CursorIterator::previous() {
   if (head()) {
     LOG(WARNING) << "Can not move backward as already at seq head. ";
     return false;

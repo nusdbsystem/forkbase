@@ -13,8 +13,10 @@ namespace ustore {
 
 DuallyDiffIndexIterator UList::DuallyDiff(
     const UList& lhs, const UList& rhs) {
-  std::unique_ptr<UIterator> lhs_diff_it(new UList::Iterator(lhs.Diff(rhs)));
-  std::unique_ptr<UIterator> rhs_diff_it(new UList::Iterator(rhs.Diff(lhs)));
+  std::unique_ptr<CursorIterator> lhs_diff_it(
+      new UList::Iterator(lhs.Diff(rhs)));
+  std::unique_ptr<CursorIterator> rhs_diff_it(
+      new UList::Iterator(rhs.Diff(lhs)));
 
   lhs_diff_it->previous();
   rhs_diff_it->previous();

@@ -11,8 +11,10 @@ namespace ustore {
 
 DuallyDiffKeyIterator UMap::DuallyDiff(
     const UMap& lhs, const UMap& rhs) {
-  std::unique_ptr<UIterator> lhs_diff_it(new UMap::Iterator(lhs.Diff(rhs)));
-  std::unique_ptr<UIterator> rhs_diff_it(new UMap::Iterator(rhs.Diff(lhs)));
+  std::unique_ptr<CursorIterator> lhs_diff_it(
+      new UMap::Iterator(lhs.Diff(rhs)));
+  std::unique_ptr<CursorIterator> rhs_diff_it(
+      new UMap::Iterator(rhs.Diff(lhs)));
 
   lhs_diff_it->previous();
   rhs_diff_it->previous();

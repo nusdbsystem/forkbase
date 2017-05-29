@@ -12,7 +12,7 @@
 inline void CheckIdenticalItems(
   const std::vector<ustore::Slice>& keys,
   const std::vector<ustore::Slice>& vals,
-  ustore::UIterator* it) {
+  ustore::CursorIterator* it) {
   for (size_t i = 0; i < keys.size(); i++) {
     auto expected_key = keys[i];
     auto expected_val = vals[i];

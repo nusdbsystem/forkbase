@@ -17,14 +17,14 @@ class UMap : public ChunkableType {
  public:
   static DuallyDiffKeyIterator DuallyDiff(const UMap& lhs, const UMap& rhs);
 
-  class Iterator : public UIterator {
+  class Iterator : public CursorIterator {
    public:
     Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
              ChunkLoader* loader) noexcept
-      : UIterator(root, ranges, loader) {}
+      : CursorIterator(root, ranges, loader) {}
     Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
              ChunkLoader* loader) noexcept
-      : UIterator(root, std::move(ranges), loader) {}
+      : CursorIterator(root, std::move(ranges), loader) {}
 
     inline uint64_t index() const override {
       LOG(WARNING) << "Index not supported for Map";
