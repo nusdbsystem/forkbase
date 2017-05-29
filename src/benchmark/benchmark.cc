@@ -51,7 +51,7 @@ void Benchmark::ValidateString(const Slice& key,
                                const std::vector<std::string>& values) {
   Timer timer;
   timer.Reset();
-  for (int i = 0; i < versions.size(); ++i) {
+  for (size_t i = 0; i < versions.size(); ++i) {
     VString s = db_->Get(key, versions[i]).String();
     CHECK(Slice(values[i]) == s.slice());
   }
@@ -59,8 +59,8 @@ void Benchmark::ValidateString(const Slice& key,
 }
 
 void Benchmark::StringValidation(int n, int len) {
-  std::cout << "Validating " << n << " Strings with Fixed Length ("
-            << len << ")......" << std::endl;
+  std::cout << "Validating " << n << " Strings with Fixed Length (" << len
+            << ")......" << std::endl;
   Slice key("String");
   Slice branch("Validation");
   std::vector<std::string> values = rg_.NRandomString(n, len);
@@ -69,8 +69,8 @@ void Benchmark::StringValidation(int n, int len) {
 }
 
 void Benchmark::FixedString(int n, int len) {
-  std::cout << "Benchmarking " << n << " Strings with Fixed Length ("
-            << len << ")......" << std::endl;
+  std::cout << "Benchmarking " << n << " Strings with Fixed Length (" << len
+            << ")......" << std::endl;
   Slice key("String");
   Slice branch("Fixed");
   std::vector<std::string> values = rg_.NFixedString(n, len);
@@ -79,8 +79,9 @@ void Benchmark::FixedString(int n, int len) {
 }
 
 void Benchmark::RandomString(int n, int len) {
-  std::cout << "Benchmarking " << n << " Strings with Random Length (max="
-            << len << ")......" << std::endl;
+  std::cout << "Benchmarking " << n
+            << " Strings with Random Length (max=" << len << ")......"
+            << std::endl;
   Slice key("String");
   Slice branch("Random");
   std::vector<std::string> values = rg_.NRandomString(n, len);
@@ -129,7 +130,7 @@ void Benchmark::ValidateBlob(const Slice& key,
                              const std::vector<std::string>& values) {
   Timer timer;
   timer.Reset();
-  for (int i = 0; i < versions.size(); ++i) {
+  for (size_t i = 0; i < versions.size(); ++i) {
     VBlob b = db_->Get(key, versions[i]).Blob();
     byte_t* buf = new byte_t[b.size()];
     b.Read(0, b.size(), buf);
@@ -140,8 +141,8 @@ void Benchmark::ValidateBlob(const Slice& key,
 }
 
 void Benchmark::BlobValidation(int n, int size) {
-  std::cout << "Validating " << n << " Blobs with Fixed Size ("
-            << size << ")......" << std::endl;
+  std::cout << "Validating " << n << " Blobs with Fixed Size (" << size
+            << ")......" << std::endl;
   Slice key("Blob");
   Slice branch("Validation");
   std::vector<std::string> values = rg_.NRandomString(n, size);
@@ -150,8 +151,8 @@ void Benchmark::BlobValidation(int n, int size) {
 }
 
 void Benchmark::FixedBlob(int n, int size) {
-  std::cout << "Benchmarking " << n << " Blobs with Fixed Size ("
-            << size << ")......" << std::endl;
+  std::cout << "Benchmarking " << n << " Blobs with Fixed Size (" << size
+            << ")......" << std::endl;
   Slice key("Blob");
   Slice branch("Fixed");
   std::vector<std::string> values = rg_.NFixedString(n, size);
@@ -161,8 +162,8 @@ void Benchmark::FixedBlob(int n, int size) {
 }
 
 void Benchmark::RandomBlob(int n, int size) {
-  std::cout << "Benchmarking " << n << " Blobs with Random Size (max="
-            << size << ")......" << std::endl;
+  std::cout << "Benchmarking " << n << " Blobs with Random Size (max=" << size
+            << ")......" << std::endl;
   Slice key("Blob");
   Slice branch("Random");
   std::vector<std::string> values = rg_.NRandomString(n, size);
