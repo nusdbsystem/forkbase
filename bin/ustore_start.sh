@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# start the workers and client services
+# start worker and client services
 #
 
 usage="Usage: ustore-run.sh [ arguments ]\n

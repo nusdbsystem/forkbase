@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <unistd.h>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -14,11 +15,6 @@
 
 using namespace ustore;
 
-constexpr int val_size = 100;
-constexpr int max_str_len = 32;
-constexpr int fixed_str_len = 16;
-constexpr int max_blob_size = 4096;
-constexpr int fixed_blob_size = 4096;
 constexpr int kSleepTime = 100000;
 
 void BenchmarkWorker() {

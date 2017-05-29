@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# kill all ustore jobs
+# stop worker services
 #
 
 # get environment variables
@@ -23,6 +23,7 @@ for i in ${hosts[@]}; do
     ssh $ssh_options $i $ustore_kill
   fi
 done
+echo "----------- All workers stopped ------------"
 
 ## kill ustore client service processes
 #host_file=$USTORE_CONF/client_services

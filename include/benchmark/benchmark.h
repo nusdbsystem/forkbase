@@ -65,6 +65,11 @@ class Benchmark {
   static constexpr int kNumBlobs = 5000;
   static constexpr int kStringLength = 64;
   static constexpr int kBlobSize = 8192;  // ensure blob are chunked
+  // static constexpr int kNumValidations = 10;
+  // static constexpr int kNumStrings = 10;
+  // static constexpr int kNumBlobs = 10;
+  // static constexpr int kStringLength = 10;
+  // static constexpr int kBlobSize = 10;  // ensure blob are chunked
 
   std::vector<Hash> PutString(const Slice& key, const Slice& branch,
                               const std::vector<std::string>& values);

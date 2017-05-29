@@ -1,6 +1,6 @@
 data_dir: "ustore_data"
 data_file_pattern: "ustore"
-num_segments: 8
+num_segments: 32
 
 worker_file: "conf/workers"
 clientservice_file: "conf/client_services"

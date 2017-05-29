@@ -38,6 +38,12 @@ ADD_DEPENDENCIES(micro_bench ustore)
 TARGET_LINK_LIBRARIES(micro_bench ustore)
 SET_TARGET_PROPERTIES(micro_bench PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 
+ADD_EXECUTABLE(dist_bench "benchmark/dist_bench_main.cc")
+ADD_DEPENDENCIES(dist_bench copy_protobuf)
+ADD_DEPENDENCIES(dist_bench ustore)
+TARGET_LINK_LIBRARIES(dist_bench ustore)
+SET_TARGET_PROPERTIES(dist_bench PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+
 IF(ENABLE_EXAMPLE)
   ADD_SUBDIRECTORY(example)
 ENDIF()
