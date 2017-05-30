@@ -61,8 +61,8 @@ using std::vector;
 #define WORKER_RDMA_CONN_STRLEN (MASTER_RDMA_CONN_STRLEN + 8 + 16 + 2)
 // 4: four-digital wid, 1: ':', 1: \0
 #define MAX_CONN_STRLEN (WORKER_RDMA_CONN_STRLEN+4+1)
-// 192.148.111.111:11234;
-#define MAX_CONN_STRLEN_G WORKER_RDMA_CONN_STRLEN + 22
+// 192.148.111.111:11234; // hostname:port
+#define MAX_CONN_STRLEN_G WORKER_RDMA_CONN_STRLEN + 100
 
 #define HALF_BITS 0xffffffff
 #define QUARTER_BITS 0xffff

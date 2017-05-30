@@ -56,7 +56,7 @@ RdmaNetResource* RdmaNetResourceFactory::newRdmaNetResource(
       try {
         RdmaNetResource *ret = new RdmaNetResource(list[i]);
         resources.push_back(ret);
-        LOG(INFO)<< "new rdma resource_ at " << ret << std::endl;
+        DLOG(INFO)<< "new rdma resource_ at " << ret << std::endl;
         return ret;
       } catch (int err) {
         LOG(WARNING)<< "Unable to get rdam resource_" << std::endl;
@@ -325,14 +325,14 @@ RdmaNetContext* RdmaNetResource::NewRdmaNetContext(node_id_t id) {
     LOG(WARNING)<< "unable to register more communication slots\n";
     return nullptr;
   }
-  LOG(INFO)<< "new RdmaNetContext: " << rdma_context_counter_ << std::endl;
+  DLOG(INFO)<< "new RdmaNetContext: " << rdma_context_counter_ << std::endl;
   return new RdmaNetContext(id, this);
 }
 
 void RdmaNetResource::DeleteRdmaNetContext(RdmaNetContext* ctx) {
   rdma_context_counter_--;
   // TODO(zhanghao): de-regsiter the slots
-  LOG(INFO)<< "delete RdmaNetContext: " << rdma_context_counter_ << std::endl;
+  DLOG(INFO)<< "delete RdmaNetContext: " << rdma_context_counter_ << std::endl;
   delete ctx;
 }
 
@@ -415,8 +415,8 @@ RdmaNetContext::RdmaNetContext(const node_id_t& id, RdmaNetResource *res)
       LOG(WARNING)<< "Unable to query qp";
       goto clean_qp;
     }
-    LOG(INFO)<< "qattr.cap.max_inline_data = " << attr.cap.max_inline_data
-        << "attr.cap.max_inline_data = " << qattr.cap.max_inline_data;
+    DLOG(INFO)<< "qattr.cap.max_inline_data = " << attr.cap.max_inline_data
+        << ", attr.cap.max_inline_data = " << qattr.cap.max_inline_data;
     if (attr.cap.max_inline_data == 0) {
       LOG(INFO)<< "Do NOT support inline data";
       MAX_RDMA_INLINE_SIZE = 0;
@@ -465,7 +465,7 @@ RdmaNetContext* RdmaNet::CreateRdmaNetContext(const node_id_t& id,
   qpCliMap_[ctx->GetQP()] = ctx;
   netmap_[id] = ctx;
 
-  LOG(INFO)<< "create qp " << ctx->GetQP() << std::endl;
+  DLOG(INFO)<< "create qp " << ctx->GetQP() << std::endl;
 
   net_lock_.unlock();
   return ctx;
@@ -554,7 +554,7 @@ const char* RdmaNetContext::GetRdmaConnString() {
           this->resource_->portAttribute_.lid, this->qp_->qp_num,
           this->resource_->psn_, 0, 0L);
   out:
-  LOG(INFO)<< "msg = " << msg_ << std::endl;
+  DLOG(INFO)<< "msg = " << msg_ << std::endl;
   return msg_;
 }
 
@@ -859,15 +859,17 @@ int RdmaNetContext::ExchConnParam(const node_id_t& cur_node,
     return -1;
   }
 
-  char msg[conn_len + 1];
+  char msg[MAX_CONN_STRLEN_G + 1];
   /* waiting for server's response */
-  int n = read(sockfd, msg, conn_len);
+  int n = read(sockfd, msg, MAX_CONN_STRLEN_G);
   if (n <= 0) {
     LOG(WARNING) << "Failed to read conn param from server "
         << strerror(errno) << " read " << n << "bytes)";
     return -1;
   }
   msg[n] = '\0';
+
+  DLOG(INFO) << "received: " << msg << " size = " << n;
 
   std::vector<std::string> cv;
   Split(msg, cv, ';');
@@ -918,25 +920,27 @@ void RdmaNet::StartService(const node_id_t& id, RdmaNetResource* res) {
   // create the event loop
   el_ = aeCreateEventLoop(EVENTLOOP_FDSET_INCR);
 
-  // open the socket for listening to the connections
-  // from workers to exch rdma resouces
-  char neterr[ANET_ERR_LEN];
-  vector<std::string> ip_port;
-  Split(id, ip_port);
-  assert(ip_port.size() == 2);
-  char* bind_addr = const_cast<char *>(ip_port[0].c_str());
-  int port = atoi(ip_port[1].c_str());
-  sockfd_ = anetTcpServer(neterr, port, bind_addr, TCP_BACKLOG);
-  if (sockfd_ < 0) {
-    LOG(WARNING) << "Opening port " << port
-        << " (bind_addr " << bind_addr << "): " << neterr;
-    assert(false);
-  }
+  if (id.length() != 0) {
+    // open the socket for listening to the connections
+    // from workers to exch rdma resouces
+    char neterr[ANET_ERR_LEN];
+    vector<std::string> ip_port;
+    Split(id, ip_port);
+    assert(ip_port.size() == 2);
+    char* bind_addr = const_cast<char *>(ip_port[0].c_str());
+    int port = atoi(ip_port[1].c_str());
+    sockfd_ = anetTcpServer(neterr, port, bind_addr, TCP_BACKLOG);
+    if (sockfd_ < 0) {
+      LOG(WARNING)<< "Opening port " << port
+      << " (bind_addr " << bind_addr << "): " << neterr;
+      assert(false);
+    }
 
-  // register tcp event for rdma parameter exchange
-  if (sockfd_ > 0 &&
-      aeCreateFileEvent(el_, sockfd_, AE_READABLE, TcpHandle, this) == AE_ERR) {
-    LOG(WARNING) << "Unrecoverable error creating sockfd file event.";
+    // register tcp event for rdma parameter exchange
+    if (sockfd_ > 0&&
+    aeCreateFileEvent(el_, sockfd_, AE_READABLE, TcpHandle, this) == AE_ERR) {
+      LOG(WARNING)<< "Unrecoverable error creating sockfd file event.";
+    }
   }
 
   // register rdma event
@@ -1080,12 +1084,11 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
   char cip[IP_STR_LEN];
   int cfd, cport;
   std::string conn;
-  node_id_t id;
   vector<std::string> cv;
   bool exist = false;
 
   cfd = anetTcpAccept(neterr, fd, cip, sizeof(cip), &cport);
-  LOG(INFO) << "Accept connection from: " << cfd;
+  DLOG(INFO) << "Accept connection from: " << cfd;
   if (cfd == ANET_ERR) {
     if (errno != EWOULDBLOCK)
     LOG(WARNING)<< "Accepting client connection: " << neterr << std::endl;
@@ -1101,19 +1104,35 @@ void TcpHandle(aeEventLoop *el, int fd, void *data, int mask) {
       return;
     }
     msg[n] = '\0';
-    LOG(INFO) << "conn string " << msg;
+    DLOG(INFO) << "conn string " << msg;
 }
 
+  DLOG(INFO) << "TCP Handle, received = " << msg;
+
   Split(msg, cv, ';');
-  assert(cv.size() == 2);
-  id = cv[0];
+  node_id_t id;
+  string sconn;
+  // assert(cv.size() == 2);
+  if (cv.size() == 1) {
+    id += string(cip);
+    id += ":";
+    id += std::to_string(cport);
+    sconn = std::move(cv[0]);
+  } else {
+    id = std::move(cv[0]);
+    sconn = std::move(cv[1]);
+  }
+
+  DLOG(WARNING) << "id = " << id;
+
   if (unlikely(!(ctx =
       static_cast<RdmaNetContext*>(net->CreateRdmaNetContext(id, exist))))) {
+    LOG(WARNING) << "Create RdmaNetContext failed";
     close(cfd);
     return;
   }
   if (!exist) {
-    ctx->SetRemoteConnParam(cv[1].c_str());
+    ctx->SetRemoteConnParam(sconn.c_str());
   } else {
     LOG(INFO) << "The RdmaNetContext already exists " << cfd;
   }

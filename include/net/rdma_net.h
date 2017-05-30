@@ -249,7 +249,7 @@ class RdmaNet : public Net {
 
   // delete the tcp connection event
   inline void DeleteConnectionEvent(uint32_t fd) {
-    LOG(WARNING) << "Close connection " << fd;
+    DLOG(INFO) << "Close connection " << fd;
     aeDeleteFileEvent(el_, fd, AE_READABLE);
     assert(fdCliMap_.count(fd));
     DeleteNetContext(fdCliMap_.at(fd));

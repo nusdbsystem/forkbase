@@ -35,7 +35,20 @@ class TestCallBack : public CallBack {
     string m(static_cast<const char*>(msg), size);
     //EXPECT_TRUE(source.compare(m) == 0);
     //EXPECT_TRUE((m == kID0) || (m == kID1) || (m == kID2));
-    DLOG(WARNING) << "msg = " << m;
+    DLOG(INFO) << "msg = " << m;
+  }
+};
+
+class ServerCallBack : public CallBack {
+ public:
+  explicit ServerCallBack(void* handler): CallBack(handler) {}
+  void operator()(const void *msg, int size, const node_id_t& source) {
+    Net* net = static_cast<Net*>(handler_);
+    string m(static_cast<const char*>(msg), size);
+    //EXPECT_TRUE(source.compare(m) == 0);
+    //EXPECT_TRUE((m == kID0) || (m == kID1) || (m == kID2));
+    DLOG(INFO) << "Server received msg = " << m;
+    net->GetNetContext(source)->Send(m.c_str(), m.size());
   }
 };
 
@@ -122,6 +135,49 @@ TEST(NetTest, MsgTest) {
   net2->Stop();
   t2->join();
   delete net2;
+  usleep(kSleepTime);
+}
+
+// test client and server context
+TEST(NetTest, ClientServer) {
+#ifdef USE_RDMA
+  Net* server = new RdmaNet(kID0);
+  Net* client = new RdmaNet("");
+#else
+  Net* server = new ServerZmqNet(kID0);
+  Net* client = new ServerZmqNet("");
+#endif
+
+  usleep(kSleepTime);
+  NetContext* context = client->CreateNetContext(kID0);
+
+  TestCallBack cb0;
+  ServerCallBack cb1(server);
+
+  // register receive callback function
+  client->RegisterRecv(&cb0);
+  server->RegisterRecv(&cb1);
+
+  // start the net background thread
+  thread* t0 = new thread(Start, client);
+  thread* t1 = new thread(Start, server);
+  usleep(kSleepTime);
+
+  /*
+   * node 0 sends msg to node 1
+   */
+  context->Send(kID0.c_str(), kID0.length());
+
+  // free the resources
+  usleep(kSleepTime);
+  client->Stop();
+  t0->join();
+  delete client;
+
+  usleep(kSleepTime);
+  server->Stop();
+  t1->join();
+  delete server;
   usleep(kSleepTime);
 }
 

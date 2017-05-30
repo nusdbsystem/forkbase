@@ -74,18 +74,18 @@ void WorkerService::Init() {
   fin_cs.close();
  */
 
+  // TODO(zhanghao): check why letting this after RdmaNet make NetContext destroyed unexpected?
+  worker_ = new Worker(worker_id);
+
 // TODO(zhanghao): define a static function in net.cc to create net instance,
 // instead of directly use USE_RDMA flag everywhere
 #ifdef USE_RDMA
-  net_ = new RdmaNet(node_addr_, Env::Instance()->config()->recv_threads());
+  net_ = new RdmaNet(node_addr_, Env::Instance()->config().recv_threads());
 #else
   // net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
   net_ = new ServerZmqNet(node_addr_,
                           Env::Instance()->config().recv_threads());
 #endif
-
-  fin.close();
-  worker_ = new Worker(worker_id);
 }
 
 void WorkerService::Start() {
