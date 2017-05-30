@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_HTTP_SETTINGS_H_
-#define USTORE_USTORE_HTTP_SETTINGS_H_
+#ifndef USTORE_HTTP_SETTINGS_H_
+#define USTORE_HTTP_SETTINGS_H_
 
 namespace ustore {
 
@@ -16,34 +16,25 @@ namespace ustore {
  * if defined, use cache
  */
 #define USE_CACHE
-#define DEFAULT_CACHE_SIZE 100  // default cache size
+constexpr int kDefaultCacheSize = 100;  // default cache size
 
-#define MAX_HEADER_SIZE 512  // max http header size
+constexpr int kMaxHeaderSize = 512;  // max http header size
 
 /*
  * max file size
- * if actual file size > MAX_FILE_SIZE,
+ * if actual file size > kMaxFileSize,
  * it is ok since we have a dynamic strategy to decide the file size
  * and allocate the response buffer
  */
-#define MAX_FILE_SIZE 10240
-#define MAX_RESPONSE_SIZE (MAX_HEADER_SIZE+MAX_FILE_SIZE)
+constexpr int kMaxFileSize = 10240;
+constexpr int kMaxResponseSize = kMaxHeaderSize + kMaxFileSize;
 
 /*
  * default receive buffer size
- * TODO: if data is larger than the DEFAULT_RECV_SIZE, how to handle?
+ * TODO: if data is larger than the kDefaultRecvSize, how to handle?
  */
-#define DEFAULT_RECV_SIZE MAX_RESPONSE_SIZE
-
-/*
- * LOGGING LEVEL:
- *  LOG_DEBUG
- *  LOG_INFO
- *  LOG_WARNING
- *  LOG_FATAL
- */
-#define LOG_LEVEL LOG_WARNING
+constexpr int kDefaultRecvSize = kMaxResponseSize;
 
 }  // namespace ustore
 
-#endif  // USTORE_USTORE_HTTP_SETTINGS_H_
+#endif  // USTORE_HTTP_SETTINGS_H_

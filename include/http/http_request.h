@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_HTTP_HTTP_REQUEST_H_
-#define USTORE_USTORE_HTTP_HTTP_REQUEST_H_
+#ifndef USTORE_HTTP_HTTP_REQUEST_H_
+#define USTORE_HTTP_HTTP_REQUEST_H_
 
 #include <unordered_map>
 #include <iostream>
@@ -9,9 +9,6 @@
 #include <string>
 #include "http/net.h"
 #include "http/settings.h"
-
-using std::string;
-using std::unordered_map;
 
 namespace ustore {
 
@@ -29,15 +26,15 @@ const string kOtherHeaders =
     "Connection: keep-alive\r\nServer: Simple Http Server\r\n";
 const string kParaKey = "para";
 
-enum CommandType {
-  GET,
-  PUT,
-  MERGE,
-  BRANCH,
-  RENAME,
-  LIST,
-  HEAD,
-  LATEST
+enum class CommandType {
+  kGet,
+  kPut,
+  kMerge,
+  kBranch,
+  kRename,
+  kList,
+  kHead,
+  kLatest
 };
 
 
@@ -46,7 +43,8 @@ enum CommandType {
  */
 class HttpRequest {
  public:
-  HttpRequest() {}
+  HttpRequest() = default;
+  ~HttpRequest() = default;
 
   // parse the data read from socket to
   // fill the necessary header fields in this object
@@ -62,7 +60,7 @@ class HttpRequest {
   inline bool KeepAlive() { return keep_alive_; }
 
   // get the POST data
-  inline unordered_map<string, string> GetParameters() {
+  inline std::unordered_map<string, string> GetParameters() {
     return ParseParameters();
   }
 
@@ -74,7 +72,7 @@ class HttpRequest {
 
  private:
   // parse the parameter list
-  unordered_map<string, string> ParseParameters();
+  std::unordered_map<string, string> ParseParameters();
 
   /*
    * parse the first line of the header
@@ -158,12 +156,12 @@ class HttpRequest {
   string uri_;
   string http_version_;
   bool keep_alive_ = false;
-  unordered_map<string, string> headers_;
-  static const unordered_map<string, CommandType> cmddict_;
+  std::unordered_map<string, string> headers_;
+  static const std::unordered_map<string, CommandType> cmddict_;
 
   // status_: e.g. 202 OK, 404 Not Found
   string status_ = kOk;
 };
 }  // namespace ustore
 
-#endif  // USTORE_USTORE_HTTP_HTTP_REQUEST_H_
+#endif  // USTORE_HTTP_HTTP_REQUEST_H_

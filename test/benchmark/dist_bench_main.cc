@@ -14,20 +14,19 @@ constexpr int kSleepTime = 100000;
 
 void BenchmarkClient() {
   // create client service
-  RemoteClientService *service = new RemoteClientService("");
-  service->Init();
-  std::thread client_service_thread(&RemoteClientService::Start, service);
+  RemoteClientService service("");
+  service.Init();
+  std::thread client_service_thread(&RemoteClientService::Start, &service);
   sleep(1);
 
   // create client
-  ClientDb *client = service->CreateClientDb();
+  ClientDb *client = service.CreateClientDb();
   ObjectDB db(client);
   Benchmark bm(&db);
   bm.RunAll();
 
-  service->Stop();
+  service.Stop();
   client_service_thread.join();
-  delete service;
   usleep(kSleepTime);
 }
 

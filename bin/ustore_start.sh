@@ -22,7 +22,7 @@ ssh_options="-oStrictHostKeyChecking=no \
              -oUserKnownHostsFile=/dev/null \
              -oLogLevel=quiet"
 ustore_run="bin/ustored $@"
-http_run="bin/http_client $@"
+http_run="bin/ustore_http $@"
 ustore_sshrun="cd $USTORE_HOME; $ustore_run"
 
 # start all the workers
@@ -45,9 +45,10 @@ for i in `cat $host_file` ; do
 done
 
 # start the http client
-echo Starting http client service @ `hostname`: $http_run 
+sleep 2
+echo Starting http client service @ `hostname`: $http_run
 cd $USTORE_HOME
-$http_run >> $USTORE_LOG/http_client.log 2>&1 &
+$http_run >> $USTORE_LOG/ustore_http.log 2>&1 &
 sleep 1
 echo "----------- All processes started ------------"
 

@@ -9,18 +9,19 @@
 #include "http/http_request.h"
 #include "http/server.h"
 
+namespace ustore {
+
 using std::string;
 using std::cout;
 using std::endl;
-
-namespace ustore {
+using std::unordered_map;
 
 /*
  * event handler to process request from clients
  * el: EventLoop pointer
  * fd: file descriptor of the ClientSocket
  * data: ClientSocket pointer
- * mask: READABLE / WRITABLE
+ * mask: kReadable / kWritable
  */
 void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
   HttpServer* hserver = static_cast<HttpServer*>(data);
@@ -31,19 +32,19 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
   int status = request.ReadAndParse(cs);
   if (status == ST_CLOSED) {
     hserver->Close(cs);
-    el->DeleteFileEvent(fd, READABLE);
+    el->DeleteFileEvent(fd, kReadable);
   } else if (status == ST_ERROR) {
     LOG(WARNING)<< "Parse request failed";
   } else {
     unordered_map<string, string> paras = request.GetParameters();
     for (const auto& it : paras) {
-      LOG(INFO) << it.first << ":" << it.second;
+      DLOG(INFO) << it.first << ":" << it.second;
     }
 
     string response;
     switch (request.GetCommand()) {
-      case GET:
-      LOG(INFO) << "Get Command";
+      case CommandType::kGet:
+      DLOG(INFO) << "Get Command";
       CHECK(paras.count("key"));
       if (paras.count("version")) {
         VMeta meta = hserver->GetODB()
@@ -68,8 +69,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         LOG(WARNING) << response;
       }
       break;
-      case PUT:
-      LOG(INFO) << "Put Command";
+      case CommandType::kPut:
+      DLOG(INFO) << "Put Command";
       CHECK(paras.count("key") && paras.count("value"));
       if (paras.count("version")) {
         VMeta meta = hserver->GetODB()
@@ -96,8 +97,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         LOG(WARNING) << response;
       }
       break;
-      case MERGE:
-      LOG(INFO) << "Merge Command";
+      case CommandType::kMerge:
+      DLOG(INFO) << "Merge Command";
       CHECK(paras.count("key") && paras.count("value"));
       if (paras.count("tgt_branch") && paras.count("ref_branch")) {
         VMeta meta = hserver->GetODB()
@@ -110,9 +111,10 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
               std::to_string(static_cast<int>(meta.code()));
         }
       } else if (paras.count("tgt_branch") && paras.count("ref_version1")) {
-        VMeta meta = hserver->GetODB()
-        .Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
-            Slice(paras["tgt_branch"]), Hash::FromBase32(paras["ref_version1"]));
+        VMeta meta = hserver->GetODB().Merge(Slice(paras["key"]),
+            VString(Slice(paras["value"])),
+            Slice(paras["tgt_branch"]),
+            Hash::FromBase32(paras["ref_version1"]));
         if (meta.code() == ErrorCode::kOK) {
           response = meta.version().ToBase32();
         } else {
@@ -135,8 +137,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         LOG(WARNING) << response;
       }
       break;
-      case BRANCH:
-      LOG(INFO) << "Branch Command";
+      case CommandType::kBranch:
+      DLOG(INFO) << "Branch Command";
       CHECK(paras.count("key") && paras.count("new_branch"));
       if (paras.count("old_branch")) {
         ErrorCode code = hserver->GetODB()
@@ -161,8 +163,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         LOG(WARNING) << response;
       }
       break;
-      case RENAME:
-      LOG(INFO) << "Rename Command";
+      case CommandType::kRename:
+      DLOG(INFO) << "Rename Command";
       if (paras.count("key") && paras.count("new_branch")
           && paras.count("old_branch")) {
         ErrorCode code = hserver->GetODB()
@@ -178,20 +180,20 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         LOG(WARNING) << response;
       }
       break;
-      case LIST:
-      response = "Not Support LIST";
+      case CommandType::kList:
+      response = "Not Support kList";
       LOG(WARNING) << response;
       break;
-      case HEAD:
-      response = "Not Support HEAD";
+      case CommandType::kHead:
+      response = "Not Support kHead";
       LOG(WARNING) << response;
       break;
-      case LATEST:
-      response = "Not Support LATEST";
+      case CommandType::kLatest:
+      response = "Not Support kLatest";
       LOG(WARNING) << response;
       break;
       default:
-      response = "Unrecognized uri: " + request.GetCommand();
+      response = "Unrecognized uri: " + static_cast<int>(request.GetCommand());
       LOG(WARNING) << response;
     }
 
@@ -202,7 +204,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
     if (!request.KeepAlive()) {
       LOG(INFO) << "not keep alive, delete socket";
       hserver->Close(cs);
-      el->DeleteFileEvent(fd, READABLE);
+      el->DeleteFileEvent(fd, kReadable);
     }
   }
 }
@@ -212,7 +214,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
  * el: EventLoop pointer
  * fd: file descriptor of the ClientSocket
  * data: HttpServer pointer
- * mask: READABLE / WRITABLE
+ * mask: kReadable / kWritable
  */
 void AcceptTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
   HttpServer* ser = static_cast<HttpServer*>(data);
@@ -221,7 +223,7 @@ void AcceptTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
     LOG(FATAL)<< "cannot accept client";
     return;
   }
-  LOG(INFO)<< "Accept client = " << cs->GetFD();
+  LOG(INFO) << "Accept client = " << cs->GetFD();
 
   if (ser->DispatchClientSocket(cs) == ST_ERROR) {
     LOG(FATAL) << "dispatch client socket failed";
@@ -261,7 +263,7 @@ int HttpServer::Start(int threads_num) {
     el_[i] = new EventLoop(el_size_);
   }
 
-  if (el_[0]->CreateFileEvent(ss_.GetFD(), READABLE, AcceptTcpClientHandle,
+  if (el_[0]->CreateFileEvent(ss_.GetFD(), kReadable, AcceptTcpClientHandle,
                               this) == ST_ERROR) {
     LOG(FATAL)<< "cannot create file event";
     return ST_ERROR;
@@ -278,7 +280,7 @@ int HttpServer::Start(int threads_num) {
 int HttpServer::DispatchClientSocket(ClientSocket* cs) {
   int hash = cs->GetFD() % threads_num_;
   EventLoop* el = el_[hash];
-  if (el->CreateFileEvent(cs->GetFD(), READABLE, ProcessTcpClientHandle,
+  if (el->CreateFileEvent(cs->GetFD(), kReadable, ProcessTcpClientHandle,
                           this) == ST_ERROR) {
     LOG(FATAL) << "cannot create file event";
     return ST_ERROR;

@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_HTTP_NET_H_
-#define USTORE_USTORE_HTTP_NET_H_
+#ifndef USTORE_HTTP_NET_H_
+#define USTORE_HTTP_NET_H_
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -10,9 +10,6 @@
 #include <sstream>
 #include "http/event.h"
 #include "http/settings.h"
-
-using std::string;
-using std::stringstream;
 
 namespace ustore {
 
@@ -28,41 +25,27 @@ namespace ustore {
  */
 class Socket {
  public:
-  explicit Socket(int fd): fd_(fd) {}
-
-  Socket(const string& ip, int port)
-      : ip_(ip),
-        port_(port) {}
-
-  Socket(const string& ip, int port, int fd)
-      : ip_(ip),
-        port_(port),
-        fd_(fd) {}
-
-  ~Socket() {
-    if (fd_ > 0) {
-      close(fd_);
-    }
-  }
+  explicit Socket(int fd) : fd_(fd) {}
+  Socket(const std::string& ip, int port) : ip_(ip), port_(port) {}
+  Socket(const std::string& ip, int port, int fd)
+      : ip_(ip), port_(port), fd_(fd) {}
+  ~Socket() { if (fd_ > 0) close(fd_); }
 
   // get the file descriptor of the socket
-  inline int GetFD() const noexcept {
-    return fd_;
-  }
+  inline int GetFD() const noexcept { return fd_; }
 
  protected:
   int fd_ = -1;
-  string ip_;
+  std::string ip_;
   int port_ = 0;
 };
 
 class ClientSocket : public Socket {
  public:
-  ClientSocket(const string& ip, int port)
-      : Socket(ip, port) {
-  }
-  ClientSocket(const string& ip, int port, int fd)
+  ClientSocket(const std::string& ip, int port) : Socket(ip, port) {}
+  ClientSocket(const std::string& ip, int port, int fd)
       : Socket(ip, port, fd) {}
+  ~ClientSocket() = default;
 
   // connect to the server
   int Connect();
@@ -74,26 +57,25 @@ class ClientSocket : public Socket {
    * read the data (max = size) from socket and put the data in buf
    * return: size of data received
    */
-  int Recv(void* buf, int size = DEFAULT_RECV_SIZE);
+  int Recv(void* buf, int size = kDefaultRecvSize);
   /*
-   * read the data (max = size) from socket and put the data in a string and return
-   * return: received data as a string
+   * read the data (max = size) from socket and put the data in a std::string and return
+   * return: received data as a std::string
    */
-  string Recv(int size = DEFAULT_RECV_SIZE);
+  std::string Recv(int size = kDefaultRecvSize);
   /*
-   * read the data (max = size) from socket and write the data to stringstream
+   * read the data (max = size) from socket and write the data to std::stringstream
    * return: size of data received
    */
-  int Recv(stringstream& ss, int size = DEFAULT_RECV_SIZE);
+  int Recv(std::stringstream& ss, int size = kDefaultRecvSize);
 };
 
 class ServerSocket : public Socket {
  public:
-  explicit ServerSocket(int port, const string& bind_addr = "", int backlog =
-                            TCP_BACKLOG)
-      : Socket(bind_addr, port),
-        backlog_(backlog) {
-  }
+  explicit ServerSocket(int port, const std::string& bind_addr = "",
+                        int backlog = TCP_BACKLOG)
+      : Socket(bind_addr, port), backlog_(backlog) {}
+  ~ServerSocket() = default;
 
   /*
    * start listen to the socket
@@ -116,4 +98,4 @@ class ServerSocket : public Socket {
 };
 }  // namespace ustore
 
-#endif  // USTORE_USTORE_HTTP_NET_H_
+#endif  // USTORE_HTTP_NET_H_

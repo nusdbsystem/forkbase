@@ -8,15 +8,17 @@
 
 namespace ustore {
 
+using std::unordered_map;
+
 const unordered_map<string, CommandType> HttpRequest::cmddict_ = {
-    {"/get", GET},
-    {"/put", PUT},
-    {"/merge", MERGE},
-    {"/branch", BRANCH},
-    {"/rename", RENAME},
-    {"/list", LIST},
-    {"/head", HEAD},
-    {"/latest", LATEST}
+    {"/get", CommandType::kGet},
+    {"/put", CommandType::kPut},
+    {"/merge", CommandType::kMerge},
+    {"/branch", CommandType::kBranch},
+    {"/rename", CommandType::kRename},
+    {"/list", CommandType::kList},
+    {"/head", CommandType::kHead},
+    {"/latest", CommandType::kLatest}
 };
 
 int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
@@ -98,8 +100,8 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
 }
 
 int HttpRequest::ReadAndParse(ClientSocket* socket) {
-  char buf[MAX_HEADER_SIZE];
-  int nread = socket->Recv(buf, MAX_HEADER_SIZE);
+  char buf[kMaxHeaderSize];
+  int nread = socket->Recv(buf, kMaxHeaderSize);
   if (unlikely(nread <= 0)) {  // remote has close the socket
      return ST_CLOSED;
   }
@@ -155,8 +157,8 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
     return ST_SUCCESS;
   }
 
-  char header[MAX_HEADER_SIZE];
-  char sbuf[MAX_RESPONSE_SIZE];
+  char header[kMaxHeaderSize];
+  char sbuf[kMaxResponseSize];
   int pos = 0;
 
   memcpy(header+pos, kHttpVersion.c_str(), kHttpVersion.length());

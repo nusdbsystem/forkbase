@@ -174,21 +174,20 @@ TEST(TestMessage, TestClient1Thread) {
     worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
 
   // launch clients
-  RemoteClientService *service = new RemoteClientService("");
+  RemoteClientService service("");
 
-  service->Init();
+  service.Init();
   // service->Start();
-  thread client_service_thread(&RemoteClientService::Start, service);
+  thread client_service_thread(&RemoteClientService::Start, &service);
   usleep(kSleepTime);
 
   // 1 thread
-  ClientDb *client = service->CreateClientDb();
+  ClientDb *client = service.CreateClientDb();
   TestClientRequest(client, 0, NREQUESTS);
 
   // stop the client service
-  service->Stop();
+  service.Stop();
   client_service_thread.join();
-  delete service;
   usleep(kSleepTime);
 
   // stop workers

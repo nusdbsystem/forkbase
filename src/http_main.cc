@@ -46,11 +46,10 @@ int main(int argc, char* argv[]) {
   // launch clients
   RemoteClientService service("");;
   service.Init();
-  ClientDb* client = service.CreateClientDb();
-
   std::thread ct(&RemoteClientService::Start, &service);
-  usleep(1000000);
+  sleep(1);
 
+  ClientDb* client = service.CreateClientDb();
   HttpServer server(client, port, bind_addr);  // create the HttpServer
   // set the max concurrent connections to support
   server.SetEventLoopSize(elsize);

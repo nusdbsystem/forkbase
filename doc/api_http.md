@@ -64,6 +64,15 @@ Currently, we only support ``VString`` related object operations.
     POST -d "key=XXX&old_branch=XXX&new_branch=XXX"
 ```
 
+## <a name="delete">Delete a branch</a>
+
+```
+  [public] /delete
+
+    // delete an existing branch
+    POST -d "key=XXX&branch=XXX"
+```
+
 ## <a name="list">List keys and branches</a>
 
 ```

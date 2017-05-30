@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_USTORE_HTTP_LOCK_H_
-#define USTORE_USTORE_HTTP_LOCK_H_
+#ifndef USTORE_HTTP_LOCK_H_
+#define USTORE_HTTP_LOCK_H_
 
 #include "http/settings.h"
 
@@ -47,4 +47,4 @@ class Locker {
 };
 }  // namespace ustore
 
-#endif  // USTORE_USTORE_HTTP_LOCK_H_
+#endif  // USTORE_HTTP_LOCK_H_

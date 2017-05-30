@@ -122,9 +122,7 @@ string MergeVV(const string& key, const string& ref_version1,
 
 
 TEST(HttpTest, BasicOps) {
-  ustore::SetStderrLogging(WARNING);
-
-  Worker worker {2018};
+  Worker worker {2017};
   int port = Env::Instance()->config().http_port();
 
   // start the http server
@@ -135,7 +133,7 @@ TEST(HttpTest, BasicOps) {
   // connect to the http server
   ClientSocket cs("localhost", port);
   if (cs.Connect() != ST_SUCCESS) {
-    LOG(WARNING) << "cannot connect to the server";
+    DLOG(INFO) << "cannot connect to the server";
     return;
   }
 
@@ -145,40 +143,40 @@ TEST(HttpTest, BasicOps) {
   // put a new key value
   string version = PutB(key, value1, branch1, cs);
   string version1 = version;
-  LOG(WARNING) << "Got version: " << version;
+  DLOG(INFO) << "Got version: " << version;
 
   // get the value
   string value = Get(key, version, cs);
-  LOG(WARNING) << "Got value: " << value;
+  DLOG(INFO) << "Got value: " << value;
   CHECK_EQ(value1, value);
 
   // put a key value based on the previous version
   string value2 = "value2";
   version = PutV(key, value2, version, cs);
   string version2 = version;
-  LOG(WARNING) << "Got version: " << version;
+  DLOG(INFO) << "Got version: " << version;
 
   // get the value
   value = Get(key, version, cs);
-  LOG(WARNING) << "Got value: " << value;
+  DLOG(INFO) << "Got value: " << value;
   CHECK_EQ(value, value2);
 
   // branch based on version
   string branch2 = "mybranch2";
   string status = BranchV(key, version, branch2, cs);
-  LOG(WARNING) << "New branch " << branch2 << ": " << status;
+  DLOG(INFO) << "New branch " << branch2 << ": " << status;
   CHECK(status == "OK" || status == "Branch Error: 5");
 
   // branch based on branch
   string branch3 = "mybranch3";
   status = BranchB(key, branch1, branch3, cs);
-  LOG(WARNING) << "New branch " << branch3 << ": " << status;
+  DLOG(INFO) << "New branch " << branch3 << ": " << status;
   CHECK(status == "OK" || status == "Branch Error: 5");
 
   // rename a branch
   string branch4 = "mybranch4";
   status = Rename(key, branch1, branch4, cs);
-  LOG(WARNING) << "Rename branch from " <<
+  DLOG(INFO) << "Rename branch from " <<
       branch1 << " to " << branch4 << ": " << status;
   CHECK(status == "OK" || status == "Rename Error: 5");
 
@@ -186,7 +184,7 @@ TEST(HttpTest, BasicOps) {
   // merge target branch to a referring branch
   string value3 = "value3";
   version = MergeBB(key, branch2, branch3, value3, cs);
-  LOG(WARNING) << "Merge branch "
+  DLOG(INFO) << "Merge branch "
      << branch3 << " based on " << branch2 << ": " << version;
 
   // get back the value to check
@@ -196,7 +194,7 @@ TEST(HttpTest, BasicOps) {
   // merge target branch to a referring version
   string value4 = "value4";
   string version3 = MergeBV(key, branch2, version, value4, cs);
-  LOG(WARNING) << "Merge branch "
+  DLOG(INFO) << "Merge branch "
       << branch2 << " based on " << version << ": " << version3;
 
   // get back the value to check
@@ -206,7 +204,7 @@ TEST(HttpTest, BasicOps) {
   // merge two existing versions
   string value5 = "value5";
   string version4 = MergeVV(key, version1, version2, value5, cs);
-  LOG(WARNING) << "Merge version "
+  DLOG(INFO) << "Merge version "
       << version1 << " based on " << version2 << ": " << version4;
 
   // get back the value to check

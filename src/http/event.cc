@@ -18,15 +18,15 @@ int EventLoop::EpollAddEvent(int fd, int mask) {
   struct epoll_event ee;
   /* If the fd was already monitored for some event, we need a MOD
    * operation. Otherwise we need an ADD operation. */
-  int op = events_[fd].mask == NONE ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
+  int op = events_[fd].mask == kNone ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
 
   ee.events = 0;
   mask |= events_[fd].mask;  // Merge old events
-  if (mask & READABLE)
+  if (mask & kReadable)
     ee.events |= EPOLLIN;
-  if (mask & WRITABLE)
+  if (mask & kWritable)
     ee.events |= EPOLLOUT;
-  if (mask & EDEGE)
+  if (mask & kEdege)
     ee.events |= EPOLLET;
   ee.data.u64 = 0;  // avoid valgrind warning
   ee.data.fd = fd;
@@ -40,13 +40,13 @@ void EventLoop::EpollDelEvent(int fd, int delmask) {
   int mask = events_[fd].mask & (~delmask);
 
   ee.events = 0;
-  if (mask & READABLE)
+  if (mask & kReadable)
     ee.events |= EPOLLIN;
-  if (mask & WRITABLE)
+  if (mask & kWritable)
     ee.events |= EPOLLOUT;
   ee.data.u64 = 0;  // avoid valgrind warning
   ee.data.fd = fd;
-  if (mask != NONE) {
+  if (mask != kNone) {
     epoll_ctl(estate_->epfd, EPOLL_CTL_MOD, fd, &ee);
   } else {
     /* Note, Kernel < 2.6.9 requires a non null event pointer even for
@@ -66,13 +66,13 @@ int EventLoop::EpollPoll(int timeout) {
       int mask = 0;
       struct epoll_event *e = estate_->events + j;
       if (likely(e->events & EPOLLIN))
-        mask |= READABLE;
+        mask |= kReadable;
       if (e->events & EPOLLOUT)
-        mask |= WRITABLE;
+        mask |= kWritable;
       if (e->events & EPOLLERR)
-        mask |= WRITABLE;
+        mask |= kWritable;
       if (e->events & EPOLLHUP)
-        mask |= WRITABLE;
+        mask |= kWritable;
       fired_[j].fd = e->data.fd;
       fired_[j].mask = mask;
     }
@@ -90,7 +90,7 @@ EventLoop::EventLoop(int setsize) {
   this->stop_ = 0;
   this->maxfd_ = -1;
   for (int i = 0; i < setsize; i++)
-    this->events_[i].mask = NONE;
+    this->events_[i].mask = kNone;
 
   estate_ = new EpollState();
   if (!estate_) return;
@@ -122,9 +122,9 @@ int EventLoop::ResizeSetSize(int setsize) {
 
   this->setsize_ = setsize;
 
-  // new slots are initialized with NONE mask
+  // new slots are initialized with kNone mask
   for (int i = this->maxfd_ + 1; i < setsize; i++)
-    this->events_[i].mask = NONE;
+    this->events_[i].mask = kNone;
   return ST_SUCCESS;
 }
 
@@ -156,9 +156,9 @@ int EventLoop::CreateFileEvent(int fd, int mask, FileProc *proc,
   if (EpollAddEvent(fd, mask) == -1)
     return ST_ERROR;
   fe->mask |= mask;
-  if (mask & READABLE)
+  if (mask & kReadable)
     fe->rfile_proc = proc;
-  if (mask & WRITABLE)
+  if (mask & kWritable)
     fe->wfile_proc = proc;
   fe->client_data = client_data;
   if (fd > this->maxfd_)
@@ -170,16 +170,16 @@ void EventLoop::DeleteFileEvent(int fd, int mask) {
   if (fd >= this->setsize_) return;
 
   FileEvent *fe = &this->events_[fd];
-  if (fe->mask == NONE) return;
+  if (fe->mask == kNone) return;
 
   EpollDelEvent(fd, mask);
   fe->mask = fe->mask & (~mask);
-  if (fd == this->maxfd_ && fe->mask == NONE) {
+  if (fd == this->maxfd_ && fe->mask == kNone) {
     /* Update the max fd */
     int j;
 
     for (j = this->maxfd_ - 1; j >= 0; j--)
-      if (this->events_[j].mask != NONE)
+      if (this->events_[j].mask != kNone)
         break;
     this->maxfd_ = j;
   }
@@ -203,12 +203,12 @@ int EventLoop::ProcessEvents(int timeout) {
       int fd = this->fired_[j].fd;
       int rfired = 0;
 
-      if (likely(fe->mask & mask & READABLE)) {
+      if (likely(fe->mask & mask & kReadable)) {
         rfired = 1;
         fe->rfile_proc(this, fd, fe->client_data, mask);
       }
 
-      if (fe->mask & mask & WRITABLE) {
+      if (fe->mask & mask & kWritable) {
         if (!rfired || fe->wfile_proc != fe->rfile_proc)
           fe->wfile_proc(this, fd, fe->client_data, mask);
       }

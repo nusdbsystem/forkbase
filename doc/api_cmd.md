@@ -60,7 +60,16 @@ Currently, we only support ``VString`` related object operations.
   [command] rename
 
     // rename an existing branch
-    rename $NEW_BRANCH $OLD_BRANCH
+    rename $OLD_BRANCH $NEW_BRANCH
+```
+
+## <a name="delete">Delete a branch</a>
+
+```
+  [command] delete
+
+    // delete an existing branch
+    delete $OLD_BRANCH
 ```
 
 ## <a name="list">List keys and branches</a>

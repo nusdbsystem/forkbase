@@ -12,6 +12,8 @@
 
 namespace ustore {
 
+using std::stringstream;
+
 int ServerSocket::Listen() {
   int rv;
   char cport[6];  // max 65535
@@ -64,8 +66,8 @@ ClientSocket* ServerSocket::Accept() {
   sockaddr_storage sa;
   socklen_t salen = sizeof(sa);
 
-  int max_ip_len = 46;
-  char cip[max_ip_len];
+  constexpr int kMaxIpLen = 46;
+  char cip[kMaxIpLen];
   int cfd, cport;
 
   while (true) {
@@ -83,7 +85,7 @@ ClientSocket* ServerSocket::Accept() {
 
   if (sa.ss_family == AF_INET) {
     sockaddr_in* s = reinterpret_cast<sockaddr_in*>(&sa);
-    inet_ntop(AF_INET, &(s->sin_addr), cip, max_ip_len);
+    inet_ntop(AF_INET, &(s->sin_addr), cip, kMaxIpLen);
     cport = ntohs(s->sin_port);
   } else {
     LOG(WARNING)<< "not supported IPV6";
