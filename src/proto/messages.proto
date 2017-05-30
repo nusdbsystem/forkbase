@@ -26,6 +26,18 @@ message UStoreMessage {
     MERGE_REQUEST = 9;
     MERGE_RESPONSE = 10;
     GET_CHUNK_REQUEST = 11;
+    LIST_KEY_REQUEST = 12;
+    LIST_BRANCH_REQUEST = 13;
+    EXISTS_REQUEST = 14;
+    GET_BRANCH_HEAD_REQUEST = 15;
+    IS_BRANCH_HEAD_REQUEST = 16;
+    GET_LATEST_VERSION_REQUEST = 17;
+    IS_LATEST_VERSION_REQUEST = 18;
+    DELETE_REQUEST = 19;
+    LIST_RESPONSE = 20;
+    BOOL_RESPONSE = 21;
+    BRANCH_VERSION_RESPONSE = 22;
+    DELETE_RESPONSE = 23;
   }
 
   /**
@@ -50,6 +62,9 @@ message UStoreMessage {
   optional RenameRequestPayload rename_request_payload = 10;
   optional MergeRequestPayload merge_request_payload = 11;
   optional MergeResponsePayload merge_response_payload = 12;
+  optional BoolResponsePayload bool_response_payload = 13;
+  optional MultiVersionResponsePayload multi_version_response_payload = 14;
+  optional BranchVersionResponsePayload branch_version_response_payload = 16;
 }
 
 /**
@@ -140,4 +155,16 @@ message ValuePayload {
   optional int32 dels = 4;
   repeated bytes values = 5;  // vector<Slice> vals
   repeated bytes keys = 6;  // vector<Slice> keys
+}
+
+message MultiVersionResponsePayload {
+  repeated bytes versions = 1;
+}
+
+message BranchVersionResponsePayload {
+  optional bytes version = 2;
+}
+
+message BoolResponsePayload {
+  required bool value = 3;
 }

@@ -39,6 +39,7 @@ using std::string;
 
 const int NREQUESTS = 4;
 const string keys[] = {"aaa", "bbb", "ccc", "ddd"};
+const string random_key = "eee";
 const string values[] = {"where is the wisdome in knowledge",
                          "where is the knowledge in information",
                          "the brown fox",
@@ -49,69 +50,112 @@ const int kSleepTime = 100000;
 // i^th thread issue requests from i*(nthreads/nreqs) to
 // (i+1)*(nthreads/nreqs)
 void TestClientRequest(ClientDb* client, int idx, int len) {
-  Hash HEAD_VERSION = Hash::ComputeFrom((const byte_t*)("head"), 4);
+  int start_idx = idx;
+  for (int k = 0; k < len; k++) {
+    idx = (start_idx + k) % NREQUESTS;
+    Hash HEAD_VERSION = Hash::ComputeFrom((const byte_t*)("head"), 4);
 
-  // put a string
-  Value string_val;
-  string_val.type = UType::kString;
-  string_val.base = Hash::kNull;
-  string_val.vals.push_back(Slice(values[idx]));
-  Hash version;
-  EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, HEAD_VERSION, &version),
-            ErrorCode::kOK);
-  DLOG(INFO) << "PUT version (string): " << version.ToBase32();
+    // put a string
+    Value string_val;
+    string_val.type = UType::kString;
+    string_val.base = Hash::kNull;
+    string_val.vals.push_back(Slice(values[idx]));
+    Hash version;
+    EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, HEAD_VERSION, &version),
+              ErrorCode::kOK);
+    DLOG(INFO) << "PUT version (string): " << version.ToBase32();
 
-  // put a list of 2 values
-  Value list_val;
-  list_val.type = UType::kList;
-  list_val.base = Hash::kNull;
-  list_val.vals.push_back(Slice(values[0]));
-  list_val.vals.push_back(Slice(values[idx]));
-  Hash version_list;
-  EXPECT_EQ(client->Put(Slice(keys[idx]), list_val, HEAD_VERSION,
-                        &version_list), ErrorCode::kOK);
-  DLOG(INFO) << "PUT version (list): " << version_list.ToBase32();
+    // put a list of 2 values
+    Value list_val;
+    list_val.type = UType::kList;
+    list_val.base = Hash::kNull;
+    list_val.vals.push_back(Slice(values[0]));
+    list_val.vals.push_back(Slice(values[idx]));
+    Hash version_list;
+    EXPECT_EQ(client->Put(Slice(keys[idx]), list_val, HEAD_VERSION,
+              &version_list), ErrorCode::kOK);
+    DLOG(INFO) << "PUT version (list): " << version_list.ToBase32();
 
-  // get the string back
-  UCell string_value;
-  EXPECT_EQ(client->Get(Slice(keys[idx]), version, &string_value),
-            ErrorCode::kOK);
-  EXPECT_EQ(string_value.type(), UType::kString);
-  DLOG(INFO) << "GET datahash (string): "
-            <<  string_value.dataHash().ToBase32();
-  // get the list back
-  UCell list_value;
-  EXPECT_EQ(client->Get(Slice(keys[idx]), version_list, &list_value),
-            ErrorCode::kOK);
-  EXPECT_EQ(list_value.type(), UType::kList);
-  DLOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
+    // get the string back
+    UCell string_value;
+    EXPECT_EQ(client->Get(Slice(keys[idx]), version, &string_value),
+              ErrorCode::kOK);
+    EXPECT_EQ(string_value.type(), UType::kString);
+    DLOG(INFO) << "GET datahash (string): "
+               <<  string_value.dataHash().ToBase32();
+    // get the list back
+    UCell list_value;
+    EXPECT_EQ(client->Get(Slice(keys[idx]), version_list, &list_value),
+              ErrorCode::kOK);
+    EXPECT_EQ(list_value.type(), UType::kList);
+    DLOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
 
-  // check GetChunk
-  EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list).numBytes(),
-            list_value.chunk().numBytes());
+    // check GetChunk
+    EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list).numBytes(),
+              list_value.chunk().numBytes());
 
-  // branch from head
-  string new_branch = "branch_"+std::to_string(idx);
-  EXPECT_EQ(client->Branch(Slice(keys[idx]),
-                              version, Slice(new_branch)), ErrorCode::kOK);
+    // branch from head
+    string new_branch = "branch_"+std::to_string(idx);
+    EXPECT_EQ(client->Branch(Slice(keys[idx]),
+              version, Slice(new_branch)), ErrorCode::kOK);
 
-  // put on the new branch (string value)
-  Hash branch_version;
-  EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, Slice(new_branch),
-                        &branch_version), ErrorCode::kOK);
+    // put on the new branch (string value)
+    Hash branch_version;
+    EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, Slice(new_branch),
+              &branch_version), ErrorCode::kOK);
 
-  DLOG(INFO) << "PUT version (new branch): " << branch_version.ToBase32()
-            << std::endl;
+    DLOG(INFO) << "PUT version (new branch): " << branch_version.ToBase32()
+               << std::endl;
 
-  // merge
-  Hash merge_version;
-  EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, Slice(new_branch),
-                          version, &merge_version), ErrorCode::kOK);
-  DLOG(INFO) << "MERGE version (w/o branch): " << merge_version.ToBase32();
+    Hash q_branch;
+    client->GetBranchHead(Slice(keys[idx]), Slice(new_branch), &q_branch);
+    EXPECT_EQ(branch_version, q_branch);
+    // merge
+    Hash merge_version;
+    EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, Slice(new_branch),
+              version, &merge_version), ErrorCode::kOK);
+    DLOG(INFO) << "MERGE version (w/o branch): " << merge_version.ToBase32()
+               << std::endl;
 
-  EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, version, branch_version,
-                          &merge_version), ErrorCode::kOK);
-  DLOG(INFO) << "MERGE version (with branch): " << merge_version.ToBase32();
+    // Check branch head
+    bool is_head;
+    client->IsBranchHead(Slice(keys[idx]), Slice(new_branch), branch_version,
+                         &is_head);
+    EXPECT_TRUE(!is_head);
+    client->IsBranchHead(Slice(keys[idx]), Slice(new_branch), merge_version,
+                         &is_head);
+    EXPECT_TRUE(is_head);
+    EXPECT_EQ(client->Merge(Slice(keys[idx]), string_val, version,
+              branch_version, &merge_version), ErrorCode::kOK);
+    DLOG(INFO) << "MERGE version (with branch): " << merge_version.ToBase32()
+               << std::endl;
+
+    // Get latest versions
+    vector<Hash> versions;
+    client->GetLatestVersions(Slice(keys[idx]), &versions);
+    EXPECT_EQ(versions.size(), 3);
+    bool is_latest;
+    client->IsLatestVersion(Slice(keys[idx]), versions[0], &is_latest);
+    EXPECT_TRUE(is_latest);
+
+    client->Delete(Slice(keys[idx]), Slice(new_branch));
+  }
+  // list keys
+  vector<string> q_keys;
+  client->ListKeys(&q_keys);
+  EXPECT_EQ(q_keys.size(), len);
+
+  // list branches
+  vector<string> branches;
+  client->ListBranches(Slice(keys[idx]), &branches);
+  EXPECT_EQ(branches.size(), 0);  // branch was deleted
+
+  // check exist
+  bool exists;
+  client->Exists(Slice(keys[(idx + 1) % NREQUESTS]), &exists);
+  EXPECT_TRUE(exists);
+  client->Exists(Slice(random_key), &exists);
+  EXPECT_TRUE(!exists);
 }
 
 TEST(TestMessage, TestClient1Thread) {

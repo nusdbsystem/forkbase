@@ -88,38 +88,34 @@ class ClientDb : public DB {
                   const Hash& ref_version1, const Hash& ref_version2,
                   Hash* version) override;
 
+  ErrorCode ListKeys(std::vector<std::string>* keys) override;
+  ErrorCode ListBranches(const Slice& key,
+                         std::vector<std::string>* branches) override;
+
+  ErrorCode Exists(const Slice& key, bool* exist) override;
+  ErrorCode Exists(const Slice& key, const Slice& branch, bool* exist) override;
+
+  ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
+                          Hash* version) override;
+  ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
+                         const Hash& version, bool* isHead) override;
+
+  ErrorCode GetLatestVersions(const Slice& key,
+                              std::vector<Hash>* versions) override;
+  ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
+                            bool* isLatest) override;
+
   ErrorCode Branch(const Slice& key, const Slice& old_branch,
                    const Slice& new_branch) override;
   ErrorCode Branch(const Slice& key, const Hash& version,
                    const Slice& new_branch) override;
   ErrorCode Rename(const Slice& key, const Slice& old_branch,
                    const Slice& new_branch) override;
+  ErrorCode Delete(const Slice& key, const Slice& branch) override;
 
   Chunk GetChunk(const Slice& key, const Hash& version) override;
 
   inline int id() const noexcept { return id_; }
-
-  // TODO(anh): implement methods below
-  ErrorCode ListKeys(std::vector<std::string>* versions)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode Exists(const Slice& key, bool* exist)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode Exists(const Slice& key, const Slice& branch, bool* exist)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode GetBranchHead(const Slice& key, const Slice& branch, Hash* version)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
-                         const Hash& version, bool* isHead)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* versions)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
-                            bool* isLatest)
-  override { return ErrorCode::kUnknownOp; }
-  ErrorCode Delete(const Slice& key, const Slice& branch)
-  override { return ErrorCode::kUnknownOp; }
 
  private:
   // send request to a node. Return false if there are
@@ -141,6 +137,10 @@ class ClientDb : public DB {
   ErrorCode GetPutResponse(Hash* version);
   ErrorCode GetMergeResponse(Hash* version);
   ErrorCode GetUCellResponse(UCell* value);
+  ErrorCode GetStringList(std::vector<string> *vals);
+  ErrorCode GetVersionList(std::vector<Hash> *versions);
+  ErrorCode GetBool(bool *exists);
+  ErrorCode GetBranchHeadVersion(Hash *version);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
@@ -162,7 +162,7 @@ class ClientDb : public DB {
 class WorkerList {
  public:
   explicit WorkerList(const std::vector<RangeInfo>& workers);
-  ~WorkerList() {}
+  ~WorkerList() = default;
 
   /**
    * Invoked whenever the list is out of date.
@@ -175,6 +175,8 @@ class WorkerList {
    * function is responsible for updating the list.
    */
   node_id_t GetWorker(const Slice& key);
+
+  std::vector<node_id_t> GetWorkerIds();
 
  private:
   // should be sorted by the range
