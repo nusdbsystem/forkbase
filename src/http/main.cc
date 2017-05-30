@@ -1,9 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include <cstring>
+#include <thread>
 #include "utils/env.h"
 #include "utils/logging.h"
 #include "http/server.h"
+#include "cluster/remote_client_service.h"
+#include "cluster/clientdb.h"
+
 using namespace ustore;
 
 int main(int argc, char* argv[]) {
@@ -39,12 +43,25 @@ int main(int argc, char* argv[]) {
       "bind_addr: %s, threads: %d, connections: %d\n",
       port, bind_addr.c_str(), threads, elsize);
 
-  HttpServer server(port, bind_addr);  // create the HttpServer
+  // launch clients
+  RemoteClientService service("");;
+  service.Init();
+  ClientDb* client = service.CreateClientDb();
+
+  std::thread ct(&RemoteClientService::Start, &service);
+  usleep(1000000);
+
+  HttpServer server(client, port, bind_addr);  // create the HttpServer
   // set the max concurrent connections to support
   server.SetEventLoopSize(elsize);
 
   if (server.Start(threads) != ST_SUCCESS) {  // start the http server
     printf("start httpserver error\n");
   }
+
+  // exit and cleanup
+  service.Stop();
+  ct.join();
+  delete client;
   return 0;
 }

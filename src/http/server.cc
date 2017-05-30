@@ -8,7 +8,6 @@
 #include "http/event.h"
 #include "http/http_request.h"
 #include "http/server.h"
-#include "http/http_client_service.h"
 
 using std::string;
 using std::cout;
@@ -24,13 +23,14 @@ namespace ustore {
  * mask: READABLE / WRITABLE
  */
 void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
-  ClientSocket* cs = static_cast<ClientSocket*>(data);
+  HttpServer* hserver = static_cast<HttpServer*>(data);
+  ClientSocket* cs = hserver->GetClientSocket(fd);
   // LOG(LOG_WARNING, "Process client = %d", cs->GetFD());
 
   HttpRequest request;
   int status = request.ReadAndParse(cs);
   if (status == ST_CLOSED) {
-    delete cs;
+    hserver->Close(cs);
     el->DeleteFileEvent(fd, READABLE);
   } else if (status == ST_ERROR) {
     LOG(WARNING)<< "Parse request failed";
@@ -46,8 +46,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       LOG(INFO) << "Get Command";
       CHECK(paras.count("key"));
       if (paras.count("version")) {
-        VMeta meta = HttpClientService::Instance()->GetDB()
-        ->Get(Slice(paras["key"]), Hash::FromBase32(paras["version"]));
+        VMeta meta = hserver->GetODB()
+        .Get(Slice(paras["key"]), Hash::FromBase32(paras["version"]));
         if (meta.code() == ErrorCode::kOK) {
           response = meta.String().slice().ToString();
         } else {
@@ -55,8 +55,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
               std::to_string(static_cast<int>(meta.code()));
         }
       } else if (paras.count("branch")) {
-        VMeta meta = HttpClientService::Instance()->GetDB()
-        ->Get(Slice(paras["key"]), Slice(paras["branch"]));
+        VMeta meta = hserver->GetODB()
+        .Get(Slice(paras["key"]), Slice(paras["branch"]));
         if (meta.code() == ErrorCode::kOK) {
           response = meta.String().slice().ToString();
         } else {
@@ -72,8 +72,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       LOG(INFO) << "Put Command";
       CHECK(paras.count("key") && paras.count("value"));
       if (paras.count("version")) {
-        VMeta meta = HttpClientService::Instance()->GetDB()
-            ->Put(Slice(paras["key"]), VString(Slice(paras["value"])),
+        VMeta meta = hserver->GetODB()
+            .Put(Slice(paras["key"]), VString(Slice(paras["value"])),
                   Hash::FromBase32(paras["version"]));
         if (meta.code() == ErrorCode::kOK) {
           response = meta.version().ToBase32();
@@ -82,8 +82,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
               std::to_string(static_cast<int>(meta.code()));
         }
       } else if (paras.count("branch")) {
-        VMeta meta = HttpClientService::Instance()->GetDB()
-        ->Put(Slice(paras["key"]),
+        VMeta meta = hserver->GetODB()
+        .Put(Slice(paras["key"]),
               VString(Slice(paras["value"])), Slice(paras["branch"]));
         if (meta.code() == ErrorCode::kOK) {
           response = meta.version().ToBase32();
@@ -100,8 +100,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       LOG(INFO) << "Merge Command";
       CHECK(paras.count("key") && paras.count("value"));
       if (paras.count("tgt_branch") && paras.count("ref_branch")) {
-        VMeta meta = HttpClientService::Instance()->GetDB()
-        ->Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
+        VMeta meta = hserver->GetODB()
+        .Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
             Slice(paras["tgt_branch"]), Slice(paras["ref_branch"]));
         if (meta.code() == ErrorCode::kOK) {
           response = meta.version().ToBase32();
@@ -110,8 +110,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
               std::to_string(static_cast<int>(meta.code()));
         }
       } else if (paras.count("tgt_branch") && paras.count("ref_version1")) {
-        VMeta meta = HttpClientService::Instance()->GetDB()
-        ->Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
+        VMeta meta = hserver->GetODB()
+        .Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
             Slice(paras["tgt_branch"]), Hash::FromBase32(paras["ref_version1"]));
         if (meta.code() == ErrorCode::kOK) {
           response = meta.version().ToBase32();
@@ -120,8 +120,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
               std::to_string(static_cast<int>(meta.code()));
         }
       } else if (paras.count("ref_version1") && paras.count("ref_version2")) {
-        VMeta meta = HttpClientService::Instance()->GetDB()
-        ->Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
+        VMeta meta = hserver->GetODB()
+        .Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
             Hash::FromBase32(paras["ref_version1"]),
             Hash::FromBase32(paras["ref_version2"]));
         if (meta.code() == ErrorCode::kOK) {
@@ -139,8 +139,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       LOG(INFO) << "Branch Command";
       CHECK(paras.count("key") && paras.count("new_branch"));
       if (paras.count("old_branch")) {
-        ErrorCode code = HttpClientService::Instance()->GetDB()
-        ->Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
+        ErrorCode code = hserver->GetODB()
+        .Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
                  Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK";
@@ -148,8 +148,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
           response = "Branch Error: " + std::to_string(static_cast<int>(code));
         }
       } else if (paras.count("version")) {
-        ErrorCode code = HttpClientService::Instance()->GetDB()
-        ->Branch(Slice(paras["key"]), Hash::FromBase32(paras["version"]),
+        ErrorCode code = hserver->GetODB()
+        .Branch(Slice(paras["key"]), Hash::FromBase32(paras["version"]),
                  Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK";
@@ -165,8 +165,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       LOG(INFO) << "Rename Command";
       if (paras.count("key") && paras.count("new_branch")
           && paras.count("old_branch")) {
-        ErrorCode code = HttpClientService::Instance()->GetDB()
-        ->Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
+        ErrorCode code = hserver->GetODB()
+        .Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
                  Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK";
@@ -201,7 +201,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
 
     if (!request.KeepAlive()) {
       LOG(INFO) << "not keep alive, delete socket";
-      delete cs;
+      hserver->Close(cs);
       el->DeleteFileEvent(fd, READABLE);
     }
   }
@@ -216,7 +216,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
  */
 void AcceptTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
   HttpServer* ser = static_cast<HttpServer*>(data);
-  ClientSocket* cs = ser->GetServerSocket().Accept();
+  ClientSocket* cs = ser->Accept();
   if (!cs) {
     LOG(FATAL)<< "cannot accept client";
     return;
@@ -234,8 +234,8 @@ void StartEventLoopThread(EventLoop* el) {
   el->Start();
 }
 
-HttpServer::HttpServer(int port, const string& bind_addr, int backlog)
-    : ss_(port, bind_addr, backlog) {
+HttpServer::HttpServer(DB* db, int port, const string& bind_addr, int backlog)
+    : odb_(db), ss_(port, bind_addr, backlog) {
 }
 
 HttpServer::~HttpServer() {
@@ -279,7 +279,7 @@ int HttpServer::DispatchClientSocket(ClientSocket* cs) {
   int hash = cs->GetFD() % threads_num_;
   EventLoop* el = el_[hash];
   if (el->CreateFileEvent(cs->GetFD(), READABLE, ProcessTcpClientHandle,
-                          cs) == ST_ERROR) {
+                          this) == ST_ERROR) {
     LOG(FATAL) << "cannot create file event";
     return ST_ERROR;
   }

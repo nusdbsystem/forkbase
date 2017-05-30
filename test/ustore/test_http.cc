@@ -9,7 +9,7 @@
 #include "utils/logging.h"
 #include "http/server.h"
 #include "http/net.h"
-#include "cluster/worker_service.h"
+#include "worker/worker.h"
 
 using namespace ustore;
 
@@ -124,23 +124,11 @@ string MergeVV(const string& key, const string& ref_version1,
 TEST(HttpTest, BasicOps) {
   ustore::SetStderrLogging(WARNING);
 
-  // launch workers
-  std::ifstream fin(Env::Instance()->config().worker_file());
-  string worker_addr;
-  std::vector<WorkerService*> workers;
-  while (fin >> worker_addr)
-    workers.push_back(new WorkerService(worker_addr, ""));
-
-  std::vector<std::thread> worker_threads;
-  for (int i = 0; i < workers.size(); i++)
-    workers[i]->Init();
-
-  for (int i = 0; i < workers.size(); i++)
-    worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
-
+  Worker worker {2018};
   int port = Env::Instance()->config().http_port();
+
   // start the http server
-  HttpServer server(port);
+  HttpServer server(&worker, port);
   std::thread server_thread(Start, &server);
   sleep(1);
 
@@ -228,13 +216,4 @@ TEST(HttpTest, BasicOps) {
   server.Stop();
   sleep(1);
   server_thread.join();
-  // server_thread.join();
-
-  // stop workers
-  for (int i = 0; i < worker_threads.size(); i++) {
-    workers[i]->Stop();
-    worker_threads[i].join();
-    delete workers[i];
-    usleep(kSleepTime);
-  }
 }
