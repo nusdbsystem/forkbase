@@ -13,9 +13,10 @@
 #include "worker/worker.h"
 #include "utils/logging.h"
 
+namespace ustore {
+
 using std::vector;
 using std::string;
-namespace ustore {
 
 class WSCallBack : public CallBack {
  public:
@@ -129,8 +130,8 @@ void WorkerService::HandleRequest(const void *msg, int size,
   response->set_source(ustore_msg->source());
 
   ErrorCode error_code;
-  //CHECK(ustore_msg->has_branch() || ustore_msg->has_version());
-  //CHECK(!(ustore_msg->has_branch() && ustore_msg->has_version()));
+  // CHECK(ustore_msg->has_branch() || ustore_msg->has_version());
+  // CHECK(!(ustore_msg->has_branch() && ustore_msg->has_version()));
   switch (ustore_msg->type()) {
     case UStoreMessage::PUT_REQUEST:
     {
@@ -245,7 +246,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
     {
       bool exists;
       error_code = ustore_msg->has_branch()
-          ? worker_->Exists(Slice(ustore_msg->key()), 
+          ? worker_->Exists(Slice(ustore_msg->key()),
                   Slice(ustore_msg->branch()), &exists)
           : worker_->Exists(Slice(ustore_msg->key()), &exists);
       BoolResponsePayload *bool_res =

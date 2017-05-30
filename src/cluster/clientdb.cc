@@ -312,56 +312,55 @@ ErrorCode ClientDb::GetStringList(vector<string> *vals) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
 
-  MultiVersionResponsePayload *payload = 
+  MultiVersionResponsePayload *payload =
     response->mutable_multi_version_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
 
-  for (int i=0; i < payload->versions_size(); i++)  
-    vals->push_back(string((payload->versions(i)).data(),
-                                (payload->versions(i)).length()));
-  delete response; 
-  return err; 
+  for (int i=0; i < payload->versions_size(); i++)
+    vals->push_back(string(payload->versions(i).data(),
+                    payload->versions(i).length()));
+  delete response;
+  return err;
 }
 
 ErrorCode ClientDb::GetVersionList(vector<Hash> *versions) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
 
-  MultiVersionResponsePayload *payload = 
+  MultiVersionResponsePayload *payload =
     response->mutable_multi_version_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
 
-  for (int i=0; i < payload->versions_size(); i++) 
-    versions->push_back(Hash(reinterpret_cast<const byte_t *>
-                          (payload->versions(i).data())).Clone());
-  delete response; 
-  return err; 
+  for (int i=0; i < payload->versions_size(); i++)
+    versions->push_back(Hash(reinterpret_cast<const byte_t *>(
+                        payload->versions(i).data())).Clone());
+  delete response;
+  return err;
 }
 
 ErrorCode ClientDb::GetBranchHeadVersion(Hash *version) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
 
-  BranchVersionResponsePayload *payload = 
+  BranchVersionResponsePayload *payload =
     response->mutable_branch_version_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
 
   *version = Hash(reinterpret_cast<const byte_t *>(
-                      payload->version().data())).Clone();
-
-  delete response; 
-  return err; 
+                  payload->version().data())).Clone();
+  delete response;
+  return err;
 }
 
 ErrorCode ClientDb::GetBool(bool *value) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
 
-  BoolResponsePayload *payload = 
+  BoolResponsePayload *payload =
     response->mutable_bool_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
   *value = payload->value();
-  delete response; 
+  delete response;
   return err;
 }
 
@@ -383,7 +382,8 @@ ErrorCode ClientDb::ListKeys(std::vector<std::string>* keys) {
   return err;
 }
 
-ErrorCode ClientDb::ListBranches(const Slice& key, std::vector<std::string>* branches) {
+ErrorCode ClientDb::ListBranches(const Slice& key,
+                                 std::vector<std::string>* branches) {
   UStoreMessage *request = new UStoreMessage();
   request->set_type(UStoreMessage::LIST_BRANCH_REQUEST);
   request->set_key(key.data(), key.len());
@@ -392,7 +392,7 @@ ErrorCode ClientDb::ListBranches(const Slice& key, std::vector<std::string>* bra
   delete request;
   return GetStringList(branches);
 }
-  
+
 ErrorCode ClientDb::Exists(const Slice& key, bool* exist) {
   UStoreMessage *request = new UStoreMessage();
   request->set_type(UStoreMessage::EXISTS_REQUEST);
@@ -414,7 +414,8 @@ ErrorCode ClientDb::Exists(const Slice& key, const Slice& branch, bool* exist) {
   return GetBool(exist);
 }
 
-ErrorCode ClientDb::GetBranchHead(const Slice& key, const Slice& branch, Hash* version) {
+ErrorCode ClientDb::GetBranchHead(const Slice& key, const Slice& branch,
+                                  Hash* version) {
   UStoreMessage *request = new UStoreMessage();
   request->set_type(UStoreMessage::GET_BRANCH_HEAD_REQUEST);
   request->set_key(key.data(), key.len());
@@ -438,7 +439,8 @@ ErrorCode ClientDb::IsBranchHead(const Slice& key, const Slice& branch,
   return GetBool(isHead);
 }
 
-ErrorCode ClientDb::GetLatestVersions(const Slice& key, std::vector<Hash>* versions) {
+ErrorCode ClientDb::GetLatestVersions(const Slice& key,
+                                      std::vector<Hash>* versions) {
   UStoreMessage *request = new UStoreMessage();
   request->set_type(UStoreMessage::GET_LATEST_VERSION_REQUEST);
   request->set_key(key.data(), key.len());
@@ -469,7 +471,6 @@ ErrorCode ClientDb::Delete(const Slice& key, const Slice& branch) {
   Send(request, workers_->GetWorker(key));
   delete request;
   return GetEmptyResponse();
-
 }
 
 WorkerList::WorkerList(const std::vector<RangeInfo> &workers) {

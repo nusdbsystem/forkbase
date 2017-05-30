@@ -38,7 +38,7 @@ ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest)
     : NetContext(src, dest) {
   // start connection to the remote host
   send_sock_ = zsock_new(ZMQ_DEALER);
-  zsock_set_connect_timeout(send_sock_, 10);
+  zsock_set_connect_timeout(send_sock_, kWaitInterval);
   string host = "tcp://" + dest_id_;
   CHECK_EQ(zsock_connect((zsock_t *)send_sock_, "%s", host.c_str()), 0);
 }
@@ -57,8 +57,8 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
   zmsg_append(msg, &frame);
 
   send_lock_.lock();
-  //int timeout = 100;
-  //zmq_setsockopt(send_sock_, ZMQ_SNDTIMEO, &timeout, sizeof(int));
+  // int timeout = 100;
+  // zmq_setsockopt(send_sock_, ZMQ_SNDTIMEO, &timeout, sizeof(int));
   int st = zmsg_send(&msg, (zsock_t *)send_sock_) == 0 ? len : -1;
   CHECK_EQ(st, len) << " Connection failure: failed to send message";
   send_lock_.unlock();
