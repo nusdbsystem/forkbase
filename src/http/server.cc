@@ -180,6 +180,21 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         LOG(WARNING) << response;
       }
       break;
+      case CommandType::kDelete:
+      DLOG(INFO) << "Delete Command";
+      if (paras.count("key") && paras.count("branch")) {
+        ErrorCode code = hserver->GetODB()
+        .Delete(Slice(paras["key"]), Slice(paras["branch"]));
+        if (code == ErrorCode::kOK) {
+          response = "OK";
+        } else {
+          response = "Delete Error: " + std::to_string(static_cast<int>(code));
+        }
+      } else {
+        response = "Delete parameter error";
+        LOG(WARNING) << response;
+      }
+      break;
       case CommandType::kList:
       response = "Not Support kList";
       LOG(WARNING) << response;

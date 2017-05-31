@@ -16,6 +16,7 @@ const unordered_map<string, CommandType> HttpRequest::cmddict_ = {
     {"/merge", CommandType::kMerge},
     {"/branch", CommandType::kBranch},
     {"/rename", CommandType::kRename},
+    {"/delete", CommandType::kDelete},
     {"/list", CommandType::kList},
     {"/head", CommandType::kHead},
     {"/latest", CommandType::kLatest}

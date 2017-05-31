@@ -32,6 +32,7 @@ enum class CommandType {
   kMerge,
   kBranch,
   kRename,
+  kDelete,
   kList,
   kHead,
   kLatest
