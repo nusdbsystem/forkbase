@@ -136,9 +136,9 @@ class ColumnStore {
 template<class T1, class T2>
 ErrorCode ColumnStore::GetTable(const T1& table_name, const T2& branch_name,
                                 Table* table) {
-  auto tab_meta = odb_.Get(Slice(table_name), Slice(branch_name));
-  USTORE_GUARD(tab_meta.code());
-  *table = tab_meta.Map();
+  auto tab_rst = odb_.Get(Slice(table_name), Slice(branch_name));
+  USTORE_GUARD(tab_rst.stat);
+  *table = tab_rst.value.Map();
   return ErrorCode::kOK;
 }
 
@@ -146,9 +146,9 @@ template<class T1, class T2, class T3>
 ErrorCode ColumnStore::ReadColumn(const T1& table_name, const T2& branch_name,
                                   const T3& col_name, Column* col) {
   auto col_key = GlobalKey(table_name, col_name);
-  auto col_meta = odb_.Get(Slice(col_key), Slice(branch_name));
-  USTORE_GUARD(col_meta.code());
-  *col = col_meta.List();
+  auto col_rst = odb_.Get(Slice(col_key), Slice(branch_name));
+  USTORE_GUARD(col_rst.stat);
+  *col = col_rst.value.List();
   return ErrorCode::kOK;
 }
 
@@ -158,9 +158,9 @@ ErrorCode ColumnStore::WriteColumn(
   const std::vector<Slice>& col_vals, Version* ver) {
   auto col_key = GlobalKey(table_name, col_name);
   Column col(col_vals);
-  auto col_meta = odb_.Put(Slice(col_key), col, Slice(branch_name));
-  USTORE_GUARD(col_meta.code());
-  *ver = col_meta.version().ToBase32();
+  auto col_rst = odb_.Put(Slice(col_key), col, Slice(branch_name));
+  USTORE_GUARD(col_rst.stat);
+  *ver = col_rst.value.ToBase32();
   return ErrorCode::kOK;
 }
 

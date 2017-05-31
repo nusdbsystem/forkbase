@@ -9,7 +9,7 @@ namespace ca {
 
 ErrorCode ColumnStore::CreateTable(const std::string& table_name,
                                    const std::string& branch_name) {
-  return odb_.Put(Slice(table_name), Table(), Slice(branch_name)).code();
+  return odb_.Put(Slice(table_name), Table(), Slice(branch_name)).stat;
 }
 
 ErrorCode ColumnStore::BranchTable(const std::string& table_name,
@@ -56,7 +56,7 @@ ErrorCode ColumnStore::MergeTable(const std::string& table_name,
     GetTable(table_name, tgt_branch_name, &tab));
   tab.Remove(Slice(remove_col_name));
   return odb_.Merge(Slice(table_name), tab, Slice(tgt_branch_name),
-                    Slice(ref_branch_name)).code();
+                    Slice(ref_branch_name)).stat;
 }
 
 ErrorCode ColumnStore::MergeTable(
@@ -72,7 +72,7 @@ ErrorCode ColumnStore::MergeTable(
     GetTable(table_name, tgt_branch_name, &tab));
   tab.Set(Slice(new_col_name), Slice(new_col_ver));
   return odb_.Merge(Slice(table_name), tab, Slice(tgt_branch_name),
-                    Slice(ref_branch_name)).code();
+                    Slice(ref_branch_name)).stat;
 }
 
 ErrorCode ColumnStore::GetColumn(
@@ -100,7 +100,7 @@ ErrorCode ColumnStore::PutColumn(const std::string& table_name,
   USTORE_GUARD(
     GetTable(table_name, branch_name, &tab));
   tab.Set(Slice(col_name), Slice(col_ver));
-  return odb_.Put(Slice(table_name), tab, Slice(branch_name)).code();
+  return odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
 }
 
 ErrorCode ColumnStore::RemoveColumn(const std::string& table_name,
@@ -110,7 +110,7 @@ ErrorCode ColumnStore::RemoveColumn(const std::string& table_name,
   USTORE_GUARD(
     GetTable(table_name, branch_name, &tab));
   tab.Remove(Slice(col_name));
-  return odb_.Put(Slice(table_name), tab, Slice(branch_name)).code();
+  return odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
 }
 
 ErrorCode ColumnStore::DiffColumn(const std::string& lhs_table_name,
