@@ -34,8 +34,8 @@ void ZmqNet::Stop() {
   is_running_ = false;
 }
 
-ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest)
-    : NetContext(src, dest) {
+ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest, ClientZmqNet *net)
+    : NetContext(src, dest), client_net_(net) {
   // start connection to the remote host
   send_sock_ = zsock_new(ZMQ_DEALER);
   zsock_set_connect_timeout(send_sock_, kWaitInterval);
@@ -57,11 +57,10 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
   zmsg_append(msg, &frame);
 
   send_lock_.lock();
-  // int timeout = 100;
-  // zmq_setsockopt(send_sock_, ZMQ_SNDTIMEO, &timeout, sizeof(int));
   int st = zmsg_send(&msg, (zsock_t *)send_sock_) == 0 ? len : -1;
-  CHECK_EQ(st, len) << " Connection failure: failed to send message";
   send_lock_.unlock();
+  client_net_->request_counter_++;
+  client_net_->timeout_counter_ = kPoolTimeout; 
   return st;
 }
 
@@ -108,12 +107,15 @@ ClientZmqNet::ClientZmqNet(int nthreads) : ZmqNet("", nthreads) {
   }
   CHECK_EQ(status, 0);
   is_running_ = true;
+  timeout_counter_ = kPoolTimeout;
+  request_counter_ = 0;
 }
 
 NetContext* ZmqNet::CreateNetContext(const node_id_t& id) {
   ZmqNetContext* ctx = nullptr;
   if (!netmap_.count(id)) {
-    ctx = new ZmqNetContext(cur_node_, id);
+    ctx = new ZmqNetContext(cur_node_, id,
+                      reinterpret_cast<ClientZmqNet *>(this));
     netmap_[id] = ctx;
   }
   CHECK(netmap_[id]) << "Creating netcontext failed";
@@ -137,20 +139,22 @@ void ClientZmqNet::Start() {
       zpoller_add(zpoller, nctx->GetSocket());
   }
 
-  int count_wait_interval = kPoolTimeout;
   while (is_running_) {
     void *sock = zpoller_wait(zpoller, kWaitInterval);
     if (!sock && !zpoller_expired(zpoller))
       break;
-    // if (zpoller_expired(zpoller) && is_running_ && !(count_wait_interval--))
-    //   LOG(FATAL) << "Connection timed out. Server may have crashed!";
+     if (zpoller_expired(zpoller) && is_running_ && !(timeout_counter_--)
+                    && request_counter_) 
+       LOG(FATAL) << "Connection timed out. Server may have crashed!";
     if (sock) {
       zmsg_t *msg = zmsg_recv(sock);
       if (!msg)
         break;
+      request_counter_--;
+      timeout_counter_ = kPoolTimeout;
+
       // send to backend
       zmsg_send(&msg, backend_sock_);
-      count_wait_interval = kPoolTimeout;  // reset
     }
   }
   // Stop when ^C

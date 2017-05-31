@@ -4,6 +4,7 @@
 #define USTORE_NET_ZMQ_NET_H_
 
 #include <mutex>
+#include <atomic>
 #include <string>
 #include <thread>
 #include <vector>
@@ -45,6 +46,7 @@ class ClientZmqNet : public ZmqNet {
   void Start() override;
   // receive thread
   void ClientThread();
+  std::atomic<int> request_counter_, timeout_counter_;
 };
 
 /**
@@ -72,15 +74,16 @@ class ServerZmqNet : public ZmqNet {
 // remote worker
 class ZmqNetContext : public NetContext {
  public:
-  ZmqNetContext(const node_id_t& src, const node_id_t& dest);
+  ZmqNetContext(const node_id_t& src, const node_id_t& dest, ClientZmqNet *net);
   ~ZmqNetContext();
 
   ssize_t Send(const void* ptr, size_t len, CallBack* func = nullptr) override;
   void *GetSocket() { return send_sock_; }
 
- private:
+ protected:
   std::mutex send_lock_;
   void *send_sock_;
+  ClientZmqNet *client_net_;
 };
 
 // Server side's network context. Contains a processing thread, a connection
