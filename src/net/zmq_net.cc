@@ -142,8 +142,8 @@ void ClientZmqNet::Start() {
     void *sock = zpoller_wait(zpoller, kWaitInterval);
     if (!sock && !zpoller_expired(zpoller))
       break;
-    if (zpoller_expired(zpoller) && is_running_ && !(count_wait_interval--))
-      LOG(FATAL) << "Connection timed out. Server may have crashed!";
+    // if (zpoller_expired(zpoller) && is_running_ && !(count_wait_interval--))
+    //   LOG(FATAL) << "Connection timed out. Server may have crashed!";
     if (sock) {
       zmsg_t *msg = zmsg_recv(sock);
       if (!msg)
