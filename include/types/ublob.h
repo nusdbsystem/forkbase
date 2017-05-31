@@ -64,12 +64,6 @@ class UBlob : public ChunkableType {
     inline bool head() const override { return cursor_.isBegin(); }
     inline bool end() const override { return cursor_.isEnd(); }
 
-    inline bool empty() const override {
-      // A Blob with no bytes contain a single empty chunk
-      // , which is not empty
-      return false;
-    }
-
    protected:
     inline Slice RealValue() const override {
       // number of bytes stored in this chunk

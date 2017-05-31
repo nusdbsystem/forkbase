@@ -46,17 +46,14 @@ TEST(SList, Empty) {
 
 
   auto it = new_slist2.Scan();
-  ASSERT_TRUE(it.empty());
   ASSERT_TRUE(it.end());
 
   // empty list DIFF non-empty list
   auto diff_it1 = new_slist2.Diff(new_slist1);
-  ASSERT_TRUE(diff_it1.empty());
   ASSERT_TRUE(diff_it1.end());
 
   // non-empty list DIFF empty list
   auto diff_it2 = new_slist1.Diff(new_slist2);
-  ASSERT_FALSE(diff_it2.empty());
   ASSERT_EQ(0, diff_it2.index());
   ASSERT_TRUE(diff_it2.value() == expected_e1);
 
@@ -64,7 +61,6 @@ TEST(SList, Empty) {
   ASSERT_TRUE(diff_it2.end());
 
   ASSERT_TRUE(diff_it2.previous());
-  ASSERT_FALSE(diff_it2.empty());
   ASSERT_EQ(0, diff_it2.index());
   ASSERT_TRUE(diff_it2.value() == expected_e1);
 
@@ -73,7 +69,6 @@ TEST(SList, Empty) {
 
   // non-empty list INTERSECT empty list
   auto intersect_it = new_slist2.Intersect(new_slist1);
-  ASSERT_TRUE(intersect_it.empty());
   ASSERT_TRUE(intersect_it.end());
 
   // non-empty list DUALLYDIFF empty list
