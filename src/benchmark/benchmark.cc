@@ -32,7 +32,7 @@ std::vector<Hash> Benchmark::PutString(const std::vector<std::string>& keys,
   timer.Reset();
   for (size_t i = 0; i < keys.size(); ++i) {
     versions.push_back(
-        db_->Put(Slice(keys[i]), VString(Slice(values[i])), branch).version());
+        db_->Put(Slice(keys[i]), VString(Slice(values[i])), branch).value);
   }
   std::cout << "Put String Time: " << timer.Elapse() << " ms" << std::endl;
   return versions;
@@ -43,7 +43,7 @@ void Benchmark::GetString(const std::vector<std::string>& keys,
   Timer timer;
   timer.Reset();
   for (size_t i = 0; i < keys.size(); ++i) {
-    VString s = db_->Get(Slice(keys[i]), versions[i]).String();
+    VString s = db_->Get(Slice(keys[i]), versions[i]).value.String();
   }
   std::cout << "Get String Time: " << timer.Elapse() << " ms" << std::endl;
 }
@@ -54,7 +54,7 @@ void Benchmark::ValidateString(const std::vector<std::string>& keys,
   Timer timer;
   timer.Reset();
   for (size_t i = 0; i < keys.size(); ++i) {
-    VString s = db_->Get(Slice(keys[i]), versions[i]).String();
+    VString s = db_->Get(Slice(keys[i]), versions[i]).value.String();
     CHECK(Slice(values[i]) == s.slice());
   }
   std::cout << "Validate String Time: " << timer.Elapse() << " ms" << std::endl;
@@ -100,7 +100,7 @@ std::vector<Hash> Benchmark::PutBlob(const std::vector<std::string>& keys,
   timer.Reset();
   for (size_t i = 0; i < keys.size(); ++i) {
     versions.push_back(
-        db_->Put(Slice(keys[i]), VBlob(Slice(values[i])), branch).version());
+        db_->Put(Slice(keys[i]), VBlob(Slice(values[i])), branch).value);
   }
   std::cout << "Put Blob Time: " << timer.Elapse() << " ms\n";
   return versions;
@@ -111,7 +111,7 @@ void Benchmark::GetBlobMeta(const std::vector<std::string>& keys,
   Timer timer;
   timer.Reset();
   for (size_t i = 0; i < keys.size(); ++i) {
-    VBlob b = db_->Get(Slice(keys[i]), versions[i]).Blob();
+    VBlob b = db_->Get(Slice(keys[i]), versions[i]).value.Blob();
   }
   std::cout << "Get Blob Meta Time: " << timer.Elapse() << " ms\n";
 }
@@ -121,7 +121,7 @@ void Benchmark::GetBlob(const std::vector<std::string>& keys,
   Timer timer;
   timer.Reset();
   for (size_t i = 0; i < keys.size(); ++i) {
-    VBlob b = db_->Get(Slice(keys[i]), versions[i]).Blob();
+    VBlob b = db_->Get(Slice(keys[i]), versions[i]).value.Blob();
     for (auto it = b.ScanChunk(); !it.end(); it.next())
       it.value();
   }
@@ -134,7 +134,7 @@ void Benchmark::ValidateBlob(const std::vector<std::string>& keys,
   Timer timer;
   timer.Reset();
   for (size_t i = 0; i < keys.size(); ++i) {
-    VBlob b = db_->Get(Slice(keys[i]), versions[i]).Blob();
+    VBlob b = db_->Get(Slice(keys[i]), versions[i]).value.Blob();
     byte_t* buf = new byte_t[b.size()];
     b.Read(0, b.size(), buf);
     CHECK(Slice(values[i]) == Slice(buf, b.size()));

@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
       port, bind_addr.c_str(), threads, elsize);
 
   // launch clients
-  RemoteClientService service("");;
+  RemoteClientService service("");
   service.Init();
   std::thread ct(&RemoteClientService::Start, &service);
   sleep(1);

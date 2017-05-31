@@ -47,22 +47,22 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       DLOG(INFO) << "Get Command";
       CHECK(paras.count("key"));
       if (paras.count("version")) {
-        VMeta meta = hserver->GetODB()
+        auto rlt = hserver->GetODB()
         .Get(Slice(paras["key"]), Hash::FromBase32(paras["version"]));
-        if (meta.code() == ErrorCode::kOK) {
-          response = meta.String().slice().ToString();
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.String().slice().ToString();
         } else {
           response = "Get Error: " +
-              std::to_string(static_cast<int>(meta.code()));
+              std::to_string(static_cast<int>(rlt.stat));
         }
       } else if (paras.count("branch")) {
-        VMeta meta = hserver->GetODB()
+        auto rlt = hserver->GetODB()
         .Get(Slice(paras["key"]), Slice(paras["branch"]));
-        if (meta.code() == ErrorCode::kOK) {
-          response = meta.String().slice().ToString();
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.String().slice().ToString();
         } else {
           response = "Get Error: " +
-              std::to_string(static_cast<int>(meta.code()));
+              std::to_string(static_cast<int>(rlt.stat));
         }
       } else {
         response = "Get parameter error";
@@ -73,24 +73,24 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       DLOG(INFO) << "Put Command";
       CHECK(paras.count("key") && paras.count("value"));
       if (paras.count("version")) {
-        VMeta meta = hserver->GetODB()
+        auto rlt = hserver->GetODB()
             .Put(Slice(paras["key"]), VString(Slice(paras["value"])),
                   Hash::FromBase32(paras["version"]));
-        if (meta.code() == ErrorCode::kOK) {
-          response = meta.version().ToBase32();
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.ToBase32();
         } else {
           response = "Put Error: " +
-              std::to_string(static_cast<int>(meta.code()));
+              std::to_string(static_cast<int>(rlt.stat));
         }
       } else if (paras.count("branch")) {
-        VMeta meta = hserver->GetODB()
+        auto rlt = hserver->GetODB()
         .Put(Slice(paras["key"]),
               VString(Slice(paras["value"])), Slice(paras["branch"]));
-        if (meta.code() == ErrorCode::kOK) {
-          response = meta.version().ToBase32();
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.ToBase32();
         } else {
           response = "Put Error: " +
-              std::to_string(static_cast<int>(meta.code()));
+              std::to_string(static_cast<int>(rlt.stat));
         }
       } else {
         response = "Put parameter error";
@@ -101,36 +101,36 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       DLOG(INFO) << "Merge Command";
       CHECK(paras.count("key") && paras.count("value"));
       if (paras.count("tgt_branch") && paras.count("ref_branch")) {
-        VMeta meta = hserver->GetODB()
+        auto rlt = hserver->GetODB()
         .Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
             Slice(paras["tgt_branch"]), Slice(paras["ref_branch"]));
-        if (meta.code() == ErrorCode::kOK) {
-          response = meta.version().ToBase32();
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.ToBase32();
         } else {
           response = "Merge Error: " +
-              std::to_string(static_cast<int>(meta.code()));
+              std::to_string(static_cast<int>(rlt.stat));
         }
       } else if (paras.count("tgt_branch") && paras.count("ref_version1")) {
-        VMeta meta = hserver->GetODB().Merge(Slice(paras["key"]),
+        auto rlt = hserver->GetODB().Merge(Slice(paras["key"]),
             VString(Slice(paras["value"])),
             Slice(paras["tgt_branch"]),
             Hash::FromBase32(paras["ref_version1"]));
-        if (meta.code() == ErrorCode::kOK) {
-          response = meta.version().ToBase32();
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.ToBase32();
         } else {
           response = "Merge Error: " +
-              std::to_string(static_cast<int>(meta.code()));
+              std::to_string(static_cast<int>(rlt.stat));
         }
       } else if (paras.count("ref_version1") && paras.count("ref_version2")) {
-        VMeta meta = hserver->GetODB()
+        auto rlt = hserver->GetODB()
         .Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
             Hash::FromBase32(paras["ref_version1"]),
             Hash::FromBase32(paras["ref_version2"]));
-        if (meta.code() == ErrorCode::kOK) {
-          response = meta.version().ToBase32();
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.ToBase32();
         } else {
           response = "Merge Error: " +
-              std::to_string(static_cast<int>(meta.code()));
+              std::to_string(static_cast<int>(rlt.stat));
         }
       } else {
         response = "Merge parameter error";
@@ -141,18 +141,18 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       DLOG(INFO) << "Branch Command";
       CHECK(paras.count("key") && paras.count("new_branch"));
       if (paras.count("old_branch")) {
-        ErrorCode code = hserver->GetODB()
+        auto code = hserver->GetODB()
         .Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
-                 Slice(paras["new_branch"]));
+                Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK";
         } else {
           response = "Branch Error: " + std::to_string(static_cast<int>(code));
         }
       } else if (paras.count("version")) {
-        ErrorCode code = hserver->GetODB()
+        auto code = hserver->GetODB()
         .Branch(Slice(paras["key"]), Hash::FromBase32(paras["version"]),
-                 Slice(paras["new_branch"]));
+                Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK";
         } else {
@@ -167,9 +167,9 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       DLOG(INFO) << "Rename Command";
       if (paras.count("key") && paras.count("new_branch")
           && paras.count("old_branch")) {
-        ErrorCode code = hserver->GetODB()
+        auto code = hserver->GetODB()
         .Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
-                 Slice(paras["new_branch"]));
+                Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK";
         } else {
@@ -183,7 +183,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       case CommandType::kDelete:
       DLOG(INFO) << "Delete Command";
       if (paras.count("key") && paras.count("branch")) {
-        ErrorCode code = hserver->GetODB()
+        auto code = hserver->GetODB()
         .Delete(Slice(paras["key"]), Slice(paras["branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK";

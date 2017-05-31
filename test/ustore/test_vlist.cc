@@ -25,23 +25,19 @@ TEST(VList, CreateFromEmpty) {
   // create buffered new list
   ustore::VList list(slice_data);
   // put new list
-  Hash hash = db.Put(Slice(key_vlist), list, Slice(branch_vlist)).version();
+  Hash hash = db.Put(Slice(key_vlist), list, Slice(branch_vlist)).value;
   // get list
-  auto v = db.Get(Slice(key_vlist), Slice(branch_vlist)).List();
+  auto v = db.Get(Slice(key_vlist), Slice(branch_vlist)).value.List();
   // update list
   std::string delta = " delta";
   slice_data.push_back(Slice(delta));
   v.Append({Slice(delta)});
-  VMeta update = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated list
-  VMeta get = db.Get(Slice(key_vlist), Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.List();
+  auto get = db.Get(Slice(key_vlist), Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.List();
   // check data
 
   ustore::Slice actual_val = v.Get(0);
@@ -50,12 +46,12 @@ TEST(VList, CreateFromEmpty) {
 
   // remove the only element
   v.Delete(0, 1);
-  VMeta update1 = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == update1.code());
+  auto update1 = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == update1.stat);
 
-  VMeta get1 = db.Get(Slice(key_vlist), Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == get1.code());
-  v = get1.List();
+  auto get1 = db.Get(Slice(key_vlist), Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == get1.stat);
+  v = get1.value.List();
   ASSERT_EQ(0, v.numElements());
 }
 
@@ -67,16 +63,12 @@ TEST(VList, CreateNewVList) {
   // create buffered new list
   ustore::VList list(slice_data);
   // put new list
-  VMeta put = db.Put(Slice(key_vlist), list, Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == put.code());
-  EXPECT_TRUE(put.cell().empty());
-  EXPECT_FALSE(put.version().empty());
+  auto put = db.Put(Slice(key_vlist), list, Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get list
-  VMeta get = db.Get(Slice(key_vlist), Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  auto v = get.List();
+  auto get = db.Get(Slice(key_vlist), Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.List();
   // check data
   auto it = v.Scan();
   for (const auto& s : slice_data) {
@@ -92,23 +84,19 @@ TEST(VList, UpdateExistingVList) {
   // create buffered new list
   ustore::VList list(slice_data);
   // put new list
-  Hash hash = db.Put(Slice(key_vlist), list, Slice(branch_vlist)).version();
+  Hash hash = db.Put(Slice(key_vlist), list, Slice(branch_vlist)).value;
   // get list
-  auto v = db.Get(Slice(key_vlist), Slice(branch_vlist)).List();
+  auto v = db.Get(Slice(key_vlist), Slice(branch_vlist)).value.List();
   // update list
   std::string delta = " delta";
   slice_data.push_back(Slice(delta));
   v.Append({Slice(delta)});
-  VMeta update = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated list
-  VMeta get = db.Get(Slice(key_vlist), Slice(branch_vlist));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.List();
+  auto get = db.Get(Slice(key_vlist), Slice(branch_vlist));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.List();
   // check data
   auto it = v.Scan();
   for (const auto& s : slice_data) {

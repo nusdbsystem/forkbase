@@ -18,29 +18,22 @@ namespace ustore {
 // TODO(wangsh): modify DB api and remove version in VMeta
 class VMeta : private Noncopyable {
  public:
-  VMeta(DB* db, ErrorCode code, UCell&& cell)
-      : db_(db), code_(code), cell_(std::move(cell)) {}
-  VMeta(DB* db, ErrorCode code, Hash&& version)
-      : db_(db), code_(code), version_(std::move(version)) {}
+  VMeta(DB* db, UCell&& cell) : db_(db), cell_(std::move(cell)) {}
   // moveable
   VMeta(VMeta&& other) {
-    db_ = other.db_; code_ = other.code_;
+    db_ = other.db_;
     std::swap(cell_, other.cell_);
-    std::swap(version_, other.version_);
   }
   ~VMeta() = default;
 
   // moveable
   VMeta& operator=(VMeta&& other) {
-    db_ = other.db_; code_ = other.code_;
+    db_ = other.db_;
     std::swap(cell_, other.cell_);
-    std::swap(version_, other.version_);
     return *this;
   }
 
   inline const UCell& cell() const { return cell_; }
-  inline Hash version() const { return version_.Clone(); }
-  inline ErrorCode code() const { return code_; }
 
   VBlob Blob() const;
   VString String() const;
@@ -49,9 +42,7 @@ class VMeta : private Noncopyable {
 
  private:
   DB* db_;
-  ErrorCode code_;
   UCell cell_;
-  Hash version_;
 };
 
 }  // namespace ustore

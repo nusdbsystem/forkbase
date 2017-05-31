@@ -27,25 +27,21 @@ TEST(VMap, CreateFromEmpty) {
   ustore::VMap map(slice_key, slice_val);
 
   // put new map
-  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).version();
+  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).value;
   // get map
-  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).Map();
+  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).value.Map();
   // update map
   std::string delta_key = "z delta";
   std::string delta_val = "v delta";
   slice_key.push_back(Slice(delta_key));
   slice_val.push_back(Slice(delta_val));
   v.Set(Slice(delta_key), Slice(delta_val));
-  VMeta update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // add to map
-  VMeta get = db.Get(Slice(key_vmap), Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.Map();
+  auto get = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Map();
 
   ustore::Slice actual_val = v.Get(Slice(delta_key));
   ASSERT_TRUE(delta_val == actual_val);
@@ -53,12 +49,12 @@ TEST(VMap, CreateFromEmpty) {
 
   // remove the only key
   v.Remove(Slice(delta_key));
-  VMeta update1 = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == update1.code());
+  auto update1 = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == update1.stat);
 
-  VMeta get1 = db.Get(Slice(key_vmap), Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == get1.code());
-  v = get1.Map();
+  auto get1 = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == get1.stat);
+  v = get1.value.Map();
   ASSERT_EQ(0, v.numElements());
 }
 
@@ -71,16 +67,12 @@ TEST(VMap, CreateNewVMap) {
   // create buffered new map
   ustore::VMap map(slice_key, slice_val);
   // put new map
-  VMeta put = db.Put(Slice(key_vmap), map, Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == put.code());
-  EXPECT_TRUE(put.cell().empty());
-  EXPECT_FALSE(put.version().empty());
+  auto put = db.Put(Slice(key_vmap), map, Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get map
-  VMeta get = db.Get(Slice(key_vmap), Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  auto v = get.Map();
+  auto get = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.Map();
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size(); ++i) {
@@ -99,25 +91,21 @@ TEST(VMap, AddToExistingVMap) {
   // create buffered new map
   ustore::VMap map(slice_key, slice_val);
   // put new map
-  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).version();
+  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).value;
   // get map
-  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).Map();
+  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).value.Map();
   // update map
   std::string delta_key = "z delta";
   std::string delta_val = "v delta";
   slice_key.push_back(Slice(delta_key));
   slice_val.push_back(Slice(delta_val));
   v.Set(Slice(delta_key), Slice(delta_val));
-  VMeta update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // add to map
-  VMeta get = db.Get(Slice(key_vmap), Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.Map();
+  auto get = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Map();
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size(); ++i) {
@@ -136,21 +124,17 @@ TEST(VMap, RemoveFromExistingVMap) {
   // create buffered new map
   ustore::VMap map(slice_key, slice_val);
   // put new map
-  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).version();
+  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).value;
   // get map
-  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).Map();
+  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).value.Map();
   // remove from map
   v.Remove(slice_key[slice_key.size()-1]);
-  VMeta update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated map
-  VMeta get = db.Get(Slice(key_vmap), Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.Map();
+  auto get = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Map();
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size() - 1; ++i) {
@@ -169,23 +153,19 @@ TEST(VMap, UpdateExistingVMap) {
   // create buffered new map
   ustore::VMap map(slice_key, slice_val);
   // put new map
-  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).version();
+  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).value;
   // get map
-  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).Map();
+  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).value.Map();
   // update map
   std::string nv = "new_v";
   v.Set(slice_key[0], Slice(nv));
   slice_val[0] = Slice(nv);
-  VMeta update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated map
-  VMeta get = db.Get(Slice(key_vmap), Slice(branch_vmap));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.Map();
+  auto get = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Map();
   // check data
   auto it = v.Scan();
   for (int i = 0; i < slice_key.size(); ++i) {

@@ -23,16 +23,12 @@ TEST(VString, CreateNewVString) {
   // create buffered new string
   ustore::VString string{Slice(raw_data)};
   // put new string
-  VMeta put = db.Put(Slice(key_vstring), string, Slice(branch_vstring));
-  EXPECT_TRUE(ErrorCode::kOK == put.code());
-  EXPECT_TRUE(put.cell().empty());
-  EXPECT_FALSE(put.version().empty());
+  auto put = db.Put(Slice(key_vstring), string, Slice(branch_vstring));
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get string
-  VMeta get = db.Get(Slice(key_vstring), Slice(branch_vstring));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  auto v = get.String();
+  auto get = db.Get(Slice(key_vstring), Slice(branch_vstring));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.String();
   // check data
   EXPECT_EQ(0, memcmp(raw_data, v.data(), v.len()));
 }
@@ -42,16 +38,12 @@ TEST(VString, CreateFromEmpty) {
   Slice empty;
   ustore::VString string(empty);
 
-  VMeta put = db.Put(Slice(key_vstring), string, Slice(branch_vstring));
-  EXPECT_TRUE(ErrorCode::kOK == put.code());
-  EXPECT_TRUE(put.cell().empty());
-  EXPECT_FALSE(put.version().empty());
+  auto put = db.Put(Slice(key_vstring), string, Slice(branch_vstring));
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get string
-  VMeta get = db.Get(Slice(key_vstring), Slice(branch_vstring));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  auto v = get.String();
+  auto get = db.Get(Slice(key_vstring), Slice(branch_vstring));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.String();
 
   // check data
   EXPECT_EQ(0, v.len());

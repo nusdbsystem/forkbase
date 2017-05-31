@@ -24,22 +24,18 @@ TEST(VBlob, CreateFromEmpty) {
   ustore::Slice empty;
   ustore::VBlob blob{Slice(empty)};
   // put new blob
-  Hash hash = db.Put(Slice(key_vblob), blob, Slice(branch_vblob)).version();
+  Hash hash = db.Put(Slice(key_vblob), blob, Slice(branch_vblob)).value;
   // get blob
-  auto v = db.Get(Slice(key_vblob), Slice(branch_vblob)).Blob();
+  auto v = db.Get(Slice(key_vblob), Slice(branch_vblob)).value.Blob();
   // update blob
   std::string s = "delta";
   v.Append(reinterpret_cast<const byte_t*>(s.c_str()), s.length());
-  VMeta update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated blob
-  VMeta get = db.Get(Slice(key_vblob), Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.Blob();
+  auto get = db.Get(Slice(key_vblob), Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Blob();
   // check data
   ustore::byte_t* buf = new ustore::byte_t[v.size()];
   v.Read(0, v.size(), buf);
@@ -47,20 +43,15 @@ TEST(VBlob, CreateFromEmpty) {
   delete[] buf;
 
   // remove all bytes from the blob
-  v = db.Get(Slice(key_vblob), Slice(branch_vblob)).Blob();
+  v = db.Get(Slice(key_vblob), Slice(branch_vblob)).value.Blob();
   // update blob
   v.Delete(0, s.length());
   update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
-
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated blob
   get = db.Get(Slice(key_vblob), Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.Blob();
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Blob();
   // check data
   EXPECT_EQ(0, v.size());
 }
@@ -70,16 +61,12 @@ TEST(VBlob, CreateNewVBlob) {
   // create buffered new blob
   ustore::VBlob blob{Slice(raw_data)};
   // put new blob
-  VMeta put = db.Put(Slice(key_vblob), blob, Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == put.code());
-  EXPECT_TRUE(put.cell().empty());
-  EXPECT_FALSE(put.version().empty());
+  auto put = db.Put(Slice(key_vblob), blob, Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get blob
-  VMeta get = db.Get(Slice(key_vblob), Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  auto v = get.Blob();
+  auto get = db.Get(Slice(key_vblob), Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.Blob();
   // check data
   byte_t* buf = new byte_t[v.size()];
   v.Read(0, v.size(), buf);
@@ -92,24 +79,20 @@ TEST(VBlob, UpdateExistingVBlob) {
   // create buffered new blob
   ustore::VBlob blob{Slice(raw_data)};
   // put new blob
-  Hash hash = db.Put(Slice(key_vblob), blob, Slice(branch_vblob)).version();
+  Hash hash = db.Put(Slice(key_vblob), blob, Slice(branch_vblob)).value;
   // get blob
-  auto v = db.Get(Slice(key_vblob), Slice(branch_vblob)).Blob();
+  auto v = db.Get(Slice(key_vblob), Slice(branch_vblob)).value.Blob();
   // update blob
   std::string s{raw_data};
   std::string delta = " delta";
   s += delta;
   v.Append(reinterpret_cast<const byte_t*>(s.data()+v.size()), delta.length());
-  VMeta update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == update.code());
-  EXPECT_TRUE(update.cell().empty());
-  EXPECT_FALSE(update.version().empty());
+  auto update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated blob
-  VMeta get = db.Get(Slice(key_vblob), Slice(branch_vblob));
-  EXPECT_TRUE(ErrorCode::kOK == get.code());
-  EXPECT_FALSE(get.cell().empty());
-  EXPECT_TRUE(get.version().empty());
-  v = get.Blob();
+  auto get = db.Get(Slice(key_vblob), Slice(branch_vblob));
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Blob();
   // check data
   ustore::byte_t* buf = new ustore::byte_t[v.size()];
   v.Read(0, v.size(), buf);
