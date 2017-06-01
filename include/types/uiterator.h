@@ -39,13 +39,6 @@ UIterator is a genric Iterator interface that shall be inherited
 
  protected:
   UIterator() = default;
-
-  UIterator(UIterator&& rhs) noexcept {}
-
-  UIterator& operator=(UIterator&& rhs) noexcept {
-    return *this;
-  }
-
   virtual ~UIterator() = default;
 
   // Override this method to return actual value
@@ -61,7 +54,6 @@ The valid elements are specified by a vector of IndexRange.
   CursorIterator() = default;
 
   CursorIterator(CursorIterator&& rhs) noexcept :
-      ustore::UIterator(std::move(rhs)),
       ranges_(std::move(rhs.ranges_)),
       curr_range_idx_(rhs.curr_range_idx_),
       curr_idx_in_range_(rhs.curr_idx_in_range_),
@@ -69,16 +61,14 @@ The valid elements are specified by a vector of IndexRange.
 
   CursorIterator(const Hash& root, const std::vector<IndexRange>& ranges,
             ChunkLoader* loader) noexcept
-      : UIterator(),
-        ranges_(std::move(ranges)),
+      : ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
         cursor_(root, ranges_.size() ? index() : 0, loader) {}
 
   CursorIterator(const Hash& root, std::vector<IndexRange>&& ranges,
             ChunkLoader* loader) noexcept
-      : UIterator(),
-        ranges_(std::move(ranges)),
+      : ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
         cursor_(root, ranges_.size() ? index() : 0, loader) {}
@@ -86,7 +76,6 @@ The valid elements are specified by a vector of IndexRange.
   virtual ~CursorIterator() = default;
 
   CursorIterator& operator=(CursorIterator&& rhs) noexcept {
-    UIterator::operator=(std::move(rhs));
     ranges_ = std::move(rhs.ranges_);
     curr_range_idx_ = rhs.curr_range_idx_;
     curr_idx_in_range_ = rhs.curr_idx_in_range_;
@@ -102,13 +91,9 @@ The valid elements are specified by a vector of IndexRange.
   //  return false if cursor points to head after movement
   bool previous() override;
 
-  inline bool head() const override {
-    return curr_range_idx_ == -1;
-  }
+  inline bool head() const override {return curr_range_idx_ == -1; }
 
-  inline bool end() const override {
-    return curr_range_idx_ == ranges_.size();
-  }
+  inline bool end() const override {return curr_range_idx_ == ranges_.size(); }
 
   // return the idx of pointed element
   virtual inline uint64_t index() const {
