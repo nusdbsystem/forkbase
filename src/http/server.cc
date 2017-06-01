@@ -45,7 +45,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
     switch (request.GetCommand()) {
       case CommandType::kGet:
       DLOG(INFO) << "Get Command";
-      if(!paras.count("key")) {
+      if (!paras.count("key")) {
         response = "No key provided" + CRLF;
         break;
       }
@@ -74,7 +74,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       break;
       case CommandType::kPut:
       DLOG(INFO) << "Put Command";
-      if(!paras.count("key") || !paras.count("value")) {
+      if (!paras.count("key") || !paras.count("value")) {
         response = "No key or value provided" + CRLF;
         break;
       }
@@ -105,7 +105,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       break;
       case CommandType::kMerge:
       DLOG(INFO) << "Merge Command";
-      if(!paras.count("key") || !paras.count("value")) {
+      if (!paras.count("key") || !paras.count("value")) {
         response = "No key or value provided" + CRLF;
         break;
       }
@@ -148,7 +148,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       break;
       case CommandType::kBranch:
       DLOG(INFO) << "Branch Command";
-      if(!paras.count("key") || !paras.count("new_branch")) {
+      if (!paras.count("key") || !paras.count("new_branch")) {
         response = "No key or new_branch provided" + CRLF;
         break;
       }
@@ -159,7 +159,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         if (code == ErrorCode::kOK) {
           response = "OK" + CRLF;
         } else {
-          response = "Branch Error: " + std::to_string(static_cast<int>(code)) + CRLF;
+          response = "Branch Error: " + std::to_string(static_cast<int>(code))
+                   + CRLF;
         }
       } else if (paras.count("version")) {
         auto code = hserver->GetODB()
@@ -168,7 +169,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         if (code == ErrorCode::kOK) {
           response = "OK" + CRLF;
         } else {
-          response = "Branch Error: " + std::to_string(static_cast<int>(code)) + CRLF;
+          response = "Branch Error: " + std::to_string(static_cast<int>(code))
+                   + CRLF;
         }
       } else {
         response = "Branch parameter error" + CRLF;
@@ -185,7 +187,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         if (code == ErrorCode::kOK) {
           response = "OK" + CRLF;
         } else {
-          response = "Rename Error: " + std::to_string(static_cast<int>(code)) + CRLF;
+          response = "Rename Error: " + std::to_string(static_cast<int>(code))
+                   + CRLF;
         }
       } else {
         response = "Rename parameter error" + CRLF;
@@ -200,7 +203,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         if (code == ErrorCode::kOK) {
           response = "OK" + CRLF;
         } else {
-          response = "Delete Error: " + std::to_string(static_cast<int>(code)) + CRLF;
+          response = "Delete Error: " + std::to_string(static_cast<int>(code))
+                   + CRLF;
         }
       } else {
         response = "Delete parameter error" + CRLF;
@@ -213,7 +217,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       if (request.GetMethod() == "get") {
         auto rlt = hserver->GetODB().ListKeys();
         if (rlt.stat == ErrorCode::kOK) {
-          for (std::string& v: rlt.value) {
+          for (std::string& v : rlt.value) {
             response += v + CRLF;
           }
         } else {
@@ -223,7 +227,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       } else if (paras.count("key")) {  // list all branches of a key
         auto rlt = hserver->GetODB().ListBranches(Slice(paras["key"]));
         if (rlt.stat == ErrorCode::kOK) {
-          for (std::string& v: rlt.value) {
+          for (std::string& v : rlt.value) {
             response += v + CRLF;
           }
         } else {
@@ -238,7 +242,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       case CommandType::kHead:
       DLOG(INFO) << "Head Command";
       if (paras.count("key") && paras.count("branch")) {
-        auto rlt = hserver->GetODB().GetBranchHead(Slice(paras["key"]), Slice(paras["branch"]));
+        auto rlt = hserver->GetODB().GetBranchHead(Slice(paras["key"]),
+                                                   Slice(paras["branch"]));
         if (rlt.stat == ErrorCode::kOK) {
           response = rlt.value.ToBase32() + CRLF;
         } else {
@@ -255,7 +260,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       if (paras.count("key")) {
         auto rlt = hserver->GetODB().GetLatestVersions(Slice(paras["key"]));
         if (rlt.stat == ErrorCode::kOK) {
-          for (Hash& h: rlt.value) {
+          for (Hash& h : rlt.value) {
             response = h.ToBase32() + CRLF;
           }
         } else {
@@ -270,7 +275,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       case CommandType::kExists:
       DLOG(INFO) << "Exists Command";
       if (paras.count("key") && paras.count("branch")) {
-        auto rlt = hserver->GetODB().Exists(Slice(paras["key"]), Slice(paras["branch"]));
+        auto rlt = hserver->GetODB().Exists(Slice(paras["key"]),
+                                            Slice(paras["branch"]));
         if (rlt.stat == ErrorCode::kOK) {
           response = rlt.value == true ? "true" : "false";
           response += CRLF;
@@ -294,9 +300,11 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       break;
       case CommandType::kIsBranchHead:
       DLOG(INFO) << "IsBranchHead Command";
-      if (paras.count("key") && paras.count("branch") && paras.count("version")) {
+      if (paras.count("key") && paras.count("branch")
+          && paras.count("version")) {
         auto rlt = hserver->GetODB().
-        IsBranchHead(Slice(paras["key"]), Slice(paras["branch"]), Hash::FromBase32(paras["version"]));
+        IsBranchHead(Slice(paras["key"]), Slice(paras["branch"]),
+                     Hash::FromBase32(paras["version"]));
         if (rlt.stat == ErrorCode::kOK) {
           response = rlt.value == true ? "true" : "false";
           response += CRLF;
@@ -313,7 +321,8 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       DLOG(INFO) << "IsLatestVersion Command";
       if (paras.count("key") && paras.count("version")) {
         auto rlt = hserver->GetODB().
-        IsLatestVersion(Slice(paras["key"]), Hash::FromBase32(paras["version"]));
+        IsLatestVersion(Slice(paras["key"]),
+                        Hash::FromBase32(paras["version"]));
         if (rlt.stat == ErrorCode::kOK) {
           response = rlt.value == true ? "true" : "false";
           response += CRLF;

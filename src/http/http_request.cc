@@ -196,7 +196,6 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
   memcpy(header+pos, kOtherHeaders.c_str(), kOtherHeaders.length());
   pos += kOtherHeaders.length();
 
-
   memcpy(header+pos, kContentLen.c_str(), kContentLen.length());
   pos += kContentLen.length();
   // end of header
@@ -205,7 +204,8 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
   int res_len;
   if (response.length() > kMaxResponseSize - pos) {
     res_len = kMaxResponseSize - pos;
-    LOG(WARNING) << "response length is too long: " << response.length() << ", cut it to " << res_len;
+    LOG(WARNING) << "response length is too long: " << response.length()
+                 << ", cut it to " << res_len;
   } else {
     res_len = response.length();
   }

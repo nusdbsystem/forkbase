@@ -78,9 +78,7 @@ class HttpRequest {
   }
 
   // get the method
-  inline string GetMethod() const {
-    return method_;
-  }
+  inline string GetMethod() const { return method_; }
 
  private:
   // parse the parameter list
