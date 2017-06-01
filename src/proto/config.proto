@@ -17,9 +17,6 @@ message Config {
   /* cluster related */
   // file containing worker list in format of hostname:port
   optional string worker_file = 10 [default = "conf/workers"];
-  // @ deprecated
-  // file containing client hostnames
-  optional string clientservice_file = 11 [default = "conf/client_services"];
 
   /* clientdb related */
   optional int32 recv_threads = 21 [default = 2]; // number of receiving threads

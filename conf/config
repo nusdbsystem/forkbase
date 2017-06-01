@@ -3,7 +3,6 @@ data_file_pattern: "ustore"
 num_segments: 32
 
 worker_file: "conf/workers"
-clientservice_file: "conf/client_services"
 
 recv_threads: 1
 service_threads: 1

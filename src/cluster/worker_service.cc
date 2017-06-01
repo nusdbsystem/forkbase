@@ -65,18 +65,6 @@ void WorkerService::Init() {
 
   std::sort(ranges_.begin(), ranges_.end(), range_cmp);
 
-/*
- * zh: decouple the client service and worker service
-  // add address of the client service
-  std::ifstream fin_cs(Env::Instance()->config()->clientservice_file(),
-                       std::ifstream::in);
-  CHECK(fin_cs);
-  node_id_t cs_addr;
-  while (fin_cs >> cs_addr)
-    addresses_.push_back(cs_addr);
-  fin_cs.close();
- */
-
   // TODO(zhanghao): check why letting this after RdmaNet make NetContext destroyed unexpected?
   worker_ = new Worker(worker_id);
 

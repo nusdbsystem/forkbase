@@ -6,6 +6,8 @@
 
 [Dependencies](doc/depend.md)
 
+[Usage Guide](doc/guide.md)
+
 [Commandline Console API](doc/api_cmd.md)
 
 [Http RESTful API](doc/api_http.md)
