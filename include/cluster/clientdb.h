@@ -4,6 +4,7 @@
 #define USTORE_CLUSTER_CLIENTDB_H_
 
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -65,7 +66,7 @@ class ClientDb : public DB {
   ClientDb(const node_id_t& master, int id, Net* net, ResponseBlob* blob,
            WorkerList* workers)
     : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
-  ~ClientDb();
+  ~ClientDb() = default;
 
   // Storage APIs. Inheritted from DB.
   ErrorCode Get(const Slice& key, const Slice& branch,
@@ -122,16 +123,18 @@ class ClientDb : public DB {
   // errors with network communication.
   bool Send(const Message* msg, const node_id_t& node_id);
   // wait for response, and take ownership of the message.
-  Message* WaitForResponse();
+  std::unique_ptr<UStoreMessage> WaitForResponse();
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
   // helper methods for creating messages
-  UStoreMessage* CreatePutRequest(const Slice& key, const Value& value);
-  UStoreMessage* CreateGetRequest(const Slice& key);
-  UStoreMessage* CreateGetChunkRequest(const Slice& key);
-  UStoreMessage* CreateBranchRequest(const Slice& key,
-                                     const Slice& new_branch);
-  UStoreMessage* CreateMergeRequest(const Slice& key, const Value& value);
+  std::unique_ptr<UStoreMessage> CreatePutRequest(const Slice& key,
+                                                  const Value& value);
+  std::unique_ptr<UStoreMessage> CreateGetRequest(const Slice& key);
+  std::unique_ptr<UStoreMessage> CreateGetChunkRequest(const Slice& key);
+  std::unique_ptr<UStoreMessage> CreateBranchRequest(const Slice& key,
+                                                     const Slice& new_branch);
+  std::unique_ptr<UStoreMessage> CreateMergeRequest(const Slice& key,
+                                                    const Value& value);
   // helper methods for getting response
   ErrorCode GetEmptyResponse();
   ErrorCode GetPutResponse(Hash* version);
@@ -162,7 +165,8 @@ class ClientDb : public DB {
  */
 class WorkerList {
  public:
-  explicit WorkerList(const std::vector<RangeInfo>& workers);
+  WorkerList() = default;
+  WorkerList(const std::vector<RangeInfo>& workers);
   ~WorkerList() = default;
 
   /**

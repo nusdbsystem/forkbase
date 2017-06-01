@@ -182,8 +182,8 @@ TEST(TestMessage, TestClient1Thread) {
   usleep(kSleepTime);
 
   // 1 thread
-  ClientDb *client = service.CreateClientDb();
-  TestClientRequest(client, 0, NREQUESTS);
+  ClientDb client = service.CreateClientDb();
+  TestClientRequest(&client, 0, NREQUESTS);
 
   // stop the client service
   service.Stop();
