@@ -6,25 +6,25 @@
 namespace ustore {
 
 UType Utils::ToUType(const std::string& str) {
-  if (str == "bool") return UType::kBool;
-  if (str == "num") return UType::kNum;
-  if (str == "string") return UType::kString;
-  if (str == "blob") return UType::kBlob;
-  if (str == "list") return UType::kList;
-  if (str == "set") return UType::kSet;
-  if (str == "map") return UType::kMap;
+  if (str == "Bool") return UType::kBool;
+  if (str == "Num") return UType::kNum;
+  if (str == "String") return UType::kString;
+  if (str == "Blob") return UType::kBlob;
+  if (str == "List") return UType::kList;
+  if (str == "Set") return UType::kSet;
+  if (str == "Map") return UType::kMap;
   return UType::kUnknown;
 }
 
 std::string Utils::ToString(const UType& type) {
   switch (type) {
-    case UType::kBool: return "bool";
-    case UType::kNum: return "num";
-    case UType::kString: return "string";
-    case UType::kBlob: return "blob";
-    case UType::kList: return "list";
-    case UType::kSet: return "set";
-    case UType::kMap: return "map";
+    case UType::kBool: return "Bool";
+    case UType::kNum: return "Num";
+    case UType::kString: return "String";
+    case UType::kBlob: return "Blob";
+    case UType::kList: return "List";
+    case UType::kSet: return "Set";
+    case UType::kMap: return "Map";
     default: return "unknown";
   }
 }
@@ -65,6 +65,39 @@ ErrorCode Utils::CheckIndex(const size_t idx, const SList& list) {
     return ErrorCode::kIndexOutOfRange;
   }
   return ErrorCode::kOK;
+}
+
+void Utils::PrintList(const UList& list, const bool elem_in_quote,
+                      std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = list.Scan();
+  os << "[";
+  if (!it.end()) {
+    os << quote << it.value() << quote;
+    for (it.next(); !it.end(); it.next()) {
+      os << ", " << quote << it.value() << quote;
+    }
+  }
+  os << "]";
+}
+
+void Utils::PrintMap(const UMap& map, const bool elem_in_quote,
+                     std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = map.Scan();
+  auto f_print_it = [&os, &quote, &it]() {
+    std::cout << "(" << quote << it.key() << quote << "->" << quote
+              << it.value() << quote << ")";
+  };
+  std::cout << "[";
+  if (!it.end()) {
+    f_print_it();
+    for (it.next(); !it.end(); it.next()) {
+      std::cout << ", ";
+      f_print_it();
+    }
+  }
+  std::cout << "]";
 }
 
 }  // namespace ustore

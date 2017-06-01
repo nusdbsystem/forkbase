@@ -24,7 +24,6 @@ class Config {
   static std::string ref_branch;
   static std::string version;
   static std::string ref_version;
-  static std::string ref_version2;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 

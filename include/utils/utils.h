@@ -41,6 +41,44 @@ namespace ustore {
 #define USTORE_GUARD_INT(op) \
   EQUAL_OR_ELSE_RETURN_CAST(op, ::ustore::ErrorCode::kOK, int)
 
+#define FONT_RESET          "\033[0m"
+#define FONT_BLACK          "\033[30m"          /* Black */
+#define FONT_RED            "\033[31m"          /* Red */
+#define FONT_GREEN          "\033[32m"          /* Green */
+#define FONT_YELLOW         "\033[33m"          /* Yellow */
+#define FONT_BLUE           "\033[34m"          /* Blue */
+#define FONT_MAGENTA        "\033[35m"          /* Magenta */
+#define FONT_CYAN           "\033[36m"          /* Cyan */
+#define FONT_WHITE          "\033[37m"          /* White */
+#define FONT_BOLD_BLACK     "\033[1m\033[30m"   /* Bold Black */
+#define FONT_BOLD_RED       "\033[1m\033[31m"   /* Bold Red */
+#define FONT_BOLD_GREEN     "\033[1m\033[32m"   /* Bold Green */
+#define FONT_BOLD_YELLOW    "\033[1m\033[33m"   /* Bold Yellow */
+#define FONT_BOLD_BLUE      "\033[1m\033[34m"   /* Bold Blue */
+#define FONT_BOLD_MAGENTA   "\033[1m\033[35m"   /* Bold Magenta */
+#define FONT_BOLD_CYAN      "\033[1m\033[36m"   /* Bold Cyan */
+#define FONT_BOLD_WHITE     "\033[1m\033[37m"   /* Bold White */
+
+#define COLOR(font_color, msg) \
+  font_color << msg << FONT_RESET
+
+#define BLACK(msg)          COLOR(FONT_BLACK, msg)
+#define RED(msg)            COLOR(FONT_RED, msg)
+#define GREEN(msg)          COLOR(FONT_GREEN, msg)
+#define YELLOW(msg)         COLOR(FONT_YELLOW, msg)
+#define BLUE(msg)           COLOR(FONT_BLUE, msg)
+#define MAGENTA(msg)        COLOR(FONT_MAGENTA, msg)
+#define CYAN(msg)           COLOR(FONT_CYAN, msg)
+#define WHITE(msg)          COLOR(FONT_WHITE, msg)
+#define BOLD_BLACK(msg)     COLOR(FONT_BOLD_BLACK, msg)
+#define BOLD_RED(msg)       COLOR(FONT_BOLD_RED, msg)
+#define BOLD_GREEN(msg)     COLOR(FONT_BOLD_GREEN, msg)
+#define BOLD_YELLOW(msg)    COLOR(FONT_BOLD_YELLOW, msg)
+#define BOLD_BLUE(msg)      COLOR(FONT_BOLD_BLUE, msg)
+#define BOLD_MAGENTA(msg)   COLOR(FONT_BOLD_MAGENTA, msg)
+#define BOLD_CYAN(msg)      COLOR(FONT_BOLD_CYAN, msg)
+#define BOLD_WHITE(msg)     COLOR(FONT_BOLD_WHITE, msg)
+
 class Utils {
  public:
   template<typename T>
@@ -112,6 +150,12 @@ class Utils {
 
   template <typename T>
   static std::vector<size_t> SortIndexes(const std::vector<T>& v);
+
+  static void PrintList(const UList& list, const bool elem_in_quote = false,
+                        std::ostream& os = std::cout);
+
+  static void PrintMap(const UMap& map, const bool elem_in_quote = false,
+                       std::ostream& os = std::cout);
 };
 
 template<typename T>

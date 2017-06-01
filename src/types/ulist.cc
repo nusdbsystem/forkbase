@@ -13,9 +13,9 @@ namespace ustore {
 
 DuallyDiffIndexIterator UList::DuallyDiff(const UList& lhs, const UList& rhs) {
   std::unique_ptr<CursorIterator> lhs_diff_it(
-      new UList::Iterator(lhs.Diff(rhs)));
+    new UList::Iterator(lhs.Diff(rhs)));
   std::unique_ptr<CursorIterator> rhs_diff_it(
-      new UList::Iterator(rhs.Diff(lhs)));
+    new UList::Iterator(rhs.Diff(lhs)));
 
   lhs_diff_it->previous();
   rhs_diff_it->previous();
@@ -83,6 +83,20 @@ UList::Iterator UList::Intersect(const UList& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
   IndexComparator cmptor(rhs.hash(), chunk_loader_);
   return Iterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get());
+}
+
+std::ostream& operator<<(std::ostream& os, const UList& obj) {
+  auto it = obj.Scan();
+  os << "[";
+  if (!it.end()) {
+    os << it.value();
+    for (it.next(); !it.end(); it.next()) {
+      os << ", ";
+      os << it.value();
+    }
+  }
+  os << "]";
+  return os;
 }
 
 }  // namespace ustore

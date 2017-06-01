@@ -25,7 +25,7 @@ VString VMeta::String() const {
 VList VMeta::List() const {
   if (!cell_.empty() && cell_.type() == UType::kList) {
     return VList(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
-                   cell_.dataHash());
+                 cell_.dataHash());
   }
   LOG(WARNING) << "Not a List value, return an empty VList";
   return VList();
@@ -34,11 +34,31 @@ VList VMeta::List() const {
 VMap VMeta::Map() const {
   if (!cell_.empty() && cell_.type() == UType::kMap) {
     return VMap(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
-                   cell_.dataHash());
+                cell_.dataHash());
   }
   LOG(WARNING) << "Not a Map value, return an empty VMap";
   return VMap();
 }
 
-}  // namespace ustore
+std::ostream& operator<<(std::ostream& os, const VMeta& obj) {
+  switch (obj.cell_.type()) {
+    case UType::kBlob:
+      os << obj.Blob();
+      break;
+    case UType::kString:
+      os << obj.String();
+      break;
+    case UType::kList:
+      os << obj.List();
+      break;
+    case UType::kMap:
+      os << obj.Map();
+      break;
+    default:
+      os << "<unknown>";
+      break;
+  }
+  return os;
+}
 
+}  // namespace ustore

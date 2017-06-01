@@ -16,8 +16,6 @@ namespace ca {
 
 class Utils : public ::ustore::Utils {
  public:
-  static void PrintList(const UList& list);
-
   static void PrintListDiff(DuallyDiffIndexIterator& it);
 
   static inline void PrintListDiff(DuallyDiffIndexIterator&& it) {

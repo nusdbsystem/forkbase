@@ -10,11 +10,11 @@
 namespace ustore {
 
 DuallyDiffKeyIterator UMap::DuallyDiff(
-    const UMap& lhs, const UMap& rhs) {
+  const UMap& lhs, const UMap& rhs) {
   std::unique_ptr<CursorIterator> lhs_diff_it(
-      new UMap::Iterator(lhs.Diff(rhs)));
+    new UMap::Iterator(lhs.Diff(rhs)));
   std::unique_ptr<CursorIterator> rhs_diff_it(
-      new UMap::Iterator(rhs.Diff(lhs)));
+    new UMap::Iterator(rhs.Diff(lhs)));
 
   lhs_diff_it->previous();
   rhs_diff_it->previous();
@@ -80,6 +80,23 @@ bool UMap::SetNodeForHash(const Hash& root_hash) {
   } else {
     return false;
   }
+}
+
+std::ostream& operator<<(std::ostream& os, const UMap& obj) {
+  auto it = obj.Scan();
+  auto f_print_it = [&os, &it]() {
+    os << "(" << it.key() << "->" << it.value() << ")";
+  };
+  os << "[";
+  if (!it.end()) {
+    f_print_it();
+    for (it.next(); !it.end(); it.next()) {
+      os << ", ";
+      f_print_it();
+    }
+  }
+  os << "]";
+  return os;
 }
 
 }  // namespace ustore
