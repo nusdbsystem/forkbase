@@ -7,3 +7,5 @@ worker_file: "conf/workers"
 recv_threads: 1
 service_threads: 1
 http_port: 60600
+
+n_clients: 1

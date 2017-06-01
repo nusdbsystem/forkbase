@@ -20,10 +20,10 @@ using std::string;
 
 class WSCallBack : public CallBack {
  public:
-  explicit WSCallBack(void* handler) : CallBack(handler) {}
-  void operator()(const void *msg, int size, const node_id_t& source) override {
-    (reinterpret_cast<WorkerService *>(handler_))->HandleRequest(
-                                        msg, size, source);
+  explicit WSCallBack(void *handler) : CallBack(handler) {}
+  void operator()(const void *msg, int size, const node_id_t &source) override {
+    (reinterpret_cast<WorkerService *>(handler_))
+        ->HandleRequest(msg, size, source);
   }
 };
 
@@ -34,8 +34,7 @@ int WorkerService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
 // for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void WorkerService::Init() {
   // init the network: connects to the workers
-  std::ifstream fin(Env::Instance()->config().worker_file(),
-                    std::ifstream::in);
+  std::ifstream fin(Env::Instance()->config().worker_file(), std::ifstream::in);
   CHECK(fin);
   node_id_t worker_addr;
   Hash h;
@@ -65,11 +64,13 @@ void WorkerService::Init() {
 // TODO(zhanghao): define a static function in net.cc to create net instance,
 // instead of directly use USE_RDMA flag everywhere
 #ifdef USE_RDMA
-  net_.reset(new RdmaNet(node_addr_, Env::Instance()->config().recv_threads()));
+  // net_ = new RdmaNet(node_addr_, Env::Instance()->config().recv_threads());
+  net_.reset(new RdmaNet(node_addr_, 1));
 #else
   // net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
-  net_.reset(new ServerZmqNet(node_addr_,
-                              Env::Instance()->config().recv_threads()));
+  // net_ = new ServerZmqNet(node_addr_,
+  // Env::Instance()->config().recv_threads());
+  net_.reset(new ServerZmqNet(node_addr_, 1));
 #endif
 }
 
@@ -102,7 +103,7 @@ Value WorkerService::ValueFromRequest(const ValuePayload& payload) {
   return val;
 }
 void WorkerService::HandleRequest(const void *msg, int size,
-                                   const node_id_t& source) {
+                                  const node_id_t &source) {
   // parse the request
   UStoreMessage ustore_msg;
   ustore_msg.ParseFromArray(msg, size);
@@ -130,8 +131,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
       break;
     }
-    case UStoreMessage::GET_REQUEST:
-    {
+    case UStoreMessage::GET_REQUEST: {
       // Value val;
       UCell val;
       error_code = ustore_msg.has_branch()
@@ -175,8 +175,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
                    Slice(ustore_msg.branch()), Slice(payload.new_branch()));
       break;
     }
-    case UStoreMessage::MERGE_REQUEST:
-    {
+    case UStoreMessage::MERGE_REQUEST: {
       MergeRequestPayload *payload =
           ustore_msg.mutable_merge_request_payload();
       Value value = ValueFromRequest(payload->value());
@@ -201,8 +200,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
       break;
     }
-    case UStoreMessage::LIST_KEY_REQUEST:
-    {
+    case UStoreMessage::LIST_KEY_REQUEST: {
       vector<string> keys;
       error_code = worker_->ListKeys(&keys);
       if (error_code != ErrorCode::kOK) break;
@@ -212,8 +210,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
         res_payload->add_versions(k.data(), k.length());
       break;
     }
-    case UStoreMessage::LIST_BRANCH_REQUEST:
-    {
+    case UStoreMessage::LIST_BRANCH_REQUEST: {
       vector<string> branches;
       error_code = worker_->ListBranches(Slice(ustore_msg.key()), &branches);
       if (error_code != ErrorCode::kOK) break;
@@ -223,8 +220,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
         res_payload->add_versions(b.data(), b.length());
       break;
     }
-    case UStoreMessage::EXISTS_REQUEST:
-    {
+    case UStoreMessage::EXISTS_REQUEST: {
       bool exists;
       error_code = ustore_msg.has_branch()
           ? worker_->Exists(Slice(ustore_msg.key()),
@@ -236,8 +232,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       bool_res->set_value(exists);
       break;
     }
-    case UStoreMessage::GET_BRANCH_HEAD_REQUEST:
-    {
+    case UStoreMessage::GET_BRANCH_HEAD_REQUEST: {
       Hash version;
       error_code = worker_->GetBranchHead(Slice(ustore_msg.key()),
                             Slice(ustore_msg.branch()), &version);
@@ -247,8 +242,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       res_payload->set_version(version.value(), Hash::kByteLength);
       break;
     }
-    case UStoreMessage::IS_BRANCH_HEAD_REQUEST:
-    {
+    case UStoreMessage::IS_BRANCH_HEAD_REQUEST: {
       bool is_head;
       error_code = worker_->IsBranchHead(Slice(ustore_msg.key()),
           Slice(ustore_msg.branch()),
@@ -260,8 +254,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       bool_res->set_value(is_head);
       break;
     }
-    case UStoreMessage::GET_LATEST_VERSION_REQUEST:
-    {
+    case UStoreMessage::GET_LATEST_VERSION_REQUEST: {
       vector<Hash> versions;
       error_code = worker_->GetLatestVersions(
                       Slice(ustore_msg.key()), &versions);
@@ -272,8 +265,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
         res_payload->add_versions(k.value(), Hash::kByteLength);
       break;
     }
-    case UStoreMessage::IS_LATEST_VERSION_REQUEST:
-    {
+    case UStoreMessage::IS_LATEST_VERSION_REQUEST: {
       bool is_latest;
       error_code = worker_->IsLatestVersion(
           Slice(ustore_msg.key()),
@@ -306,7 +298,5 @@ void WorkerService::HandleRequest(const void *msg, int size,
   delete[] serialized;
 }
 
-void WorkerService::Stop() {
-  net_->Stop();
-}
+void WorkerService::Stop() { net_->Stop(); }
 }  // namespace ustore

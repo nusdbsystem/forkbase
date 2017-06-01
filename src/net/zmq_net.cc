@@ -20,7 +20,7 @@ namespace ustore {
  */
 
 constexpr int kWaitInterval = 10;
-constexpr int kPoolTimeout = 1000;
+constexpr int kPoolTimeout = 10000;
 constexpr int kSocketBindTimeout = 1;
 constexpr int kSocketTrials = 5;
 
