@@ -25,11 +25,18 @@ class HeadVersion : private Noncopyable {
   inline void LogBranchUpdate(const Slice& key, const Slice& branch,
                               const Hash& ver) const {}
 
-  explicit HeadVersion(const std::string& log_path) noexcept;
+  HeadVersion() = default;
 
-  HeadVersion() noexcept;
+  ~HeadVersion() = default;
 
-  ~HeadVersion() noexcept;
+  // Load branch version info from log path
+  // Add them into member branch_ver_
+  // Return whether loading succeeds
+  bool LoadBranchVersion(const std::string& log_path);
+
+  // Dump branch_ver_ into log_path
+  // Return whether Dumping succeeds
+  bool DumpBranchVersion(const std::string& log_path);
 
   boost::optional<Hash> GetBranch(const Slice& key,
                                   const Slice& branch) const;
@@ -66,7 +73,6 @@ class HeadVersion : private Noncopyable {
  private:
   std::unordered_map<PSlice, std::unordered_map<PSlice, Hash>> branch_ver_;
   std::unordered_map<PSlice, std::unordered_set<Hash>> latest_ver_;
-  std::string log_path_;
 };
 
 }  // namespace ustore

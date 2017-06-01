@@ -8,21 +8,14 @@
 #include "utils/logging.h"
 
 namespace ustore {
-// the file to persist branch_ver_ before HeadVersion destruction
-constexpr char kDefaultLogPath[] = "default_head_version.log";
-
-HeadVersion::HeadVersion() noexcept :
-    HeadVersion(kDefaultLogPath) { }
-
-HeadVersion::HeadVersion(const std::string& log_path) noexcept
-    : log_path_(log_path) {
-  std::ifstream ifs(log_path_, std::ifstream::in);
+bool HeadVersion::LoadBranchVersion(const std::string& log_path) {
+  std::ifstream ifs(log_path, std::ifstream::in);
 
   if (ifs) {
     DLOG(INFO) << "\n============Reading Head Version From Log===========";
-    DLOG(INFO) << "Log Path: " << log_path_;
+    DLOG(INFO) << "Log Path: " << log_path;
     KeyVersions key_versions;  // protobuf
-    key_versions.ParseFromIstream(&ifs);
+    if (!key_versions.ParseFromIstream(&ifs)) return false;
 
     size_t num_keys = key_versions.key_versions_size();
 
@@ -47,14 +40,17 @@ HeadVersion::HeadVersion(const std::string& log_path) noexcept
       }
     }
     DLOG(INFO) << "====================================================\n";
+    return true;
+  } else {
+    return false;
   }  // end ifs
 }
 
-HeadVersion::~HeadVersion() noexcept {
+bool HeadVersion::DumpBranchVersion(const std::string& log_path) {
 // Dump the brach_ver_ to external file to persist
   DLOG(INFO) << "\n============Dumping Head Version to log===========";
-  DLOG(INFO) << "Log Path: " << log_path_;
-  std::ofstream ofs(log_path_, std::ofstream::out);
+  DLOG(INFO) << "Log Path: " << log_path;
+  std::ofstream ofs(log_path, std::ofstream::out);
   KeyVersions key_versions;
   for (const auto& k2branchversion : branch_ver_) {
     PSlice key = k2branchversion.first;
@@ -75,9 +71,10 @@ HeadVersion::~HeadVersion() noexcept {
       DLOG(INFO) << "\t version: " << hash.ToBase32();
     }  // end for branch2version
   }  // end for k2branchversion
-  key_versions.SerializeToOstream(&ofs);
+  bool succeeds = key_versions.SerializeToOstream(&ofs);
   ofs.close();
   DLOG(INFO) << "====================================================\n";
+  return succeeds;
 }
 
 boost::optional<Hash> HeadVersion::GetBranch(const Slice& key,
