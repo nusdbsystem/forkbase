@@ -66,9 +66,11 @@ TEST(NetTest, MsgTest) {
   Net* net0 = new ServerZmqNet(kID0);
   Net* net1 = new ServerZmqNet(kID1);
   Net* net2 = new ServerZmqNet(kID2);
+  Net* client = new ClientZmqNet();
 #endif
 
   usleep(kSleepTime);
+#ifdef USE_RDMA
   NetContext* ctx0_1 = net0->CreateNetContext(kID1);
   NetContext* ctx0_2 = net0->CreateNetContext(kID2);
 
@@ -83,7 +85,11 @@ TEST(NetTest, MsgTest) {
   // create the NetContext from node 2
   NetContext* ctx2_0 = net2->CreateNetContext(kID0);
   NetContext* ctx2_1 = net2->CreateNetContext(kID1);
-
+#else
+  NetContext* ctx1 = client->CreateNetContext(kID1);
+  NetContext* ctx2 = client->CreateNetContext(kID2);
+  NetContext* ctx3 = client->CreateNetContext(kID2);
+#endif
   TestCallBack cb0;
   TestCallBack cb1;
   TestCallBack cb2;
@@ -99,7 +105,11 @@ TEST(NetTest, MsgTest) {
   thread* t0 = new thread(Start, net0);
   thread* t1 = new thread(Start, net1);
   thread* t2 = new thread(Start, net2);
+#ifndef USE_RDMA
+  thread* t3 = new thread(Start, client);
+#endif
 
+#ifdef USE_RDMA
   /*
    * node 0 sends msg to node 1
    */
@@ -119,7 +129,14 @@ TEST(NetTest, MsgTest) {
    * node 2 sends msg to node 1
    */
   ctx2_1->Send(kID2.c_str(), kID2.length());
+#else
+  ctx1->Send(kID1.c_str(), kID1.length());
 
+  ctx2->Send(kID2.c_str(), kID2.length());
+
+  ctx3->Send(kID2.c_str(), kID2.length());
+
+#endif
   // free the resources
   usleep(kSleepTime);
   net0->Stop();
@@ -136,6 +153,11 @@ TEST(NetTest, MsgTest) {
   t2->join();
   delete net2;
   usleep(kSleepTime);
+#ifndef USE_RDMA
+  client->Stop();
+  t3->join();
+  delete client;
+#endif
 }
 
 // test client and server context
@@ -195,9 +217,11 @@ TEST(NetTest, CreateContexts) {
   Net* net0 = new ServerZmqNet(kID0);
   Net* net1 = new ServerZmqNet(kID1);
   Net* net2 = new ServerZmqNet(kID2);
+  Net* client = new ClientZmqNet();
 #endif
 
   usleep(kSleepTime);
+#ifdef USE_RDMA
   net0->CreateNetContexts(nodes);
 
   NetContext* ctx0_1 = net0->GetNetContext(kID1);
@@ -217,6 +241,12 @@ TEST(NetTest, CreateContexts) {
 
   NetContext* ctx2_0 = net2->GetNetContext(kID0);
   NetContext* ctx2_1 = net2->GetNetContext(kID1);
+#else
+  client->CreateNetContexts(nodes);
+  NetContext *ctx1 = client->GetNetContext(kID0);
+  NetContext *ctx2 = client->GetNetContext(kID1);
+  NetContext *ctx3 = client->GetNetContext(kID2);
+#endif
 
   TestCallBack cb0;
   TestCallBack cb1;
@@ -235,6 +265,11 @@ TEST(NetTest, CreateContexts) {
   thread* t1 = new thread(Start, net1);
   thread* t2 = new thread(Start, net2);
 
+#ifndef USE_RDMA
+  thread* t3 = new thread(Start, client);
+#endif
+
+#ifdef USE_RDMA
   /*
    * node 0 sends msg to node 1
    */
@@ -254,6 +289,14 @@ TEST(NetTest, CreateContexts) {
    * node 2 sends msg to node 1
    */
   ctx2_1->Send(kID2.c_str(), kID2.length());
+#else
+  ctx1->Send(kID0.c_str(), kID0.length());
+
+  ctx2->Send(kID1.c_str(), kID1.length());
+
+  ctx3->Send(kID2.c_str(), kID2.length());
+
+#endif
 
   // free the resources
   usleep(kSleepTime);
@@ -269,4 +312,9 @@ TEST(NetTest, CreateContexts) {
   t2->join();
   delete net2;
   usleep(kSleepTime);
+#ifndef USE_RDMA
+  client->Stop();
+  t3->join();
+  delete client;
+#endif
 }
