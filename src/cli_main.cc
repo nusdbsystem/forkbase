@@ -11,7 +11,7 @@
 namespace ustore {
 namespace cli {
 
-const int kWaitForSvcReadyInMs = 75;
+constexpr int kWaitForSvcReadyInMs = 75;
 
 int main(int argc, char* argv[]) {
   SetStderrLogging(WARNING);

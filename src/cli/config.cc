@@ -30,13 +30,13 @@ void Config::Reset() {
   ref_version2 = "";
 }
 
-bool Config::ParseCmdArgs(const int& argc, char* argv[]) {
+bool Config::ParseCmdArgs(int argc, char* argv[]) {
   Reset();
   po::variables_map vm;
-  GUARD(ParseCmdArgs(argc, argv, vm));
+  GUARD(ParseCmdArgs(argc, argv, &vm));
 
   auto arg_command = vm["command"].as<std::string>();
-  Command::Normalize(arg_command);
+  Command::Normalize(&arg_command);
   GUARD(Command::IsValid(arg_command));
   command = std::move(arg_command);
 
@@ -53,8 +53,7 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[]) {
   return true;
 }
 
-bool Config::ParseCmdArgs(const int& argc, char* argv[],
-                          po::variables_map& vm) {
+bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   po::options_description desc("Options", 120);
   desc.add_options()
   ("command", po::value<std::string>()->required(),
@@ -80,13 +79,13 @@ bool Config::ParseCmdArgs(const int& argc, char* argv[],
 
   try {
     po::store(po::command_line_parser(argc, argv).options(desc)
-              .positional(pos_opts).run(), vm);
-    if (vm.count("help")) {
+              .positional(pos_opts).run(), *vm);
+    if (vm->count("help")) {
       is_help = true;
       std::cout << desc << std::endl;
       return false;
     }
-    po::notify(vm);
+    po::notify(*vm);
   } catch (std::exception& e) {
     std::cerr << "[ERROR] " << e.what() << std::endl << std::endl
               << desc << std::endl;

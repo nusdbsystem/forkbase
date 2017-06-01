@@ -14,8 +14,8 @@ namespace cli {
 
 class Command {
  public:
-  static inline void Normalize(std::string& cmd) {
-    boost::algorithm::to_upper(cmd);
+  static inline void Normalize(std::string* cmd) {
+    boost::algorithm::to_upper(*cmd);
   }
 
   static inline bool IsValid(const std::string& cmd) {

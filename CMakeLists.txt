@@ -52,9 +52,7 @@ if(USE_RDMA)
 endif()
 
 SET(BOOST_COMPONENT "filesystem")
-#IF(ENABLE_EXAMPLE)
 LIST(APPEND BOOST_COMPONENT "program_options")
-#ENDIF()
 
 # ---[ Dependencies
 include(cmake/Dependencies.cmake)

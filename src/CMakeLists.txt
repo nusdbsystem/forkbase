@@ -86,11 +86,11 @@ LIST(APPEND ustore_srcs ${utils_source})
 AUX_SOURCE_DIRECTORY(worker worker_source)
 LIST(APPEND ustore_srcs ${worker_source})
 
-AUX_SOURCE_DIRECTORY(http http_source)
-LIST(APPEND ustore_srcs ${http_source})
-
 AUX_SOURCE_DIRECTORY(cli cli_source)
 LIST(APPEND ustore_srcs ${cli_source})
+
+AUX_SOURCE_DIRECTORY(http http_source)
+LIST(APPEND ustore_srcs ${http_source})
 
 ADD_LIBRARY(ustore_objs OBJECT ${ustore_srcs})
 ADD_DEPENDENCIES(ustore_objs copy_protobuf)
@@ -111,18 +111,17 @@ LIST(APPEND USTORE_LINKER_LIBS ${PROTOBUF_LIBRARY})
 TARGET_LINK_LIBRARIES(ustore ${USTORE_LINKER_LIBS})
 #SET_TARGET_PROPERTIES(ustore PROPERTIES LINK_FLAGS "")
 
-ADD_EXECUTABLE(ustored "worker_main.cc")
-ADD_DEPENDENCIES(ustored copy_protobuf)
+ADD_EXECUTABLE(ustored "main.cc")
 ADD_DEPENDENCIES(ustored ustore)
 TARGET_LINK_LIBRARIES(ustored ustore)
 SET_TARGET_PROPERTIES(ustored PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
 
+ADD_EXECUTABLE(ustore_cli "cli_main.cc")
+ADD_DEPENDENCIES(ustore_cli ustore)
+TARGET_LINK_LIBRARIES(ustore_cli ustore)
+SET_TARGET_PROPERTIES(ustore_cli PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+
 ADD_EXECUTABLE(ustore_http "http_main.cc")
-ADD_DEPENDENCIES(ustore_http copy_protobuf)
 ADD_DEPENDENCIES(ustore_http ustore)
 TARGET_LINK_LIBRARIES(ustore_http ustore)
 SET_TARGET_PROPERTIES(ustore_http PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
-
-ADD_EXECUTABLE(ustore_cli "cli/cli_main.cc")
-ADD_DEPENDENCIES(ustore_cli ustore)
-TARGET_LINK_LIBRARIES(ustore_cli ustore)

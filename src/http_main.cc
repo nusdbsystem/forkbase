@@ -8,7 +8,8 @@
 #include "cluster/remote_client_service.h"
 #include "cluster/clientdb.h"
 
-using namespace ustore;
+namespace ustore {
+namespace http{
 
 int main(int argc, char* argv[]) {
   int port = Env::Instance()->config().http_port();
@@ -63,4 +64,11 @@ int main(int argc, char* argv[]) {
   ct.join();
   delete client;
   return 0;
+}
+
+}  // namespace http
+}  // namespace ustore
+
+int main(int argc, char* argv[]) {
+  return ustore::http::main(argc, argv);
 }

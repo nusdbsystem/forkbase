@@ -26,13 +26,12 @@ class Config {
   static std::string ref_version;
   static std::string ref_version2;
 
-  static bool ParseCmdArgs(const int& argc, char* argv[]);
+  static bool ParseCmdArgs(int argc, char* argv[]);
 
  private:
   static void Reset();
 
-  static bool ParseCmdArgs(const int& argc, char* argv[],
-                           po::variables_map& vm);
+  static bool ParseCmdArgs(int argc, char* argv[], po::variables_map* vm);
 
   template<typename T>
   static bool CheckArg(const T& var, const bool expr,

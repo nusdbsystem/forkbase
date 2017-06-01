@@ -248,7 +248,7 @@ ErrorCode Command::ExecBranch() {
   // illegal: ref_branch and ref_ver are neither set or both set
   f_rpt_invalid_args();
   return ErrorCode::kInvalidCommandArgument;
-};
+}
 
 ErrorCode Command::ExecRename() {
   const auto& key = Config::key;
