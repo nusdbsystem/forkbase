@@ -10,6 +10,7 @@
 #include "http/server.h"
 #include "http/net.h"
 #include "worker/worker.h"
+#include "http/http_request.h"
 
 using namespace ustore;
 
@@ -33,8 +34,10 @@ string PutB(const string& key, const string& value, const string& branch, Client
       "key=" + key + "&branch=" + branch + "&value=" + value;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
 string PutV(const string& key, const string& value,
@@ -43,8 +46,10 @@ string PutV(const string& key, const string& value,
       kHeaders + "key=" + key + "&version=" + version + "&value=" + value;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
 string Get(const string& key, const string& version, ClientSocket& cs) {
@@ -52,8 +57,10 @@ string Get(const string& key, const string& version, ClientSocket& cs) {
       kHeaders + "key=" + key + "&version=" + version;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
 string BranchV(const string& key, const string& version,
@@ -62,8 +69,10 @@ string BranchV(const string& key, const string& version,
       "key=" + key + "&version=" + version + "&new_branch=" + new_branch;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
 string BranchB(const string& key, const string& old_branch,
@@ -72,8 +81,10 @@ string BranchB(const string& key, const string& old_branch,
       "key=" + key + "&old_branch=" + old_branch + "&new_branch=" + new_branch;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
 string Rename(const string& key, const string& old_branch,
@@ -82,8 +93,10 @@ string Rename(const string& key, const string& old_branch,
       "key=" + key + "&old_branch=" + old_branch + "&new_branch=" + new_branch;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
 string MergeBB(const string& key, const string& tgt_branch,
@@ -93,8 +106,10 @@ string MergeBB(const string& key, const string& tgt_branch,
         "&value=" + value;
     cs.Send(post_content.c_str(), post_content.length());
     string data = cs.Recv();
-    int i = data.find("\r\n\r\n");
-    return data.substr(i+4);
+    int i = data.find(CRLF+CRLF);
+    i += CRLF.length()*2;
+    int j = data.find(CRLF, i);
+    return data.substr(i, j-i);
 }
 
 string MergeBV(const string& key, const string& tgt_branch,
@@ -104,8 +119,10 @@ string MergeBV(const string& key, const string& tgt_branch,
       "&value=" + value;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
 string MergeVV(const string& key, const string& ref_version1,
@@ -116,10 +133,108 @@ string MergeVV(const string& key, const string& ref_version1,
       "&value=" + value;
   cs.Send(post_content.c_str(), post_content.length());
   string data = cs.Recv();
-  int i = data.find("\r\n\r\n");
-  return data.substr(i+4);
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
 }
 
+string Head(const string& key, const string& branch, ClientSocket& cs) {
+  string post_content = "POST /head " + kHeaders +
+      "key=" + key + "&branch=" + branch;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
+}
+
+string IsBranchHead(const string& key, const string& version,
+                    const string& branch, ClientSocket& cs) {
+  string post_content = "POST /isbranchhead " + kHeaders +
+      "key=" + key + "&version=" + version + "&branch=" + branch;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
+}
+
+string Latest(const string& key, ClientSocket& cs) {
+  string post_content = "POST /latest " + kHeaders +
+      "key=" + key;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
+}
+
+string IsLatestVersion(const string& key, const string& version, ClientSocket& cs) {
+  string post_content = "POST /islatestversion " + kHeaders +
+      "key=" + key + "&version=" + version;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
+}
+
+string ListK(ClientSocket& cs) {
+  string post_content = "GET /list " + kHeaders;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  return data.substr(i);
+}
+
+string ListB(const string& key, ClientSocket& cs) {
+  string post_content = "POST /list " + kHeaders
+      + "key=" + key;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  return data.substr(i);
+}
+
+string ExistsK(const string& key, ClientSocket& cs) {
+  string post_content = "POST /exists " + kHeaders +
+      "key=" + key;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
+}
+
+string ExistsB(const string& key, const string& branch, ClientSocket& cs) {
+  string post_content = "POST /exists " + kHeaders +
+      "key=" + key + "&branch=" + branch;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
+}
+
+string Delete(const string& key, const string& branch, ClientSocket& cs) {
+  string post_content = "POST /delete " + kHeaders +
+      "key=" + key + "&branch=" + branch;
+  cs.Send(post_content.c_str(), post_content.length());
+  string data = cs.Recv();
+  int i = data.find(CRLF+CRLF);
+  i += CRLF.length()*2;
+  int j = data.find(CRLF, i);
+  return data.substr(i, j-i);
+}
 
 TEST(HttpTest, BasicOps) {
   Worker worker {2017};
@@ -140,6 +255,7 @@ TEST(HttpTest, BasicOps) {
   string key = "mykey";
   string value1 = "value1";
   string branch1 = "mybranch1";
+
   // put a new key value
   string version = PutB(key, value1, branch1, cs);
   string version1 = version;
@@ -157,15 +273,64 @@ TEST(HttpTest, BasicOps) {
   DLOG(INFO) << "Got version: " << version;
 
   // get the value
-  value = Get(key, version, cs);
+  value = Get(key, version2, cs);
   DLOG(INFO) << "Got value: " << value;
   CHECK_EQ(value, value2);
 
+  // check if a key exists
+  string status = ExistsK(key, cs);
+  CHECK_EQ(status, "true");
+  status = ExistsK(key+"error", cs);
+  CHECK_EQ(status, "false");
+
+  // check if a key and branch exists
+  status = ExistsB(key, branch1, cs);
+  CHECK_EQ(status, "true");
+  status = ExistsB(key+"error", branch1, cs);
+  CHECK_EQ(status, "false");
+  status = ExistsB(key, branch1+"error", cs);
+  CHECK_EQ(status, "false");
+  status = ExistsB(key+"error", branch1+"error", cs);
+  CHECK_EQ(status, "false");
+
+  // head of the branch
+  version = Head(key, branch1, cs);
+  CHECK_EQ(version, version1);
+
+  // check if it is the branch head
+  status = IsBranchHead(key, version, branch1, cs);
+  CHECK_EQ(status, "true");
+  status = IsBranchHead(key, version2, branch1, cs);
+  CHECK_EQ(status, "false");
+
+  // latest version of the key
+  version = Latest(key, cs);
+  CHECK_EQ(version, version2);
+
+  // check if a key is latest
+  status = IsLatestVersion(key, version, cs);
+  CHECK_EQ(status, "true");
+  status = IsLatestVersion(key, version1, cs);
+  CHECK_EQ(status, "false");
+
+  // put a new key
+  string key2 = "mykey2";
+  version = PutB(key2, value1, branch1, cs);
+  DLOG(INFO) << "Got version: " << version;
+
+  // list the keys
+  string keys = ListK(cs);
+  CHECK_EQ(keys, key2 + CRLF + key + CRLF);
+
   // branch based on version
   string branch2 = "mybranch2";
-  string status = BranchV(key, version, branch2, cs);
+  status = BranchV(key, version2, branch2, cs);
   DLOG(INFO) << "New branch " << branch2 << ": " << status;
   CHECK(status == "OK" || status == "Branch Error: 5");
+
+  // list the branches
+  string branches = ListB(key, cs);
+  CHECK_EQ(branches, branch2 + CRLF + branch1 + CRLF);
 
   // branch based on branch
   string branch3 = "mybranch3";
@@ -210,6 +375,14 @@ TEST(HttpTest, BasicOps) {
   // get back the value to check
   value = Get(key, version4, cs);
   CHECK_EQ(value, value5);
+
+  // delete a branch
+  status = ExistsB(key, branch1, cs);
+  CHECK_EQ(status, "true");
+  status = Delete(key, branch1, cs);
+  CHECK_EQ(status, "OK");
+  status = ExistsB(key, branch1, cs);
+  CHECK_EQ(status, "false");
 
   server.Stop();
   sleep(1);

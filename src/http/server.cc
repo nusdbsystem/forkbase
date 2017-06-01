@@ -45,70 +45,79 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
     switch (request.GetCommand()) {
       case CommandType::kGet:
       DLOG(INFO) << "Get Command";
-      CHECK(paras.count("key"));
+      if(!paras.count("key")) {
+        response = "No key provided" + CRLF;
+        break;
+      }
       if (paras.count("version")) {
         auto rlt = hserver->GetODB()
         .Get(Slice(paras["key"]), Hash::FromBase32(paras["version"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.String().slice().ToString();
+          response = rlt.value.String().slice().ToString() + CRLF;
         } else {
           response = "Get Error: " +
-              std::to_string(static_cast<int>(rlt.stat));
+              std::to_string(static_cast<int>(rlt.stat)) + CRLF;
         }
       } else if (paras.count("branch")) {
         auto rlt = hserver->GetODB()
         .Get(Slice(paras["key"]), Slice(paras["branch"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.String().slice().ToString();
+          response = rlt.value.String().slice().ToString() + CRLF;
         } else {
           response = "Get Error: " +
-              std::to_string(static_cast<int>(rlt.stat));
+              std::to_string(static_cast<int>(rlt.stat)) + CRLF;
         }
       } else {
-        response = "Get parameter error";
+        response = "Get parameter error" + CRLF;
         LOG(WARNING) << response;
       }
       break;
       case CommandType::kPut:
       DLOG(INFO) << "Put Command";
-      CHECK(paras.count("key") && paras.count("value"));
+      if(!paras.count("key") || !paras.count("value")) {
+        response = "No key or value provided" + CRLF;
+        break;
+      }
       if (paras.count("version")) {
         auto rlt = hserver->GetODB()
             .Put(Slice(paras["key"]), VString(Slice(paras["value"])),
                   Hash::FromBase32(paras["version"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.ToBase32();
+          response = rlt.value.ToBase32() + CRLF;
         } else {
           response = "Put Error: " +
-              std::to_string(static_cast<int>(rlt.stat));
+              std::to_string(static_cast<int>(rlt.stat)) + CRLF;
         }
       } else if (paras.count("branch")) {
         auto rlt = hserver->GetODB()
         .Put(Slice(paras["key"]),
               VString(Slice(paras["value"])), Slice(paras["branch"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.ToBase32();
+          response = rlt.value.ToBase32() + CRLF;
         } else {
           response = "Put Error: " +
-              std::to_string(static_cast<int>(rlt.stat));
+              std::to_string(static_cast<int>(rlt.stat)) + CRLF;
         }
       } else {
-        response = "Put parameter error";
+        response = "Put parameter error" + CRLF;
         LOG(WARNING) << response;
       }
       break;
       case CommandType::kMerge:
       DLOG(INFO) << "Merge Command";
-      CHECK(paras.count("key") && paras.count("value"));
+      if(!paras.count("key") || !paras.count("value")) {
+        response = "No key or value provided" + CRLF;
+        break;
+      }
       if (paras.count("tgt_branch") && paras.count("ref_branch")) {
         auto rlt = hserver->GetODB()
         .Merge(Slice(paras["key"]), VString(Slice(paras["value"])),
             Slice(paras["tgt_branch"]), Slice(paras["ref_branch"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.ToBase32();
+          response = rlt.value.ToBase32() + CRLF;
         } else {
           response = "Merge Error: " +
-              std::to_string(static_cast<int>(rlt.stat));
+              std::to_string(static_cast<int>(rlt.stat)) + CRLF;
         }
       } else if (paras.count("tgt_branch") && paras.count("ref_version1")) {
         auto rlt = hserver->GetODB().Merge(Slice(paras["key"]),
@@ -116,10 +125,10 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
             Slice(paras["tgt_branch"]),
             Hash::FromBase32(paras["ref_version1"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.ToBase32();
+          response = rlt.value.ToBase32() + CRLF;
         } else {
           response = "Merge Error: " +
-              std::to_string(static_cast<int>(rlt.stat));
+              std::to_string(static_cast<int>(rlt.stat)) + CRLF;
         }
       } else if (paras.count("ref_version1") && paras.count("ref_version2")) {
         auto rlt = hserver->GetODB()
@@ -127,39 +136,42 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
             Hash::FromBase32(paras["ref_version1"]),
             Hash::FromBase32(paras["ref_version2"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.ToBase32();
+          response = rlt.value.ToBase32() + CRLF;
         } else {
           response = "Merge Error: " +
-              std::to_string(static_cast<int>(rlt.stat));
+              std::to_string(static_cast<int>(rlt.stat)) + CRLF;
         }
       } else {
-        response = "Merge parameter error";
+        response = "Merge parameter error" + CRLF;
         LOG(WARNING) << response;
       }
       break;
       case CommandType::kBranch:
       DLOG(INFO) << "Branch Command";
-      CHECK(paras.count("key") && paras.count("new_branch"));
+      if(!paras.count("key") || !paras.count("new_branch")) {
+        response = "No key or new_branch provided" + CRLF;
+        break;
+      }
       if (paras.count("old_branch")) {
         auto code = hserver->GetODB()
         .Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
                 Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
-          response = "OK";
+          response = "OK" + CRLF;
         } else {
-          response = "Branch Error: " + std::to_string(static_cast<int>(code));
+          response = "Branch Error: " + std::to_string(static_cast<int>(code)) + CRLF;
         }
       } else if (paras.count("version")) {
         auto code = hserver->GetODB()
         .Branch(Slice(paras["key"]), Hash::FromBase32(paras["version"]),
                 Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
-          response = "OK";
+          response = "OK" + CRLF;
         } else {
-          response = "Branch Error: " + std::to_string(static_cast<int>(code));
+          response = "Branch Error: " + std::to_string(static_cast<int>(code)) + CRLF;
         }
       } else {
-        response = "Branch parameter error";
+        response = "Branch parameter error" + CRLF;
         LOG(WARNING) << response;
       }
       break;
@@ -171,12 +183,12 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         .Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
                 Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
-          response = "OK";
+          response = "OK" + CRLF;
         } else {
-          response = "Rename Error: " + std::to_string(static_cast<int>(code));
+          response = "Rename Error: " + std::to_string(static_cast<int>(code)) + CRLF;
         }
       } else {
-        response = "Rename parameter error";
+        response = "Rename parameter error" + CRLF;
         LOG(WARNING) << response;
       }
       break;
@@ -186,29 +198,137 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         auto code = hserver->GetODB()
         .Delete(Slice(paras["key"]), Slice(paras["branch"]));
         if (code == ErrorCode::kOK) {
-          response = "OK";
+          response = "OK" + CRLF;
         } else {
-          response = "Delete Error: " + std::to_string(static_cast<int>(code));
+          response = "Delete Error: " + std::to_string(static_cast<int>(code)) + CRLF;
         }
       } else {
-        response = "Delete parameter error";
+        response = "Delete parameter error" + CRLF;
         LOG(WARNING) << response;
       }
       break;
       case CommandType::kList:
-      response = "Not Support kList";
-      LOG(WARNING) << response;
+      DLOG(INFO) << "List Command";
+      // list all keys
+      if (request.GetMethod() == "get") {
+        auto rlt = hserver->GetODB().ListKeys();
+        if (rlt.stat == ErrorCode::kOK) {
+          for (std::string& v: rlt.value) {
+            response += v + CRLF;
+          }
+        } else {
+          response = "List Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else if (paras.count("key")) {  // list all branches of a key
+        auto rlt = hserver->GetODB().ListBranches(Slice(paras["key"]));
+        if (rlt.stat == ErrorCode::kOK) {
+          for (std::string& v: rlt.value) {
+            response += v + CRLF;
+          }
+        } else {
+          response = "List Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else {
+        response = "List parameter error" + CRLF;
+        LOG(WARNING) << response;
+      }
       break;
       case CommandType::kHead:
-      response = "Not Support kHead";
-      LOG(WARNING) << response;
+      DLOG(INFO) << "Head Command";
+      if (paras.count("key") && paras.count("branch")) {
+        auto rlt = hserver->GetODB().GetBranchHead(Slice(paras["key"]), Slice(paras["branch"]));
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value.ToBase32() + CRLF;
+        } else {
+          response = "Head Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else {
+        response = "Head parameter error" + CRLF;
+        LOG(WARNING) << response;
+      }
       break;
       case CommandType::kLatest:
-      response = "Not Support kLatest";
-      LOG(WARNING) << response;
+      DLOG(INFO) << "Latest Command";
+      if (paras.count("key")) {
+        auto rlt = hserver->GetODB().GetLatestVersions(Slice(paras["key"]));
+        if (rlt.stat == ErrorCode::kOK) {
+          for (Hash& h: rlt.value) {
+            response = h.ToBase32() + CRLF;
+          }
+        } else {
+          response = "Latest Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else {
+        response = "Latest parameter error" + CRLF;
+        LOG(WARNING) << response;
+      }
+      break;
+      case CommandType::kExists:
+      DLOG(INFO) << "Exists Command";
+      if (paras.count("key") && paras.count("branch")) {
+        auto rlt = hserver->GetODB().Exists(Slice(paras["key"]), Slice(paras["branch"]));
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value == true ? "true" : "false";
+          response += CRLF;
+        } else {
+          response = "Exists Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else if (paras.count("key")) {
+        auto rlt = hserver->GetODB().Exists(Slice(paras["key"]));
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value == true ? "true" : "false";
+          response += CRLF;
+        } else {
+          response = "Exists Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else {
+        response = "Exists parameter error" + CRLF;
+        LOG(WARNING) << response;
+      }
+      break;
+      case CommandType::kIsBranchHead:
+      DLOG(INFO) << "IsBranchHead Command";
+      if (paras.count("key") && paras.count("branch") && paras.count("version")) {
+        auto rlt = hserver->GetODB().
+        IsBranchHead(Slice(paras["key"]), Slice(paras["branch"]), Hash::FromBase32(paras["version"]));
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value == true ? "true" : "false";
+          response += CRLF;
+        } else {
+          response = "IsBranchHead Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else {
+        response = "IsBranchHead parameter error" + CRLF;
+        LOG(WARNING) << response;
+      }
+      break;
+      case CommandType::kIsLatestVersion:
+      DLOG(INFO) << "IsLatestVersion Command";
+      if (paras.count("key") && paras.count("version")) {
+        auto rlt = hserver->GetODB().
+        IsLatestVersion(Slice(paras["key"]), Hash::FromBase32(paras["version"]));
+        if (rlt.stat == ErrorCode::kOK) {
+          response = rlt.value == true ? "true" : "false";
+          response += CRLF;
+        } else {
+          response = "IsLatestVersion Error: " +
+          std::to_string(static_cast<int>(rlt.stat)) + CRLF;
+        }
+      } else {
+        response = "IsLatestVersion parameter error" + CRLF;
+        LOG(WARNING) << response;
+      }
       break;
       default:
-      response = "Unrecognized uri: " + static_cast<int>(request.GetCommand());
+      response = "Unrecognized uri: "
+          + std::to_string(static_cast<int>(request.GetCommand())) + CRLF;
       LOG(WARNING) << response;
     }
 
