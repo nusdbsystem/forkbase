@@ -141,6 +141,7 @@ class ClientDb : public DB {
   ErrorCode GetVersionList(std::vector<Hash> *versions);
   ErrorCode GetBool(bool *exists);
   ErrorCode GetBranchHeadVersion(Hash *version);
+  Chunk GetChunkResponse();
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node

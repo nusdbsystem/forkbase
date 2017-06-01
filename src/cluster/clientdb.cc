@@ -129,17 +129,7 @@ Chunk ClientDb::GetChunk(const Slice& key, const Hash& version) {
   Send(request, dest);
   delete request;
 
-  UStoreMessage *response
-    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  // const std::string &tmp = response->get_response_payload().value();
-  UCellPayload *tmp = response->mutable_get_response_payload()
-                      ->mutable_meta();
-  // make a copy of the Slice object
-  // comment(wangsh):
-  //   SHOULD use unique_ptr instead of raw pointer to avoid memory leak
-  std::unique_ptr<byte_t[]> buf(new byte_t[tmp->value().length()]);
-  std::memcpy(buf.get(), tmp->value().data(), tmp->value().length());
-  return Chunk(std::move(buf));
+  return GetChunkResponse();
 }
 
 UStoreMessage *ClientDb::CreateBranchRequest(const Slice &key,
@@ -273,9 +263,11 @@ ErrorCode ClientDb::GetEmptyResponse() {
 ErrorCode ClientDb::GetPutResponse(Hash* version) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *version = Hash(reinterpret_cast<const byte_t *>(
-    response->put_response_payload().new_version().data())).Clone();
   ErrorCode err = static_cast<ErrorCode>(response->status());
+  if (err == ErrorCode::kOK) {
+    *version = Hash(reinterpret_cast<const byte_t *>(
+               response->put_response_payload().new_version().data())).Clone();
+  }
   delete response;
   return err;
 }
@@ -283,14 +275,35 @@ ErrorCode ClientDb::GetPutResponse(Hash* version) {
 ErrorCode ClientDb::GetMergeResponse(Hash* version) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-  *version = Hash(reinterpret_cast<const byte_t *>(
-    response->merge_response_payload().new_version().data())).Clone();
   ErrorCode err = static_cast<ErrorCode>(response->status());
+  if (err == ErrorCode::kOK) {
+    *version = Hash(reinterpret_cast<const byte_t *>(
+             response->merge_response_payload().new_version().data())).Clone();
+  }
   delete response;
   return err;
 }
 
 ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
+  UStoreMessage *response
+    = reinterpret_cast<UStoreMessage *>(WaitForResponse());
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+  if (err == ErrorCode::kOK) {
+    UCellPayload *tmp = response->mutable_get_response_payload()
+                        ->mutable_meta();
+    // make a copy of the Slice object
+    // comment(wangsh):
+    //   SHOULD use unique_ptr instead of raw pointer to avoid memory leak
+    std::unique_ptr<byte_t[]> buf(new byte_t[tmp->value().length()]);
+    std::memcpy(buf.get(), tmp->value().data(), tmp->value().length());
+    Chunk c(std::move(buf));
+    *meta = UCell(std::move(c));
+  }
+  delete response;
+  return err;
+}
+
+Chunk ClientDb::GetChunkResponse() {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
   // const std::string &tmp = response->get_response_payload().value();
@@ -301,24 +314,21 @@ ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
   //   SHOULD use unique_ptr instead of raw pointer to avoid memory leak
   std::unique_ptr<byte_t[]> buf(new byte_t[tmp->value().length()]);
   std::memcpy(buf.get(), tmp->value().data(), tmp->value().length());
-  Chunk c(std::move(buf));
-  *meta = UCell(std::move(c));
-  ErrorCode err = static_cast<ErrorCode>(response->status());
   delete response;
-  return err;
+  return Chunk(std::move(buf));
 }
 
 ErrorCode ClientDb::GetStringList(vector<string> *vals) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-
-  MultiVersionResponsePayload *payload =
-    response->mutable_multi_version_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
-
-  for (int i=0; i < payload->versions_size(); i++)
-    vals->push_back(string(payload->versions(i).data(),
-                    payload->versions(i).length()));
+  if (err == ErrorCode::kOK) {
+    MultiVersionResponsePayload *payload =
+      response->mutable_multi_version_response_payload();
+    for (int i = 0; i < payload->versions_size(); i++)
+      vals->push_back(string(payload->versions(i).data(),
+                      payload->versions(i).length()));
+  }
   delete response;
   return err;
 }
@@ -326,14 +336,14 @@ ErrorCode ClientDb::GetStringList(vector<string> *vals) {
 ErrorCode ClientDb::GetVersionList(vector<Hash> *versions) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-
-  MultiVersionResponsePayload *payload =
-    response->mutable_multi_version_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
-
-  for (int i=0; i < payload->versions_size(); i++)
-    versions->push_back(Hash(reinterpret_cast<const byte_t *>(
-                        payload->versions(i).data())).Clone());
+  if (err == ErrorCode::kOK) {
+    MultiVersionResponsePayload *payload =
+      response->mutable_multi_version_response_payload();
+    for (int i=0; i < payload->versions_size(); i++)
+      versions->push_back(Hash(reinterpret_cast<const byte_t *>(
+                          payload->versions(i).data())).Clone());
+  }
   delete response;
   return err;
 }
@@ -341,13 +351,13 @@ ErrorCode ClientDb::GetVersionList(vector<Hash> *versions) {
 ErrorCode ClientDb::GetBranchHeadVersion(Hash *version) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-
-  BranchVersionResponsePayload *payload =
-    response->mutable_branch_version_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
-
-  *version = Hash(reinterpret_cast<const byte_t *>(
-                  payload->version().data())).Clone();
+  if (err == ErrorCode::kOK) {
+    BranchVersionResponsePayload *payload =
+      response->mutable_branch_version_response_payload();
+    *version = Hash(reinterpret_cast<const byte_t *>(
+                    payload->version().data())).Clone();
+  }
   delete response;
   return err;
 }
@@ -355,11 +365,11 @@ ErrorCode ClientDb::GetBranchHeadVersion(Hash *version) {
 ErrorCode ClientDb::GetBool(bool *value) {
   UStoreMessage *response
     = reinterpret_cast<UStoreMessage *>(WaitForResponse());
-
-  BoolResponsePayload *payload =
-    response->mutable_bool_response_payload();
   ErrorCode err = static_cast<ErrorCode>(response->status());
-  *value = payload->value();
+  if (err == ErrorCode::kOK) {
+    BoolResponsePayload *payload = response->mutable_bool_response_payload();
+    *value = payload->value();
+  }
   delete response;
   return err;
 }
