@@ -25,24 +25,24 @@ class Command {
   explicit Command(DB* db) noexcept : odb_(db) {}
   ~Command() = default;
 
-  int ExecCommand(const std::string& command);
+  ErrorCode ExecCommand(const std::string& command);
 
  private:
   static const std::unordered_set<std::string> kSupportedCommands;
 
-  int ExecGet();
-  int ExecPut();
-  int ExecMerge();
-  int ExecBranch();
-  int ExecRename();
-  int ExecDelete();
-  int ExecListKey();
-  int ExecListBranch();
-  int ExecHead();
-  int ExecLatest();
-  int ExecIsHead();
-  int ExecIsLatest();
-  int ExecExists();
+  ErrorCode ExecGet();
+  ErrorCode ExecPut();
+  ErrorCode ExecMerge();
+  ErrorCode ExecBranch();
+  ErrorCode ExecRename();
+  ErrorCode ExecDelete();
+  ErrorCode ExecListKey();
+  ErrorCode ExecListBranch();
+  ErrorCode ExecHead();
+  ErrorCode ExecLatest();
+  ErrorCode ExecIsHead();
+  ErrorCode ExecIsLatest();
+  ErrorCode ExecExists();
 
   ObjectDB odb_;
 };

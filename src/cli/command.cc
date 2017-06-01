@@ -13,7 +13,7 @@ const std::unordered_set<std::string> Command::kSupportedCommands = {
   "LIST_KEY", "LIST_BRANCH", "EXIST"
 };
 
-int Command::ExecCommand(const std::string& cmd) {
+ErrorCode Command::ExecCommand(const std::string& cmd) {
   if (cmd == "GET") return ExecGet();
   if (cmd == "PUT") return ExecPut();
   if (cmd == "MERGE") return ExecMerge();
@@ -28,10 +28,10 @@ int Command::ExecCommand(const std::string& cmd) {
   if (cmd == "IS_HEAD") return ExecIsHead();
   if (cmd == "IS_LATEST") return ExecIsLatest();
   std::cerr << "[FAILURE] Unknown command: " << cmd << std::endl;
-  return -2;
+  return ErrorCode::kUnknownCommand;
 }
 
-int Command::ExecGet() {
+ErrorCode Command::ExecGet() {
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   const auto& ver = Config::version;
@@ -57,28 +57,28 @@ int Command::ExecGet() {
   // conditional execution
   if (key.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   if (!branch.empty() && ver.empty()) {
     auto rst = odb_.Get(Slice(key), Slice(branch));
     auto& ec = rst.stat;
     auto val = rst.value.String();
     ec == ErrorCode::kOK ? f_rpt_success(val) : f_rpt_fail_by_branch(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   if (branch.empty() && !ver.empty()) {
     auto rst = odb_.Get(Slice(key), Slice(ver));
     auto& ec = rst.stat;
     auto val = rst.value.String();
     ec == ErrorCode::kOK ? f_rpt_success(val) : f_rpt_fail_by_ver(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   // illegal: branch and version are neither set or both set
   f_rpt_invalid_args();
-  return -3;
+  return ErrorCode::kInvalidCommandArgument;
 }
 
-int Command::ExecPut() {
+ErrorCode Command::ExecPut() {
   const auto& key = Config::key;
   const auto& val = Config::value;
   const auto& branch = Config::branch;
@@ -106,14 +106,14 @@ int Command::ExecPut() {
   // conditional execution
   if (key.empty() || val.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   if (!branch.empty() && ref_ver.empty()) {
     auto rst = odb_.Put(Slice(key), VString(Slice(val)), Slice(branch));
     auto& ec = rst.stat;
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   if (branch.empty() && !ref_ver.empty()) {
     auto rst =
@@ -121,14 +121,14 @@ int Command::ExecPut() {
     auto& ec = rst.stat;
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   // illegal: branch and reffering version are neither set or both set
   f_rpt_invalid_args();
-  return -3;
+  return ErrorCode::kInvalidCommandArgument;
 }
 
-int Command::ExecMerge() {
+ErrorCode Command::ExecMerge() {
   const auto& key = Config::key;
   const auto& val = Config::value;
   const auto& tgt_branch = Config::branch;
@@ -168,7 +168,7 @@ int Command::ExecMerge() {
   // conditional execution
   if (key.empty() || val.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   if (!tgt_branch.empty() && !ref_branch.empty() && ref_ver.empty()) {
     auto rst = odb_.Merge(Slice(key), VString(Slice(val)), Slice(tgt_branch),
@@ -176,7 +176,7 @@ int Command::ExecMerge() {
     auto& ec = rst.stat;
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   if (!tgt_branch.empty() && ref_branch.empty() && !ref_ver.empty()) {
     auto rst = odb_.Merge(Slice(key), VString(Slice(val)), Slice(tgt_branch),
@@ -184,7 +184,7 @@ int Command::ExecMerge() {
     auto& ec = rst.stat;
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch_ver(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   if (tgt_branch.empty() && !ref_ver.empty() && !ref_ver2.empty()) {
     auto rst = odb_.Merge(Slice(key), VString(Slice(val)),
@@ -193,14 +193,14 @@ int Command::ExecMerge() {
     auto& ec = rst.stat;
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   // illegal settings of arguments
   f_rpt_invalid_args();
-  return -3;
+  return ErrorCode::kInvalidCommandArgument;
 }
 
-int Command::ExecBranch() {
+ErrorCode Command::ExecBranch() {
   const auto& key = Config::key;
   const auto& tgt_branch = Config::branch;
   const auto& ref_branch = Config::ref_branch;
@@ -232,25 +232,25 @@ int Command::ExecBranch() {
   // conditional execution
   if (key.empty() || tgt_branch.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   if (!ref_branch.empty() && ref_ver.empty()) {
     auto ec = odb_.Branch(Slice(key), Slice(ref_branch), Slice(tgt_branch));
     ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_branch(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   if (ref_branch.empty() && !ref_ver.empty()) {
     auto ec = odb_.Branch(Slice(key), Hash::FromBase32(ref_ver),
                           Slice(tgt_branch));
     ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_ver(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
   // illegal: ref_branch and ref_ver are neither set or both set
   f_rpt_invalid_args();
-  return -3;
+  return ErrorCode::kInvalidCommandArgument;
 };
 
-int Command::ExecRename() {
+ErrorCode Command::ExecRename() {
   const auto& key = Config::key;
   const auto& old_branch = Config::ref_branch;
   const auto& new_branch = Config::branch;
@@ -274,14 +274,14 @@ int Command::ExecRename() {
   // conditional execution
   if (key.empty() || old_branch.empty() || new_branch.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   auto ec = odb_.Rename(Slice(key), Slice(old_branch), Slice(new_branch));
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
-int Command::ExecDelete() {
+ErrorCode Command::ExecDelete() {
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   // screen printing
@@ -302,14 +302,14 @@ int Command::ExecDelete() {
   // conditional execution
   if (key.empty() || branch.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   auto ec = odb_.Delete(Slice(key), Slice(branch));
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
-int Command::ExecListKey() {
+ErrorCode Command::ExecListKey() {
   // screen printing
   const auto f_rpt_success = [](const std::vector<std::string>& keys) {
     std::cout << "[SUCCESS: LIST_KEYS] Keys: "
@@ -322,10 +322,10 @@ int Command::ExecListKey() {
   auto& ec = rst.stat;
   auto& keys = rst.value;
   ec == ErrorCode::kOK ? f_rpt_success(keys) : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
-int Command::ExecListBranch() {
+ErrorCode Command::ExecListBranch() {
   const auto& key = Config::key;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
@@ -343,16 +343,16 @@ int Command::ExecListBranch() {
   // conditional execution
   if (key.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   auto rst = odb_.ListBranches(Slice(key));
   auto& ec = rst.stat;
   auto& branches = rst.value;
   ec == ErrorCode::kOK ? f_rpt_success(branches) : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
-int Command::ExecHead() {
+ErrorCode Command::ExecHead() {
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   // screen printing
@@ -371,16 +371,16 @@ int Command::ExecHead() {
   // conditional execution
   if (key.empty() || branch.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   auto rst = odb_.GetBranchHead(Slice(key), Slice(branch));
   auto& ec = rst.stat;
   auto& ver = rst.value;
   ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
-int Command::ExecLatest() {
+ErrorCode Command::ExecLatest() {
   const auto& key = Config::key;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
@@ -398,16 +398,16 @@ int Command::ExecLatest() {
   // conditional execution
   if (key.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   auto rst = odb_.GetLatestVersions(Slice(key));
   auto& ec = rst.stat;
   auto& vers = rst.value;
   ec == ErrorCode::kOK ? f_rpt_success(vers) : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
-int Command::ExecExists() {
+ErrorCode Command::ExecExists() {
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   // screen printing
@@ -431,24 +431,24 @@ int Command::ExecExists() {
   // conditional execution
   if (key.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   if (branch.empty()) {
     auto rst = odb_.Exists(Slice(key));
     auto& ec = rst.stat;
     auto exist = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success_by_key(exist) : f_rpt_fail(ec);
-    return static_cast<int>(ec);
+    return ec;
   } else {
     auto rst = odb_.Exists(Slice(key), Slice(branch));
     auto& ec = rst.stat;
     auto exist = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success_by_branch(exist) : f_rpt_fail(ec);
-    return static_cast<int>(ec);
+    return ec;
   }
 }
 
-int Command::ExecIsHead() {
+ErrorCode Command::ExecIsHead() {
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   const auto& ver = Config::version;
@@ -471,17 +471,17 @@ int Command::ExecIsHead() {
   // conditional execution
   if (key.empty() || branch.empty() || ver.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   auto rst =
     odb_.IsBranchHead(Slice(key), Slice(branch), Hash::FromBase32(ver));
   auto& ec = rst.stat;
   auto& is_head = rst.value;
   ec == ErrorCode::kOK ? f_rpt_success(is_head) : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
-int Command::ExecIsLatest() {
+ErrorCode Command::ExecIsLatest() {
   const auto& key = Config::key;
   const auto& ver = Config::version;
   // screen printing
@@ -501,14 +501,14 @@ int Command::ExecIsLatest() {
   // conditional execution
   if (key.empty() || ver.empty()) {
     f_rpt_invalid_args();
-    return -3;
+    return ErrorCode::kInvalidCommandArgument;
   }
   auto rst =
     odb_.IsLatestVersion(Slice(key), Hash::FromBase32(ver));
   auto& ec = rst.stat;
   auto& is_latest = rst.value;
   ec == ErrorCode::kOK ? f_rpt_success(is_latest) : f_rpt_fail(ec);
-  return static_cast<int>(ec);
+  return ec;
 }
 
 }  // namespace cli

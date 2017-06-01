@@ -22,19 +22,20 @@ int main(int argc, char* argv[]) {
   auto client_db = ustore_svc.CreateClientDb();
   Command cmd(client_db);
   // conditional execution
-  int ec = 0;
+  auto ec = ErrorCode::kUnknownOp;
   if (Config::ParseCmdArgs(argc, argv)) {
     ec = cmd.ExecCommand(Config::command);
   } else if (Config::is_help) {
     DLOG(INFO) << "Help messages have been printed";
+    ec = ErrorCode::kOK;
   } else {
     std::cerr << "[FAILURE] Found invalid command-line option" << std::endl;
-    ec = -1;
+    ec = ErrorCode::kInvalidCommandArgument;
   }
   // clean and exit
   ustore_svc.Stop();
   ustore_svc_thread.join();
-  return ec;
+  return static_cast<int>(ec);
 }
 
 }  // namespace cli
