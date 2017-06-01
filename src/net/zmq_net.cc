@@ -34,8 +34,8 @@ void ZmqNet::Stop() {
   is_running_ = false;
 }
 
-ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest, ClientZmqNet *net)
-    : NetContext(src, dest), client_net_(net) {
+ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest,
+    ClientZmqNet *net) : NetContext(src, dest), client_net_(net) {
   // start connection to the remote host
   send_sock_ = zsock_new(ZMQ_DEALER);
   zsock_set_connect_timeout(send_sock_, kWaitInterval);
@@ -60,7 +60,7 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
   int st = zmsg_send(&msg, (zsock_t *)send_sock_) == 0 ? len : -1;
   send_lock_.unlock();
   client_net_->request_counter_++;
-  client_net_->timeout_counter_ = kPoolTimeout; 
+  client_net_->timeout_counter_ = kPoolTimeout;
   return st;
 }
 
@@ -141,18 +141,15 @@ void ClientZmqNet::Start() {
 
   while (is_running_) {
     void *sock = zpoller_wait(zpoller, kWaitInterval);
-    if (!sock && !zpoller_expired(zpoller))
-      break;
-     if (zpoller_expired(zpoller) && is_running_ && !(timeout_counter_--)
-                    && request_counter_) 
+    if (!sock && !zpoller_expired(zpoller)) break;
+    if (zpoller_expired(zpoller) && is_running_ && !(timeout_counter_--)
+        && request_counter_)
        LOG(FATAL) << "Connection timed out. Server may have crashed!";
     if (sock) {
       zmsg_t *msg = zmsg_recv(sock);
-      if (!msg)
-        break;
+      if (!msg) break;
       request_counter_--;
       timeout_counter_ = kPoolTimeout;
-
       // send to backend
       zmsg_send(&msg, backend_sock_);
     }

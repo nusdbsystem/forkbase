@@ -3,8 +3,8 @@
 #ifndef USTORE_NET_ZMQ_NET_H_
 #define USTORE_NET_ZMQ_NET_H_
 
-#include <mutex>
 #include <atomic>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>

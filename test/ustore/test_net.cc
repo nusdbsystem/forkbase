@@ -66,14 +66,14 @@ TEST(NetTest, MsgTest) {
   Net* net0 = new ServerZmqNet(kID0);
   Net* net1 = new ServerZmqNet(kID1);
   Net* net2 = new ServerZmqNet(kID2);
-  Net *client = new ClientZmqNet();
+  Net* client = new ClientZmqNet();
 #endif
 
   usleep(kSleepTime);
 #ifdef USE_RDMA
   NetContext* ctx0_1 = net0->CreateNetContext(kID1);
   NetContext* ctx0_2 = net0->CreateNetContext(kID2);
-  
+
   /*
    * create NetContext from node 1
    * actually this is not necessary since node 0 already connected to node 1
