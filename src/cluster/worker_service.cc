@@ -124,7 +124,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::PUT_REQUEST:
     {
       ValuePayload *payload = ustore_msg->mutable_put_request_payload()
-                                         ->mutable_value();
+                                        ->mutable_value();
       Value *value = ValueFromRequest(payload);
       Hash new_version;
       error_code = ustore_msg->has_branch()
@@ -133,6 +133,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
         : worker_->Put(Slice(ustore_msg->key()), *value,
           Hash((const byte_t*)((ustore_msg->version()).data())),
           &new_version);
+      if (error_code != ErrorCode::kOK) break;
       PutResponsePayload *res_payload =
           response->mutable_put_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
@@ -148,7 +149,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
                           Slice(ustore_msg->branch()), &val)
            : worker_->Get(Slice(ustore_msg->key()),
               Hash((const byte_t*)((ustore_msg->version()).data())), &val);
-
+      if (error_code != ErrorCode::kOK) break;
       GetResponsePayload *payload = response->mutable_get_response_payload();
       payload->mutable_meta()->set_value(val.chunk().head(),
                                          val.chunk().numBytes());
@@ -160,7 +161,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       GetResponsePayload *payload =
               response->mutable_get_response_payload();
       Chunk c = worker_->GetChunk(Slice(ustore_msg->key()),
-               Hash((const byte_t*)((ustore_msg->version()).data())));
+                Hash((const byte_t*)((ustore_msg->version()).data())));
       payload->mutable_meta()->set_value(c.head(), c.numBytes());
       break;
     }
@@ -174,14 +175,13 @@ void WorkerService::HandleRequest(const void *msg, int size,
         : worker_->Branch(Slice(ustore_msg->key()),
               Hash((const byte_t*)((ustore_msg->version()).data())),
               Slice(payload.new_branch()));
-
       break;
     }
     case UStoreMessage::RENAME_REQUEST:
     {
       RenameRequestPayload payload = ustore_msg->rename_request_payload();
       error_code = worker_->Rename(Slice(ustore_msg->key()),
-          Slice(ustore_msg->branch()), Slice(payload.new_branch()));
+                   Slice(ustore_msg->branch()), Slice(payload.new_branch()));
       break;
     }
     case UStoreMessage::MERGE_REQUEST:
@@ -192,18 +192,19 @@ void WorkerService::HandleRequest(const void *msg, int size,
       Hash new_version;
       error_code = ustore_msg->has_version()
         ? worker_->Merge(Slice(ustore_msg->key()), *value,
-              Hash((const byte_t*)((ustore_msg->version())).data()),
-              Hash((const byte_t*)((payload->ref_version())).data()),
-              &new_version)
+                   Hash((const byte_t*)((ustore_msg->version())).data()),
+                   Hash((const byte_t*)((payload->ref_version())).data()),
+                   &new_version)
         : (payload->has_ref_version()
               ? worker_->Merge(Slice(ustore_msg->key()), *value,
-                Slice(ustore_msg->branch()),
-                Hash((const byte_t*)((payload->ref_version())).data()),
-                &new_version)
+                         Slice(ustore_msg->branch()),
+                         Hash((const byte_t*)((payload->ref_version())).data()),
+                         &new_version)
               : worker_->Merge(Slice(ustore_msg->key()), *value,
-                Slice(ustore_msg->branch()),
-                Slice(payload->ref_branch()),
-                &new_version));
+                         Slice(ustore_msg->branch()),
+                         Slice(payload->ref_branch()),
+                         &new_version));
+      if (error_code != ErrorCode::kOK) break;
       MergeResponsePayload *res_payload =
           response->mutable_merge_response_payload();
       res_payload->set_new_version(new_version.value(), Hash::kByteLength);
@@ -213,6 +214,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
     {
       vector<string> keys;
       error_code = worker_->ListKeys(&keys);
+      if (error_code != ErrorCode::kOK) break;
       MultiVersionResponsePayload *res_payload =
           response->mutable_multi_version_response_payload();
       for (auto k : keys)
@@ -222,8 +224,8 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::LIST_BRANCH_REQUEST:
     {
       vector<string> branches;
-      error_code = worker_->ListBranches(Slice(ustore_msg->key()),
-                                                  &branches);
+      error_code = worker_->ListBranches(Slice(ustore_msg->key()), &branches);
+      if (error_code != ErrorCode::kOK) break;
       MultiVersionResponsePayload *res_payload =
           response->mutable_multi_version_response_payload();
       for (auto b : branches)
@@ -235,8 +237,9 @@ void WorkerService::HandleRequest(const void *msg, int size,
       bool exists;
       error_code = ustore_msg->has_branch()
           ? worker_->Exists(Slice(ustore_msg->key()),
-                  Slice(ustore_msg->branch()), &exists)
+                     Slice(ustore_msg->branch()), &exists)
           : worker_->Exists(Slice(ustore_msg->key()), &exists);
+      if (error_code != ErrorCode::kOK) break;
       BoolResponsePayload *bool_res =
           response->mutable_bool_response_payload();
       bool_res->set_value(exists);
@@ -245,8 +248,9 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::GET_BRANCH_HEAD_REQUEST:
     {
       Hash version;
-      error_code = worker_->GetBranchHead(
-              Slice(ustore_msg->key()), Slice(ustore_msg->branch()), &version);
+      error_code = worker_->GetBranchHead(Slice(ustore_msg->key()),
+                            Slice(ustore_msg->branch()), &version);
+      if (error_code != ErrorCode::kOK) break;
       BranchVersionResponsePayload *res_payload =
             response->mutable_branch_version_response_payload();
       res_payload->set_version(version.value(), Hash::kByteLength);
@@ -255,10 +259,11 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::IS_BRANCH_HEAD_REQUEST:
     {
       bool is_head;
-      error_code = worker_->IsBranchHead(
-        Slice(ustore_msg->key()), Slice(ustore_msg->branch()),
-        Hash(reinterpret_cast<const byte_t *>(ustore_msg->version().data())),
-        &is_head);
+      error_code = worker_->IsBranchHead(Slice(ustore_msg->key()),
+          Slice(ustore_msg->branch()),
+          Hash(reinterpret_cast<const byte_t *>(ustore_msg->version().data())),
+          &is_head);
+      if (error_code != ErrorCode::kOK) break;
       BoolResponsePayload *bool_res =
           response->mutable_bool_response_payload();
       bool_res->set_value(is_head);
@@ -269,6 +274,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       vector<Hash> versions;
       error_code = worker_->GetLatestVersions(
                       Slice(ustore_msg->key()), &versions);
+      if (error_code != ErrorCode::kOK) break;
       MultiVersionResponsePayload *res_payload =
           response->mutable_multi_version_response_payload();
       for (auto k : versions)
@@ -282,6 +288,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
           Slice(ustore_msg->key()),
           Hash(reinterpret_cast<const byte_t *>(ustore_msg->version().data())),
           &is_latest);
+      if (error_code != ErrorCode::kOK) break;
       BoolResponsePayload *bool_res =
           response->mutable_bool_response_payload();
       bool_res->set_value(is_latest);
@@ -290,10 +297,11 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UStoreMessage::DELETE_REQUEST:
     {
       error_code = worker_->Delete(Slice(ustore_msg->key()),
-                                  Slice(ustore_msg->branch()));
+                                   Slice(ustore_msg->branch()));
       break;
     }
     default:
+      LOG(WARNING) << "Unrecognized request type: " << ustore_msg->type();
       break;
   }
 

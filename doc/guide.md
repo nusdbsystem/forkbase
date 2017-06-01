@@ -77,7 +77,7 @@ Ensure UStore service is on.
   # e.g., put a value
   ./bin/ustore_cli put -k key -b branch -v value
 ```
-All APIs can be found in [API doc](api_cmd.md)
+All APIs can be found in [API doc](api_cmd.md).
 
 ## Http Request
 
@@ -86,7 +86,7 @@ Ensure UStore service is on.
   # e.g., put a value
   curl http://localhost:60600/put -X POST -d "key=key&branch=branch&value=value"
 ```
-All APIs can be found in [API doc](api_http.md)
+All APIs can be found in [API doc](api_http.md).
 
 ## Performance Minotor
 
