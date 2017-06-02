@@ -4,11 +4,11 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<script src="http://code.jquery.com/jquery-3.1.1.min.js"></script>
-		<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script src="{% static 'ustore/js/jquery_min.js' %}"></script>
+		<script type="text/javascript" src="{% static 'ustore/js/bootstrap.min.js' %}"></script>
 
-		<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
-		<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="{% static 'ustore/css/bootstrap-theme.min.css' %}">
+		<link rel="stylesheet" type="text/css" href="{% static 'ustore/css/bootstrap.min.css' %}">
 		<link rel='stylesheet' href="{% static 'ustore/css/font.css' %}" />
 		{% block custom_js %} {% endblock %}
 	</head>

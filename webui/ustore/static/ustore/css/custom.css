@@ -185,6 +185,8 @@ nav.sidebar, .main{
 	fill: white;
 }
 
+.icon-get { background-image: url("../images/get.svg"); }
+.icon-put { background-image: url("../images/put.svg"); }
 .icon-branch { background-image: url("../images/branch.svg"); }
 .icon-merge { background-image: url("../images/merge.svg"); }
 .icon-list { background-image: url("../images/list.svg"); }

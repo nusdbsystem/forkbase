@@ -105,21 +105,19 @@ $(document).ready(function() {
 
 	// fill in target for merge
 	$("#branch_list").on("click", "ul li", function(e) {
-		if($("#exe").find('form[name="merge"]').is(":visible")){
-			var content = $("#exe").find('form[name="merge"]');
+		var content = $("#exe").find('form[name="merge"]');
+		if(content.is(":visible")){
+			if (content.find('[name="opt1"]').text().indexOf('branch') < 0){
+				content.find('[name="bransion1"]').val('');
+			}
 			content.find('[name="bransion2"]').val($("span:first", this).text());
 			content.find('[name="opt2"]').text('target branch');
 		}
 	});
 
-
 	$("#version_list").on("click", "ul li", function(e) {
 		var content = $("#exe").find('form[name="merge"]');
 		if(content.is(":visible")){
-			if (content.find('[name="opt1"]').text().indexOf('branch') < 0){
-				content.find('[name="opt1"]').text('referal branch');
-				content.find('[name="bransion1"]').val('');
-			}
 			content.find('[name="bransion2"]').val($("span:first", this).text());
 			content.find('[name="opt2"]').text('target version');
 		}
@@ -151,7 +149,7 @@ $(document).ready(function() {
 			content.show();
 			content.find('[name="key"]').val(key);
 			content.find('[name="bransion1"]').val(branch);
-			content.find('[name="opt1"]').text('referal branch');
+			content.find('[name="opt1"]').text('target branch');
 		} else if ($(this).text() == 'branch') {
 			var content = $("#exe").find('form[name="branch"]');
 			content.show();
@@ -171,7 +169,7 @@ $(document).ready(function() {
 	$("#version_list ul div.dropdown-content").on('click', 'span', function(e){
 		$("#exe > form").hide();
 		$("#exe > form > div").find('textarea[name="result"]').parent().hide();
-		var key = $("#branch_list span span[name='key_name'").text();
+		var key = $("#version_list span span[name='key_name'").text();
 		var branch = contents.hover_key;
 		if($(this).text() == 'put' || $(this).text() == 'get') {
 			var content = $("#exe").find('form[name="get-or-put"]');
@@ -179,13 +177,13 @@ $(document).ready(function() {
 			content.find('[name="key"]').val(key);
 			content.find('[name="bransion"]').val(branch);
 			content.find('[name="opt"]').text('version');
-			var res = post_request(get_url, {'key': key, 'opt': 'branch', 'bransion': branch}, val_data, content.find('[name="value"]'));
+			var res = post_request(get_url, {'key': key, 'opt': 'version', 'bransion': branch}, val_data, content.find('[name="value"]'));
 		} else if ($(this).text() == 'merge') {
 			var content = $('#exe').find('form[name="merge"]');
 			content.show();
 			content.find('[name="key"]').val(key);
 			content.find('[name="bransion1"]').val(branch);
-			content.find('[name="opt1"]').text('referal version');
+			content.find('[name="opt1"]').text('target version');
 		} else if ($(this).text() == 'branch') {
 			var content = $("#exe").find('form[name="branch"]');
 			content.show();
@@ -215,10 +213,10 @@ $(document).ready(function() {
 		var opt2 = $(content).find('[name="opt2"]').text()
 		opt2 = opt2.indexOf('branch') >= 0 ? 'branch' : 'version';
 		data = {'key': content['key'].value, 
-			'opt1': opt2, 
-			'bransion1': content['bransion2'].value,
-			'opt2': opt1, 
-			'bransion2': content['bransion1'].value,
+			'opt1': opt1, 
+			'bransion1': content['bransion1'].value,
+			'opt2': opt2, 
+			'bransion2': content['bransion2'].value,
 			'value': content['value'].value}
 		post_request(merge_url, data, text_data, $(content['result']), $(content['result']).parent());
 		return false;

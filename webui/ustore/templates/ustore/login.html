@@ -14,7 +14,7 @@
 			<img src="{% static 'ustore/images/logo.jpeg' %}" class="img img-responsive img-circle center-block img-logo"/>
 		</div><!-- /.logo -->
 		<form class="controls" action='/login/' method='post'>
-			<input type="text" name="ip" placeholder="Server IP" class="form-control" />
+			<input type="text" name="ip" placeholder="Server IP (e.g. localhost:60600)" class="form-control" default />
 			<input type="submit" class="btn btn-default btn-block btn-custom" value="Connect">
 		</form><!-- /.controls -->
 	</div><!-- /#login-box -->
