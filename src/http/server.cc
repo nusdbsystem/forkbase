@@ -53,7 +53,10 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         auto rlt = hserver->GetODB()
         .Get(Slice(paras["key"]), Hash::FromBase32(paras["version"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.String().slice().ToString() + CRLF;
+          // response = rlt.value.String().slice().ToString() + CRLF;
+          std::stringstream ss;
+          ss << rlt.value << CRLF;
+          response = ss.str();
         } else {
           response = "Get Error: " +
               std::to_string(static_cast<int>(rlt.stat)) + CRLF;
@@ -182,7 +185,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
       if (paras.count("key") && paras.count("new_branch")
           && paras.count("old_branch")) {
         auto code = hserver->GetODB()
-        .Branch(Slice(paras["key"]), Slice(paras["old_branch"]),
+        .Rename(Slice(paras["key"]), Slice(paras["old_branch"]),
                 Slice(paras["new_branch"]));
         if (code == ErrorCode::kOK) {
           response = "OK" + CRLF;
@@ -261,7 +264,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         auto rlt = hserver->GetODB().GetLatestVersions(Slice(paras["key"]));
         if (rlt.stat == ErrorCode::kOK) {
           for (Hash& h : rlt.value) {
-            response = h.ToBase32() + CRLF;
+            response += h.ToBase32() + CRLF;
           }
         } else {
           response = "Latest Error: " +

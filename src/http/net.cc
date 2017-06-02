@@ -121,7 +121,7 @@ int ClientSocket::Connect() {
     if (connect(fd_, p->ai_addr, p->ai_addrlen) == -1) {
       /* If the socket is non-blocking, it is ok for connect() to
        * return an ST_INPROCESS error here. */
-      LOG(WARNING)<< "failed to connect";
+      LOG(INFO)<< "failed to connect";
       if (errno == EINPROGRESS) {
         freeaddrinfo(servinfo);
         return ST_INPROCESS;

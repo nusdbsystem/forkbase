@@ -377,11 +377,11 @@ TEST(HttpTest, BasicOps) {
   CHECK_EQ(value, value5);
 
   // delete a branch
-  status = ExistsB(key, branch1, cs);
+  status = ExistsB(key, branch4, cs);
   CHECK_EQ(status, "true");
-  status = Delete(key, branch1, cs);
+  status = Delete(key, branch4, cs);
   CHECK_EQ(status, "OK");
-  status = ExistsB(key, branch1, cs);
+  status = ExistsB(key, branch4, cs);
   CHECK_EQ(status, "false");
 
   server.Stop();
