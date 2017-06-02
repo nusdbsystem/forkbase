@@ -9,19 +9,6 @@ namespace ca {
 const int Utils::kKeyPrintWidth = 16;
 const int Utils::kBrnachPrintWidth = 8;
 
-void Utils::PrintList(const UList& list) {
-  auto it = list.Scan();
-  std::cout << "[";
-  if (!it.end()) {
-    std::cout << it.value();
-    for (it.next(); !it.end(); it.next()) {
-      std::cout << ", ";
-      std::cout << it.value();
-    }
-  }
-  std::cout << "]";
-}
-
 void Utils::PrintListDiff(DuallyDiffIndexIterator& it) {
   auto f_print_entry = [&it]() {
     std::cout << it.index() << ":(";

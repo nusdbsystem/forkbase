@@ -16,7 +16,6 @@ std::string Config::branch = "";
 std::string Config::ref_branch = "";
 std::string Config::version = "";
 std::string Config::ref_version = "";
-std::string Config::ref_version2 = "";
 
 void Config::Reset() {
   is_help = false;
@@ -27,7 +26,6 @@ void Config::Reset() {
   ref_branch = "";
   version = "";
   ref_version = "";
-  ref_version2 = "";
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -37,7 +35,6 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
   auto arg_command = vm["command"].as<std::string>();
   Command::Normalize(&arg_command);
-  GUARD(Command::IsValid(arg_command));
   command = std::move(arg_command);
 
   key = vm["key"].as<std::string>();
@@ -48,7 +45,6 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
   version = vm["version"].as<std::string>();
   ref_version = vm["ref-version"].as<std::string>();
-  ref_version2 = vm["ref-version2"].as<std::string>();
 
   return true;
 }
@@ -64,31 +60,35 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "data value")
   ("branch,b", po::value<std::string>()->default_value(""),
    "the operating branch")
-  ("ref-branch", po::value<std::string>()->default_value(""),
+  ("ref-branch,c", po::value<std::string>()->default_value(""),
    "the referring branch")
   ("version,v", po::value<std::string>()->default_value(""),
    "the operating version")
-  ("ref-version", po::value<std::string>()->default_value(""),
+  ("ref-version,u", po::value<std::string>()->default_value(""),
    "the referring version")
-  ("ref-version2", po::value<std::string>()->default_value(""),
-   "the second referring version")
   ("help,?", "print usage message");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);
 
+  auto f_print_help = [&desc]() {
+    Command::PrintCommandHelp();
+    std::cout << std::endl << desc << std::endl;
+  };
+
   try {
     po::store(po::command_line_parser(argc, argv).options(desc)
+              .style(po::command_line_style::unix_style)
               .positional(pos_opts).run(), *vm);
     if (vm->count("help")) {
       is_help = true;
-      std::cout << desc << std::endl;
+      f_print_help();
       return false;
     }
     po::notify(*vm);
   } catch (std::exception& e) {
-    std::cerr << "[ERROR] " << e.what() << std::endl << std::endl
-              << desc << std::endl;
+    std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl << std::endl;
+    f_print_help();
     return false;
   }
   return true;

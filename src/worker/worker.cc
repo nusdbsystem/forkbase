@@ -2,7 +2,9 @@
 
 #include "worker/worker.h"
 
+#include <boost/filesystem.hpp>
 #include <memory>
+#include "store/lst_store.h"
 #include "types/server/sblob.h"
 #include "types/server/slist.h"
 #include "types/server/smap.h"
@@ -12,11 +14,45 @@
 
 namespace ustore {
 
-Worker::Worker(const WorkerID& id) : id_(id) {
-  // set data file path
-  auto& c = Env::Instance()->config();
-  std::string file_name = c.data_file_pattern() + "_" + std::to_string(id);
-  store::SetChunkStorePath(c.data_dir(), file_name);
+namespace fs = boost::filesystem;
+using CellIterator =
+  typename lst_store::LSTStore::type_iterator<ChunkType, ChunkType::kCell>;
+
+Worker::Worker(const WorkerID& id, bool persist) : id_(id), persist_(persist) {
+  // create data/log dir
+  auto dir = Env::Instance()->config().data_dir();
+  auto pattern = Env::Instance()->config().data_file_pattern();
+  // create data/log dir
+  fs::create_directory(fs::path(dir));
+  // set data path
+  std::string data_file = pattern + "_" + std::to_string(id_);
+  store::InitChunkStore(dir, data_file, persist);
+  if (persist_) {
+    // load head file
+    std::string head_path = dir + "/" + data_file + ".head";
+    if (fs::exists(fs::path(head_path))) head_ver_.LoadBranchVersion(head_path);
+    // load latest versions
+    auto store = dynamic_cast<lst_store::LSTStore*>(store::GetChunkStore());
+    if (store) {
+      for (auto it = store->begin<CellIterator>();
+           it != store->end<CellIterator>(); ++it) {
+        UpdateLatestVersion(UCell(std::move(*it)));
+      }
+    }
+    else
+      LOG(WARNING) << "Fail to get LST Store instance";
+  }
+}
+
+Worker::~Worker() {
+  // dump head file
+  if (persist_) {
+    auto dir = Env::Instance()->config().data_dir();
+    auto pattern = Env::Instance()->config().data_file_pattern();
+    std::string data_file = pattern + "_" + std::to_string(id_);
+    std::string head_path = dir + "/" + data_file + ".head";
+    head_ver_.DumpBranchVersion(head_path);
+  }
 }
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
@@ -257,9 +293,11 @@ ErrorCode Worker::Delete(const Slice& key, const Slice& branch) {
   return ErrorCode::kOK;
 }
 
-Chunk Worker::GetChunk(const Slice& key, const Hash& ver) {
+ErrorCode Worker::GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) {
   static const auto chunk_store = store::GetChunkStore();
-  return chunk_store->Get(ver);
+  *chunk = chunk_store->Get(ver);
+  if (chunk->empty()) return ErrorCode::kChunkNotExists;
+  return ErrorCode::kOK;
 }
 
 ErrorCode Worker::ListKeys(std::vector<std::string>* keys) {

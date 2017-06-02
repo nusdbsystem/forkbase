@@ -22,7 +22,10 @@ class Command {
     return kSupportedCommands.find(cmd) != kSupportedCommands.end();
   }
 
-  explicit Command(DB* db) noexcept : odb_(db) {}
+  static void PrintCommandHelp();
+
+  // explicit Command(DB* db) noexcept : odb_(db) {}
+  explicit Command(DB* db) noexcept;
   ~Command() = default;
 
   ErrorCode ExecCommand(const std::string& command);
@@ -45,6 +48,7 @@ class Command {
   ErrorCode ExecExists();
 
   ObjectDB odb_;
+  std::unordered_map<std::string, std::function<ErrorCode()>> cmd_exec_;
 };
 
 }  // namespace cli

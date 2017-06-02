@@ -17,12 +17,16 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vmap(2017);
 const char key_vmap[] = "key_vmap";
 const char branch_vmap[] = "branch_vmap";
 
+ustore::Worker& worker_vmap() {
+  static ustore::Worker* worker = new ustore::Worker(2017, false);
+  return *worker;
+}
+
 TEST(VMap, CreateFromEmpty) {
-  ustore::ObjectDB db(&worker_vmap);
+  ustore::ObjectDB db(&worker_vmap());
   std::vector<Slice> slice_key, slice_val;
   ustore::VMap map(slice_key, slice_val);
 
@@ -59,7 +63,7 @@ TEST(VMap, CreateFromEmpty) {
 }
 
 TEST(VMap, CreateNewVMap) {
-  ustore::ObjectDB db(&worker_vmap);
+  ustore::ObjectDB db(&worker_vmap());
   std::sort(smap_key.begin(), smap_key.end());
   std::vector<Slice> slice_key, slice_val;
   for (const auto& s : smap_key) slice_key.push_back(Slice(s));
@@ -83,7 +87,7 @@ TEST(VMap, CreateNewVMap) {
 }
 
 TEST(VMap, AddToExistingVMap) {
-  ustore::ObjectDB db(&worker_vmap);
+  ustore::ObjectDB db(&worker_vmap());
   std::sort(smap_key.begin(), smap_key.end());
   std::vector<Slice> slice_key, slice_val;
   for (const auto& s : smap_key) slice_key.push_back(Slice(s));
@@ -116,7 +120,7 @@ TEST(VMap, AddToExistingVMap) {
 }
 
 TEST(VMap, RemoveFromExistingVMap) {
-  ustore::ObjectDB db(&worker_vmap);
+  ustore::ObjectDB db(&worker_vmap());
   std::sort(smap_key.begin(), smap_key.end());
   std::vector<Slice> slice_key, slice_val;
   for (const auto& s : smap_key) slice_key.push_back(Slice(s));
@@ -145,7 +149,7 @@ TEST(VMap, RemoveFromExistingVMap) {
 }
 
 TEST(VMap, UpdateExistingVMap) {
-  ustore::ObjectDB db(&worker_vmap);
+  ustore::ObjectDB db(&worker_vmap());
   std::sort(smap_key.begin(), smap_key.end());
   std::vector<Slice> slice_key, slice_val;
   for (const auto& s : smap_key) slice_key.push_back(Slice(s));

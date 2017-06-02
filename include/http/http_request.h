@@ -35,7 +35,11 @@ enum class CommandType {
   kDelete,
   kList,
   kHead,
-  kLatest
+  kLatest,
+  kExists,
+  kIsBranchHead,
+  kIsLatestVersion,
+  kError
 };
 
 
@@ -67,9 +71,14 @@ class HttpRequest {
 
   // get the command
   inline CommandType GetCommand() const {
-    CHECK(cmddict_.count(uri_));
+    if (!cmddict_.count(uri_)) {
+      return CommandType::kError;
+    }
     return cmddict_.at(uri_);
   }
+
+  // get the method
+  inline string GetMethod() const { return method_; }
 
  private:
   // parse the parameter list

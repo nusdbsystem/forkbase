@@ -19,7 +19,10 @@ const unordered_map<string, CommandType> HttpRequest::cmddict_ = {
     {"/delete", CommandType::kDelete},
     {"/list", CommandType::kList},
     {"/head", CommandType::kHead},
-    {"/latest", CommandType::kLatest}
+    {"/latest", CommandType::kLatest},
+    {"/exists", CommandType::kExists},
+    {"/islatestversion", CommandType::kIsLatestVersion},
+    {"/isbranchhead", CommandType::kIsBranchHead}
 };
 
 int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
@@ -34,14 +37,37 @@ int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
   CHECK(ie > is);
   method_ = string(buf, is, ie-is);
 
-  // uri
-  pos = ie+1;
-  TrimSpace(buf, pos, end);
-  if (unlikely(pos > end)) return ST_ERROR;
-  is = ie = pos;
-  ie = FindChar(buf, is, end, ' ');
-  CHECK(ie > is);
-  uri_ = string(buf, is, ie-is);
+  if (method_ == "post") {
+    // uri
+    pos = ie + 1;
+    TrimSpace(buf, pos, end);
+    if (unlikely(pos > end))
+      return ST_ERROR;
+    is = ie = pos;
+    ie = FindChar(buf, is, end, ' ');
+    CHECK(ie > is);
+    uri_ = string(buf, is, ie - is);
+  } else if (method_ == "get") {
+    // uri
+    pos = ie + 1;
+    TrimSpace(buf, pos, end);
+    if (unlikely(pos > end))
+      return ST_ERROR;
+    is = ie = pos;
+    ie = FindChar(buf, is, end, ' ');
+    CHECK(ie > is);
+
+    int p = FindChar(buf, is, ie, '?');
+    CHECK(p > is);
+    if (p > ie) {  // no parameter
+      uri_ = string(buf, is, ie - is);
+    } else {
+      uri_ = string(buf, is, p - is);
+      headers_[kParaKey] = string(buf, p+1, ie - p - 1);
+    }
+  } else {
+    LOG(WARNING) << "Unsupported method: " << method_;
+  }
 
   // http_version_
   pos = ie+1;
@@ -107,7 +133,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
      return ST_CLOSED;
   }
 
-  // LOG(WARNING) << "Received: " << buf;
+  DLOG(INFO) << "Received: " << buf;
 
   int ls = 0, le = 0;  // start and end position of each line
   int pos = 0;
@@ -149,7 +175,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
 
 
 int HttpRequest::Respond(ClientSocket* socket, const string response) {
-  if (method_ != "post") {
+  if (!(method_ == "post" || method_ == "get")) {
     if (unlikely(kBadRequest.length() !=
         socket->Send(kBadRequest.c_str(), kBadRequest.length()))) {
       return ST_ERROR;
@@ -158,8 +184,7 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
     return ST_SUCCESS;
   }
 
-  char header[kMaxHeaderSize];
-  char sbuf[kMaxResponseSize];
+  char header[kMaxResponseSize];
   int pos = 0;
 
   memcpy(header+pos, kHttpVersion.c_str(), kHttpVersion.length());
@@ -171,14 +196,21 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
   memcpy(header+pos, kOtherHeaders.c_str(), kOtherHeaders.length());
   pos += kOtherHeaders.length();
 
-
   memcpy(header+pos, kContentLen.c_str(), kContentLen.length());
   pos += kContentLen.length();
   // end of header
   pos += sprintf(header+pos, "%ld\r\n\r\n", response.length());
 
-  memcpy(header+pos, response.c_str(), response.length());
-  pos += response.length();
+  int res_len;
+  if (response.length() > kMaxResponseSize - pos) {
+    res_len = kMaxResponseSize - pos;
+    LOG(WARNING) << "response length is too long: " << response.length()
+                 << ", cut it to " << res_len;
+  } else {
+    res_len = response.length();
+  }
+  memcpy(header+pos, response.c_str(), res_len);
+  pos += res_len;
 
   if (unlikely(pos != socket->Send(header, pos))) {
     return ST_ERROR;

@@ -3,6 +3,7 @@
 #ifndef USTORE_CLUSTER_REMOTE_CLIENT_SERVICE_H_
 #define USTORE_CLUSTER_REMOTE_CLIENT_SERVICE_H_
 
+#include <memory>
 #include <vector>
 #include "cluster/clientdb.h"
 #include "net/net.h"
@@ -28,7 +29,7 @@ class RemoteClientService {
 
   explicit RemoteClientService(const node_id_t& master)
       : node_addr_(""), master_(master), is_running_(false), nclients_(0) {}
-  ~RemoteClientService();
+  ~RemoteClientService() = default;
 
   // initialize the network, register callback
   virtual void Init();
@@ -53,7 +54,7 @@ class RemoteClientService {
    * Create a new ClientDb connecting to the database.
    * Interaction with the database is through this object.
    */
-  virtual ClientDb* CreateClientDb();
+  virtual ClientDb CreateClientDb();
 
   static int range_cmp(const RangeInfo& a, const RangeInfo& b);
 
@@ -62,11 +63,11 @@ class RemoteClientService {
   volatile bool is_running_;  // volatile to avoid caching old value
   node_id_t master_;  // master node
   node_id_t node_addr_;  // the node's address
-  Net *net_ = nullptr;
-  std::vector<ResponseBlob*> responses_;  // the response queue
-  WorkerList *workers_ = nullptr;  // worker list
+  WorkerList workers_;  // worker list
+  std::vector<std::unique_ptr<ResponseBlob>> responses_;  // the response queue
   std::vector<node_id_t> addresses_;  // worker addresses
-  CallBack* cb_ = nullptr;
+  std::unique_ptr<Net> net_;
+  std::unique_ptr<CallBack> cb_;
 };
 
 }  // namespace ustore

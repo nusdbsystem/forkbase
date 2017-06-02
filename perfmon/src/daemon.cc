@@ -118,12 +118,10 @@ int main(int argc, char*argv[]) {
   string pid_dir = conf.get("pid_dir");
   if (pid_dir != "") setRegistPath(pid_dir.c_str());
 
-  registInPerfmon("perf_daemon");
-
   printf("starting perfmon daemon...\n");
   PerfmonDaemon *daemon
-    = new PerfmonDaemon(atoi(sock_port.c_str()),
-    atoi(http_port.c_str()));
+    = new PerfmonDaemon(atoi(sock_port.c_str()), atoi(http_port.c_str()));
+  registInPerfmon("perf_daemon");
   daemon->start();
 
   printf("closing perfmon daemon...\n");

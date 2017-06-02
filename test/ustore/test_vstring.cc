@@ -14,12 +14,16 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vstring(404);
 const char key_vstring[] = "key_vstring";
 const char branch_vstring[] = "branch_vstring";
 
+ustore::Worker& worker_vstring() {
+  static ustore::Worker* worker = new ustore::Worker(2017, false);
+  return *worker;
+}
+
 TEST(VString, CreateNewVString) {
-  ustore::ObjectDB db(&worker_vstring);
+  ustore::ObjectDB db(&worker_vstring());
   // create buffered new string
   ustore::VString string{Slice(raw_data)};
   // put new string
@@ -34,7 +38,7 @@ TEST(VString, CreateNewVString) {
 }
 
 TEST(VString, CreateFromEmpty) {
-  ustore::ObjectDB db(&worker_vstring);
+  ustore::ObjectDB db(&worker_vstring());
   Slice empty;
   ustore::VString string(empty);
 

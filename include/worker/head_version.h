@@ -21,12 +21,21 @@ namespace ustore {
  */
 class HeadVersion : private Noncopyable {
  public:
+  HeadVersion() = default;
+  ~HeadVersion() = default;
+
   // TODO(yaochang): persist the log of branch update.
   inline void LogBranchUpdate(const Slice& key, const Slice& branch,
                               const Hash& ver) const {}
 
-  HeadVersion() {}
-  ~HeadVersion() {}
+  // Load branch version info from log path
+  // Add them into member branch_ver_
+  // Return whether loading succeeds
+  bool LoadBranchVersion(const std::string& log_path);
+
+  // Dump branch_ver_ into log_path
+  // Return whether Dumping succeeds
+  bool DumpBranchVersion(const std::string& log_path);
 
   boost::optional<Hash> GetBranch(const Slice& key,
                                   const Slice& branch) const;

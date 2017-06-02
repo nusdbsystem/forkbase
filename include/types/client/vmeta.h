@@ -40,6 +40,8 @@ class VMeta : private Noncopyable {
   VList List() const;
   VMap Map() const;
 
+  friend std::ostream& operator<<(std::ostream& os, const VMeta& obj);
+
  private:
   DB* db_;
   UCell cell_;

@@ -17,7 +17,12 @@ Chunk ServerChunkLoader::GetChunk(const Hash& key) {
 }
 
 Chunk ClientChunkLoader::GetChunk(const Hash& key) {
-  return db_->GetChunk(Slice(key_), key);
+  Chunk chunk;
+  ErrorCode code = db_->GetChunk(Slice(key_), key, &chunk);
+  if (code != ErrorCode::kOK)
+    LOG(WARNING) << "Failed to fetch chunk, error code: "
+                 << static_cast<int>(code);
+  return chunk;
 }
 
 }  // namespace ustore

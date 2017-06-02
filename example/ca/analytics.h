@@ -8,10 +8,10 @@
 #include <random>
 #include <string>
 #include <unordered_set>
-#include "ca/config.h"
-#include "ca/relational.h"
-#include "ca/utils.h"
+#include "spec/relational.h"
 #include "types/type.h"
+#include "ca/config.h"
+#include "ca/utils.h"
 
 namespace ustore {
 namespace example {

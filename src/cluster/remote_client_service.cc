@@ -22,12 +22,6 @@ class CSCallBack : public CallBack {
   }
 };
 
-RemoteClientService::~RemoteClientService() {
-  delete net_;
-  delete cb_;
-  delete workers_;
-}
-
 int RemoteClientService::range_cmp(const RangeInfo& a, const RangeInfo& b) {
   return Slice(a.start()) < Slice(b.start());
 }
@@ -53,21 +47,21 @@ void RemoteClientService::Init() {
   std::sort(workers.begin(), workers.end(), RemoteClientService::range_cmp);
 
 #ifdef USE_RDMA
-  net_ = new RdmaNet(node_addr_, Env::Instance()->config().recv_threads());
+  net_.reset(new RdmaNet(node_addr_, Env::Instance()->config().recv_threads()));
 #else
   // net_ = new ZmqNet(node_addr_, Env::Instance()->config().recv_threads());
-  net_ = new ClientZmqNet(Env::Instance()->config().recv_threads());
+  net_.reset(new ClientZmqNet(Env::Instance()->config().recv_threads()));
 #endif
   fin.close();
 
   // init worker list
-  workers_ = new WorkerList(workers);
+  workers_.Update(workers);
 }
 
 void RemoteClientService::Start() {
   net_->CreateNetContexts(addresses_);
-  cb_ = new CSCallBack(this);
-  net_->RegisterRecv(cb_);
+  cb_.reset(new CSCallBack(this));
+  net_->RegisterRecv(cb_.get());
   // zh: make the start behavior consistent with the worker service
   is_running_ = true;
   net_->Start();
@@ -83,12 +77,12 @@ void RemoteClientService::HandleResponse(const void *msg, int size,
                                    const node_id_t& source) {
   UStoreMessage *ustore_msg = new UStoreMessage();
   ustore_msg->ParseFromArray(msg, size);
-  ResponseBlob *res_blob = responses_[ustore_msg->source()];
+  ResponseBlob* res_blob = responses_[ustore_msg->source()].get();
 
   res_blob->message = ustore_msg;
   std::unique_lock<std::mutex> lck(res_blob->lock);
   res_blob->has_msg = true;
-  (res_blob->condition).notify_all();
+  res_blob->condition.notify_all();
 }
 
 void RemoteClientService::Stop() {
@@ -97,11 +91,11 @@ void RemoteClientService::Stop() {
   // net_thread_->join();
 }
 
-ClientDb* RemoteClientService::CreateClientDb() {
+ClientDb RemoteClientService::CreateClientDb() {
   // adding a new response blob
-  ResponseBlob *resblob = new ResponseBlob();
-  responses_.push_back(resblob);
-  return new ClientDb(master_, nclients_++, net_, resblob, workers_);
+  ResponseBlob* resblob = new ResponseBlob();
+  responses_.push_back(std::unique_ptr<ResponseBlob>(resblob));
+  return ClientDb(master_, nclients_++, net_.get(), resblob, &workers_);
 }
 
 }  // namespace ustore

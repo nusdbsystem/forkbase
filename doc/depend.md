@@ -7,20 +7,16 @@
 * cmake >= 2.8
 * g++ >= 4.8 (At least support c11 standard)
 * protobuf >= 2.6.1
-* boost >= 1.5.4 (file system)
+* boost >= 1.5.4 (file system, program options)
 * czmq >= 4.0.2
 * libzmq >= 4.2.1
 * gflags >= 2.1.0
-
-### Example
-
-* boost >= 1.5.4 (program options)
 
 ### Performance Monitor
 
 * libpcap (1.8.1)
 * dbus (1.0)
-* cpp-netlib >= 0.11.0
+* cpp-netlib == 0.11.0
 * python >= 2.7
 
 ## Optional

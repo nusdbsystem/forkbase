@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   ustore::SetStderrLogging(FLAGS_loglevel);
 
   // start the worker
-  WorkerService ws(FLAGS_node_id, "");
+  WorkerService ws(FLAGS_node_id, "", true);
   ws.Init();
   ws.Start();
 

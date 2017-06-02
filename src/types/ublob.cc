@@ -64,7 +64,7 @@ bool UBlob::SetNodeForHash(const Hash& root_hash) {
 }
 
 Hash UBlob::Insert(size_t pos, const byte_t* data,
-                         size_t num_insert) const {
+                   size_t num_insert) const {
   return Splice(pos, 0, data, num_insert);
 }
 

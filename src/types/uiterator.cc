@@ -9,7 +9,7 @@ bool CursorIterator::next() {
     LOG(WARNING) << "Can not move forward as already at seq head. ";
     return false;
   }
-  if (empty()) {
+  if (ranges_.size() == 0) {
     curr_idx_in_range_ = 0;
     curr_range_idx_ = 0;
     return false;
@@ -57,7 +57,7 @@ bool CursorIterator::previous() {
     LOG(WARNING) << "Can not move backward as already at seq head. ";
     return false;
   }
-  if (empty()) {
+  if (ranges_.size() == 0) {
     curr_range_idx_ = -1;
     curr_idx_in_range_ = 0;
     return false;

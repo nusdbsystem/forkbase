@@ -10,24 +10,14 @@
 #include "recovery/log_record.h"
 #include "recovery/log_worker.h"
 
-const char log_dir[] = ".";
-const char log_file[] = "ustore_test.log";
-const char log_path[] = "./ustore_test.log";
+const char log_file[] = "test_recover.log";
 const ustore::byte_t raw_str[] = "The quick brown fox jumps over the lazy dog";
 const char name_data[] = "I am a branch name";
 const char new_name[] = "I am a new name";
 
 TEST(Recovery, LogWorkerInit) {
   ustore::recovery::LogWorker worker;
-  int check_log_file = access(log_path, F_OK);
-  int delete_file;
-  if(check_log_file == 0) {
-    delete_file = unlink(log_path);
-    if(delete_file == -1) {
-      LOG(WARNING) << "log file already exists";
-    }
-  }
-  bool ret = worker.Init(log_dir, log_file);
+  bool ret = worker.Init(".", log_file);
   EXPECT_EQ(ret, true);
   worker.setTimeout(4000);
   EXPECT_EQ(worker.timeout(), 4000);
@@ -44,7 +34,7 @@ TEST(Recovery, LogWorkerInit) {
 
 TEST(Recovery, LogWorkerRead) {
   ustore::recovery::LogWorker worker(1);
-  bool ret = worker.Init(log_dir, log_file);
+  bool ret = worker.Init(".", log_file);
   EXPECT_EQ(ret, true);
   ustore::recovery::LogRecord record;
   bool read_flag;
@@ -71,4 +61,5 @@ TEST(Recovery, LogWorkerRead) {
   EXPECT_EQ(record.value_length, 0);
   EXPECT_TRUE(record.logcmd == ustore::recovery::LogCommand::kRemove);
   EXPECT_EQ(0, std::memcmp(record.key, new_name, record.key_length));
+  std::remove(log_file);
 }

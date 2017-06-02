@@ -1,6 +1,9 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <stdio.h>
+
 #include "gtest/gtest.h"
+
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "worker/head_version.h"
@@ -26,6 +29,7 @@ const Hash ver[] = {
 };
 
 HeadVersion head_ver;
+constexpr char test_head_version_log[] = "test_head_version.log";
 
 TEST(Worker, HeadVersion_PutBranch) {
   EXPECT_FALSE(head_ver.Exists(key[0], branch[0]));
@@ -47,6 +51,18 @@ TEST(Worker, HeadVersion_PutBranch) {
 
   head_ver.PutBranch(key[0], branch[2], ver[3]);
   EXPECT_TRUE(head_ver.IsBranchHead(key[0], branch[2], ver[3]));
+
+  ASSERT_TRUE(head_ver.DumpBranchVersion(test_head_version_log));
+}
+
+TEST(Worker, HeadVersion_Load) {
+  HeadVersion new_head_ver;
+  new_head_ver.LoadBranchVersion(test_head_version_log);
+  EXPECT_EQ(3, new_head_ver.ListBranch(key[0]).size());
+  EXPECT_EQ(ver[1], new_head_ver.GetBranch(key[0], branch[0]));
+  EXPECT_EQ(ver[2], new_head_ver.GetBranch(key[0], branch[1]));
+  EXPECT_EQ(ver[3], new_head_ver.GetBranch(key[0], branch[2]));
+  std::remove(test_head_version_log);
 }
 
 TEST(Worker, HeadVersion_GetBranch) {

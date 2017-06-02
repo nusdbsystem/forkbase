@@ -58,17 +58,14 @@ TEST(SMap, Empty) {
   ASSERT_EQ(0, new_smap2.numElements());
 
   auto it = new_smap2.Scan();
-  ASSERT_TRUE(it.empty());
   ASSERT_TRUE(it.end());
 
   // empty map DIFF non-empty map
   auto diff_it1 = new_smap2.Diff(new_smap1);
-  ASSERT_TRUE(diff_it1.empty());
   ASSERT_TRUE(diff_it1.end());
 
   // non-empty map DIFF empty map
   auto diff_it2 = new_smap1.Diff(new_smap2);
-  ASSERT_FALSE(diff_it2.empty());
   ASSERT_TRUE(diff_it2.key() == k1);
   ASSERT_TRUE(diff_it2.value() == expected_v1);
 
@@ -76,7 +73,6 @@ TEST(SMap, Empty) {
   ASSERT_TRUE(diff_it2.end());
 
   ASSERT_TRUE(diff_it2.previous());
-  ASSERT_FALSE(diff_it2.empty());
   ASSERT_TRUE(diff_it2.key() == k1);
   ASSERT_TRUE(diff_it2.value() == expected_v1);
 
@@ -85,7 +81,6 @@ TEST(SMap, Empty) {
 
   // non-empty map INTERSECT empty map
   auto intersect_it = new_smap2.Intersect(new_smap1);
-  ASSERT_TRUE(intersect_it.empty());
   ASSERT_TRUE(intersect_it.end());
 
   // non-empty map DUALLYDIFF empty map

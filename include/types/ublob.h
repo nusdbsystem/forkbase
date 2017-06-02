@@ -17,10 +17,10 @@ namespace ustore {
 class UBlob : public ChunkableType {
  public:
   class Iterator : public CursorIterator {
-  /*
-  The normal Iterator for UBlob iterator the specified bytes
-  in the vector of index ranges
-  */
+    /*
+    The normal Iterator for UBlob iterator the specified bytes
+    in the vector of index ranges
+    */
     friend class UBlob;
    public:
     Iterator(Iterator&& other) = default;
@@ -44,10 +44,10 @@ class UBlob : public ChunkableType {
   };
 
   class ChunkIterator : public UIterator {
-  /*
-  The Ublob's ChunkIterator iterates one chunk at a time.
-  The returned value is a slice
-  */
+    /*
+    The Ublob's ChunkIterator iterates one chunk at a time.
+    The returned value is a slice
+    */
     friend class UBlob;
    public:
     ChunkIterator(ChunkIterator&& other) noexcept
@@ -63,12 +63,6 @@ class UBlob : public ChunkableType {
 
     inline bool head() const override { return cursor_.isBegin(); }
     inline bool end() const override { return cursor_.isEnd(); }
-
-    inline bool empty() const override {
-      // A Blob with no bytes contain a single empty chunk
-      // , which is not empty
-      return false;
-    }
 
    protected:
     inline Slice RealValue() const override {
@@ -99,17 +93,17 @@ class UBlob : public ChunkableType {
    *      the number of bytes that actually read
    */
   size_t Read(size_t pos, size_t len, byte_t* buffer) const;
-   /** Delete some bytes from a position and insert new bytes
-   *
-   *  Args:
-   *    pos: the byte position to remove or insert bytes
-   *    n_delete_bytes: the number of bytes to be deleted
-   *    data: the byte array to insert after deletion
-   *    n_insert_bytes: number of bytes in array to be inserted into current blob
-   *
-   *  Return:
-   *    the new Blob reflecting the operation
-   */
+  /** Delete some bytes from a position and insert new bytes
+  *
+  *  Args:
+  *    pos: the byte position to remove or insert bytes
+  *    n_delete_bytes: the number of bytes to be deleted
+  *    data: the byte array to insert after deletion
+  *    n_insert_bytes: number of bytes in array to be inserted into current blob
+  *
+  *  Return:
+  *    the new Blob reflecting the operation
+  */
   virtual Hash Splice(size_t pos, size_t n_delete_bytes, const byte_t* data,
                       size_t n_insert_bytes) const = 0;
   // * Insert bytes given a position
@@ -139,11 +133,18 @@ class UBlob : public ChunkableType {
     return ChunkIterator(hash(), chunk_loader_.get());
   }
 
+  friend inline std::ostream& operator<<(std::ostream& os, const UBlob& obj) {
+    for (auto it = obj.ScanChunk(); !it.end(); it.next()) {
+      os << it.value();
+    }
+    return os;
+  }
+
  protected:
   UBlob() = default;
   UBlob(UBlob&& rhs) = default;
   explicit UBlob(std::shared_ptr<ChunkLoader> loader) noexcept :
-      ChunkableType(loader) {}
+    ChunkableType(loader) {}
   virtual ~UBlob() = default;
 
   UBlob& operator=(UBlob&& rhs) = default;

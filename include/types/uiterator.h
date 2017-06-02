@@ -23,18 +23,17 @@ UIterator is a genric Iterator interface that shall be inherited
   // point to next element
   //  return false if cursor points to end after movement
   virtual bool next() = 0;
+
   // point to previous element
   //  return false if cursor points to head after movement
   virtual bool previous() = 0;
 
   virtual bool head() const = 0;
+
   virtual bool end() const = 0;
 
-  // TODO(pingcheng): may not need this api
-  virtual bool empty() const = 0;
-
   inline Slice value() const {
-    CHECK(!empty() && !head() && !end());
+    CHECK(!head() && !end());
     return RealValue();
   }
 
@@ -65,14 +64,14 @@ The valid elements are specified by a vector of IndexRange.
       : ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
-        cursor_(root, empty() ? 0 : index(), loader) {}
+        cursor_(root, ranges_.size() ? index() : 0, loader) {}
 
   CursorIterator(const Hash& root, std::vector<IndexRange>&& ranges,
             ChunkLoader* loader) noexcept
       : ranges_(std::move(ranges)),
         curr_range_idx_(0),
         curr_idx_in_range_(0),
-        cursor_(root, empty() ? 0 : index(), loader) {}
+        cursor_(root, ranges_.size() ? index() : 0, loader) {}
 
   virtual ~CursorIterator() = default;
 
@@ -87,24 +86,24 @@ The valid elements are specified by a vector of IndexRange.
   // point to next element
   //  return false if cursor points to end after movement
   bool next() override;
+
   // point to previous element
   //  return false if cursor points to head after movement
   bool previous() override;
 
-  inline bool head() const override { return curr_range_idx_ == -1; }
-  inline bool end() const override { return curr_range_idx_ == ranges_.size(); }
+  inline bool head() const override {return curr_range_idx_ == -1; }
 
-  inline bool empty() const override { return ranges_.size() == 0; }
+  inline bool end() const override {return curr_range_idx_ == ranges_.size(); }
 
   // return the idx of pointed element
   virtual inline uint64_t index() const {
-    CHECK(!empty() && !head() && !end());
+    CHECK(!head() && !end());
     return ranges_[curr_range_idx_].start_idx + curr_idx_in_range_;
   }
 
   // return the decoded slice value
   virtual inline Slice key() const {
-    CHECK(!empty() && !head() && !end());
+    CHECK(!head() && !end());
     return cursor_.currentKey().ToSlice();
   }
 
@@ -114,12 +113,12 @@ The valid elements are specified by a vector of IndexRange.
   }
 
   inline const byte_t* data() const {
-    CHECK(!empty() && !head() && !end());
+    CHECK(!head() && !end());
     return cursor_.current();
   }
 
   inline size_t numBytes() const {
-    CHECK(!empty() && !head() && !end());
+    CHECK(!head() && !end());
     return cursor_.numCurrentBytes();
   }
 

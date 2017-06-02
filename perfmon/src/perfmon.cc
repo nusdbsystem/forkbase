@@ -233,9 +233,9 @@ int main(int argc, char *argv[]) {
     strcpy(perf_path, PERFMON_REG_PATH.c_str());
     printf("pid dir = %s\n", PERFMON_REG_PATH.c_str());
 
-    registInPerfmon("perf_monitor");
     PerformanceMonitor * monitor = new PerformanceMonitor(
       sock_host.c_str(), atoi(sock_port.c_str()), perf_path);
+    registInPerfmon("perf_monitor");
     signal(SIGINT, &signal_handler);
 
     monitor->start();

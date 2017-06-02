@@ -1,0 +1,18 @@
+/// Copyright (c) 2017 The Ustore Authors.
+
+package ustore;
+
+message BranchVersion {
+  required bytes branch = 1;
+  required bytes hash_base32 = 2;
+}
+
+message KeyVersion {
+  required bytes key = 1;
+  repeated BranchVersion branches = 2;
+}
+
+message KeyVersions {
+  repeated KeyVersion key_versions = 1;
+}
+

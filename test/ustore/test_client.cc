@@ -91,8 +91,10 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
     DLOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
 
     // check GetChunk
-    EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list).numBytes(),
-              list_value.chunk().numBytes());
+    ustore::Chunk chunk;
+    EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list, &chunk),
+              ErrorCode::kOK);
+    EXPECT_EQ(chunk.numBytes(), list_value.chunk().numBytes());
 
     // branch from head
     string new_branch = "branch_"+std::to_string(idx);
@@ -164,7 +166,7 @@ TEST(TestMessage, TestClient1Thread) {
   string worker_addr;
   vector<WorkerService*> workers;
   while (fin >> worker_addr)
-    workers.push_back(new WorkerService(worker_addr, ""));
+    workers.push_back(new WorkerService(worker_addr, "", false));
 
   vector<thread> worker_threads;
   for (int i = 0; i < workers.size(); i++)
@@ -182,8 +184,8 @@ TEST(TestMessage, TestClient1Thread) {
   usleep(kSleepTime);
 
   // 1 thread
-  ClientDb *client = service.CreateClientDb();
-  TestClientRequest(client, 0, NREQUESTS);
+  ClientDb client = service.CreateClientDb();
+  TestClientRequest(&client, 0, NREQUESTS);
 
   // stop the client service
   service.Stop();

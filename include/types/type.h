@@ -94,9 +94,10 @@ enum class ErrorCode : byte_t {
   kIndexOutOfRange = 20,
   kTypeMismatch = 21,
   kKeyNotExists = 22,
-  kKeyExists = 23, 
-  kInvalidCommandArgument = 24, 
-  kUnknownCommand = 25
+  kKeyExists = 23,
+  kChunkNotExists = 24,
+  kInvalidCommandArgument = 25,
+  kUnknownCommand = 26
 };
 
 }  // namespace ustore

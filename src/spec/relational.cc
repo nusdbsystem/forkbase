@@ -1,11 +1,9 @@
-// Copyright (c) 2017 The Ustore Authors.
+// Copyright (c) 2017 The UStore Authors.
 
+#include "spec/relational.h"
 #include "utils/logging.h"
-#include "ca/relational.h"
 
 namespace ustore {
-namespace example {
-namespace ca {
 
 ErrorCode ColumnStore::CreateTable(const std::string& table_name,
                                    const std::string& branch_name) {
@@ -82,8 +80,8 @@ ErrorCode ColumnStore::GetColumn(
   USTORE_GUARD(
     GetTable(table_name, branch_name, &tab));
   if (tab.Get(Slice(col_name)).empty()) {
-    LOG(ERROR) << "Column \"" << col_name << "\" does not exist in Table \""
-               << table_name << "\" of Branch \"" << branch_name << "\"";
+    LOG(WARNING) << "Column \"" << col_name << "\" does not exist in Table \""
+                 << table_name << "\" of Branch \"" << branch_name << "\"";
     return ErrorCode::kKeyNotExists;
   }
   return ReadColumn(table_name, branch_name, col_name, col);
@@ -129,6 +127,4 @@ ErrorCode ColumnStore::DiffColumn(const std::string& lhs_table_name,
   return ErrorCode::kOK;
 }
 
-}  // namespace ca
-}  // namespace example
 }  // namespace ustore

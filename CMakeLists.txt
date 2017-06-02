@@ -30,7 +30,7 @@ OPTION(ENABLE_TEST "Compile test module" ON)
 OPTION(TEST_NODEBUILDER "Test node builder" OFF)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
 OPTION(USE_RDMA "Use RDMA" OFF)
-OPTION(ENABLE_EXAMPLE "Compile example module" OFF)
+OPTION(ENABLE_EXAMPLE "Compile example module" ON)
 
 if(TEST_NODEBUILDER)
   message(STATUS "Test Node Builder with Specific Rolling Hasher")

@@ -16,4 +16,4 @@ if [ ! -d $dest ]; then
   mkdir $dest
 fi
 
-ps -aux | grep ustored | grep worker | grep -v "grep" | awk '{print $2}' > $dest/pid
+ps -aux | grep ustored | grep -v "grep" | awk '{print $2}' > $dest/worker

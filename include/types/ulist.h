@@ -27,12 +27,12 @@ class UList : public ChunkableType {
     // Only used by UList
     Iterator(const Hash& root, const std::vector<IndexRange>& ranges,
              ChunkLoader* loader) noexcept :
-        CursorIterator(root, ranges, loader) {}
+      CursorIterator(root, ranges, loader) {}
 
     // Only used by UList
     Iterator(const Hash& root, std::vector<IndexRange>&& ranges,
              ChunkLoader* loader) noexcept :
-        CursorIterator(root, std::move(ranges), loader) {}
+      CursorIterator(root, std::move(ranges), loader) {}
 
     inline Slice RealValue() const override {
       return ListNode::Decode(data());
@@ -59,13 +59,15 @@ class UList : public ChunkableType {
   // Return an iterator that scan elements that both exist in this Ulist and rhs
   UList::Iterator Intersect(const UList& rhs) const;
 
+  friend std::ostream& operator<<(std::ostream& os, const UList& obj);
+
  protected:
   UList() = default;
   UList(UList&& rhs) = default;
   // create an empty map
   // construct chunk loader for server
   explicit UList(std::shared_ptr<ChunkLoader> loader) noexcept :
-      ChunkableType(loader) {}
+    ChunkableType(loader) {}
   // construct chunk loader for server
   virtual ~UList() = default;
 

@@ -1,17 +1,14 @@
-// Copyright (c) 2017 The Ustore Authors.
+// Copyright (c) 2017 The UStore Authors.
 
-#ifndef USTORE_EXAMPLE_CA_RELATIONAL_H_
-#define USTORE_EXAMPLE_CA_RELATIONAL_H_
+#ifndef USTORE_SPEC_RELATIONAL_H_
+#define USTORE_SPEC_RELATIONAL_H_
 
 #include <string>
 #include <vector>
 #include "spec/object_db.h"
-#include "types/type.h"
 #include "utils/utils.h"
 
 namespace ustore {
-namespace example {
-namespace ca {
 
 using Table = VMap;
 using Column = VList;
@@ -164,8 +161,6 @@ ErrorCode ColumnStore::WriteColumn(
   return ErrorCode::kOK;
 }
 
-}  // namespace ca
-}  // namespace example
 }  // namespace ustore
 
-#endif  // USTORE_EXAMPLE_CA_RELATIONAL_H_
+#endif  // USTORE_SPEC_RELATIONAL_H_

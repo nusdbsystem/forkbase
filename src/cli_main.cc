@@ -11,16 +11,17 @@
 namespace ustore {
 namespace cli {
 
-constexpr int kWaitForSvcReadyInMs = 75;
+constexpr int kInitForMs = 75;
 
 int main(int argc, char* argv[]) {
   SetStderrLogging(WARNING);
+  // connect to UStore servcie
   RemoteClientService ustore_svc("");
   ustore_svc.Init();
   std::thread ustore_svc_thread(&RemoteClientService::Start, &ustore_svc);
-  std::this_thread::sleep_for(std::chrono::milliseconds(kWaitForSvcReadyInMs));
+  std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
   auto client_db = ustore_svc.CreateClientDb();
-  Command cmd(client_db);
+  Command cmd(&client_db);
   // conditional execution
   auto ec = ErrorCode::kUnknownOp;
   if (Config::ParseCmdArgs(argc, argv)) {
@@ -29,10 +30,11 @@ int main(int argc, char* argv[]) {
     DLOG(INFO) << "Help messages have been printed";
     ec = ErrorCode::kOK;
   } else {
-    std::cerr << "[FAILURE] Found invalid command-line option" << std::endl;
+    std::cerr << BOLD_RED("[FAILURE] ")
+              << "Found invalid command-line option" << std::endl;
     ec = ErrorCode::kInvalidCommandArgument;
   }
-  // clean and exit
+  // disconnect with UStore service
   ustore_svc.Stop();
   ustore_svc_thread.join();
   return static_cast<int>(ec);
