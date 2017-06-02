@@ -1,0 +1,64 @@
+{% extends 'ustore/main.html' %}
+{% load static %}
+
+{% block main_js %}
+<script src="{% static 'ustore/js/exe.js' %}"></script>
+{% endblock %}
+
+
+{% block main_content %}
+<div class="form-title">
+  <h1>BRANCH</h1>
+</div>
+<form name='exe_form' role="form" class="store-form">
+    <div class="row">
+      <div class="col-md-3">
+          <div class="form-group">
+                <input name='key' type="text" class="form-control" placeholder="Enter the key here">
+          </div>
+        </div>
+
+        <div class="col-sm-2">
+        <select name='opt'>
+          <option value ="branch">branch</option>
+          <option value ="version">version</option>
+        </select>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+                <input name='bransion' type="text" class="form-control" placeholder="Enter the old branch/version here">
+          </div>
+        </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-sm-2"></div>
+      <div class="col-md-6">
+        <div class="form-group">
+              <input name='branch' type="text" class="form-control" placeholder="Enter the new branch here">
+        </div>
+      </div>
+    </div>
+</form>
+
+<div class="row">
+  <div class="col-md-11">
+    <button name='exe' type="submit" id="put_exe" class="btn main-btn pull-right">Execute</button>
+  </div>
+</div>
+
+</br>
+<div name="result_div" style="display: none" class="row">
+    <div class="col-md-11">
+      <div class="form-group">
+            <textarea readonly name="result" id='put_res' class="form-control textarea" placeholder="Result showing here..."></textarea>
+      </div>
+    </div>
+</div>
+
+<script>
+    var exe_url = "{% url 'branch' %}"
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% load static %}
+
+<!-- https://bootsnipp.com/snippets/56A0W -->
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://code.jquery.com/jquery-3.1.1.min.js"></script>
+		<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+		<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel='stylesheet' href="{% static 'ustore/css/font.css' %}" />
+		{% block custom_js %} {% endblock %}
+	</head>
+	<body>
+		{% block body %} {% endblock %}
+	</body>
+</html>
+<!--<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>-->

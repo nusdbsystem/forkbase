@@ -1,0 +1,184 @@
+{% extends 'ustore/main.html' %}
+{% load static %}
+
+{% block main_js %}
+<script src="{% static 'ustore/js/exe.js' %}"></script>
+{% endblock %}
+
+
+{% block main_content %}
+<!-- <div class="form-title">
+  <span class="title">LIST</span>
+</div> -->
+<div class="row">
+  <div class="col-md-3" style="width: 33%">
+      <span class="title">Keys</span>
+      <ul id="key" class="content-list list-unstyled dropdown">
+        {% for key in keys %}
+          <li><span>{{key}}</span><div class="hint"><a name='branch'>b</a> / <a name='version'>v</a></div></li>
+        {% endfor %}
+      </ul>
+  </div>
+  <div class="col-md-6">
+    <div id="branch_list" class="row" style="display: none; width: 100%"">
+      <span class="subtitle">Branches</span>
+      <span class="foot-title">of <span name='key_name'></span></span>
+      <ul class="content-list list-unstyled dropdown">
+        <div class="dropdown-content">
+          <span>put</span>
+          <span>get</span>
+          <span>merge</span>
+          <span>branch</span>
+          <span>rename</span>
+        </div>
+      </ul>
+    </div>
+    <div id="version_list" class="row" style="display: none; width: 100%"">
+      <span class="subtitle">Versions</span>
+      <span class="foot-title">of <span name='key_name'></span></span>
+      <ul class="content-list list-unstyled dropdown">
+        <div class="dropdown-content">
+          <span>put</span>
+          <span>get</span>
+          <span>merge</span>
+          <span>branch</span>
+        </div>
+      </ul>
+    </div>
+  </div>
+<!--   <div id="branch_list" class="col-md-3" style="display: none; width: 33%"">
+    <span class="subtitle">Branches</span>
+    <span class="foot-title">of <span name='key_name'></span></span>
+    <ul class="content-list list-unstyled dropdown">
+      <div class="dropdown-content">
+        <span>put</span>
+        <span>get</span>
+        <span>merge</span>
+        <span>branch</span>
+        <span>rename</span>
+      </div>
+    </ul>
+  </div>
+  <div id="version_list" class="col-md-3" style="display: none; width: 33%"">
+    <span class="subtitle">Versions</span>
+    <span class="foot-title">of <span name='key_name'></span></span>
+    <ul class="content-list list-unstyled dropdown">
+      <div class="dropdown-content">
+        <span>put</span>
+        <span>get</span>
+        <span>merge</span>
+        <span>branch</span>
+      </div>
+    </ul>
+  </div> -->
+</div>
+
+<div id="exe">
+<!-- get and put -->
+  <form class="row form-group" name="get-or-put" style="padding: 15px; display: none;">
+    <div style="padding: 15px">
+      <label class="form-label" for="key">key</label>
+      <input readonly name='key' type="text" class="form-content form-control "/>
+    </div> 
+    <div style="padding: 15px">
+      <label class="form-label" name='opt' for='bransion'>branch</label>
+      <input readonly name='bransion' type="text" class="form-content form-control"/>
+    </div> 
+    <div style="padding: 15px">
+      <label class="form-label" for='value'>value</label>
+      <textarea name='value' class="form-content form-control textarea" rows="3" placeholder="Enter the value here..."></textarea>
+    </div> 
+    <div style="padding: 15px">
+      <button id='put' type="submit" class="btn main-btn pull-right">PUT</button>
+    </div> 
+    <div style="padding: 15px; display: none">
+      <label class="form-label" for='result'>result</label>
+      <textarea readonly name='result' class="form-content form-control textarea" rows="3"></textarea>
+    </div> 
+  </form>
+
+<!-- merge -->
+  <form class="row form-group" name="merge" style="padding: 15px; display: none;">
+    <div style="padding: 15px">
+      <label class="form-label" for="key">key</label>
+      <input readonly name='key' type="text" class="form-content form-control "/>
+    </div> 
+    <div style="padding: 15px">
+      <label class="form-label" name='opt1' for="bransion1">referal branch</label>
+      <input readonly required name='bransion1' type="text" class="form-content form-control "/>
+    </div>
+    <div style="padding: 15px">
+      <label class="form-label" name='opt2' for="bransion2">target branch</label>
+      <input readonly name='bransion2' type="text" class="form-content form-control "/>
+    </div>
+    <div style="padding: 15px">
+      <label class="form-label" for='value'>value</label>
+      <textarea name='value' class="form-content form-control textarea" rows="3" placeholder="Enter the value here..."></textarea>
+    </div> 
+    <div style="padding: 15px">
+      <button id='merge' type="submit" class="btn main-btn pull-right">MERGE</button>
+    </div> 
+    <div style="padding: 15px; display: none">
+      <label class="form-label" for='result'>result</label>
+      <textarea readonly name='result' class="form-content form-control textarea" rows="3"></textarea>
+    </div>
+  </form>
+
+<!-- branch -->
+  <form class="row form-group" name="branch" style="padding: 15px; display: none;">
+    <div style="padding: 15px">
+      <label class="form-label" for="key">key</label>
+      <input readonly name='key' type="text" class="form-content form-control "/>
+    </div> 
+    <div style="padding: 15px">
+      <label class="form-label" name='opt' for="bransion">old branch</label>
+      <input readonly name='bransion' type="text" class="form-content form-control "/>
+    </div>
+    <div style="padding: 15px">
+      <label class="form-label" for="new_branch">new branch</label>
+      <input name='new_branch' type="text" class="form-content form-control "/>
+    </div>
+    <div style="padding: 15px">
+      <button id='branch' type="submit" class="btn main-btn pull-right">BRANCH</button>
+    </div> 
+    <div style="padding: 15px; display: none">
+      <label class="form-label" for='result'>result</label>
+      <textarea readonly name='result' class="form-content form-control textarea" rows="3"></textarea>
+    </div>
+  </form>
+
+<!-- rename -->
+  <form class="row form-group" name="rename" style="padding: 15px; display: none;">
+    <div style="padding: 15px">
+      <label class="form-label" for="key">key</label>
+      <input readonly name='key' type="text" class="form-content form-control "/>
+    </div> 
+    <div style="padding: 15px">
+      <label class="form-label" name='opt' for="bransion">old branch</label>
+      <input readonly name='bransion' type="text" class="form-content form-control "/>
+    </div>
+    <div style="padding: 15px">
+      <label class="form-label" for="new_branch">new branch</label>
+      <input name='new_branch' type="text" class="form-content form-control "/>
+    </div>
+    <div style="padding: 15px">
+      <button id='rename' type="submit" class="btn main-btn pull-right">RENAME</button>
+    </div> 
+    <div style="padding: 15px; display: none">
+      <label class="form-label" for='result'>result</label>
+      <textarea readonly name='result' class="form-content form-control textarea" rows="3"></textarea>
+    </div>
+  </form>
+
+</div>
+
+<script>
+    var get_url = "{% url 'get' %}"
+    var put_url = "{% url 'put' %}"
+    var branch_url = "{% url 'branch' %}"
+    var merge_url = "{% url 'merge' %}"
+    var list_url = "{% url 'list' %}"
+    var rename_url = "{% url 'rename' %}"
+    var latest_url = "{% url 'latest' %}"
+</script>
+{% endblock %}
