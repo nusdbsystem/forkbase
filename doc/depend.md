@@ -16,7 +16,7 @@
 
 * libpcap (1.8.1)
 * dbus (1.0)
-* cpp-netlib >= 0.11.0
+* cpp-netlib >= 0.13.0
 * python >= 2.7
 
 ## Optional
