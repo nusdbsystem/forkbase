@@ -20,8 +20,8 @@ void BenchmarkClient() {
   sleep(1);
 
   // create client
-  ClientDb *client = service.CreateClientDb();
-  ObjectDB db(client);
+  ClientDb client = service.CreateClientDb();
+  ObjectDB db(&client);
   Benchmark bm(&db);
   bm.RunAll();
 

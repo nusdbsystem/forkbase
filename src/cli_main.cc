@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   std::thread ustore_svc_thread(&RemoteClientService::Start, &ustore_svc);
   std::this_thread::sleep_for(std::chrono::milliseconds(kWaitForSvcReadyInMs));
   auto client_db = ustore_svc.CreateClientDb();
-  Command cmd(client_db);
+  Command cmd(&client_db);
   // conditional execution
   auto ec = ErrorCode::kUnknownOp;
   if (Config::ParseCmdArgs(argc, argv)) {

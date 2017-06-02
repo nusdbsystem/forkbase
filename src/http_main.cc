@@ -50,8 +50,8 @@ int main(int argc, char* argv[]) {
   std::thread ct(&RemoteClientService::Start, &service);
   sleep(1);
 
-  ClientDb* client = service.CreateClientDb();
-  HttpServer server(client, port, bind_addr);  // create the HttpServer
+  ClientDb client = service.CreateClientDb();
+  HttpServer server(&client, port, bind_addr);  // create the HttpServer
   // set the max concurrent connections to support
   server.SetEventLoopSize(elsize);
 
@@ -62,7 +62,6 @@ int main(int argc, char* argv[]) {
   // exit and cleanup
   service.Stop();
   ct.join();
-  delete client;
   return 0;
 }
 
