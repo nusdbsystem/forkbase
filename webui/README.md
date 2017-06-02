@@ -10,36 +10,32 @@
 
 ## configuration
 
-  * set ip and port in ./ustore/run_server.sh
+  * set ip and port in run_server.sh
 
 ## run by script
 
   1. start
   ```
-    $ ./ustore/run_server.sh
+    $ ./run_server.sh
+  ```
 
   2. stop
     it sounds ridicules but django doesn't provide any 'stop' function, so that you will have to stop by `command + c` or kill the thread
 
 ## manual run
-  
+
   ```
-    $ python ./ustore/manage.py runserver $port
-
-### data preparation
-
-  * a dir containing multiple pid files named by the process name
-  * each pid file contains at least one line, and each line of a pid file is the
-    pid of a monitored process
+    $ python ./manage.py runserver $port
+  ```
 
 ### functions
 
   1. login
-    user needs to input ustore server $ip:$port to connect. e.g., soccf-dbr3-025.d1.comp.nus.edu.sg port:60601. 
+    user needs to input ustore server $ip:$port to connect. e.g., soccf-dbr3-025.d1.comp.nus.edu.sg port:60601.
 
-    *** WARNING: 
+    *** WARNING:
     The program will not check if the address is available. User should ensure it himself.
-    
+
     The ustore server address is saved as an instance in the webpage server, which will be lost if the webpage server is restarted. Go to any page to re-enter the address and connect.
 
   2. list

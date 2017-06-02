@@ -27,6 +27,7 @@
 *.exe
 *.out
 *.app
+*.pyc
 
 # Build folder
 build/
