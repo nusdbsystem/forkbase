@@ -49,7 +49,8 @@ class ChunkStore {
 namespace store {
 
 // have to be called before calling GetChunkStore(), otherwise has no effect
-ChunkStore* SetChunkStorePath(const std::string& dir, const std::string& file);
+ChunkStore* InitChunkStore(const std::string& dir, const std::string& file,
+                           bool persist);
 ChunkStore* GetChunkStore();
 
 }  // namespace store

@@ -237,7 +237,7 @@ string Delete(const string& key, const string& branch, ClientSocket& cs) {
 }
 
 TEST(HttpTest, BasicOps) {
-  Worker worker {2017};
+  Worker worker {2017, false};
   int port = Env::Instance()->config().http_port();
 
   // start the http server

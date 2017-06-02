@@ -12,8 +12,7 @@ bool HeadVersion::LoadBranchVersion(const std::string& log_path) {
   std::ifstream ifs(log_path, std::ifstream::in);
 
   if (ifs) {
-    DLOG(INFO) << "\n============Reading Head Version From Log===========";
-    DLOG(INFO) << "Log Path: " << log_path;
+    LOG(INFO) << "Loading head version file: " << log_path << " ......";
     KeyVersions key_versions;  // protobuf
     if (!key_versions.ParseFromIstream(&ifs)) return false;
 
@@ -39,7 +38,7 @@ bool HeadVersion::LoadBranchVersion(const std::string& log_path) {
         branch_map.find(branch)->second = Hash::FromBase32(version_base32);
       }
     }
-    DLOG(INFO) << "====================================================\n";
+    LOG(INFO) << "Loaded head versions";
     return true;
   } else {
     return false;
@@ -47,9 +46,8 @@ bool HeadVersion::LoadBranchVersion(const std::string& log_path) {
 }
 
 bool HeadVersion::DumpBranchVersion(const std::string& log_path) {
-// Dump the brach_ver_ to external file to persist
-  DLOG(INFO) << "\n============Dumping Head Version to log===========";
-  DLOG(INFO) << "Log Path: " << log_path;
+  // Dump the brach_ver_ to external file to persist
+  LOG(INFO) << "Dumping head version file: " << log_path << " ......";
   std::ofstream ofs(log_path, std::ofstream::out);
   KeyVersions key_versions;
   for (const auto& k2branchversion : branch_ver_) {
@@ -73,7 +71,7 @@ bool HeadVersion::DumpBranchVersion(const std::string& log_path) {
   }  // end for k2branchversion
   bool succeeds = key_versions.SerializeToOstream(&ofs);
   ofs.close();
-  DLOG(INFO) << "====================================================\n";
+  LOG(INFO) << "Dumped head versions";
   return succeeds;
 }
 

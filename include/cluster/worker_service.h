@@ -28,8 +28,8 @@ class WorkerService {
 
     static int range_cmp(const RangeInfo& a, const RangeInfo& b);
 
-    WorkerService(const node_id_t& addr, const node_id_t& master)
-      : node_addr_(addr), master_(master) {}
+    WorkerService(const node_id_t& addr, const node_id_t& master, bool persist)
+      : node_addr_(addr), master_(master), persist_(persist) {}
     virtual ~WorkerService() = default;
 
     // initialize the network, the worker and register callback
@@ -58,6 +58,7 @@ class WorkerService {
     std::unique_ptr<Worker> worker_;  // where the logic happens
     std::unique_ptr<Net> net_;
     std::unique_ptr<CallBack> cb_ = nullptr;
+    bool persist_;
 };
 }  // namespace ustore
 

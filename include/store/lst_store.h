@@ -171,6 +171,7 @@ class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
   static constexpr ChunkType type_ = T;
 
   explicit LSTStoreTypeIterator(parent iterator) : parent(iterator) {
+    if (!parent::ptr_) return;
     ChunkType type = PtrToChunkType(parent::ptr_);
     if (type != type_ && !IsEndChunk(type))
       operator++();
@@ -179,9 +180,10 @@ class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
   LSTStoreTypeIterator(const MapType& map,
       const LSTSegment* segment,
       const byte_t* ptr) : parent(map, segment, ptr) {
-      ChunkType type = PtrToChunkType(parent::ptr_);
-      if (type != type_ && !IsEndChunk(type))
-        operator++();
+    if (!parent::ptr_) return;
+    ChunkType type = PtrToChunkType(parent::ptr_);
+    if (type != type_ && !IsEndChunk(type))
+      operator++();
   }
 
   LSTStoreTypeIterator(const LSTStoreTypeIterator&) noexcept = default;
@@ -245,7 +247,8 @@ class LSTStore
 
   template <typename Iterator = iterator>
   Iterator begin() {
-    return Iterator(chunk_map_, major_list_, GetFirstHashPtr(major_list_));
+    const byte_t* ptr = major_list_ ? GetFirstHashPtr(major_list_) : nullptr;
+    return Iterator(chunk_map_, major_list_, ptr);
   }
 
   template <typename Iterator = iterator>
@@ -255,8 +258,10 @@ class LSTStore
 
   template <typename Iterator = iterator>
   Iterator end() {
-    return Iterator(chunk_map_, current_major_segment_,
-      (const byte_t*)current_major_segment_->segment_ + major_segment_offset_);
+    const byte_t* ptr = current_major_segment_ ?
+      (const byte_t*)current_major_segment_->segment_ + major_segment_offset_
+      : nullptr;
+    return Iterator(chunk_map_, current_major_segment_, ptr);
   }
 
   template <typename Iterator = iterator>
@@ -266,11 +271,11 @@ class LSTStore
 
  private:
   // TODO(qingchao): add a remove-old-log flag to ease unit test
-  LSTStore() : LSTStore(".", "ustore_default") {}
-  LSTStore(const std::string& dir, const std::string& file)
+  LSTStore() : LSTStore(".", "ustore_default", false) {}
+  LSTStore(const std::string& dir, const std::string& file, bool persist)
     : num_segments_(Env::Instance()->config().num_segments()),
       log_file_size_(kSegmentSize * num_segments_ + kMetaLogSize) {
-    MmapUstoreLogFile(dir, file);
+    MmapUstoreLogFile(dir, file, persist);
   }
   ~LSTStore() noexcept(false);
 
@@ -289,7 +294,8 @@ class LSTStore
   void Load(void*);
   size_t LoadFromValidSegment(LSTSegment*);
   size_t LoadFromLastSegment(LSTSegment*);
-  void* MmapUstoreLogFile(const std::string& dir, const std::string& file);
+  void* MmapUstoreLogFile(const std::string& dir, const std::string& file,
+                          bool persist);
   LSTSegment* Allocate(LSTSegment*);
   LSTSegment* AllocateMajor();
   LSTSegment* AllocateMinor();

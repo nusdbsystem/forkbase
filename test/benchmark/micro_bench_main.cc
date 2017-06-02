@@ -18,7 +18,7 @@ using namespace ustore;
 constexpr int kSleepTime = 100000;
 
 void BenchmarkWorker() {
-  Worker worker {2018};
+  Worker worker {2018, false};
   ObjectDB db(&worker);
   Benchmark bm(&db);
   bm.RunAll();
@@ -30,7 +30,7 @@ void BenchmarkClient() {
   std::string worker_addr;
   std::vector<WorkerService*> workers;
   while (fin_worker >> worker_addr)
-    workers.push_back(new WorkerService(worker_addr, ""));
+    workers.push_back(new WorkerService(worker_addr, "", false));
   std::vector<std::thread> worker_threads;
   for (int i = 0; i < workers.size(); ++i)
     workers[i]->Init();
@@ -63,8 +63,6 @@ void BenchmarkClient() {
 }
 
 int main() {
-  // remove ustore data before benchmark
-  std::remove("ustore_data/ustore_2018.dat");
   // set num_segments large enough for all test cases
   Env::Instance()->m_config().set_num_segments(64);
 

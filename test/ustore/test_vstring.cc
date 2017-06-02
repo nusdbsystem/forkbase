@@ -18,7 +18,7 @@ const char key_vstring[] = "key_vstring";
 const char branch_vstring[] = "branch_vstring";
 
 ustore::Worker& worker_vstring() {
-  static ustore::Worker* worker = new ustore::Worker(404);
+  static ustore::Worker* worker = new ustore::Worker(2017, false);
   return *worker;
 }
 

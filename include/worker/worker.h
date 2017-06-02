@@ -26,8 +26,8 @@ using WorkerID = uint32_t;
  */
 class Worker : public DB, private Noncopyable {
  public:
-  explicit Worker(const WorkerID& id);
-  ~Worker() = default;
+  Worker(const WorkerID& id, bool persist);
+  ~Worker();
 
   inline WorkerID id() const { return id_; }
 
@@ -323,6 +323,7 @@ class Worker : public DB, private Noncopyable {
   }
 
   const WorkerID id_;
+  bool persist_;
 };
 
 }  // namespace ustore

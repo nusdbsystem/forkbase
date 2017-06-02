@@ -32,7 +32,7 @@ Env::Env() {
   LOG(INFO) << "Load configuration \"" << FLAGS_config << "\"";
   google::protobuf::TextFormat::Parse(
       new google::protobuf::io::FileInputStream(fd), &config_);
-  LOG(INFO) << "configuration loaded:" << std::endl << config_.DebugString();
+  LOG(INFO) << "Loaded configuration:" << std::endl << config_.DebugString();
   close(fd);
 }
 }  // namespace ustore

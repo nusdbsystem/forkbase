@@ -60,7 +60,7 @@ void WorkerService::Init() {
   std::sort(ranges_.begin(), ranges_.end(), range_cmp);
 
   // TODO(zhanghao): check why letting this after RdmaNet make NetContext destroyed unexpected?
-  worker_.reset(new Worker(worker_id));
+  worker_.reset(new Worker(worker_id, persist_));
 
 // TODO(zhanghao): define a static function in net.cc to create net instance,
 // instead of directly use USE_RDMA flag everywhere
