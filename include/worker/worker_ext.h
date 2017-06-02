@@ -10,7 +10,7 @@ namespace ustore {
 
 class WorkerExt : public Worker {
  public:
-  explicit WorkerExt(const WorkerID& id) : Worker(id) {}
+  explicit WorkerExt(const WorkerID& id, bool persist) : Worker(id, persist) {}
   ~WorkerExt() {}
 
   ErrorCode GetForType(const UType& type, const Slice& key,

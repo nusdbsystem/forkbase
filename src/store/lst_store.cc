@@ -132,11 +132,10 @@ static void initStoreInfo(StoreInfo* info, int segments) {
  * @return the address of the memory region where the log file is mapped into
  */
 void* LSTStore::MmapUstoreLogFile(const std::string& dir,
-                                  const std::string& file) {
+                                  const std::string& file, bool persist) {
   fs::path path(dir);
-  // create dir if not found
-  fs::create_directory(path);
   path /= file + ".dat";
+  if (!persist) fs::remove(path);
 
   int fd;
   if (fs::exists(path) && fs::file_size(path) == log_file_size_) {

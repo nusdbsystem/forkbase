@@ -54,7 +54,7 @@ bool is_latest;
 const WorkerID worker_id{2017};
 
 ustore::WorkerExt& worker() {
-  static ustore::WorkerExt* worker = new ustore::WorkerExt(worker_id);
+  static ustore::WorkerExt* worker = new ustore::WorkerExt(worker_id, false);
   return *worker;
 }
 

@@ -1,4 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# get environment variables
+. `dirname "${BASH_SOURCE-$0}"`/ustore_env.sh
+
+# go to ustore home to execute binary
+cd $USTORE_HOME
+
 set -o nounset
 set -o pipefail
 

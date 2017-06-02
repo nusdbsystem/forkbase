@@ -164,7 +164,7 @@ TEST(TestMessage, TestClient1Thread) {
   string worker_addr;
   vector<WorkerService*> workers;
   while (fin >> worker_addr)
-    workers.push_back(new WorkerService(worker_addr, ""));
+    workers.push_back(new WorkerService(worker_addr, "", false));
 
   vector<thread> worker_threads;
   for (int i = 0; i < workers.size(); i++)

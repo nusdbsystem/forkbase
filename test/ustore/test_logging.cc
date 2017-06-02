@@ -31,7 +31,7 @@ TEST(Logging, FatalLogging) {
 
 TEST(Logging, SetLogDestination) {
   int a = 6;
-  ustore::SetLogDestination(ustore::WARNING, "/tmp/ustore_test.log");
+  ustore::SetLogDestination(ustore::WARNING, "test_logging.log");
   CHECK_EQ(a, 6);
   LOG(WARNING) << "test warning logging to file";
 }
