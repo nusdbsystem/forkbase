@@ -26,10 +26,10 @@ ustore::byte_t hash[NUMBER][ustore::Hash::kByteLength];
 using LSTStore = ustore::lst_store::LSTStore;
 using Chunk = ustore::Chunk;
 
-LSTStore* lstStore = LSTStore::Instance();
 
 template <typename Iterator>
 Iterator FindChunk(const Chunk& chunk) {
+  LSTStore* lstStore = LSTStore::Instance();
   auto it = lstStore->begin<Iterator>();
   for (; it != lstStore->end<Iterator>(); ++it) {
     const ustore::Chunk& ichunk = *it;
@@ -59,6 +59,7 @@ Iterator end() {
 }
 
 TEST(LSTStore, Put) {
+  LSTStore* lstStore = LSTStore::Instance();
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   for (int i = 0; i < NUMBER; ++i, (*val)++) {
@@ -81,6 +82,7 @@ TEST(LSTStore, Get) {
   }
 
   auto tp = std::chrono::steady_clock::now();
+  LSTStore* lstStore = LSTStore::Instance();
   for (int i = 0; i < NUMBER; ++i) {
     // load from stroage
     const ustore::Chunk c =

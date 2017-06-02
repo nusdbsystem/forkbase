@@ -15,12 +15,16 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vlist(2017);
 const char key_vlist[] = "key_vlist";
 const char branch_vlist[] = "branch_vlist";
 
+ustore::Worker& worker_vlist() {
+  static ustore::Worker* worker = new ustore::Worker(2017);
+  return *worker;
+}
+
 TEST(VList, CreateFromEmpty) {
-  ustore::ObjectDB db(&worker_vlist);
+  ustore::ObjectDB db(&worker_vlist());
   std::vector<Slice> slice_data;
   // create buffered new list
   ustore::VList list(slice_data);
@@ -57,7 +61,7 @@ TEST(VList, CreateFromEmpty) {
 
 
 TEST(VList, CreateNewVList) {
-  ustore::ObjectDB db(&worker_vlist);
+  ustore::ObjectDB db(&worker_vlist());
   std::vector<Slice> slice_data;
   for (const auto& s : slist_data) slice_data.push_back(Slice(s));
   // create buffered new list
@@ -78,7 +82,7 @@ TEST(VList, CreateNewVList) {
 }
 
 TEST(VList, UpdateExistingVList) {
-  ustore::ObjectDB db(&worker_vlist);
+  ustore::ObjectDB db(&worker_vlist());
   std::vector<Slice> slice_data;
   for (const auto& s : slist_data) slice_data.push_back(Slice(s));
   // create buffered new list

@@ -14,12 +14,16 @@ using ustore::VMeta;
 using ustore::ErrorCode;
 using ustore::Hash;
 
-ustore::Worker worker_vblob(2017);
 const char key_vblob[] = "key_vblob";
 const char branch_vblob[] = "branch_vblob";
 
+ustore::Worker& worker_vblob() {
+  static ustore::Worker* worker = new ustore::Worker(404);
+  return *worker;
+}
+
 TEST(VBlob, CreateFromEmpty) {
-  ustore::ObjectDB db(&worker_vblob);
+  ustore::ObjectDB db(&worker_vblob());
   // create empty
   ustore::Slice empty;
   ustore::VBlob blob{Slice(empty)};
@@ -57,7 +61,7 @@ TEST(VBlob, CreateFromEmpty) {
 }
 
 TEST(VBlob, CreateNewVBlob) {
-  ustore::ObjectDB db(&worker_vblob);
+  ustore::ObjectDB db(&worker_vblob());
   // create buffered new blob
   ustore::VBlob blob{Slice(raw_data)};
   // put new blob
@@ -75,7 +79,7 @@ TEST(VBlob, CreateNewVBlob) {
 }
 
 TEST(VBlob, UpdateExistingVBlob) {
-  ustore::ObjectDB db(&worker_vblob);
+  ustore::ObjectDB db(&worker_vblob());
   // create buffered new blob
   ustore::VBlob blob{Slice(raw_data)};
   // put new blob
