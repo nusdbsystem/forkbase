@@ -118,14 +118,15 @@ std::unique_ptr<UStoreMessage> ClientDb::CreateGetChunkRequest(
 }
 
 
-Chunk ClientDb::GetChunk(const Slice& key, const Hash& version) {
+ErrorCode ClientDb::GetChunk(const Slice& key, const Hash& version,
+                             Chunk* chunk) {
   auto request = CreateGetChunkRequest(key);
   // header
   request->set_version(version.value(), Hash::kByteLength);
   // send
   node_id_t dest = workers_->GetWorker(key);
   Send(request.get(), dest);
-  return GetChunkResponse();
+  return GetChunkResponse(chunk);
 }
 
 std::unique_ptr<UStoreMessage> ClientDb::CreateBranchRequest(const Slice &key,
@@ -286,17 +287,21 @@ ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
   return err;
 }
 
-Chunk ClientDb::GetChunkResponse() {
+ErrorCode ClientDb::GetChunkResponse(Chunk* chunk) {
   auto response = WaitForResponse();
-  // const std::string &tmp = response->get_response_payload().value();
-  UCellPayload *tmp = response->mutable_get_response_payload()
-                      ->mutable_meta();
-  // make a copy of the Slice object
-  // comment(wangsh):
-  //   SHOULD use unique_ptr instead of raw pointer to avoid memory leak
-  std::unique_ptr<byte_t[]> buf(new byte_t[tmp->value().length()]);
-  std::memcpy(buf.get(), tmp->value().data(), tmp->value().length());
-  return Chunk(std::move(buf));
+  ErrorCode err = static_cast<ErrorCode>(response->status());
+  if (err == ErrorCode::kOK) {
+    // const std::string &tmp = response->get_response_payload().value();
+    UCellPayload *tmp = response->mutable_get_response_payload()
+                        ->mutable_meta();
+    // make a copy of the Slice object
+    // comment(wangsh):
+    //   SHOULD use unique_ptr instead of raw pointer to avoid memory leak
+    std::unique_ptr<byte_t[]> buf(new byte_t[tmp->value().length()]);
+    std::memcpy(buf.get(), tmp->value().data(), tmp->value().length());
+    *chunk = Chunk(std::move(buf));
+  }
+  return err;
 }
 
 ErrorCode ClientDb::GetStringList(vector<string> *vals) {

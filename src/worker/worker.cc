@@ -293,9 +293,11 @@ ErrorCode Worker::Delete(const Slice& key, const Slice& branch) {
   return ErrorCode::kOK;
 }
 
-Chunk Worker::GetChunk(const Slice& key, const Hash& ver) {
+ErrorCode Worker::GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) {
   static const auto chunk_store = store::GetChunkStore();
-  return chunk_store->Get(ver);
+  *chunk = chunk_store->Get(ver);
+  if (chunk->empty()) return ErrorCode::kChunkNotExists;
+  return ErrorCode::kOK;
 }
 
 ErrorCode Worker::ListKeys(std::vector<std::string>* keys) {

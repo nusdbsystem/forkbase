@@ -114,7 +114,8 @@ class ClientDb : public DB {
                    const Slice& new_branch) override;
   ErrorCode Delete(const Slice& key, const Slice& branch) override;
 
-  Chunk GetChunk(const Slice& key, const Hash& version) override;
+  ErrorCode GetChunk(const Slice& key, const Hash& version,
+                     Chunk* chunk) override;
 
   inline int id() const noexcept { return id_; }
 
@@ -142,9 +143,9 @@ class ClientDb : public DB {
   ErrorCode GetUCellResponse(UCell* value);
   ErrorCode GetStringList(std::vector<string> *vals);
   ErrorCode GetVersionList(std::vector<Hash> *versions);
-  ErrorCode GetBool(bool *exists);
+  ErrorCode GetBool(bool* exists);
   ErrorCode GetBranchHeadVersion(Hash *version);
-  Chunk GetChunkResponse();
+  ErrorCode GetChunkResponse(Chunk* chunk);
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node

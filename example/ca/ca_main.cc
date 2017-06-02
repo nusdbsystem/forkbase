@@ -106,9 +106,9 @@ int RunTask(const int task_id) {
     std::cerr << BOLD_RED("[FAILURE] ")
               << "Unrecognized task ID: " << task_id << std::endl;
     return -2;
-  } else if (task_id == 0) { // Run all the tasks as a batch
+  } else if (task_id == 0) {  // Run all the tasks as a batch
     for (auto& t : task) TASK_GUARD(t());
-  } else { // Run the specified task only
+  } else {  // Run the specified task only
     TASK_GUARD(task[task_id - 1]());
   }
   return 0;

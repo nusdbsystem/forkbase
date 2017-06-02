@@ -222,7 +222,8 @@ class DB {
    * @param chunk   Returned chunk.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  virtual Chunk GetChunk(const Slice& key, const Hash& version) = 0;
+  virtual ErrorCode GetChunk(const Slice& key, const Hash& version,
+                             Chunk* chunk) = 0;
 
  protected:
   DB() = default;

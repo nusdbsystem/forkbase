@@ -205,7 +205,7 @@ class Worker : public DB, private Noncopyable {
     return Merge(key, val, ref_ver1, ref_ver2, &ver);
   }
 
-  Chunk GetChunk(const Slice& key, const Hash& ver) override;
+  ErrorCode GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) override;
 
   ErrorCode ListKeys(std::vector<std::string>* keys) override;
 

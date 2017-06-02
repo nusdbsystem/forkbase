@@ -91,8 +91,10 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
     DLOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
 
     // check GetChunk
-    EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list).numBytes(),
-              list_value.chunk().numBytes());
+    ustore::Chunk chunk;
+    EXPECT_EQ(client->GetChunk(Slice(keys[idx]), version_list, &chunk),
+              ErrorCode::kOK);
+    EXPECT_EQ(chunk.numBytes(), list_value.chunk().numBytes());
 
     // branch from head
     string new_branch = "branch_"+std::to_string(idx);
