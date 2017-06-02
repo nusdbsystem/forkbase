@@ -276,7 +276,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
       bool is_latest;
       error_code = worker_->IsLatestVersion(
           Slice(ustore_msg.key()),
-          Hash((const byte_t*)(ustore_msg.version().data())),
+          Hash(reinterpret_cast<const byte_t*>(ustore_msg.version().data())),
           &is_latest);
       if (error_code != ErrorCode::kOK) break;
       BoolResponsePayload *bool_res =
