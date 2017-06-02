@@ -49,7 +49,7 @@ const int kPrintCommandWidth = 12;
 void Command::PrintCommandHelp() {
   std::cout << "UStore Basic Commands:" << std::endl;
   std::cout << FORMAT_CMD("GET")
-            << "-k <key> [-b <branch> | " 
+            << "-k <key> [-b <branch> | "
             << std::endl << std::setw(kPrintCommandWidth + 13) << ""
             << "-v <version>]" << std::endl;
   std::cout << FORMAT_CMD("PUT")
@@ -58,7 +58,7 @@ void Command::PrintCommandHelp() {
             << std::endl << std::setw(kPrintCommandWidth + 24) << ""
             << "-u <refer_version>]" << std::endl;
   std::cout << FORMAT_CMD("BRANCH")
-            << "-k <key> -b <new_branch> [-c <base_branch> | " 
+            << "-k <key> -b <new_branch> [-c <base_branch> | "
             << std::endl << std::setw(kPrintCommandWidth + 29) << ""
             << "-u <refer_version>]"
             << std::endl;
