@@ -1,0 +1,52 @@
+{% extends 'ustore/base.html' %}
+{% load static %}
+
+
+{% block custom_js %}
+<script src="{% static 'ustore/js/page.js' %}"></script>
+<link rel="stylesheet" href="{% static 'ustore/css/custom.css' %}" />
+
+{% block main_js %}
+{% endblock %}
+
+{% endblock %}
+
+
+{% block body %}
+<nav class="navbar navbar-inverse sidebar" role="navigation">
+    <div class="container-fluid">
+    	<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-sidebar-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a class="navbar-brand" href="#">Ustore</a>
+		</div>
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="menu">
+			<ul class="nav navbar-nav">
+				<li><a href="{% url 'list' %}">LIST<span style="font-size:16px;" class="pull-right hidden-xs showopacity icon icon-list"></span></a></li>
+				<li ><a href="{% url 'get' %}">GET<span style="font-size:16px;" class="pull-right hidden-xs showopacity glyphicon glyphicon-cloud-download"></span></a></li>
+				<li ><a href="{% url 'put' %}">PUT<span style="font-size:16px;" class="pull-right hidden-xs showopacity glyphicon glyphicon-cloud-upload"></span></a></li>
+				<li ><a href="{% url 'branch' %}">BRANCH<span style="font-size:16px;" class="pull-right hidden-xs showopacity icon icon-branch"></span></a></li>
+				<li ><a href="{% url 'merge' %}">MERGE<span style="font-size:16px;" class="pull-right hidden-xs showopacity icon icon-merge"></span></a></li>
+			</ul>
+		</div>
+	</div>
+</nav>
+<div class="main container">
+	<div class="row">
+		<div class="col-md-12 col-sm-12">
+			{% block main_content %}
+			{% endblock %}
+		</div>
+	</div>
+</div>
+
+<script>
+    var latesturl = "{% url 'latest' %}"
+</script>
+{% endblock %}
