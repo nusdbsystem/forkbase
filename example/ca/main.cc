@@ -2,8 +2,6 @@
 #include <chrono>
 #include <thread>
 
-#include "worker/worker_ext.h"
-
 #include "ca/analytics.h"
 #include "ca/config.h"
 #include "ca/relational.h"
@@ -132,8 +130,8 @@ int main(int argc, char* argv[]) {
   std::thread ustore_svc_thread(&RemoteClientService::Start, &ustore_svc);
   std::this_thread::sleep_for(
       std::chrono::milliseconds(kWaitForSvcReadyInMs));
-  ClientDb* client_db = ustore_svc.CreateClientDb();
-  cs = new ColumnStore(client_db);
+  ClientDb client_db = ustore_svc.CreateClientDb();
+  cs = new ColumnStore(&client_db);
 
   if (RunTask(Config::task_id) != 0) {
     LOG(WARNING) << "Fail to Run Task " << Config::task_id;
@@ -142,7 +140,6 @@ int main(int argc, char* argv[]) {
   ustore_svc.Stop();
   ustore_svc_thread.join();
 
-  delete client_db;
   delete cs;
 
   return 0;

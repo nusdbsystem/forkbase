@@ -21,13 +21,12 @@ namespace ustore {
  */
 class HeadVersion : private Noncopyable {
  public:
+  HeadVersion() = default;
+  ~HeadVersion() = default;
+
   // TODO(yaochang): persist the log of branch update.
   inline void LogBranchUpdate(const Slice& key, const Slice& branch,
                               const Hash& ver) const {}
-
-  HeadVersion() = default;
-
-  ~HeadVersion() = default;
 
   // Load branch version info from log path
   // Add them into member branch_ver_
