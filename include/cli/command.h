@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_set>
 #include "spec/object_db.h"
+#include "spec/relational.h"
 #include "cli/config.h"
 
 namespace ustore {
@@ -24,7 +25,6 @@ class Command {
 
   static void PrintCommandHelp();
 
-  // explicit Command(DB* db) noexcept : odb_(db) {}
   explicit Command(DB* db) noexcept;
   ~Command() = default;
 
@@ -46,9 +46,15 @@ class Command {
   ErrorCode ExecIsHead();
   ErrorCode ExecIsLatest();
   ErrorCode ExecExists();
+  ErrorCode ExecCreateTable();
+  ErrorCode ExecBranchTable();
+  ErrorCode ExecGetColumn();
+  ErrorCode ExecDeleteColumn();
 
   ObjectDB odb_;
+  ColumnStore cs_;
   std::unordered_map<std::string, std::function<ErrorCode()>> cmd_exec_;
+  std::unordered_map<std::string, std::function<ErrorCode()>*> alias_exec_;
 };
 
 }  // namespace cli

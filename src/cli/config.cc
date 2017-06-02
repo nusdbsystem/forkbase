@@ -16,6 +16,8 @@ std::string Config::branch = "";
 std::string Config::ref_branch = "";
 std::string Config::version = "";
 std::string Config::ref_version = "";
+std::string Config::table = "";
+std::string Config::column = "";
 
 void Config::Reset() {
   is_help = false;
@@ -26,6 +28,8 @@ void Config::Reset() {
   ref_branch = "";
   version = "";
   ref_version = "";
+  table = "";
+  column = "";
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -44,7 +48,16 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
   ref_branch = vm["ref-branch"].as<std::string>();
 
   version = vm["version"].as<std::string>();
+  GUARD(CheckArg(version.size(), version.empty() || version.size() == 32,
+                 "Length of the operating version", "0 or 32"));
+
   ref_version = vm["ref-version"].as<std::string>();
+  GUARD(CheckArg(ref_version.size(),
+                 ref_version.empty() || ref_version.size() == 32,
+                 "Length of the reffering version", "0 or 32"));
+
+  table = vm["table"].as<std::string>();
+  column = vm["column"].as<std::string>();
 
   return true;
 }
@@ -66,6 +79,10 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "the operating version")
   ("ref-version,u", po::value<std::string>()->default_value(""),
    "the referring version")
+  ("table,t", po::value<std::string>()->default_value(""),
+   "table name")
+  ("column,a", po::value<std::string>()->default_value(""),
+   "column name")
   ("help,?", "print usage message");
 
   po::positional_options_description pos_opts;

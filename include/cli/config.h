@@ -24,6 +24,8 @@ class Config {
   static std::string ref_branch;
   static std::string version;
   static std::string ref_version;
+  static std::string table;
+  static std::string column;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 
@@ -113,8 +115,8 @@ bool Config::CheckArg(const T& var, const bool expr,
   if (expr) {
     LOG(INFO) << "[ARG] " << title << ": " << var;
   } else {
-    LOG(ERROR) << "[ERROR ARG] " << title << ": " << "[Actual] " << var
-               << ", [Expected] " << expect;
+    std::cerr << BOLD_RED("[ERROR ARG] ") << title << ": "
+              << "[Actual] " << var << ", [Expected] " << expect << std::endl;
   }
   return expr;
 }

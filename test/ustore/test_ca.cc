@@ -36,7 +36,7 @@ TEST(Relational, Basic) {
   ASSERT_EQ(2, actual_col1.numElements());
 
   ASSERT_SUCCEEDED(
-    cs.RemoveColumn(table_name, "master", col1_name));
+    cs.DeleteColumn(table_name, "master", col1_name));
 
   ASSERT_FAILED(
     cs.GetColumn(table_name, "master", col1_name, &actual_col1));

@@ -240,6 +240,9 @@ class LSTStore
   void Sync() const;
   Chunk Get(const Hash& key) override;
   bool Put(const Hash& key, const Chunk& chunk) override;
+  inline bool Exists(const Hash& key) override {
+    return !Get(key).empty();
+  }
   const StoreInfo& GetInfo() const override {
     return storeInfo;
   }

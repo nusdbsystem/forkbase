@@ -14,7 +14,7 @@ namespace cli {
 constexpr int kInitForMs = 75;
 
 int main(int argc, char* argv[]) {
-  SetStderrLogging(WARNING);
+  SetStderrLogging(ERROR);
   // connect to UStore servcie
   RemoteClientService ustore_svc("");
   ustore_svc.Init();

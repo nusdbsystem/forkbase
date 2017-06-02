@@ -28,8 +28,6 @@ struct StoreInfo {
   void Print() const;
 };
 
-
-
 class ChunkStore {
  public:
   /*
@@ -41,9 +39,9 @@ class ChunkStore {
 
   virtual Chunk Get(const Hash& key) = 0;
   virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
+  virtual bool Exists(const Hash& key) = 0;
   virtual const StoreInfo& GetInfo() const = 0;
 };
-
 
 // wrap global functions inside a namespace
 namespace store {

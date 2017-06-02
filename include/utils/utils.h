@@ -25,12 +25,12 @@ namespace ustore {
 #define EQUAL_OR_ELSE_RETURN(expr, expected) do { \
   auto v = expr; \
   if (v != expected) return v; \
-  } while (0)
+} while (0)
 
 #define EQUAL_OR_ELSE_RETURN_CAST(expr, expected, cast_t) do { \
   auto v = expr; \
   if (v != expected) return static_cast<cast_t>(v); \
-  } while (0)
+} while (0)
 
 #define GUARD(op) EQUAL_OR_ELSE_RETURN(op, true)
 

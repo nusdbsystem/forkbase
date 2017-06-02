@@ -7,7 +7,10 @@ namespace ustore {
 
 ErrorCode ColumnStore::CreateTable(const std::string& table_name,
                                    const std::string& branch_name) {
-  return odb_.Put(Slice(table_name), Table(), Slice(branch_name)).stat;
+  auto rst = odb_.Exists(Slice(table_name), Slice(branch_name));
+  auto& tab_exist = rst.value;
+  return tab_exist ? ErrorCode::kBranchExists :
+         odb_.Put(Slice(table_name), Table(), Slice(branch_name)).stat;
 }
 
 ErrorCode ColumnStore::BranchTable(const std::string& table_name,
@@ -101,7 +104,7 @@ ErrorCode ColumnStore::PutColumn(const std::string& table_name,
   return odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
 }
 
-ErrorCode ColumnStore::RemoveColumn(const std::string& table_name,
+ErrorCode ColumnStore::DeleteColumn(const std::string& table_name,
                                     const std::string& branch_name,
                                     const std::string& col_name) {
   Table tab;

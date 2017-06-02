@@ -63,7 +63,7 @@ class ColumnStore {
                       const std::string& col_name,
                       const std::vector<std::string>& col_vals);
 
-  ErrorCode RemoveColumn(const std::string& table_name,
+  ErrorCode DeleteColumn(const std::string& table_name,
                          const std::string& branch_name,
                          const std::string& col_name);
 

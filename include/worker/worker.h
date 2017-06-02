@@ -98,10 +98,8 @@ class Worker : public DB, private Noncopyable {
    * @param version     Returned version.
    * @return            Error code. (ErrorCode::kOK for success)
    */
-  inline ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
-                       Hash* ver) override {
-    return Write(key, val, prev_ver, Hash::kNull, ver);
-  }
+  ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver,
+                Hash* ver) override;
 
   ErrorCode Put(const Slice& key, const Value& val, const Hash& prev_ver) {
     static Hash ver;
@@ -211,6 +209,8 @@ class Worker : public DB, private Noncopyable {
 
   ErrorCode ListBranches(const Slice& key,
                          std::vector<std::string>* branches) override;
+
+  bool Exists(const Hash& ver) const;
 
   inline bool Exists(const Slice& key) const {
     return head_ver_.Exists(key);
