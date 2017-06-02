@@ -78,8 +78,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
 
   try {
     po::store(po::command_line_parser(argc, argv).options(desc)
-              .style(po::command_line_style::unix_style |
-                     po::command_line_style::allow_long_disguise)
+              .style(po::command_line_style::unix_style)
               .positional(pos_opts).run(), *vm);
     if (vm->count("help")) {
       is_help = true;

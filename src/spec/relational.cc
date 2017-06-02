@@ -1,11 +1,9 @@
-// Copyright (c) 2017 The Ustore Authors.
+// Copyright (c) 2017 The UStore Authors.
 
+#include "spec/relational.h"
 #include "utils/logging.h"
-#include "ca/relational.h"
 
 namespace ustore {
-namespace example {
-namespace ca {
 
 ErrorCode ColumnStore::CreateTable(const std::string& table_name,
                                    const std::string& branch_name) {
@@ -129,6 +127,4 @@ ErrorCode ColumnStore::DiffColumn(const std::string& lhs_table_name,
   return ErrorCode::kOK;
 }
 
-}  // namespace ca
-}  // namespace example
 }  // namespace ustore

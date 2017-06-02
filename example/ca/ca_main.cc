@@ -2,19 +2,19 @@
 #include <chrono>
 #include <thread>
 
+#include "cluster/remote_client_service.h"
+#include "spec/relational.h"
+
 #include "ca/analytics.h"
 #include "ca/config.h"
-#include "ca/relational.h"
 #include "ca/utils.h"
-
-#include "cluster/remote_client_service.h"
 
 namespace ustore {
 namespace example {
 namespace ca {
 
 
-constexpr int kWaitForSvcReadyInMs = 75;
+constexpr int kInitForMs = 75;
 ColumnStore* cs = nullptr;
 
 int RunSample() {
@@ -103,12 +103,12 @@ std::vector<std::function<int()>> task = {
 
 int RunTask(const int task_id) {
   if (task_id < 0 || task_id > task.size()) {
-    std::cerr << "[FAILURE] Unknown task ID: " << task_id << std::endl;
+    std::cerr << BOLD_RED("[FAILURE] ")
+              << "Unrecognized task ID: " << task_id << std::endl;
     return -2;
-  } else if (task_id == 0) {
+  } else if (task_id == 0) { // Run all the tasks as a batch
     for (auto& t : task) TASK_GUARD(t());
-  } else {
-    // Run the specified task only
+  } else { // Run the specified task only
     TASK_GUARD(task[task_id - 1]());
   }
   return 0;
@@ -116,32 +116,31 @@ int RunTask(const int task_id) {
 
 int main(int argc, char* argv[]) {
   SetStderrLogging(WARNING);
-  bool is_valid = Config::ParseCmdArgs(argc, argv);
-  if (Config::is_help) {
-    DLOG(INFO) << "Help messages have been printed";
-    return 0;
-  } else if (!is_valid) {
-    std::cerr << "[FAILURE] Found invalid command-line option" << std::endl;
-    return -1;
+  if (!Config::ParseCmdArgs(argc, argv)) {
+    if (Config::is_help) {
+      DLOG(INFO) << "Help messages have been printed";
+      return 0;
+    } else {
+      std::cerr << BOLD_RED("[FAILURE] ")
+                << "Found invalid command-line option" << std::endl;
+      return -1;
+    }
   }
-
+  // connect to UStore servcie
   RemoteClientService ustore_svc("");
   ustore_svc.Init();
   std::thread ustore_svc_thread(&RemoteClientService::Start, &ustore_svc);
-  std::this_thread::sleep_for(
-      std::chrono::milliseconds(kWaitForSvcReadyInMs));
+  std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
   ClientDb client_db = ustore_svc.CreateClientDb();
   cs = new ColumnStore(&client_db);
-
+  // run analytics task
   if (RunTask(Config::task_id) != 0) {
     LOG(WARNING) << "Fail to Run Task " << Config::task_id;
   }
-
+  // disconnect with UStore service
   ustore_svc.Stop();
   ustore_svc_thread.join();
-
   delete cs;
-
   return 0;
 }
 
