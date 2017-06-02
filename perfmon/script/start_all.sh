@@ -22,12 +22,12 @@ host_file=$PERFMON_HOME/script/slaves
 for host in `cat $host_file` ; do
   echo "starting pm_monitor @ $host"
   if [ $host = localhost ] ; then
-    cd $PERFMON_HOME 
+    cd $PERFMON_HOME
     rm -rf $PID_DIR
     mkdir -p $PID_DIR
     ./script/ps.sh
     ./build/pm_monitor >> $PERFMON_HOME/logs/pm_monitor-${host}.log 2>&1 &
   else
-     ssh $host "cd $PERFMON_HOME; rm -rf $PID_DIR; mkdir -p $PID_DIR; ./script/ps.sh; ./build/pm_monitor" >> $PERFMON_HOME/logs/pm_monitor-$host.log 2>&1 & 
+     ssh $host "cd $PERFMON_HOME; rm -rf $PID_DIR; mkdir -p $PID_DIR; ./script/ps.sh; ./build/pm_monitor" >> $PERFMON_HOME/logs/pm_monitor-$host.log 2>&1 &
   fi
 done

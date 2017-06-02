@@ -1,11 +1,11 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include "gtest/gtest.h"
-#include "ca/relational.h"
+#include "spec/relational.h"
 #include "worker/worker.h"
 
-using ustore::example::ca::ColumnStore;
-using ustore::example::ca::Column;
+using ustore::ColumnStore;
+using ustore::Column;
 
 inline void ASSERT_SUCCEEDED(ustore::ErrorCode code) {
   ASSERT_EQ(code, ustore::ErrorCode::kOK);
@@ -16,7 +16,7 @@ void ASSERT_FAILED(ustore::ErrorCode code) {
 }
 
 TEST(Relational, Basic) {
-  ustore::Worker worker(17);
+  ustore::Worker worker(2017, false);
   ColumnStore cs(&worker);
 
   ustore::ErrorCode code;

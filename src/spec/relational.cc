@@ -80,8 +80,8 @@ ErrorCode ColumnStore::GetColumn(
   USTORE_GUARD(
     GetTable(table_name, branch_name, &tab));
   if (tab.Get(Slice(col_name)).empty()) {
-    LOG(ERROR) << "Column \"" << col_name << "\" does not exist in Table \""
-               << table_name << "\" of Branch \"" << branch_name << "\"";
+    LOG(WARNING) << "Column \"" << col_name << "\" does not exist in Table \""
+                 << table_name << "\" of Branch \"" << branch_name << "\"";
     return ErrorCode::kKeyNotExists;
   }
   return ReadColumn(table_name, branch_name, col_name, col);
