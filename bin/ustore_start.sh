@@ -17,12 +17,21 @@ fi
 # go to ustore home to execute binary
 cd $USTORE_HOME
 
+if [ $# -ge 1 ]; then
+    libs=$1
+    echo "Using preload $libs"
+    shift
+    ustore_run="bin/run_preload.sh $libs bin/ustored $@"
+    http_run="bin/run_preload.sh $libs bin/ustore_http $@"
+else
+    ustore_run="bin/ustored $@"
+    http_run="bin/ustore_http $@"
+fi
+
 # ssh and start ustore processes
 ssh_options="-oStrictHostKeyChecking=no \
              -oUserKnownHostsFile=/dev/null \
              -oLogLevel=quiet"
-ustore_run="bin/ustored $@"
-http_run="bin/ustore_http $@"
 ustore_sshrun="cd $USTORE_HOME; $ustore_run"
 
 # start all the workers

@@ -13,3 +13,5 @@
 [Http RESTful API](doc/api_http.md)
 
 [Pull Request Guide](doc/pr_guide.md)
+
+[Binary Release](http://epic.d1.comp.nus.edu.sg/~zhanghao/USTORE.bin.tar.gz)
