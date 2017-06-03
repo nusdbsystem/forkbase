@@ -25,7 +25,9 @@ class Config {
   static std::string version;
   static std::string ref_version;
   static std::string table;
+  static std::string ref_table;
   static std::string column;
+  static std::string ref_column;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 

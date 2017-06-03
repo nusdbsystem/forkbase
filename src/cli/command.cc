@@ -10,7 +10,7 @@ namespace cli {
   cmd_exec_[cmd] = [this]() { return handler(); }; \
 } while(0)
 
-#define CMD_ALIAS(alias, cmd) do { \
+#define CMD_ALIAS(cmd, alias) do { \
   alias_exec_[alias] = &cmd_exec_[cmd]; \
 } while(0)
 
@@ -24,60 +24,74 @@ Command::Command(DB* db) noexcept
   CMD_HANDLER("RENAME", ExecRename);
   CMD_HANDLER("DELETE", ExecDelete);
   CMD_HANDLER("LIST_KEY", ExecListKey);
-  CMD_ALIAS("LIST_KEYS", "LIST_KEY");
-  CMD_ALIAS("LIST-KEY", "LIST_KEY");
-  CMD_ALIAS("LIST-KEYS", "LIST_KEY");
-  CMD_ALIAS("LISTKEY", "LIST_KEY");
-  CMD_ALIAS("LISTKEYS", "LIST_KEY");
-  CMD_ALIAS("LSKEY", "LIST_KEY");
-  CMD_ALIAS("LS_KEY", "LIST_KEY");
-  CMD_ALIAS("LS-KEY", "LIST_KEY");
-  CMD_ALIAS("LSK", "LIST_KEY");
+  CMD_ALIAS("LIST_KEY", "LIST_KEYS");
+  CMD_ALIAS("LIST_KEY", "LIST-KEY");
+  CMD_ALIAS("LIST_KEY", "LIST-KEYS");
+  CMD_ALIAS("LIST_KEY", "LISTKEY");
+  CMD_ALIAS("LIST_KEY", "LISTKEYS");
+  CMD_ALIAS("LIST_KEY", "LSKEY");
+  CMD_ALIAS("LIST_KEY", "LS_KEY");
+  CMD_ALIAS("LIST_KEY", "LS-KEY");
+  CMD_ALIAS("LIST_KEY", "LSK");
   CMD_HANDLER("LIST_BRANCH", ExecListBranch);
-  CMD_ALIAS("LIST_BRANCHES", "LIST_BRANCH");
-  CMD_ALIAS("LIST-BRANCH", "LIST_BRANCH");
-  CMD_ALIAS("LIST-BRANCHES", "LIST_BRANCH");
-  CMD_ALIAS("LISTBRANCHES", "LIST_BRANCH");
-  CMD_ALIAS("LISTBRANCH", "LIST_BRANCH");
-  CMD_ALIAS("LSBRANCH", "LIST_BRANCH");
-  CMD_ALIAS("LS_BRANCH", "LIST_BRANCH");
-  CMD_ALIAS("LS-BRANCH", "LIST_BRANCH");
-  CMD_ALIAS("LSB", "LIST_BRANCH");
+  CMD_ALIAS("LIST_BRANCH", "LIST_BRANCHES");
+  CMD_ALIAS("LIST_BRANCH", "LIST-BRANCH");
+  CMD_ALIAS("LIST_BRANCH", "LIST-BRANCHES");
+  CMD_ALIAS("LIST_BRANCH", "LISTBRANCHES");
+  CMD_ALIAS("LIST_BRANCH", "LISTBRANCH");
+  CMD_ALIAS("LIST_BRANCH", "LSBRANCH");
+  CMD_ALIAS("LIST_BRANCH", "LS_BRANCH");
+  CMD_ALIAS("LIST_BRANCH", "LS-BRANCH");
+  CMD_ALIAS("LIST_BRANCH", "LSB");
   CMD_HANDLER("HEAD", ExecHead);
   CMD_HANDLER("LATEST", ExecLatest);
   CMD_HANDLER("EXISTS", ExecExists);
-  CMD_ALIAS("EXIST", "EXISTS");
+  CMD_ALIAS("EXISTS", "EXIST");
   CMD_HANDLER("IS_HEAD", ExecIsHead);
-  CMD_ALIAS("ISHEAD", "IS_HEAD");
-  CMD_ALIAS("ISH", "IS_HEAD");
+  CMD_ALIAS("IS_HEAD", "ISHEAD");
+  CMD_ALIAS("IS_HEAD", "ISH");
   CMD_HANDLER("IS_LATEST", ExecIsLatest);
-  CMD_ALIAS("ISLATEST", "IS_LATEST");
-  CMD_ALIAS("ISL", "IS_LATEST");
+  CMD_ALIAS("IS_LATEST", "ISLATEST");
+  CMD_ALIAS("IS_LATEST", "ISL");
   // relational commands
   CMD_HANDLER("CREATE_TABLE", ExecCreateTable);
-  CMD_ALIAS("CREATE-TABLE", "CREATE_TABLE");
-  CMD_ALIAS("CREATETABLE", "CREATE_TABLE");
+  CMD_ALIAS("CREATE_TABLE", "CREATE-TABLE");
+  CMD_ALIAS("CREATE_TABLE", "CREATETABLE");
+  CMD_ALIAS("CREATE_TABLE", "CREATE");
   CMD_HANDLER("BRANCH_TABLE", ExecBranchTable);
-  CMD_ALIAS("BRANCH-TABLE", "BRANCH_TABLE");
-  CMD_ALIAS("BRANCHTABLE", "BRANCH_TABLE");
+  CMD_ALIAS("BRANCH_TABLE", "BRANCH-TABLE");
+  CMD_ALIAS("BRANCH_TABLE", "BRANCHTABLE");
   CMD_HANDLER("GET_COLUMN", ExecGetColumn);
-  CMD_ALIAS("GET-COLUMN", "GET_COLUMN");
-  CMD_ALIAS("GET_COL", "GET_COLUMN");
-  CMD_ALIAS("GET-COL", "GET_COLUMN");
-  CMD_ALIAS("GETCOLUMN", "GET_COLUMN");
-  CMD_ALIAS("GETCOL", "GET_COLUMN");
+  CMD_ALIAS("GET_COLUMN", "GET-COLUMN");
+  CMD_ALIAS("GET_COLUMN", "GET_COL");
+  CMD_ALIAS("GET_COLUMN", "GET-COL");
+  CMD_ALIAS("GET_COLUMN", "GETCOLUMN");
+  CMD_ALIAS("GET_COLUMN", "GETCOL");
   CMD_HANDLER("DELETE_COLUMN", ExecDeleteColumn);
-  CMD_ALIAS("DELETE-COLUMN", "DELETE_COLUMN");
-  CMD_ALIAS("DELETECOLUMN", "DELETE_COLUMN");
-  CMD_ALIAS("DELETE_COL", "DELETE_COLUMN");
-  CMD_ALIAS("DELETE-COL", "DELETE_COLUMN");
-  CMD_ALIAS("DELETECOL", "DELETE_COLUMN");
-  CMD_ALIAS("DEL_COLUMN", "DELETE_COLUMN");
-  CMD_ALIAS("DEL-COLUMN", "DELETE_COLUMN");
-  CMD_ALIAS("DELCOLUMN", "DELETE_COLUMN");
-  CMD_ALIAS("DEL_COL", "DELETE_COLUMN");
-  CMD_ALIAS("DEL-COL", "DELETE_COLUMN");
-  CMD_ALIAS("DELCOL", "DELETE_COLUMN");
+  CMD_ALIAS("DELETE_COLUMN", "DELETE-COLUMN");
+  CMD_ALIAS("DELETE_COLUMN", "DELETECOLUMN");
+  CMD_ALIAS("DELETE_COLUMN", "DELETE_COL");
+  CMD_ALIAS("DELETE_COLUMN", "DELETE-COL");
+  CMD_ALIAS("DELETE_COLUMN", "DELETECOL");
+  CMD_ALIAS("DELETE_COLUMN", "DEL_COLUMN");
+  CMD_ALIAS("DELETE_COLUMN", "DEL-COLUMN");
+  CMD_ALIAS("DELETE_COLUMN", "DELCOLUMN");
+  CMD_ALIAS("DELETE_COLUMN", "DEL_COL");
+  CMD_ALIAS("DELETE_COLUMN", "DEL-COL");
+  CMD_ALIAS("DELETE_COLUMN", "DELCOL");
+  CMD_HANDLER("DIFF_TABLE", ExecDiffTable);
+  CMD_ALIAS("DIFF_TABLE", "DIFF-TABLE");
+  CMD_ALIAS("DIFF_TABLE", "DIFFTABLE");
+  CMD_ALIAS("DIFF_TABLE", "DIFF_TAB");
+  CMD_ALIAS("DIFF_TABLE", "DIFF-TAB");
+  CMD_ALIAS("DIFF_TABLE", "DIFFTAB");
+  CMD_ALIAS("DIFF", "DIFFTAB");
+  CMD_HANDLER("DIFF_COLUMN", ExecDiffColumn);
+  CMD_ALIAS("DIFF_COLUMN", "DIFF-COLUMN");
+  CMD_ALIAS("DIFF_COLUMN", "DIFFCOLUMN");
+  CMD_ALIAS("DIFF_COLUMN", "DIFF_COL");
+  CMD_ALIAS("DIFF_COLUMN", "DIFF-COL");
+  CMD_ALIAS("DIFF_COLUMN", "DIFFCOL");
 }
 
 const int kPrintBasicCmdWidth = 12;
@@ -135,10 +149,18 @@ void Command::PrintCommandHelp() {
             << "-t <table> -b <branch>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("BRANCH_TABLE")
             << "-t <table> -b <target_branch> -c <refer_branch>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("DIFF_TABLE")
+            << "-t <table> -b <branch> -c <branch_2> {-s <table_2>}"
+            << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("GET_COLUMN")
-            << "-t <table> -b <branch> -a <column>" << std::endl;
+            << "-t <table> -b <branch> -m <column>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("DELETE_COLUMN")
-            << "-t <table> -b <branch> -a <column>" << std::endl;
+            << "-t <table> -b <branch> -m <column>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("DIFF_COLUMN")
+            << "-t <table> -m <column> -b <branch> -c <branch_2> {"
+            << "-s <table_2> | "
+            << std::endl << std::setw(kPrintRelationalCmdWidth + 61) << ""
+            << "-s <table_2> -n <column_2>}" << std::endl;
 }
 
 ErrorCode Command::ExecCommand(const std::string& cmd) {
@@ -156,6 +178,12 @@ ErrorCode Command::ExecCommand(const std::string& cmd) {
 }
 
 ErrorCode Command::ExecGet() {
+  // redirection
+  if (!Config::table.empty() && !Config::column.empty() &&
+      Config::key.empty()) {
+    return ExecGetColumn();
+  }
+
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   const auto& ver = Config::version;
@@ -362,6 +390,11 @@ ErrorCode Command::ExecMerge() {
 }
 
 ErrorCode Command::ExecBranch() {
+  // redirection
+  if (!Config::table.empty() && Config::key.empty()) {
+    return ExecBranchTable();
+  }
+
   const auto& key = Config::key;
   const auto& tgt_branch = Config::branch;
   const auto& ref_branch = Config::ref_branch;
@@ -450,6 +483,12 @@ ErrorCode Command::ExecRename() {
 }
 
 ErrorCode Command::ExecDelete() {
+  // redirection
+  if (!Config::table.empty() && !Config::column.empty() &&
+      Config::key.empty()) {
+    return ExecDeleteColumn();
+  }
+
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   // screen printing
@@ -824,6 +863,148 @@ ErrorCode Command::ExecDeleteColumn() {
   auto ec = cs_.DeleteColumn(tab, branch, col_name);
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
   return ec;
+}
+
+ErrorCode Command::ExecDiffTable() {
+  // redirection
+  if (!Config::column.empty()) {
+    return ExecDiffColumn();
+  }
+
+  const auto& lhs_tab = Config::table;
+  const auto& lhs_branch = Config::branch;
+  const auto& rhs_tab = Config::ref_table;
+  const auto& rhs_branch = Config::ref_branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: DIFF_TABLE] ")
+              << "Table: \"" << lhs_tab << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Table (2nd): \"" << rhs_tab << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](TableDiffIterator & it_diff) {
+    std::cout << BOLD_GREEN("[SUCCESS: DIFF_TABLE] ")
+              << "Different Columns: ";
+    Utils::PrintDiff(it_diff, false, true);
+    std::cout << std::endl;
+  };
+  const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
+              << "Table: \"" << lhs_tab << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
+              << "Table: \"" << lhs_tab << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Table (2nd): \"" << rhs_tab << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  // conditional execution
+  if (lhs_tab.empty() || lhs_branch.empty() || rhs_branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (rhs_tab.empty()) {
+    TableDiffIterator it_diff;
+    auto ec = cs_.DiffTable(lhs_tab, lhs_branch, rhs_branch, &it_diff);
+    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
+    return ec;
+  } else {
+    TableDiffIterator it_diff;
+    auto ec =
+      cs_.DiffTable(lhs_tab, lhs_branch, rhs_tab, rhs_branch, &it_diff);
+    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
+    return ec;
+  }
+}
+
+ErrorCode Command::ExecDiffColumn() {
+  const auto& lhs_tab = Config::table;
+  const auto& lhs_branch = Config::branch;
+  const auto& lhs_col = Config::column;
+  const auto& rhs_tab = Config::ref_table;
+  const auto& rhs_branch = Config::ref_branch;
+  const auto& rhs_col = Config::ref_col;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: DIFF_COLUMN] ")
+              << "Table: \"" << lhs_tab << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Column: \"" << lhs_col << "\", "
+              << "Table (2nd): \"" << rhs_tab << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\", "
+              << "Column (2nd): \"" << rhs_col << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](ColumnDiffIterator & it_diff) {
+    std::cout << BOLD_GREEN("[SUCCESS: DIFF_COLUMN] ")
+              << "Different Values: ";
+    // TODO(ruanpc): replace PrintListDiff with PrintDiff
+    // Utils::PrintDiff(it_diff, true, true);
+    Utils::PrintListDiff(it_diff, true, true);
+    std::cout << std::endl;
+  };
+  const auto f_rpt_fail_by_column = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
+              << "Table: \"" << lhs_tab << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Column: \"" << lhs_col << "\", "
+              << "Table (2nd): \"" << rhs_tab << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\", "
+              << "Column (2nd): \"" << rhs_col << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
+              << "Column: \"" << lhs_col << "\", "
+              << "Table: \"" << lhs_tab << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Table (2nd): \"" << rhs_tab << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
+              << "Table: \"" << lhs_tab << "\", "
+              << "Column: \"" << lhs_col << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  // conditional execution
+  if (lhs_tab.empty() || lhs_col.empty() || lhs_branch.empty() ||
+      rhs_branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (rhs_tab.empty() && rhs_col.empty()) {
+    ColumnDiffIterator it_diff;
+    auto ec =
+      cs_.DiffColumn(lhs_tab, lhs_col, lhs_branch, rhs_branch, &it_diff);
+    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
+    return ec;
+  }
+  if (!rhs_tab.empty() && rhs_col.empty()) {
+    ColumnDiffIterator it_diff;
+    auto ec = cs_.DiffColumn(lhs_col, lhs_tab, lhs_branch, rhs_tab,
+                             rhs_branch, &it_diff);
+    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
+    return ec;
+  }
+  if (!rhs_tab.empty() && !rhs_col.empty()) {
+    ColumnDiffIterator it_diff;
+    auto ec = cs_.DiffColumn(lhs_tab, lhs_branch, lhs_col,
+                             rhs_tab, rhs_branch, rhs_col, &it_diff);
+    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_column(ec);
+    return ec;
+  }
+  // illegal
+  f_rpt_invalid_args();
+  return ErrorCode::kInvalidCommandArgument;
 }
 
 }  // namespace cli

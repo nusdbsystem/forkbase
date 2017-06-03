@@ -17,7 +17,9 @@ std::string Config::ref_branch = "";
 std::string Config::version = "";
 std::string Config::ref_version = "";
 std::string Config::table = "";
+std::string Config::ref_table = "";
 std::string Config::column = "";
+std::string Config::ref_column = "";
 
 void Config::Reset() {
   is_help = false;
@@ -29,7 +31,9 @@ void Config::Reset() {
   version = "";
   ref_version = "";
   table = "";
+  ref_table = "";
   column = "";
+  ref_column = "";
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -37,28 +41,36 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
   po::variables_map vm;
   GUARD(ParseCmdArgs(argc, argv, &vm));
 
-  auto arg_command = vm["command"].as<std::string>();
-  Command::Normalize(&arg_command);
-  command = std::move(arg_command);
+  try {
+    auto arg_command = vm["command"].as<std::string>();
+    Command::Normalize(&arg_command);
+    command = std::move(arg_command);
 
-  key = vm["key"].as<std::string>();
-  value = vm["value"].as<std::string>();
+    key = vm["key"].as<std::string>();
+    value = vm["value"].as<std::string>();
 
-  branch = vm["branch"].as<std::string>();
-  ref_branch = vm["ref-branch"].as<std::string>();
+    branch = vm["branch"].as<std::string>();
+    ref_branch = vm["ref-branch"].as<std::string>();
 
-  version = vm["version"].as<std::string>();
-  GUARD(CheckArg(version.size(), version.empty() || version.size() == 32,
-                 "Length of the operating version", "0 or 32"));
+    version = vm["version"].as<std::string>();
+    GUARD(CheckArg(version.size(), version.empty() || version.size() == 32,
+                   "Length of the operating version", "0 or 32"));
 
-  ref_version = vm["ref-version"].as<std::string>();
-  GUARD(CheckArg(ref_version.size(),
-                 ref_version.empty() || ref_version.size() == 32,
-                 "Length of the reffering version", "0 or 32"));
+    ref_version = vm["ref-version"].as<std::string>();
+    GUARD(CheckArg(ref_version.size(),
+                   ref_version.empty() || ref_version.size() == 32,
+                   "Length of the reffering version", "0 or 32"));
 
-  table = vm["table"].as<std::string>();
-  column = vm["column"].as<std::string>();
+    table = vm["table"].as<std::string>();
+    ref_table = vm["ref-table"].as<std::string>();
 
+    column = vm["column"].as<std::string>();
+    ref_column = vm["ref-column"].as<std::string>();
+
+  } catch (std::exception& e) {
+    std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
+    return false;
+  }
   return true;
 }
 
@@ -80,9 +92,13 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("ref-version,u", po::value<std::string>()->default_value(""),
    "the referring version")
   ("table,t", po::value<std::string>()->default_value(""),
-   "table name")
-  ("column,a", po::value<std::string>()->default_value(""),
-   "column name")
+   "the operating table")
+  ("ref-table,s", po::value<std::string>()->default_value(""),
+   "the referring table")
+  ("column,m", po::value<std::string>()->default_value(""),
+   "the operating column")
+  ("ref-column,n", po::value<std::string>()->default_value(""),
+   "the referring column")
   ("help,?", "print usage message");
 
   po::positional_options_description pos_opts;

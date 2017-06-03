@@ -134,14 +134,15 @@ int main(int argc, char* argv[]) {
   ClientDb client_db = ustore_svc.CreateClientDb();
   cs = new ColumnStore(&client_db);
   // run analytics task
-  if (RunTask(Config::task_id) != 0) {
-    LOG(WARNING) << "Fail to Run Task " << Config::task_id;
+  auto ec = RunTask(Config::task_id);
+  if (ec != 0) {
+    std::cerr << "Fail to run Task " << Config::task_id << std::endl;
   }
   // disconnect with UStore service
   ustore_svc.Stop();
   ustore_svc_thread.join();
   delete cs;
-  return 0;
+  return ec;
 }
 
 }  // namespace ca

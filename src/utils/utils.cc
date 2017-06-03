@@ -86,18 +86,76 @@ void Utils::PrintMap(const UMap& map, const bool elem_in_quote,
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = map.Scan();
   auto f_print_it = [&os, &quote, &it]() {
-    std::cout << "(" << quote << it.key() << quote << "->" << quote
-              << it.value() << quote << ")";
+    os << "(" << quote << it.key() << quote << "->" << quote
+       << it.value() << quote << ")";
   };
-  std::cout << "[";
+  os << "[";
   if (!it.end()) {
     f_print_it();
     for (it.next(); !it.end(); it.next()) {
-      std::cout << ", ";
+      os << ", ";
       f_print_it();
     }
   }
-  std::cout << "]";
+  os << "]";
 }
+
+// TODO(ruanpc): make it_diff.key() of DuallyDiffIndexIterator refer to
+//               it_diff.index() so that the following print function for
+//               diff of UList be the template function of PrintDiff.
+void Utils::PrintListDiff(DuallyDiffIndexIterator& it_diff,
+                          const bool show_diff,
+                          const bool elem_in_quote, std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto f_print_diff_key = [&os, &it_diff, &quote]() {
+    os << quote << it_diff.index() << quote;
+  };
+  auto f_print_diff = [&os, &it_diff, &quote]() {
+    os << quote << it_diff.index() << quote << ":(";
+    auto lhs = it_diff.lhs_value();
+    if (lhs.empty()) { os << "_"; } else { os << quote << lhs << quote; }
+    os << ',';
+    auto rhs = it_diff.rhs_value();
+    if (rhs.empty()) { os << "_"; } else { os << quote << rhs << quote; }
+    os << ')';
+  };
+
+  os << "[";
+  if (!it_diff.end()) {
+    show_diff ? f_print_diff() : f_print_diff_key();
+    for (it_diff.next(); !it_diff.end(); it_diff.next()) {
+      os << ", ";
+      show_diff ? f_print_diff() : f_print_diff_key();
+    }
+  }
+  os << "]";
+}
+
+// void Utils::PrintMapDiff(DuallyDiffKeyIterator& it_diff, const bool show_diff,
+//                          const bool elem_in_quote, std::ostream& os) {
+//   const auto quote = elem_in_quote ? "\"" : "";
+//   auto f_print_diff_key = [&os, &it_diff, &quote]() {
+//     os << quote << it_diff.key() << quote;
+//   };
+//   auto f_print_diff = [&os, &it_diff, &quote]() {
+//     os << quote << it_diff.key() << quote << ":(";
+//     auto lhs = it_diff.lhs_value();
+//     if (lhs.empty()) { os << "_"; } else { os << quote << lhs << quote; }
+//     os << ',';
+//     auto rhs = it_diff.rhs_value();
+//     if (rhs.empty()) { os << "_"; } else { os << quote << rhs << quote; }
+//     os << ')';
+//   };
+
+//   os << "[";
+//   if (!it_diff.end()) {
+//     show_diff ? f_print_diff() : f_print_diff_key();
+//     for (it_diff.next(); !it_diff.end(); it_diff.next()) {
+//       os << ", ";
+//       show_diff ? f_print_diff() : f_print_diff_key();
+//     }
+//   }
+//   os << "]";
+// }
 
 }  // namespace ustore

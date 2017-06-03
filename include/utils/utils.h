@@ -156,6 +156,21 @@ class Utils {
 
   static void PrintMap(const UMap& map, const bool elem_in_quote = false,
                        std::ostream& os = std::cout);
+
+  static void PrintListDiff(DuallyDiffIndexIterator& it_diff,
+                            const bool show_diff = true,
+                            const bool elem_in_quote = false,
+                            std::ostream& os = std::cout);
+
+  // static void PrintMapDiff(DuallyDiffKeyIterator& it_diff,
+  //                          const bool show_diff = true,
+  //                          const bool elem_in_quote = false,
+  //                          std::ostream& os = std::cout);
+
+  template<class T>
+  static void PrintDiff(T& it_diff, const bool show_diff = true,
+                        const bool elem_in_quote = false,
+                        std::ostream& os = std::cout);
 };
 
 template<typename T>
@@ -205,7 +220,7 @@ std::vector<T> Utils::ToVector(
   return vec;
 }
 
-template <typename T>
+template<typename T>
 std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
   std::vector<size_t> idx(v.size());
   std::iota(idx.begin(), idx.end(), 0);
@@ -215,6 +230,34 @@ std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
   [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
 
   return idx;
+}
+
+template<class T>
+void Utils::PrintDiff(T& it_diff, const bool show_diff,
+                      const bool elem_in_quote, std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto f_print_diff_key = [&os, &it_diff, &quote]() {
+    os << quote << it_diff.key() << quote;
+  };
+  auto f_print_diff = [&os, &it_diff, &quote]() {
+    os << quote << it_diff.key() << quote << ":(";
+    auto lhs = it_diff.lhs_value();
+    if (lhs.empty()) { os << "_"; } else { os << quote << lhs << quote; }
+    os << ',';
+    auto rhs = it_diff.rhs_value();
+    if (rhs.empty()) { os << "_"; } else { os << quote << rhs << quote; }
+    os << ')';
+  };
+
+  os << "[";
+  if (!it_diff.end()) {
+    show_diff ? f_print_diff() : f_print_diff_key();
+    for (it_diff.next(); !it_diff.end(); it_diff.next()) {
+      os << ", ";
+      show_diff ? f_print_diff() : f_print_diff_key();
+    }
+  }
+  os << "]";
 }
 
 inline std::ostream& operator<<(std::ostream& os, const UType& obj) {

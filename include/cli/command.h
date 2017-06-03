@@ -50,6 +50,8 @@ class Command {
   ErrorCode ExecBranchTable();
   ErrorCode ExecGetColumn();
   ErrorCode ExecDeleteColumn();
+  ErrorCode ExecDiffTable();
+  ErrorCode ExecDiffColumn();
 
   ObjectDB odb_;
   ColumnStore cs_;
