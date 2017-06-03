@@ -105,7 +105,7 @@ endif()
 #set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} gflags)
 set(USTORE_LINKER_LIBS ${USTORE_LINKER_LIBS} boost_system)
 
-if(GEN_DYNAMIC)
+if(DYNAMIC_LIB)
   ADD_LIBRARY(ustore SHARED $<TARGET_OBJECTS:ustore_objs>)
 else()
   ADD_LIBRARY(ustore STATIC $<TARGET_OBJECTS:ustore_objs>)

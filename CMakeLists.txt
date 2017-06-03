@@ -24,7 +24,7 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 include(cmake/Utils.cmake)
 # --- [ Option for static or dynamic library generation
 # --- [     ON to generate dynamic library
-OPTION(GEN_DYNAMIC "Generate dynamic library libustore.so, 
+OPTION(DYNAMIC_LIB "Generate dynamic library libustore.so,
        otherwise libustore.a" ON)
 # --- [ Options
 OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
@@ -66,7 +66,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wreturn-type")
 if(ENABLE_DEBUG)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 endif()
-if (GEN_DYNAMIC)
+if (DYNAMIC_LIB)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 # SET(PROTOBUF_PROTOC_EXECUTABLE "protoc")
