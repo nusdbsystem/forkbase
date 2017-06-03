@@ -393,11 +393,7 @@ Chunk LSTStore::Get(const Hash& key) {
 }
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
-  // if key already exists, return without error
-  if (chunk_map_.find(key.value()) != chunk_map_.end()) {
-    // DLOG(WARNING) << "key:" << key.ToBase32() << " already exists";
-    return true;
-  }
+  if (Exists(key)) return true;
 
   static size_t to_sync_chunks = 0;
   static auto last_sync_time_point = std::chrono::steady_clock::now();

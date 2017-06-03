@@ -38,8 +38,9 @@ Worker::Worker(const WorkerID& id, bool persist) : id_(id), persist_(persist) {
            it != store->end<CellIterator>(); ++it) {
         UpdateLatestVersion(UCell(std::move(*it)));
       }
-    } else
+    } else {
       LOG(WARNING) << "Fail to get LST Store instance";
+    }
   }
 }
 

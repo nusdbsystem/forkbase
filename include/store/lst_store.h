@@ -239,10 +239,10 @@ class LSTStore
 
   void Sync() const;
   Chunk Get(const Hash& key) override;
-  bool Put(const Hash& key, const Chunk& chunk) override;
-  inline bool Exists(const Hash& key) override {
-    return !Get(key).empty();
+  bool Exists(const Hash& key) override {
+    return chunk_map_.find(key.value()) != chunk_map_.end();
   }
+  bool Put(const Hash& key, const Chunk& chunk) override;
   const StoreInfo& GetInfo() const override {
     return storeInfo;
   }

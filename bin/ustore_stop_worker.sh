@@ -12,4 +12,4 @@ ustore_fkill="killall -q -s SIGKILL -r ustored"
 
 $ustore_kill > /dev/null 2>&1 &
 kpid=$!
-wait_and_fkill "$ustore_fkill" $kpid 10
+wait_and_fkill "$ustore_fkill" $kpid 20
