@@ -461,18 +461,19 @@ bool WorkerList::Update(const std::vector<RangeInfo> &workers) {
 }
 
 node_id_t WorkerList::GetWorker(const Slice& key) {
-  ///TODO(anh): key need to be hashed before find the range
+  // TODO(anh): key need to be hashed before find the range
   /*
   for (const RangeInfo& ri : workers_)
     if (Slice(ri.start()) > key)
       return ri.address();
   return workers_[0].address();
   */
+  int mod = workers_.size();
   int res = 0;
   for (size_t i = 0; i < key.len(); ++i) {
-    res = (res * 255 + static_cast<unsigned char>(key.data()[i])) % 255;
+    res = (res * mod + key.data()[i]) % mod;
   }
-  return workers_[res % workers_.size()].address();
+  return workers_[res].address();
 }
 
 vector<node_id_t> WorkerList::GetWorkerIds() {
