@@ -65,7 +65,10 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
         auto rlt = hserver->GetODB()
         .Get(Slice(paras["key"]), Slice(paras["branch"]));
         if (rlt.stat == ErrorCode::kOK) {
-          response = rlt.value.String().slice().ToString() + CRLF;
+          // response = rlt.value.String().slice().ToString() + CRLF;
+          std::stringstream ss;
+          ss << rlt.value << CRLF;
+          response = ss.str();
         } else {
           response = "Get Error: " +
               std::to_string(static_cast<int>(rlt.stat)) + CRLF;

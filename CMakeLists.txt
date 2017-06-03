@@ -87,10 +87,6 @@ MESSAGE(STATUS "copied directory: conf")
 FILE(COPY bin DESTINATION ${PROJECT_BINARY_DIR})
 MESSAGE(STATUS "copied directory: bin")
 
-# copy the script directory
-FILE(COPY script DESTINATION ${PROJECT_BINARY_DIR})
-MESSAGE(STATUS "copied directory: script")
-
 IF(ENABLE_TEST)
   ADD_SUBDIRECTORY(test)
 ENDIF()

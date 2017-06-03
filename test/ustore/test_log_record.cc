@@ -25,7 +25,7 @@ TEST(Recovery, LogRecordChecksum) {
   record.key_length = strlen(testkey);
   record.value_length = strlen(testvalue);
   int64_t checksum_ret = record.ComputeChecksum();
-  LOG(INFO) << "returned checksum: " << checksum_ret;
+  DLOG(INFO) << "returned checksum: " << checksum_ret;
 }
 
 TEST(Recovery, LogRecordToString) {
