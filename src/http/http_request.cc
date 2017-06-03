@@ -105,6 +105,48 @@ int HttpRequest::ParseOneLine(char* buf, int start, int end) {
   return ST_SUCCESS;
 }
 
+int HttpRequest::ParseLastLine(char* buf, int start, int end) {
+  TrimSpace(buf, start, end);
+  if (unlikely(start > end)) return ST_ERROR;
+
+  DLOG(INFO) << "Last line: " << string(buf, start, end-start);
+
+  if (method_ == "post" && 
+          (!headers_.count("content-length") || atoi(headers_["content-length"].c_str()))) {
+    string key = string(buf, start, end-start+1);
+    if (headers_.count("content-length")) {
+      int cl = atoi(headers_["content-length"].c_str());
+      while (key.length() > cl) {
+        LOG(WARNING) << "Content larger than the specified content-length:" << key.length() << ":" << cl;
+        key.pop_back();
+      }
+    }
+    headers_[kParaKey] = key;
+  } else {
+    int is = start, ie = FindChar(buf, start, end, ':');
+    if (ie < end) ToLower(buf, is, ie-1);
+    string key = string(buf, is, ie-is);
+    ie++;
+    TrimSpace(buf, ie, end);
+    if (unlikely(ie > end)) {
+      if (headers_.count("content-length")) {
+        int cl = atoi(headers_["content-length"].c_str());
+        while (key.length() > cl) {
+          LOG(WARNING) << "Content larger than the specified content-length";
+          key.pop_back();
+        }
+      }
+      headers_[kParaKey] = key;
+    } else {
+      TrimSpecialReverse(buf, end, ie);
+      headers_[key] = string(buf, ie, end-ie+1);
+      // LOG(WARNING) << "Parsed: " << key << " : " << headers_[key];
+    }
+  } 
+  return ST_SUCCESS;
+}
+
+
 unordered_map<string, string> HttpRequest::ParseParameters() {
   unordered_map<string, string> kv;
   if (headers_.count(kParaKey)) {
@@ -138,8 +180,8 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
   int ls = 0, le = 0;  // start and end position of each line
   int pos = 0;
   int linenum = 0;
+  TrimSpecial(buf, pos, nread-1);
   while (likely(pos < nread)) {
-    TrimSpecial(buf, pos, nread-1);
     if (unlikely(pos >= nread)) break;
     ls = le = pos;
     le = FindChar(buf, ls, nread-1, '\n');  // find the line breaker \r\n or \n
@@ -148,9 +190,12 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
     le--;  // backwards 1 position (le == nread OR buf[le] = '\n')
     pos = le+1;
 
+    TrimSpecial(buf, pos, nread-1);
     TrimSpecialReverse(buf, le, ls);
     if (unlikely(linenum == 0)) {
       if (ParseFirstLine(buf, ls, le) == ST_ERROR) return ST_ERROR;
+    } else if (pos >= nread) { 
+      if (ParseLastLine(buf, ls, le) == ST_ERROR) return ST_ERROR;
     } else {
       if (ParseOneLine(buf, ls, le) == ST_ERROR) return ST_ERROR;
     }

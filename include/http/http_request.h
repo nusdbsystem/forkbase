@@ -90,6 +90,7 @@ class HttpRequest {
    * line: buf[start, end] excluding \r\n
    */
   int ParseFirstLine(char* buf, int start, int end);
+  int ParseLastLine(char* buf, int start, int end);
 
   /*
    * parse the one line of the header (except the first line)
