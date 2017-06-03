@@ -1,6 +1,6 @@
 
 FIND_PATH(GLOG_INCLUDE_DIR NAMES glog/logging.h PATHS "$ENV{GLOG_DIR}/include")
-FIND_LIBRARY(GLOG_LIBRARIES NAMES glog)
+FIND_LIBRARY(GLOG_LIBRARIES NAMES libglog.a glog)
 
 INCLUDE(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GLOG DEFAULT_MSG GLOG_INCLUDE_DIR GLOG_LIBRARIES)

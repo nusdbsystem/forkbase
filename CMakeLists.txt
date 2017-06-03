@@ -58,7 +58,7 @@ LIST(APPEND BOOST_COMPONENT "program_options")
 include(cmake/Dependencies.cmake)
 
 enable_testing()
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -pthread -Wreturn-type")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wreturn-type")
 
 if(ENABLE_DEBUG)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -80,6 +80,10 @@ MESSAGE(STATUS "copied directory: conf")
 # copy the bin directory
 FILE(COPY bin DESTINATION ${PROJECT_BINARY_DIR})
 MESSAGE(STATUS "copied directory: bin")
+
+# copy the script directory
+FILE(COPY script DESTINATION ${PROJECT_BINARY_DIR})
+MESSAGE(STATUS "copied directory: script")
 
 IF(ENABLE_TEST)
   ADD_SUBDIRECTORY(test)
