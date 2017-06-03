@@ -133,10 +133,13 @@ void ClientZmqNet::Start() {
   for (auto k : netmap_) {
     ZmqNetContext *nctx = reinterpret_cast<ZmqNetContext*>(k.second);
 //                              (netmap_[(const node_id_t&)k]);
-    if (first)
+    if (first) {
+      first = false;
       zpoller = zpoller_new(nctx->GetSocket(), NULL);
-    else
+    }
+    else {
       zpoller_add(zpoller, nctx->GetSocket());
+    }
   }
 
   while (is_running_) {

@@ -79,8 +79,8 @@ void RemoteClientService::HandleResponse(const void *msg, int size,
   ustore_msg->ParseFromArray(msg, size);
   ResponseBlob* res_blob = responses_[ustore_msg->source()].get();
 
-  res_blob->message = ustore_msg;
   std::unique_lock<std::mutex> lck(res_blob->lock);
+  res_blob->message = ustore_msg;
   res_blob->has_msg = true;
   res_blob->condition.notify_all();
 }
