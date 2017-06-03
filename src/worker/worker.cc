@@ -81,9 +81,10 @@ ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) {
 
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
                       const Hash& prev_ver, Hash* ver) {
-  if (branch.empty()) return Put(key, val, prev_ver, ver);
-  ErrorCode ec = Write(key, val, prev_ver, Hash::kNull, ver);
-  if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, branch, *ver);
+  const auto ec = Put(key, val, prev_ver, ver);
+  if (ec == ErrorCode::kOK && !branch.empty()) {
+    head_ver_.PutBranch(key, branch, *ver);
+  }
   return ec;
 }
 
@@ -115,7 +116,7 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
-  ErrorCode ec = Write(key, val, *tgt_ver_opt, ref_ver, ver);
+  auto ec = Merge(key, val, *tgt_ver_opt, ref_ver, ver);
   if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, tgt_branch, *ver);
   return ec;
 }

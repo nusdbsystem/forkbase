@@ -53,7 +53,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   int start_idx = idx;
   for (int k = 0; k < len; k++) {
     idx = (start_idx + k) % NREQUESTS;
-    Hash HEAD_VERSION = Hash::ComputeFrom((const byte_t*)("head"), 4);
+    Hash HEAD_VERSION = Hash::kNull;
 
     // put a string
     Value string_val;
