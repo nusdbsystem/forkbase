@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 
-if [ $# -ge 2 ]; then
-    build_dir=$1
-    lib_archive=$2
-else
-    echo "Usage: ./.gen_poc_release.sh build_dir dependency_lib_archive"
-    exit
-fi
+build_dir=./build
+lib_archive=./deps/deps-suse.tar.gz
 
 echo "rm -r $build_dir/poc_release"
 rm -r $build_dir/poc_release
@@ -38,4 +33,5 @@ echo "cp -r $build_dir/../webui $build_dir/poc_release/webui"
 cp -r $build_dir/../webui $build_dir/poc_release/webui
 echo "tar cxf poc_release.tar.gz $build_dir/poc_release"
 tar zcf poc_release.tar.gz $build_dir/poc_release
-
+echo "mv $build_dir/poc_release/ ."
+mv $build_dir/poc_release/ .
