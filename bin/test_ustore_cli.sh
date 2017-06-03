@@ -10,9 +10,21 @@ set -o nounset
 set -o pipefail
 
 #### Begin of Configurations ####
-CLI="./bin/ustore_cli"
-USTORE_CLEAN="./bin/ustore_clean.sh"
-USTORE_START="./bin/ustore_start.sh"
+
+if [ $# -ge 1 ]; then
+    libs=$1
+    echo "Using preload $libs"
+    shift
+    CLI="./bin/run_preload.sh $libs bin/ustore_cli $@"
+    USTORE_CLEAN="./bin/ustore_clean.sh $@"
+    USTORE_START="./bin/ustore_start.sh $libs $@"
+else
+    libs=""
+    CLI="./bin/ustore_cli $@"
+    USTORE_CLEAN="./bin/ustore_clean.sh $@"
+    USTORE_START="./bin/ustore_start.sh $libs $@"
+fi
+
 #### End of Configurations ####
 
 EXP_OK=0
