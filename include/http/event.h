@@ -13,7 +13,7 @@ constexpr int kReadable  = 1;  // EPOLLIN
 constexpr int kWritable  = 2;  // EPOLLOUT | EPOLLERR | EPOLLHUP
 constexpr int kEdege = 4;
 
-constexpr int kDefaultTimeout = 0;  // or 0: NON_BLOCKING, -1: BLOCKING
+constexpr int kDefaultTimeout = 10;  // or 0: NON_BLOCKING, -1: BLOCKING
 constexpr int kDefaultMaxFd = 10000;
 
 struct EventLoop;
