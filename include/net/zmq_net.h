@@ -25,9 +25,10 @@ class ZmqNet : public Net {
   // process the received msg
   void Dispatch(const node_id_t& source, const void *msg, int size);
 
+  std::string request_ep_, inproc_ep_;
  protected:
   void *recv_sock_, *backend_sock_;  // router and backend socket
-  std::string inproc_ep_;  // endpoint for ipc
+  void *request_sock_;  // inproc router socket for multi-threaded client
   int nthreads_;  // number of processing threads
   std::vector<std::thread> backend_threads_;
 };

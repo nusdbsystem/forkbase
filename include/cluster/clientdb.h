@@ -63,9 +63,11 @@ struct ResponseBlob {
 
 class ClientDb : public DB {
  public:
+  ClientDb() {}
   ClientDb(const node_id_t& master, int id, Net* net, ResponseBlob* blob,
            WorkerList* workers)
     : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
+
   ~ClientDb() = default;
 
   // Storage APIs. Inheritted from DB.

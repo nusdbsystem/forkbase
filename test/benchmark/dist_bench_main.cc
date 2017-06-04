@@ -21,15 +21,19 @@ void BenchmarkClient() {
 
   // create client
   size_t n_client = Env::Instance()->config().n_clients();
-  std::vector<ClientDb> clientdbs;
+  std::vector<ClientDb*> clientdbs;
   std::vector<ObjectDB *> dbs;
   for (size_t i = 0; i < n_client; ++i) {
-    clientdbs.push_back(service.CreateClientDb());
-    ObjectDB *db = new ObjectDB(&(clientdbs.back()));
-    dbs.push_back(db);
+    ClientDb *cdb = new ClientDb();
+    *cdb = service.CreateClientDb();
+    clientdbs.push_back(cdb);
+    dbs.push_back(new ObjectDB(cdb));
   }
   Benchmark bm(dbs);
   bm.RunAll();
+
+  for (auto d : clientdbs)
+    delete d;
 
   service.Stop();
   client_service_thread.join();

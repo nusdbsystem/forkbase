@@ -19,14 +19,15 @@ namespace ustore {
  * Implementation of Network communication via ZeroMQ
  */
 
+// total wait time for socket: kWaitInterval*kPollRetries
 constexpr int kWaitInterval = 10;
-constexpr int kPoolTimeout = 10000;
+constexpr int kPollRetries = 1000;
 constexpr int kSocketBindTimeout = 1;
 constexpr int kSocketTrials = 5;
 
 using std::string;
 using std::vector;
-
+using std::unordered_map;
 // server thread to process messages
 void ServerThread(void *args);
 
@@ -38,9 +39,8 @@ ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest,
     ClientZmqNet *net) : NetContext(src, dest), client_net_(net) {
   // start connection to the remote host
   send_sock_ = zsock_new(ZMQ_DEALER);
-  zsock_set_connect_timeout(send_sock_, kWaitInterval);
-  string host = "tcp://" + dest_id_;
-  CHECK_EQ(zsock_connect((zsock_t *)send_sock_, "%s", host.c_str()), 0);
+  zsock_connect((zsock_t *)send_sock_, "%s", 
+      client_net_->request_ep_.c_str());
 }
 
 ZmqNetContext::~ZmqNetContext() {
@@ -53,14 +53,12 @@ ssize_t ZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
   // free((char*) ptr);
   zframe_t* id = zframe_new(src_id_.c_str(), src_id_.length());
   zmsg_t* msg = zmsg_new();
+  zmsg_pushstr(msg, dest_id_.c_str());
   zmsg_append(msg, &id);
   zmsg_append(msg, &frame);
-
   send_lock_.lock();
   int st = zmsg_send(&msg, (zsock_t *)send_sock_) == 0 ? len : -1;
   send_lock_.unlock();
-  client_net_->request_counter_++;
-  client_net_->timeout_counter_ = kPoolTimeout;
   return st;
 }
 
@@ -106,8 +104,24 @@ ClientZmqNet::ClientZmqNet(int nthreads) : ZmqNet("", nthreads) {
     inproc_ep_ = "inproc://"  + std::to_string(port);
   }
   CHECK_EQ(status, 0);
+
+  // request_sock_
+  port = rand() % 0xffffff;
+  request_ep_= "inproc://"  + std::to_string(port);
+
+  // make sure that the ipc socket binds successfully
+  request_sock_ = zsock_new(ZMQ_ROUTER);
+  ntries = kSocketTrials;
+  while ((status = zsock_bind((zsock_t *)request_sock_, "%s",
+          request_ep_.c_str())) && ntries--) {
+    sleep(kSocketBindTimeout);
+    port = rand() & 0xffffff;
+    request_ep_ = "inproc://"  + std::to_string(port);
+  }
+  CHECK_EQ(status, 0);
+
   is_running_ = true;
-  timeout_counter_ = kPoolTimeout;
+  timeout_counter_ = kPollRetries;
   request_counter_ = 0;
 }
 
@@ -128,18 +142,15 @@ void ClientZmqNet::Start() {
     backend_threads_.push_back(
               std::thread(&ClientZmqNet::ClientThread, this));
 
-  bool first = true;
-  zpoller_t *zpoller;
-  for (auto k : netmap_) {
-    ZmqNetContext *nctx = reinterpret_cast<ZmqNetContext*>(k.second);
-//                              (netmap_[(const node_id_t&)k]);
-    if (first) {
-      first = false;
-      zpoller = zpoller_new(nctx->GetSocket(), NULL);
-    }
-    else {
-      zpoller_add(zpoller, nctx->GetSocket());
-    }
+  zpoller_t *zpoller = zpoller_new(request_sock_);
+  // start DEALER socket to other
+  unordered_map<node_id_t, void*> out_socks;
+  for (auto n : netmap_) { 
+    void *sock_ = zsock_new(ZMQ_DEALER);
+    string host = "tcp://" + n.first;
+    CHECK_EQ(zsock_connect((zsock_t *)sock_, "%s", host.c_str()), 0);
+    out_socks[n.first] = sock_;
+    zpoller_add(zpoller, sock_);
   }
 
   while (is_running_) {
@@ -151,14 +162,28 @@ void ClientZmqNet::Start() {
     if (sock) {
       zmsg_t *msg = zmsg_recv(sock);
       if (!msg) break;
-      request_counter_--;
-      timeout_counter_ = kPoolTimeout;
-      // send to backend
-      zmsg_send(&msg, backend_sock_);
+
+      if (sock == request_sock_) {
+        // forward to out_socks
+        // pop first frame
+        zmsg_pop(msg);
+        char *dest_id = zmsg_popstr(msg);
+        zmsg_send(&msg, out_socks[dest_id]);
+        request_counter_++;
+        timeout_counter_ = kPollRetries;
+      } else {  // send to backend 
+        zmsg_send(&msg, backend_sock_);
+        request_counter_--;
+        timeout_counter_ = kPollRetries;
+      }
     }
   }
   // Stop when ^C
   zsock_destroy((zsock_t **)&backend_sock_);
+  zsock_destroy((zsock_t **)&request_sock_);
+  for (auto s : out_socks)
+    zsock_destroy((zsock_t **)&s.second);
+
   zpoller_destroy(&zpoller);
   for (int i=0; i < backend_threads_.size(); i++)
     backend_threads_[i].join();
@@ -171,7 +196,7 @@ void ClientZmqNet::ClientThread() {
            "%s", inproc_ep_.c_str()), 0);
   zpoller_t *zpoller = zpoller_new(frontend, NULL);
   while (IsRunning()) {
-    void *sock = zpoller_wait(zpoller, kPoolTimeout);
+    void *sock = zpoller_wait(zpoller, kWaitInterval);
     if (!sock && !zpoller_expired(zpoller))
       break;
     if (sock) {
@@ -268,14 +293,13 @@ void ServerZmqNet::Start() {
   CHECK_NOTNULL(zpoller);
 
   while (is_running_) {
-    void *sock = zpoller_wait(zpoller, kPoolTimeout);
+    void *sock = zpoller_wait(zpoller, kWaitInterval);
     if (!sock && !zpoller_expired(zpoller))
       break;
     if (sock) {
       zmsg_t *msg = zmsg_recv(sock);
       if (!msg)
         break;
-
       // send to backend
       sock == recv_sock_ ? zmsg_send(&msg, backend_sock_)
                          : zmsg_send(&msg, recv_sock_);
@@ -322,7 +346,7 @@ void ServerZmqNetContext::Start(ServerZmqNet *net) {
   // listen from  recv_sock_
   zpoller_t *zpoller = zpoller_new(recv_sock_, NULL);
   while (net->IsRunning()) {
-    void *sock = zpoller_wait(zpoller, kPoolTimeout);
+    void *sock = zpoller_wait(zpoller, kWaitInterval);
     if (!sock && !zpoller_expired(zpoller))
       break;
     if (sock) {
