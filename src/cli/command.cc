@@ -181,10 +181,9 @@ void Command::PrintCommandHelp() {
   std::cout << FORMAT_RELATIONAL_CMD("DELETE_COLUMN")
             << "-t <table> -b <branch> -m <column>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("DIFF_COLUMN")
-            << "-t <table> -m <column> -b <branch> -c <branch_2> {"
-            << "-s <table_2> | "
-            << std::endl << std::setw(kPrintRelationalCmdWidth + 61) << ""
-            << "-s <table_2> -n <column_2>}" << std::endl;
+            << "-t <table> -m <column> -b <branch> -c <branch_2> "
+            << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
+            << "{-s <table_2>} {-n <column_2>}" << std::endl;
 }
 
 ErrorCode Command::ExecCommand(const std::string& cmd) {
