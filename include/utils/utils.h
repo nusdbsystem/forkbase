@@ -162,11 +162,6 @@ class Utils {
                             const bool elem_in_quote = false,
                             std::ostream& os = std::cout);
 
-  // static void PrintMapDiff(DuallyDiffKeyIterator& it_diff,
-  //                          const bool show_diff = true,
-  //                          const bool elem_in_quote = false,
-  //                          std::ostream& os = std::cout);
-
   template<class T>
   static void PrintDiff(T& it_diff, const bool show_diff = true,
                         const bool elem_in_quote = false,

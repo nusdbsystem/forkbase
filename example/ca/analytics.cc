@@ -31,11 +31,11 @@ int SampleAnalytics::Compute(std::unordered_set<std::string>* aff_cols) {
   }
   USTORE_GUARD_INT(
     cs_.PutColumn(table_name, branch_, "result", col));
-
-  ColumnDiffIterator it_diff;
+  Column col_rst;
   USTORE_GUARD_INT(
-    cs_.DiffColumn(table_name, branch_, "col-1",
-                   table_name, branch_, "result", &it_diff));
+    cs_.GetColumn(table_name, branch_, "result", &col1));
+
+  auto it_diff = cs_.DiffColumn(col1, col_rst);
   std::cout << ">>> col-1 vs. result <<<" << std::endl;
   Utils::PrintListDiff(it_diff);
   std::cout << std::endl;

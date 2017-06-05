@@ -85,13 +85,37 @@ Command::Command(DB* db) noexcept
   CMD_ALIAS("DIFF_TABLE", "DIFF_TAB");
   CMD_ALIAS("DIFF_TABLE", "DIFF-TAB");
   CMD_ALIAS("DIFF_TABLE", "DIFFTAB");
-  CMD_ALIAS("DIFF", "DIFFTAB");
+  CMD_ALIAS("DIFF_TABLE", "DIFF");
   CMD_HANDLER("DIFF_COLUMN", ExecDiffColumn);
   CMD_ALIAS("DIFF_COLUMN", "DIFF-COLUMN");
   CMD_ALIAS("DIFF_COLUMN", "DIFFCOLUMN");
   CMD_ALIAS("DIFF_COLUMN", "DIFF_COL");
   CMD_ALIAS("DIFF_COLUMN", "DIFF-COL");
   CMD_ALIAS("DIFF_COLUMN", "DIFFCOL");
+  CMD_HANDLER("EXISTS_TABLE", ExecExistsTable);
+  CMD_ALIAS("EXISTS_TABLE", "EXISTS-TABLE");
+  CMD_ALIAS("EXISTS_TABLE", "EXISTSTABLE");
+  CMD_ALIAS("EXISTS_TABLE", "EXISTS_TAB");
+  CMD_ALIAS("EXISTS_TABLE", "EXISTS-TAB");
+  CMD_ALIAS("EXISTS_TABLE", "EXISTSTAB");
+  CMD_ALIAS("EXISTS_TABLE", "EXIST_TABLE");
+  CMD_ALIAS("EXISTS_TABLE", "EXIST-TABLE");
+  CMD_ALIAS("EXISTS_TABLE", "EXISTTABLE");
+  CMD_ALIAS("EXISTS_TABLE", "EXIST_TAB");
+  CMD_ALIAS("EXISTS_TABLE", "EXIST-TAB");
+  CMD_ALIAS("EXISTS_TABLE", "EXISTTAB");
+  CMD_HANDLER("EXISTS_COLUMN", ExecExistsTable);
+  CMD_ALIAS("EXISTS_COLUMN", "EXISTS-COLUMN");
+  CMD_ALIAS("EXISTS_COLUMN", "EXISTSCOLUMN");
+  CMD_ALIAS("EXISTS_COLUMN", "EXISTS_COL");
+  CMD_ALIAS("EXISTS_COLUMN", "EXISTS-COL");
+  CMD_ALIAS("EXISTS_COLUMN", "EXISTSCOL");
+  CMD_ALIAS("EXISTS_COLUMN", "EXIST_COLUMN");
+  CMD_ALIAS("EXISTS_COLUMN", "EXIST-COLUMN");
+  CMD_ALIAS("EXISTS_COLUMN", "EXISTCOLUMN");
+  CMD_ALIAS("EXISTS_COLUMN", "EXIST_COL");
+  CMD_ALIAS("EXISTS_COLUMN", "EXIST-COL");
+  CMD_ALIAS("EXISTS_COLUMN", "EXISTCOL");
 }
 
 const int kPrintBasicCmdWidth = 12;
@@ -871,76 +895,105 @@ ErrorCode Command::ExecDiffTable() {
     return ExecDiffColumn();
   }
 
-  const auto& lhs_tab = Config::table;
+  const auto& lhs_tab_name = Config::table;
   const auto& lhs_branch = Config::branch;
-  const auto& rhs_tab = Config::ref_table;
+  auto& rhs_tab_name = Config::ref_table;
   const auto& rhs_branch = Config::ref_branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cerr << BOLD_RED("[INVALID ARGS: DIFF_TABLE] ")
-              << "Table: \"" << lhs_tab << "\", "
+              << "Table: \"" << lhs_tab_name << "\", "
               << "Branch: \"" << lhs_branch << "\", "
-              << "Table (2nd): \"" << rhs_tab << "\", "
+              << "Table (2nd): \"" << rhs_tab_name << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\"" << std::endl;
   };
-  const auto f_rpt_success = [&](TableDiffIterator & it_diff) {
+  const auto f_rpt_success = [](TableDiffIterator & it_diff) {
     std::cout << BOLD_GREEN("[SUCCESS: DIFF_TABLE] ")
               << "Different Columns: ";
     Utils::PrintDiff(it_diff, false, true);
     std::cout << std::endl;
   };
-  const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
-              << "Table: \"" << lhs_tab << "\", "
-              << "Branch: \"" << lhs_branch << "\", "
-              << "Branch (2nd): \"" << rhs_branch << "\""
+  // const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
+  //   std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
+  //             << "Table: \"" << lhs_tab_name << "\", "
+  //             << "Branch: \"" << lhs_branch << "\", "
+  //             << "Branch (2nd): \"" << rhs_branch << "\""
+  //             << RED(" --> Error Code: " << ec) << std::endl;
+  // };
+  // const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
+  //   std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
+  //             << "Table: \"" << lhs_tab_name << "\", "
+  //             << "Branch: \"" << lhs_branch << "\", "
+  //             << "Table (2nd): \"" << rhs_tab_name << "\", "
+  //             << "Branch (2nd): \"" << rhs_branch << "\""
+  //             << RED(" --> Error Code: " << ec) << std::endl;
+  // };
+  const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
+              << "Table: \"" << lhs_tab_name << "\", "
+              << "Branch: \"" << lhs_branch << "\""
               << RED(" --> Error Code: " << ec) << std::endl;
   };
-  const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
-              << "Table: \"" << lhs_tab << "\", "
-              << "Branch: \"" << lhs_branch << "\", "
-              << "Table (2nd): \"" << rhs_tab << "\", "
+  const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
+              << "Table (2nd): \"" << rhs_tab_name << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\""
               << RED(" --> Error Code: " << ec) << std::endl;
   };
   // conditional execution
-  if (lhs_tab.empty() || lhs_branch.empty() || rhs_branch.empty()) {
+  if (lhs_tab_name.empty() || lhs_branch.empty() || rhs_branch.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (rhs_tab.empty()) {
-    TableDiffIterator it_diff;
-    auto ec = cs_.DiffTable(lhs_tab, lhs_branch, rhs_branch, &it_diff);
-    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
-    return ec;
-  } else {
-    TableDiffIterator it_diff;
-    auto ec =
-      cs_.DiffTable(lhs_tab, lhs_branch, rhs_tab, rhs_branch, &it_diff);
-    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
+  if (rhs_tab_name.empty()) rhs_tab_name = lhs_tab_name;
+  Table lhs_tab;
+  auto ec = cs_.GetTable(lhs_tab_name, lhs_branch, &lhs_tab);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail_get_lhs(ec);
     return ec;
   }
+  Table rhs_tab;
+  ec = cs_.GetTable(rhs_tab_name, rhs_branch, &rhs_tab);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail_get_rhs(ec);
+    return ec;
+  }
+  auto it_diff = cs_.DiffTable(lhs_tab, rhs_tab);
+  f_rpt_success(it_diff);
+  return ErrorCode::kOK;
+
+  // if (rhs_tab.empty()) {
+  //   TableDiffIterator it_diff;
+  //   auto ec = cs_.DiffTable(lhs_tab, lhs_branch, rhs_branch, &it_diff);
+  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
+  //   return ec;
+  // } else {
+  //   TableDiffIterator it_diff;
+  //   auto ec =
+  //     cs_.DiffTable(lhs_tab, lhs_branch, rhs_tab, rhs_branch, &it_diff);
+  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
+  //   return ec;
+  // }
 }
 
 ErrorCode Command::ExecDiffColumn() {
   const auto& lhs_tab = Config::table;
   const auto& lhs_branch = Config::branch;
-  const auto& lhs_col = Config::column;
-  const auto& rhs_tab = Config::ref_table;
+  const auto& lhs_col_name = Config::column;
+  auto& rhs_tab = Config::ref_table;
   const auto& rhs_branch = Config::ref_branch;
-  const auto& rhs_col = Config::ref_col;
+  auto& rhs_col_name = Config::ref_column;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cerr << BOLD_RED("[INVALID ARGS: DIFF_COLUMN] ")
               << "Table: \"" << lhs_tab << "\", "
               << "Branch: \"" << lhs_branch << "\", "
-              << "Column: \"" << lhs_col << "\", "
+              << "Column: \"" << lhs_col_name << "\", "
               << "Table (2nd): \"" << rhs_tab << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\", "
-              << "Column (2nd): \"" << rhs_col << "\"" << std::endl;
+              << "Column (2nd): \"" << rhs_col_name << "\"" << std::endl;
   };
-  const auto f_rpt_success = [&](ColumnDiffIterator & it_diff) {
+  const auto f_rpt_success = [](ColumnDiffIterator & it_diff) {
     std::cout << BOLD_GREEN("[SUCCESS: DIFF_COLUMN] ")
               << "Different Values: ";
     // TODO(ruanpc): replace PrintListDiff with PrintDiff
@@ -948,63 +1001,113 @@ ErrorCode Command::ExecDiffColumn() {
     Utils::PrintListDiff(it_diff, true, true);
     std::cout << std::endl;
   };
-  const auto f_rpt_fail_by_column = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
+  const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
               << "Table: \"" << lhs_tab << "\", "
               << "Branch: \"" << lhs_branch << "\", "
-              << "Column: \"" << lhs_col << "\", "
+              << "Column: \"" << lhs_col_name << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
               << "Table (2nd): \"" << rhs_tab << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\", "
-              << "Column (2nd): \"" << rhs_col << "\""
+              << "Column (2nd): \"" << rhs_col_name << "\""
               << RED(" --> Error Code: " << ec) << std::endl;
   };
-  const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
-              << "Column: \"" << lhs_col << "\", "
-              << "Table: \"" << lhs_tab << "\", "
-              << "Branch: \"" << lhs_branch << "\", "
-              << "Table (2nd): \"" << rhs_tab << "\", "
-              << "Branch (2nd): \"" << rhs_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
-  };
-  const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
-              << "Table: \"" << lhs_tab << "\", "
-              << "Column: \"" << lhs_col << "\", "
-              << "Branch: \"" << lhs_branch << "\", "
-              << "Branch (2nd): \"" << rhs_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
-  };
+  // const auto f_rpt_fail_by_column = [&](const ErrorCode & ec) {
+  //   std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
+  //             << "Table: \"" << lhs_tab << "\", "
+  //             << "Branch: \"" << lhs_branch << "\", "
+  //             << "Column: \"" << lhs_col << "\", "
+  //             << "Table (2nd): \"" << rhs_tab << "\", "
+  //             << "Branch (2nd): \"" << rhs_branch << "\", "
+  //             << "Column (2nd): \"" << rhs_col << "\""
+  //             << RED(" --> Error Code: " << ec) << std::endl;
+  // };
+  // const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
+  //   std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
+  //             << "Column: \"" << lhs_col << "\", "
+  //             << "Table: \"" << lhs_tab << "\", "
+  //             << "Branch: \"" << lhs_branch << "\", "
+  //             << "Table (2nd): \"" << rhs_tab << "\", "
+  //             << "Branch (2nd): \"" << rhs_branch << "\""
+  //             << RED(" --> Error Code: " << ec) << std::endl;
+  // };
+  // const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
+  //   std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
+  //             << "Table: \"" << lhs_tab << "\", "
+  //             << "Column: \"" << lhs_col << "\", "
+  //             << "Branch: \"" << lhs_branch << "\", "
+  //             << "Branch (2nd): \"" << rhs_branch << "\""
+  //             << RED(" --> Error Code: " << ec) << std::endl;
+  // };
   // conditional execution
-  if (lhs_tab.empty() || lhs_col.empty() || lhs_branch.empty() ||
+  if (lhs_tab.empty() || lhs_col_name.empty() || lhs_branch.empty() ||
       rhs_branch.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (rhs_tab.empty() && rhs_col.empty()) {
-    ColumnDiffIterator it_diff;
-    auto ec =
-      cs_.DiffColumn(lhs_tab, lhs_col, lhs_branch, rhs_branch, &it_diff);
-    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
+  if (rhs_tab.empty()) rhs_tab = lhs_tab;
+  if (rhs_col_name.empty()) rhs_col_name = lhs_col_name;
+  Column lhs_col;
+  auto ec = cs_.GetColumn(lhs_tab, lhs_branch, lhs_col_name, &lhs_col);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail_get_lhs(ec);
     return ec;
   }
-  if (!rhs_tab.empty() && rhs_col.empty()) {
-    ColumnDiffIterator it_diff;
-    auto ec = cs_.DiffColumn(lhs_col, lhs_tab, lhs_branch, rhs_tab,
-                             rhs_branch, &it_diff);
-    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
+  Column rhs_col;
+  ec = cs_.GetColumn(rhs_tab, rhs_branch, rhs_col_name, &rhs_col);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail_get_rhs(ec);
     return ec;
   }
-  if (!rhs_tab.empty() && !rhs_col.empty()) {
-    ColumnDiffIterator it_diff;
-    auto ec = cs_.DiffColumn(lhs_tab, lhs_branch, lhs_col,
-                             rhs_tab, rhs_branch, rhs_col, &it_diff);
-    ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_column(ec);
-    return ec;
-  }
-  // illegal
-  f_rpt_invalid_args();
-  return ErrorCode::kInvalidCommandArgument;
+  auto it_diff = cs_.DiffColumn(lhs_col, rhs_col);
+  f_rpt_success(it_diff);
+  return ErrorCode::kOK;
+
+
+  // if (rhs_tab.empty() && rhs_col.empty()) {
+  // Column rhs_col;
+  // ec = cs_.GetColumn(lhs_tab, rhs_branch, lhs_col_name, &lhs_col);
+  // if (ec != ErrorCode::kOK) {
+  //   f_rpt_fail_get_lhs(ec);
+  //   return ec;
+  // }
+
+  //   ColumnDiffIterator it_diff;
+  //   auto ec =
+  //     cs_.DiffColumn(lhs_tab, lhs_col, lhs_branch, rhs_branch, &it_diff);
+  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
+  //   return ec;
+  // }
+  // if (!rhs_tab.empty() && rhs_col.empty()) {
+  //   ColumnDiffIterator it_diff;
+  //   auto ec = cs_.DiffColumn(lhs_col, lhs_tab, lhs_branch, rhs_tab,
+  //                            rhs_branch, &it_diff);
+  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
+  //   return ec;
+  // }
+  // if (!rhs_tab.empty() && !rhs_col.empty()) {
+  //   ColumnDiffIterator it_diff;
+  //   auto ec = cs_.DiffColumn(lhs_tab, lhs_branch, lhs_col,
+  //                            rhs_tab, rhs_branch, rhs_col, &it_diff);
+  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_column(ec);
+  //   return ec;
+  // }
+  // // illegal
+  // f_rpt_invalid_args();
+  // return ErrorCode::kInvalidCommandArgument;
+}
+
+ErrorCode Command::ExecExistsTable() {
+  // TODO(linqian)
+  return ErrorCode::kUnknownOp;
+}
+
+ErrorCode Command::ExecExistsColumn() {
+  // TODO(linqian)
+  return ErrorCode::kUnknownOp;
 }
 
 }  // namespace cli

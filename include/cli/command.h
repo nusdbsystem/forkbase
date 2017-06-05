@@ -52,6 +52,8 @@ class Command {
   ErrorCode ExecDeleteColumn();
   ErrorCode ExecDiffTable();
   ErrorCode ExecDiffColumn();
+  ErrorCode ExecExistsTable();
+  ErrorCode ExecExistsColumn();
 
   ObjectDB odb_;
   ColumnStore cs_;
