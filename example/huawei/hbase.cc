@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
   cs->PutColumn(table_name, branch_name,
                 "LOCATION", CreateLocationColumn(num_records));
   cs->PutColumn(table_name, branch_name,
-                "CAPTURETIME", CreateTimeColumn(num_records));
+                "CAPTURETIME", CreateIntColumn(num_records, 1000000000));
   ustore_svc.Stop();
   ustore_svc_thread.join();
   delete cs;

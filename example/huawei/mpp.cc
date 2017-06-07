@@ -97,9 +97,9 @@ int main(int argc, char* argv[]) {
   std::string branch_name("master");
   cs->CreateTable(table_name, branch_name);
   cs->PutColumn(table_name, branch_name,
-                "BEGINDAY", CreateIntColumn(num_records, 100));
+                "BEGINDAY", CreateIntColumn(num_records, 1000000000));
   cs->PutColumn(table_name, branch_name,
-                "ENDDAY", CreateIntColumn(num_records, 100));
+                "ENDDAY", CreateIntColumn(num_records, 1000000000));
   cs->PutColumn(table_name, branch_name,
                 "MSISDN", CreateStrColumn(num_records, 32));
   cs->PutColumn(table_name, branch_name,
@@ -107,17 +107,17 @@ int main(int argc, char* argv[]) {
   cs->PutColumn(table_name, branch_name,
                 "LOCATION", CreateLocationColumn(num_records));
   cs->PutColumn(table_name, branch_name,
-                "OCCUR_TIMES", CreateTimeColumn(num_records));
+                "OCCUR_TIMES", CreateIntColumn(num_records, 1000));
   cs->PutColumn(table_name, branch_name,
-                "OCCUR_DAYS", CreateIntColumn(num_records, 10));
+                "OCCUR_DAYS", CreateIntColumn(num_records, 1000));
   cs->PutColumn(table_name, branch_name,
-                "TOTAL_DAYS", CreateIntColumn(num_records, 10));
+                "TOTAL_DAYS", CreateIntColumn(num_records, 1000));
   cs->PutColumn(table_name, branch_name,
                 "OCCUR_PCT", CreateFloatColumn(num_records));
   cs->PutColumn(table_name, branch_name,
-                "BD", CreateIntColumn(num_records, 1000));
+                "BD", CreateIntColumn(num_records, 1000000000));
   cs->PutColumn(table_name, branch_name,
-                "AD", CreateIntColumn(num_records, 1000));
+                "AD", CreateIntColumn(num_records, 1000000000));
   ustore_svc.Stop();
   ustore_svc_thread.join();
   delete cs;
