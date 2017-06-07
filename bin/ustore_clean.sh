@@ -11,5 +11,19 @@ cd $USTORE_HOME
 ./bin/ustore_stop.sh
 
 # remove data
-rm ./ustore_data/ustore*
+ssh_options="-oStrictHostKeyChecking=no \
+             -oUserKnownHostsFile=/dev/null \
+             -oLogLevel=quiet"
+
+# clean ustore data
+host_file=$USTORE_CONF/workers
+hosts=`cat $host_file | cut -d ':' -f 1`
+for i in ${hosts[@]}; do
+  echo Clean ustore @ $i ...
+  if [ $i == localhost ]; then
+    rm ./ustore_data/ustore*
+  else
+    ssh $ssh_options $i rm $USTORE_HOME/ustore_data/ustore*
+  fi
+done
 echo "----------- All data removed ------------"
