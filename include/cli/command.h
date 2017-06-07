@@ -5,6 +5,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include "spec/object_db.h"
 #include "spec/relational.h"

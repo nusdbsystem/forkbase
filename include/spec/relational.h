@@ -44,20 +44,6 @@ class ColumnStore {
     return UMap::DuallyDiff(lhs, rhs);
   }
 
-  // ErrorCode DiffTable(const std::string& lhs_table_name,
-  //                     const std::string& lhs_branch_name,
-  //                     const std::string& rhs_table_name,
-  //                     const std::string& rhs_branch_name,
-  //                     TableDiffIterator* it_diff);
-
-  // inline ErrorCode DiffTable(const std::string& table_name,
-  //                            const std::string& lhs_branch_name,
-  //                            const std::string& rhs_branch_name,
-  //                            TableDiffIterator* it_diff) {
-  //   return DiffTable(table_name, lhs_branch_name, table_name, rhs_branch_name,
-  //                    it_diff);
-  // }
-
   ErrorCode MergeTable(const std::string& table_name,
                        const std::string& tgt_branch_name,
                        const std::string& ref_branch_name,
@@ -99,33 +85,6 @@ class ColumnStore {
   inline ColumnDiffIterator DiffColumn(const Column& lhs, const Column& rhs) {
     return UList::DuallyDiff(lhs, rhs);
   }
-
-  // ErrorCode DiffColumn(const std::string& lhs_table_name,
-  //                      const std::string& lhs_branch_name,
-  //                      const std::string& lhs_col_name,
-  //                      const std::string& rhs_table_name,
-  //                      const std::string& rhs_branch_name,
-  //                      const std::string& rhs_col_name,
-  //                      std::vector<std::string>* cols_diff);
-
-  // inline ErrorCode DiffColumn(const std::string& col_name,
-  //                             const std::string& lhs_table_name,
-  //                             const std::string& lhs_branch_name,
-  //                             const std::string& rhs_table_name,
-  //                             const std::string& rhs_branch_name,
-  //                             ColumnDiffIterator* it_diff) {
-  //   return DiffColumn(lhs_table_name, lhs_branch_name, col_name,
-  //                     rhs_table_name, rhs_branch_name, col_name, it_diff);
-  // }
-
-  // inline ErrorCode DiffColumn(const std::string& table_name,
-  //                             const std::string& col_name,
-  //                             const std::string& lhs_branch_name,
-  //                             const std::string& rhs_branch_name,
-  //                             ColumnDiffIterator* it_diff) {
-  //   return DiffColumn(table_name, lhs_branch_name, col_name,
-  //                     table_name, rhs_branch_name, col_name, it_diff);
-  // }
 
  private:
   template<class T1, class T2>

@@ -42,21 +42,6 @@ ErrorCode ColumnStore::BranchTable(const std::string& table_name,
   return odb_.Branch(Slice(table_name), old_branch, new_branch);
 }
 
-// ErrorCode ColumnStore::DiffTable(const std::string& lhs_table_name,
-//                                  const std::string& lhs_branch_name,
-//                                  const std::string& rhs_table_name,
-//                                  const std::string& rhs_branch_name,
-//                                  TableDiffIterator* it_diff) {
-//   Table lhs;
-//   USTORE_GUARD(
-//     GetTable(lhs_table_name, lhs_branch_name, &lhs));
-//   Table rhs;
-//   USTORE_GUARD(
-//     GetTable(rhs_table_name, rhs_branch_name, &rhs));
-//   *it_diff = UMap::DuallyDiff(lhs, rhs);
-//   return ErrorCode::kOK;
-// }
-
 ErrorCode ColumnStore::MergeTable(const std::string& table_name,
                                   const std::string& tgt_branch_name,
                                   const std::string& ref_branch_name,
@@ -122,21 +107,5 @@ ErrorCode ColumnStore::DeleteColumn(const std::string& table_name,
   tab.Remove(Slice(col_name));
   return odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
 }
-
-// ErrorCode ColumnStore::DiffColumn(const std::string& lhs_table_name,
-//                                   const std::string& lhs_branch_name,
-//                                   const std::string& lhs_col_name,
-//                                   const std::string& rhs_table_name,
-//                                   const std::string& rhs_branch_name,
-//                                   const std::string& rhs_col_name,
-//                                   std::vector<std::string>* cols_diff) {
-//   Column lhs, rhs;
-//   USTORE_GUARD(
-//     GetColumn(lhs_table_name, lhs_branch_name, lhs_col_name, &lhs));
-//   USTORE_GUARD(
-//     GetColumn(rhs_table_name, rhs_branch_name, rhs_col_name, &rhs));
-//   *it_diff = DiffColumn(lhs, rhs);
-//   return ErrorCode::kOK;
-// }
 
 }  // namespace ustore

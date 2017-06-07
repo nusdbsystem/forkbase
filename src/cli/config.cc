@@ -66,7 +66,6 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     column = vm["column"].as<std::string>();
     ref_column = vm["ref-column"].as<std::string>();
-
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
