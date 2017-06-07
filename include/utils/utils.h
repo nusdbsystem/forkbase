@@ -127,7 +127,7 @@ class Utils {
   static std::string ToString(const UType& type);
 
   static std::vector<std::string> Tokenize(
-    const std::string& str, const char* sep_chars = " [],");
+    const std::string& str, const char* sep_chars = " \t[],");
 
   template<typename T>
   static std::vector<T> ToVector(

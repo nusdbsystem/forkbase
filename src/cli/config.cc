@@ -20,6 +20,7 @@ std::string Config::table = "";
 std::string Config::ref_table = "";
 std::string Config::column = "";
 std::string Config::ref_column = "";
+std::string Config::file = "";
 
 void Config::Reset() {
   is_help = false;
@@ -34,6 +35,7 @@ void Config::Reset() {
   ref_table = "";
   column = "";
   ref_column = "";
+  file = "";
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -66,6 +68,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     column = vm["column"].as<std::string>();
     ref_column = vm["ref-column"].as<std::string>();
+
+    file = vm["file"].as<std::string>();
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -98,10 +102,13 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "the operating column")
   ("ref-column,n", po::value<std::string>()->default_value(""),
    "the referring column")
+  ("file", po::value<std::string>()->default_value(""),
+   "path of input file")
   ("help,?", "print usage message");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);
+  pos_opts.add("file", 1);
 
   auto f_print_help = [&desc]() {
     Command::PrintCommandHelp();

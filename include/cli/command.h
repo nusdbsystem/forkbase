@@ -55,6 +55,7 @@ class Command {
   ErrorCode ExecDiffColumn();
   ErrorCode ExecExistsTable();
   ErrorCode ExecExistsColumn();
+  ErrorCode ExecLoadCSV();
 
   ObjectDB odb_;
   ColumnStore cs_;

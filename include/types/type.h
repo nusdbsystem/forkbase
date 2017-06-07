@@ -97,8 +97,9 @@ enum class ErrorCode : byte_t {
   kTypeMismatch = 23,
   kKeyNotExists = 24,
   kKeyExists = 25,
-  kInvalidCommandArgument = 26,
-  kUnknownCommand = 27
+  kTableNotExists = 26,
+  kInvalidCommandArgument = 27,
+  kUnknownCommand = 28
 };
 
 }  // namespace ustore

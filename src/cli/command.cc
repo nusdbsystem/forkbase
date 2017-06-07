@@ -1,6 +1,8 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <fstream>
 #include <iomanip>
+#include <sstream>
 #include "cli/command.h"
 
 namespace ustore {
@@ -116,6 +118,11 @@ Command::Command(DB* db) noexcept
   CMD_ALIAS("EXISTS_COLUMN", "EXIST_COL");
   CMD_ALIAS("EXISTS_COLUMN", "EXIST-COL");
   CMD_ALIAS("EXISTS_COLUMN", "EXISTCOL");
+  CMD_HANDLER("LOAD_CSV", ExecLoadCSV);
+  CMD_ALIAS("LOAD_CSV", "LOAD-CSV");
+  CMD_ALIAS("LOAD_CSV", "LOADCSV");
+  CMD_ALIAS("LOAD_CSV", "LDCSV");
+  CMD_ALIAS("LOAD_CSV", "LOAD");
 }
 
 const int kPrintBasicCmdWidth = 12;
@@ -184,6 +191,8 @@ void Command::PrintCommandHelp() {
             << "-t <table> -m <column> -b <branch> -c <branch_2> "
             << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
             << "{-s <table_2>} {-n <column_2>}" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("LOAD_CSV")
+            << "<file> -t <table> -b <branch>" << std::endl;
 }
 
 ErrorCode Command::ExecCommand(const std::string& cmd) {
@@ -960,19 +969,6 @@ ErrorCode Command::ExecDiffTable() {
   auto it_diff = cs_.DiffTable(lhs_tab, rhs_tab);
   f_rpt_success(it_diff);
   return ErrorCode::kOK;
-
-  // if (rhs_tab.empty()) {
-  //   TableDiffIterator it_diff;
-  //   auto ec = cs_.DiffTable(lhs_tab, lhs_branch, rhs_branch, &it_diff);
-  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
-  //   return ec;
-  // } else {
-  //   TableDiffIterator it_diff;
-  //   auto ec =
-  //     cs_.DiffTable(lhs_tab, lhs_branch, rhs_tab, rhs_branch, &it_diff);
-  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
-  //   return ec;
-  // }
 }
 
 ErrorCode Command::ExecDiffColumn() {
@@ -1014,33 +1010,6 @@ ErrorCode Command::ExecDiffColumn() {
               << "Column (2nd): \"" << rhs_col_name << "\""
               << RED(" --> Error Code: " << ec) << std::endl;
   };
-  // const auto f_rpt_fail_by_column = [&](const ErrorCode & ec) {
-  //   std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
-  //             << "Table: \"" << lhs_tab << "\", "
-  //             << "Branch: \"" << lhs_branch << "\", "
-  //             << "Column: \"" << lhs_col << "\", "
-  //             << "Table (2nd): \"" << rhs_tab << "\", "
-  //             << "Branch (2nd): \"" << rhs_branch << "\", "
-  //             << "Column (2nd): \"" << rhs_col << "\""
-  //             << RED(" --> Error Code: " << ec) << std::endl;
-  // };
-  // const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
-  //   std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
-  //             << "Column: \"" << lhs_col << "\", "
-  //             << "Table: \"" << lhs_tab << "\", "
-  //             << "Branch: \"" << lhs_branch << "\", "
-  //             << "Table (2nd): \"" << rhs_tab << "\", "
-  //             << "Branch (2nd): \"" << rhs_branch << "\""
-  //             << RED(" --> Error Code: " << ec) << std::endl;
-  // };
-  // const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-  //   std::cerr << BOLD_RED("[FAILED: DIFF_COLUMN] ")
-  //             << "Table: \"" << lhs_tab << "\", "
-  //             << "Column: \"" << lhs_col << "\", "
-  //             << "Branch: \"" << lhs_branch << "\", "
-  //             << "Branch (2nd): \"" << rhs_branch << "\""
-  //             << RED(" --> Error Code: " << ec) << std::endl;
-  // };
   // conditional execution
   if (lhs_tab.empty() || lhs_col_name.empty() || lhs_branch.empty() ||
       rhs_branch.empty()) {
@@ -1064,39 +1033,6 @@ ErrorCode Command::ExecDiffColumn() {
   auto it_diff = cs_.DiffColumn(lhs_col, rhs_col);
   f_rpt_success(it_diff);
   return ErrorCode::kOK;
-
-
-  // if (rhs_tab.empty() && rhs_col.empty()) {
-  // Column rhs_col;
-  // ec = cs_.GetColumn(lhs_tab, rhs_branch, lhs_col_name, &lhs_col);
-  // if (ec != ErrorCode::kOK) {
-  //   f_rpt_fail_get_lhs(ec);
-  //   return ec;
-  // }
-
-  //   ColumnDiffIterator it_diff;
-  //   auto ec =
-  //     cs_.DiffColumn(lhs_tab, lhs_col, lhs_branch, rhs_branch, &it_diff);
-  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_branch(ec);
-  //   return ec;
-  // }
-  // if (!rhs_tab.empty() && rhs_col.empty()) {
-  //   ColumnDiffIterator it_diff;
-  //   auto ec = cs_.DiffColumn(lhs_col, lhs_tab, lhs_branch, rhs_tab,
-  //                            rhs_branch, &it_diff);
-  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_table(ec);
-  //   return ec;
-  // }
-  // if (!rhs_tab.empty() && !rhs_col.empty()) {
-  //   ColumnDiffIterator it_diff;
-  //   auto ec = cs_.DiffColumn(lhs_tab, lhs_branch, lhs_col,
-  //                            rhs_tab, rhs_branch, rhs_col, &it_diff);
-  //   ec == ErrorCode::kOK ? f_rpt_success(it_diff) : f_rpt_fail_by_column(ec);
-  //   return ec;
-  // }
-  // // illegal
-  // f_rpt_invalid_args();
-  // return ErrorCode::kInvalidCommandArgument;
 }
 
 ErrorCode Command::ExecExistsTable() {
@@ -1107,6 +1043,67 @@ ErrorCode Command::ExecExistsTable() {
 ErrorCode Command::ExecExistsColumn() {
   // TODO(linqian)
   return ErrorCode::kUnknownOp;
+}
+
+ErrorCode Command::ExecLoadCSV() {
+  const auto& file_path = Config::file;
+  const auto& tab = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: LOAD_CSV] ")
+              << "File: \"" << file_path << "\", "
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&]() {
+    std::cout << BOLD_GREEN("[SUCCESS: LOAD_CSV] ")
+              << "Table \"" << tab << "\" of Branch \"" << branch << "\" "
+              << "has been populated" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: LOAD_CSV] ")
+              << "File: \"" << file_path << "\", "
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  // conditional execution
+  if (file_path.empty() || tab.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (!cs_.ExistsTable(tab, branch)) {
+    f_rpt_fail(ErrorCode::kTableNotExists);
+    return ErrorCode::kTableNotExists;
+  }
+  std::ifstream ifs(file_path);
+  std::string line;
+  if (std::getline(ifs, line)) {
+    // parse table schema
+    auto col_names = Utils::Tokenize(line, " \t,|");
+    std::vector<std::vector<std::string>> cols;
+    for (auto& name : col_names) {
+      cols.emplace_back(std::vector<std::string>());
+    }
+    auto n_cols = cols.size();
+    // convert row-based entries into column-based structure
+    while (std::getline(ifs, line)) {
+      if (line.empty()) continue;
+      auto row = Utils::Tokenize(line, " \t,|");
+      for (size_t i = 0; i < n_cols; ++i) {
+        cols[i].push_back(std::move(row[i]));
+      }
+    }
+    ifs.close();
+    // put columns to the storeage
+    for (size_t i = 0; i < n_cols; ++i) {
+      USTORE_GUARD(
+        cs_.PutColumn(tab, branch, col_names[i], cols[i]));
+    }
+  }
+  f_rpt_success();
+  return ErrorCode::kOK;
 }
 
 }  // namespace cli
