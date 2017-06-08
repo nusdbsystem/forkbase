@@ -21,14 +21,10 @@ class ColumnStore {
   explicit ColumnStore(DB* db) noexcept : odb_(db) {}
   ~ColumnStore() = default;
 
-  inline bool ExistsTable(const std::string& table_name) {
-    return odb_.Exists(Slice(table_name)).value;
-  }
+  ErrorCode ExistsTable(const std::string& table_name, bool* exist);
 
-  inline bool ExistsTable(const std::string& table_name,
-                          const std::string& branch_name) {
-    return odb_.Exists(Slice(table_name), Slice(branch_name)).value;
-  }
+  ErrorCode ExistsTable(const std::string& table_name,
+                        const std::string& branch_name, bool* exist);
 
   ErrorCode CreateTable(const std::string& table_name,
                         const std::string& branch_name);
@@ -55,23 +51,16 @@ class ColumnStore {
                        const std::string& new_col_name,
                        const std::vector<std::string>& new_col_vals);
 
-  inline bool ExistsColumn(const std::string& table_name,
-                           const std::string& col_name) {
-    auto col_key = GlobalKey(table_name, col_name);
-    return odb_.Exists(Slice(col_key)).value;
-  }
+  ErrorCode ExistsColumn(const std::string& table_name,
+                         const std::string& col_name, bool* exist);
 
-  inline bool ExistsColumn(const std::string& table_name,
-                           const std::string& col_name,
-                           const std::string& branch_name) {
-    auto col_key = GlobalKey(table_name, col_name);
-    return odb_.Exists(Slice(col_key), Slice(branch_name)).value;
-  }
+  ErrorCode ExistsColumn(const std::string& table_name,
+                         const std::string& branch_name, 
+                         const std::string& col_name, bool* exist);
 
   ErrorCode GetColumn(const std::string& table_name,
                       const std::string& branch_name,
-                      const std::string& col_name,
-                      Column* col);
+                      const std::string& col_name, Column* col);
 
   ErrorCode PutColumn(const std::string& table_name,
                       const std::string& branch_name,

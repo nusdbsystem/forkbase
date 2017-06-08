@@ -157,6 +157,9 @@ class Utils {
   static void PrintMap(const UMap& map, const bool elem_in_quote = false,
                        std::ostream& os = std::cout);
 
+  static void PrintMapKeys(const UMap& map, const bool elem_in_quote = false,
+                           std::ostream& os = std::cout);
+
   static void PrintListDiff(DuallyDiffIndexIterator& it_diff,
                             const bool show_diff = true,
                             const bool elem_in_quote = false,

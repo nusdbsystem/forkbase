@@ -48,9 +48,11 @@ class Command {
   ErrorCode ExecIsLatest();
   ErrorCode ExecExists();
   ErrorCode ExecCreateTable();
+  ErrorCode ExecGetTable();
   ErrorCode ExecBranchTable();
   ErrorCode ExecGetColumn();
   ErrorCode ExecDeleteColumn();
+  ErrorCode ExecDiff();
   ErrorCode ExecDiffTable();
   ErrorCode ExecDiffColumn();
   ErrorCode ExecExistsTable();

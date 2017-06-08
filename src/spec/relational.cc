@@ -5,6 +5,21 @@
 
 namespace ustore {
 
+ErrorCode ColumnStore::ExistsTable(const std::string& table_name,
+                                   bool* exist) {
+  auto rst = odb_.Exists(Slice(table_name));
+  *exist = rst.value;
+  return rst.stat;
+}
+
+ErrorCode ColumnStore::ExistsTable(const std::string& table_name,
+                                   const std::string& branch_name,
+                                   bool* exist) {
+  auto rst = odb_.Exists(Slice(table_name), Slice(branch_name));
+  *exist = rst.value;
+  return rst.stat;
+}
+
 ErrorCode ColumnStore::CreateTable(const std::string& table_name,
                                    const std::string& branch_name) {
   auto rst = odb_.Exists(Slice(table_name), Slice(branch_name));
@@ -68,6 +83,25 @@ ErrorCode ColumnStore::MergeTable(
   tab.Set(Slice(new_col_name), Slice(new_col_ver));
   return odb_.Merge(Slice(table_name), tab, Slice(tgt_branch_name),
                     Slice(ref_branch_name)).stat;
+}
+
+ErrorCode ColumnStore::ExistsColumn(const std::string& table_name,
+                                    const std::string& col_name,
+                                    bool* exist) {
+  auto col_key = GlobalKey(table_name, col_name);
+  auto rst = odb_.Exists(Slice(col_key));
+  *exist = rst.value;
+  return rst.stat;
+}
+
+ErrorCode ColumnStore::ExistsColumn(const std::string& table_name,
+                                    const std::string& branch_name,
+                                    const std::string& col_name, 
+                                    bool* exist) {
+  auto col_key = GlobalKey(table_name, col_name);
+  auto rst = odb_.Exists(Slice(col_key), Slice(branch_name));
+  *exist = rst.value;
+  return rst.stat;
 }
 
 ErrorCode ColumnStore::GetColumn(

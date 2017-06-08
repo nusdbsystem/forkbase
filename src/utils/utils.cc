@@ -100,6 +100,20 @@ void Utils::PrintMap(const UMap& map, const bool elem_in_quote,
   os << "]";
 }
 
+void Utils::PrintMapKeys(const UMap& map, const bool elem_in_quote,
+                         std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = map.Scan();
+  os << "[";
+  if (!it.end()) {
+    os << quote << it.key() << quote;
+    for (it.next(); !it.end(); it.next()) {
+      os << ", " << quote << it.key() << quote;
+    }
+  }
+  os << "]";
+}
+
 // TODO(ruanpc): make it_diff.key() of DuallyDiffIndexIterator refer to
 //               it_diff.index() so that the following print function for
 //               diff of UList be the template function of PrintDiff.

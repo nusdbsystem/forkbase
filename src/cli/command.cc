@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -60,6 +61,12 @@ Command::Command(DB* db) noexcept
   CMD_ALIAS("CREATE_TABLE", "CREATE-TABLE");
   CMD_ALIAS("CREATE_TABLE", "CREATETABLE");
   CMD_ALIAS("CREATE_TABLE", "CREATE");
+  CMD_HANDLER("GET_TABLE", ExecGetTable);
+  CMD_ALIAS("GET_TABLE", "GET-TABLE");
+  CMD_ALIAS("GET_TABLE", "GETTABLE");
+  CMD_ALIAS("GET_TABLE", "GET_TAB");
+  CMD_ALIAS("GET_TABLE", "GET-TAB");
+  CMD_ALIAS("GET_TABLE", "GETTAB");
   CMD_HANDLER("BRANCH_TABLE", ExecBranchTable);
   CMD_ALIAS("BRANCH_TABLE", "BRANCH-TABLE");
   CMD_ALIAS("BRANCH_TABLE", "BRANCHTABLE");
@@ -81,13 +88,13 @@ Command::Command(DB* db) noexcept
   CMD_ALIAS("DELETE_COLUMN", "DEL_COL");
   CMD_ALIAS("DELETE_COLUMN", "DEL-COL");
   CMD_ALIAS("DELETE_COLUMN", "DELCOL");
+  CMD_HANDLER("DIFF", ExecDiff);
   CMD_HANDLER("DIFF_TABLE", ExecDiffTable);
   CMD_ALIAS("DIFF_TABLE", "DIFF-TABLE");
   CMD_ALIAS("DIFF_TABLE", "DIFFTABLE");
   CMD_ALIAS("DIFF_TABLE", "DIFF_TAB");
   CMD_ALIAS("DIFF_TABLE", "DIFF-TAB");
   CMD_ALIAS("DIFF_TABLE", "DIFFTAB");
-  CMD_ALIAS("DIFF_TABLE", "DIFF");
   CMD_HANDLER("DIFF_COLUMN", ExecDiffColumn);
   CMD_ALIAS("DIFF_COLUMN", "DIFF-COLUMN");
   CMD_ALIAS("DIFF_COLUMN", "DIFFCOLUMN");
@@ -121,7 +128,6 @@ Command::Command(DB* db) noexcept
   CMD_HANDLER("LOAD_CSV", ExecLoadCSV);
   CMD_ALIAS("LOAD_CSV", "LOAD-CSV");
   CMD_ALIAS("LOAD_CSV", "LOADCSV");
-  CMD_ALIAS("LOAD_CSV", "LDCSV");
   CMD_ALIAS("LOAD_CSV", "LOAD");
 }
 
@@ -175,11 +181,15 @@ void Command::PrintCommandHelp() {
             << "-k <key>" << std::endl;
   std::cout << FORMAT_BASIC_CMD("LIST_KEY") << std::endl;
   std::cout << std::endl
-            << "UStore Relational Commands:" << std::endl;
+            << "UStore Relational (Columnar) Commands:" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("CREATE_TABLE")
+            << "-t <table> -b <branch>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("GET_TABLE")
             << "-t <table> -b <branch>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("BRANCH_TABLE")
             << "-t <table> -b <target_branch> -c <refer_branch>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("EXISTS_TABLE")
+            << "-t <table> {-b <branch>}" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("DIFF_TABLE")
             << "-t <table> -b <branch> -c <branch_2> {-s <table_2>}"
             << std::endl;
@@ -187,6 +197,8 @@ void Command::PrintCommandHelp() {
             << "-t <table> -b <branch> -m <column>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("DELETE_COLUMN")
             << "-t <table> -b <branch> -m <column>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("EXISTS_COLUMN")
+            << "-t <table> -m <column> {-b <branch>}" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("DIFF_COLUMN")
             << "-t <table> -m <column> -b <branch> -c <branch_2> "
             << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
@@ -211,9 +223,8 @@ ErrorCode Command::ExecCommand(const std::string& cmd) {
 
 ErrorCode Command::ExecGet() {
   // redirection
-  if (!Config::table.empty() && !Config::column.empty() &&
-      Config::key.empty()) {
-    return ExecGetColumn();
+  if (!Config::table.empty() && Config::key.empty()) {
+    return Config::column.empty() ? ExecGetTable() : ExecGetColumn();
   }
 
   const auto& key = Config::key;
@@ -657,6 +668,11 @@ ErrorCode Command::ExecLatest() {
 }
 
 ErrorCode Command::ExecExists() {
+  // redirection
+  if (!Config::table.empty() && Config::key.empty()) {
+    return Config::column.empty() ? ExecExistsTable() : ExecExistsColumn();
+  }
+
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   // screen printing
@@ -795,6 +811,41 @@ ErrorCode Command::ExecCreateTable() {
   return ec;
 }
 
+ErrorCode Command::ExecGetTable() {
+  const auto& tab_name = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: GET_TABLE] ")
+              << "Table: \"" << tab_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const Table & tab) {
+    std::cout << BOLD_GREEN("[SUCCESS: GET_TABLE] ") << "Columns: ";
+    Utils::PrintMapKeys(tab, true);
+    std::cout << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
+              << "Table: \"" << tab_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  // conditional execution
+  if (tab_name.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  Table tab;
+  auto ec = cs_.GetTable(tab_name, branch, &tab);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  f_rpt_success(tab);
+  return ErrorCode::kOK;
+}
+
 ErrorCode Command::ExecBranchTable() {
   const auto& tab = Config::table;
   const auto& tgt_branch = Config::branch;
@@ -841,7 +892,7 @@ ErrorCode Command::ExecGetColumn() {
               << "Column: \"" << col_name << "\"" << std::endl;
   };
   const auto f_rpt_success = [&](const Column & col) {
-    std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Column: ";
+    std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Values: ";
     Utils::PrintList(col, true);
     std::cout << std::endl;
   };
@@ -897,12 +948,12 @@ ErrorCode Command::ExecDeleteColumn() {
   return ec;
 }
 
-ErrorCode Command::ExecDiffTable() {
+ErrorCode Command::ExecDiff() {
   // redirection
-  if (!Config::column.empty()) {
-    return ExecDiffColumn();
-  }
+  return Config::column.empty() ? ExecDiffTable() : ExecDiffColumn();
+}
 
+ErrorCode Command::ExecDiffTable() {
   const auto& lhs_tab_name = Config::table;
   const auto& lhs_branch = Config::branch;
   auto& rhs_tab_name = Config::ref_table;
@@ -921,21 +972,6 @@ ErrorCode Command::ExecDiffTable() {
     Utils::PrintDiff(it_diff, false, true);
     std::cout << std::endl;
   };
-  // const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-  //   std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
-  //             << "Table: \"" << lhs_tab_name << "\", "
-  //             << "Branch: \"" << lhs_branch << "\", "
-  //             << "Branch (2nd): \"" << rhs_branch << "\""
-  //             << RED(" --> Error Code: " << ec) << std::endl;
-  // };
-  // const auto f_rpt_fail_by_table = [&](const ErrorCode & ec) {
-  //   std::cerr << BOLD_RED("[FAILED: DIFF_TABLE] ")
-  //             << "Table: \"" << lhs_tab_name << "\", "
-  //             << "Branch: \"" << lhs_branch << "\", "
-  //             << "Table (2nd): \"" << rhs_tab_name << "\", "
-  //             << "Branch (2nd): \"" << rhs_branch << "\""
-  //             << RED(" --> Error Code: " << ec) << std::endl;
-  // };
   const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
               << "Table: \"" << lhs_tab_name << "\", "
@@ -1036,13 +1072,88 @@ ErrorCode Command::ExecDiffColumn() {
 }
 
 ErrorCode Command::ExecExistsTable() {
-  // TODO(linqian)
-  return ErrorCode::kUnknownOp;
+  const auto& tab = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: EXISTS] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success_by_tab = [](const bool exist) {
+    std::cout << BOLD_GREEN("[SUCCESS: EXISTS TABLE] ")
+              << (exist ? "True" : "False") << std::endl;
+  };
+  const auto f_rpt_success_by_branch = [](const bool exist) {
+    std::cout << BOLD_GREEN("[SUCCESS: EXISTS TABLE] ")
+              << (exist ? "True" : "False") << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: EXISTS] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  // conditional execution
+  if (tab.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (branch.empty()) {
+    bool exist;
+    auto ec = cs_.ExistsTable(tab, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success_by_tab(exist) : f_rpt_fail(ec);
+    return ec;
+  } else {
+    bool exist;
+    auto ec = cs_.ExistsTable(tab, branch, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success_by_branch(exist) : f_rpt_fail(ec);
+    return ec;
+  }
 }
 
 ErrorCode Command::ExecExistsColumn() {
-  // TODO(linqian)
-  return ErrorCode::kUnknownOp;
+  const auto& tab = Config::table;
+  const auto& branch = Config::branch;
+  const auto& col_name = Config::column;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: EXISTS] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Column: \"" << col_name << "\"" << std::endl;
+  };
+  const auto f_rpt_success_by_col = [](const bool exist) {
+    std::cout << BOLD_GREEN("[SUCCESS: EXISTS COLUMN] ")
+              << (exist ? "True" : "False") << std::endl;
+  };
+  const auto f_rpt_success_by_branch = [](const bool exist) {
+    std::cout << BOLD_GREEN("[SUCCESS: EXISTS COLUMN] ")
+              << (exist ? "True" : "False") << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: EXISTS] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Column: \"" << col_name << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  // conditional execution
+  if (tab.empty() || col_name.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (branch.empty()) {
+    bool exist;
+    auto ec = cs_.ExistsColumn(tab, col_name, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success_by_col(exist) : f_rpt_fail(ec);
+    return ec;
+  } else {
+    bool exist;
+    auto ec = cs_.ExistsColumn(tab, branch, col_name, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success_by_branch(exist) : f_rpt_fail(ec);
+    return ec;
+  }
 }
 
 ErrorCode Command::ExecLoadCSV() {
@@ -1073,15 +1184,20 @@ ErrorCode Command::ExecLoadCSV() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (!cs_.ExistsTable(tab, branch)) {
+  bool exist_tab;
+  auto ec = cs_.ExistsTable(tab, branch, &exist_tab);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  if (!exist_tab) {
     f_rpt_fail(ErrorCode::kTableNotExists);
     return ErrorCode::kTableNotExists;
   }
   std::ifstream ifs(file_path);
   if (!ifs) {
-    f_rpt_invalid_args();
-    std::cerr << "File \"" << file_path << "\" not found" << std::endl;
-    return ErrorCode::kInvalidCommandArgument;
+    f_rpt_fail(ErrorCode::kFailedOpenFile);
+    return ErrorCode::kFailedOpenFile;
   }
   std::string line;
   if (std::getline(ifs, line)) {
@@ -1094,6 +1210,7 @@ ErrorCode Command::ExecLoadCSV() {
     auto n_cols = cols.size();
     // convert row-based entries into column-based structure
     while (std::getline(ifs, line)) {
+      boost::trim(line);
       if (line.empty()) continue;
       auto row = Utils::Tokenize(line, " \t,|");
       for (size_t i = 0; i < n_cols; ++i) {
