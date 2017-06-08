@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <chrono>
+#include <fstream>
 #include <sstream>
 #include <thread>
 #include <vector>
@@ -49,7 +50,7 @@ std::vector<std::string> CreateLocationColumn(size_t num_records) {
   for (size_t i = 0; i < num_records; ++i) {
     std::stringstream sstr;
     sstr << "("
-         << rand() % 90 << "." << rand() % 100 << ", "
+         << rand() % 90 << "." << rand() % 100 << "#"
          << rand() % 180 << "." << rand() % 100
          << ")";
     result.push_back(sstr.str());
@@ -97,24 +98,50 @@ int main(int argc, char* argv[]) {
   std::string branch_name("master");
   cs->CreateTable(table_name, branch_name);
 
-  cs->PutColumn(table_name, branch_name,
-                "MSISDN", CreateStrColumn(num_records, 15));
-  cs->PutColumn(table_name, branch_name,
-                "IMSI", CreateStrColumn(num_records, 15));
-  cs->PutColumn(table_name, branch_name,
-                "IMEI", CreateStrColumn(num_records, 15));
-  cs->PutColumn(table_name, branch_name,
-                "HOMEAREA", CreateStrColumn(num_records, 64));
-  cs->PutColumn(table_name, branch_name,
-                "CURAREA", CreateStrColumn(num_records, 64));
-  cs->PutColumn(table_name, branch_name,
-                "LOCATION", CreateLocationColumn(num_records));
-  cs->PutColumn(table_name, branch_name,
-                "CAPTURETIME", CreateIntColumn(num_records, 1000000000));
+  std::vector<std::string> cols;
+  std::vector<std::vector<std::string>> vals;
+  cols.push_back("MSISDN");
+  vals.push_back(CreateStrColumn(num_records, 15));
+  cs->PutColumn(table_name, branch_name, cols.back(), vals.back());
+  cols.push_back("IMSI");
+  vals.push_back(CreateStrColumn(num_records, 15));
+  cs->PutColumn(table_name, branch_name, cols.back(), vals.back());
+  cols.push_back("IMEI");
+  vals.push_back(CreateStrColumn(num_records, 15));
+  cs->PutColumn(table_name, branch_name, cols.back(), vals.back());
+  cols.push_back("HOMEAREA");
+  vals.push_back(CreateStrColumn(num_records, 64));
+  cs->PutColumn(table_name, branch_name, cols.back(), vals.back());
+  cols.push_back("CURAREA");
+  vals.push_back(CreateStrColumn(num_records, 64));
+  cs->PutColumn(table_name, branch_name, cols.back(), vals.back());
+  cols.push_back("LOCATION");
+  vals.push_back(CreateLocationColumn(num_records));
+  cs->PutColumn(table_name, branch_name, cols.back(), vals.back());
+  cols.push_back("CAPTURETIME");
+  vals.push_back(CreateIntColumn(num_records, 1000000000));
+  cs->PutColumn(table_name, branch_name, cols.back(), vals.back());
+
   ustore_svc.Stop();
   ustore_svc_thread.join();
   delete cs;
   std::cout << "Table TB_LOCATION Loaded" << std::endl;
+
+  std::ofstream os("hbase.csv");
+  for (size_t i = 0; i < cols.size(); ++i) {
+    if (i) os << ",";
+    os << cols[i];
+  }
+  os << std::endl;
+  for (size_t k = 0; k < vals[0].size(); ++k) {
+    for (size_t i = 0; i < vals.size(); ++i) {
+      if (i) os << ",";
+      os << vals[i][k];
+    }
+    os << std::endl;
+  }
+  std::cout << "hbase.csv generated" << std::endl;
+
   return 0;
 }
 
