@@ -1078,6 +1078,11 @@ ErrorCode Command::ExecLoadCSV() {
     return ErrorCode::kTableNotExists;
   }
   std::ifstream ifs(file_path);
+  if (!ifs) {
+    f_rpt_invalid_args();
+    std::cerr << "File \"" << file_path << "\" not found" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
   std::string line;
   if (std::getline(ifs, line)) {
     // parse table schema
