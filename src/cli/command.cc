@@ -229,6 +229,98 @@ ErrorCode Command::ExecCommand(const std::string& cmd) {
   return it_cmd_exec->second();
 }
 
+ErrorCode Command::ExecCommand(int argc, char* argv[],
+                               const std::string& ctx) {
+  if (Config::ParseCmdArgs(argc, argv)) {
+    if (!Config::script.empty()) {
+      std::cerr << BOLD_RED("[ERROR] ") << "\"--script\" cannot be used in "
+                << "UStore " << ctx << std::endl;
+      return ErrorCode::kInvalidCommandArgument;
+    } else if (Config::command.empty()) {
+      std::cerr << BOLD_RED("[ERROR] ") << "UStore command is missing"
+                << std::endl;
+      return ErrorCode::kInvalidCommandArgument;
+    } else {
+      return ExecCommand(Config::command);
+    }
+  } else if (Config::is_help) {
+    DLOG(INFO) << "Help messages have been printed";
+    return ErrorCode::kOK;
+  } else {
+    std::cerr << BOLD_RED("[ERROR] ")
+              << "Found invalid command-line option" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+}
+
+ErrorCode Command::ExecScript(const std::string& script) {
+  CHECK(!script.empty()) << BOLD_RED("[ERROR] ")
+                         << "Path of script must be given";
+  std::ifstream ifs(script);
+  if (!ifs) {
+    std::cerr << BOLD_RED("[FAILURE] ") << "Invalid path of script: "
+              << script << std::endl;
+    return ErrorCode::kFailedOpenFile;
+  }
+  auto ec = ErrorCode::kOK;
+  std::string line;
+  size_t cnt_line = 0;
+  while ((ec == ErrorCode::kOK) && std::getline(ifs, line)) {
+    ++cnt_line;
+    boost::trim(line);
+    if (line.empty() || boost::starts_with(line, "#")) continue;
+    std::cout << YELLOW(cnt_line << ":> ") << line << std::endl;
+    // construct command-line arguments
+    auto args = Utils::Tokenize(line, " \t");
+    int argc = args.size() + 1;
+    char dummy_cmd[] = "./ustore_cli";
+    char* argv[argc] = { dummy_cmd };
+    for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
+      auto& arg = args[j];
+      argv[i] = new char[arg.size()];
+      std::strcpy(argv[i], arg.c_str());
+    }
+    // command execution
+    ec = ExecCommand(argc, argv, "script");
+    // cleaning
+    for (size_t i = 1; i < argc; ++i) delete argv[i];
+    std::cout << std::endl;
+  }
+  ifs.close();
+  return ec;
+}
+
+ErrorCode Command::ExecConsole() {
+  std::cout << "Welcome to UStore console." << std::endl
+            << "Type in commands to have them evaluated." << std::endl
+            << "Type \"--help\" for more information." << std::endl
+            << "Type \"q\" or \"quit\" to exit." << std::endl << std::endl;
+  std::string line;
+  while (true) {
+    std::cout << YELLOW("ustore> ");
+    std::getline(std::cin, line);
+    boost::trim(line);
+    if (line.empty()) continue;
+    if (line == "q" || line == "quit") break;
+    // construct command-line arguments
+    auto args = Utils::Tokenize(line, " \t");
+    int argc = args.size() + 1;
+    char dummy_cmd[] = "./ustore_cli";
+    char* argv[argc] = { dummy_cmd };
+    for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
+      auto& arg = args[j];
+      argv[i] = new char[arg.size()];
+      std::strcpy(argv[i], arg.c_str());
+    }
+    // command execution
+    ExecCommand(argc, argv, "console");
+    // cleaning
+    for (size_t i = 1; i < argc; ++i) delete argv[i];
+    std::cout << std::endl;
+  }
+  return ErrorCode::kOK;
+}
+
 ErrorCode Command::ExecGet() {
   // redirection
   if (!Config::table.empty() && Config::key.empty()) {

@@ -10,6 +10,7 @@ namespace cli {
 
 bool Config::is_help = false;
 std::string Config::command = "";
+std::string Config::script = "";
 std::string Config::file = "";
 std::string Config::key = "";
 std::string Config::value = "";
@@ -25,6 +26,7 @@ std::string Config::ref_column = "";
 void Config::Reset() {
   is_help = false;
   command = "";
+  script = "";
   file = "";
   key = "";
   value = "";
@@ -48,6 +50,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     Command::Normalize(&arg_command);
     command = std::move(arg_command);
 
+    script = vm["script"].as<std::string>();
     file = vm["file"].as<std::string>();
 
     key = vm["key"].as<std::string>();
@@ -80,8 +83,10 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   po::options_description desc("Options", 120);
   desc.add_options()
-  ("command", po::value<std::string>()->required(),
-   "UStore command [REQUIRED]")
+  ("command", po::value<std::string>()->default_value(""),
+   "UStore command")
+  ("script", po::value<std::string>()->default_value(""),
+   "script of UStore commands")
   ("file", po::value<std::string>()->default_value(""),
    "path of input/output file")
   ("key,k", po::value<std::string>()->default_value(""),

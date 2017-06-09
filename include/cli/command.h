@@ -30,9 +30,13 @@ class Command {
   ~Command() = default;
 
   ErrorCode ExecCommand(const std::string& command);
+  ErrorCode ExecScript(const std::string& script);
+  ErrorCode ExecConsole();
 
  private:
   static const std::unordered_set<std::string> kSupportedCommands;
+
+  ErrorCode ExecCommand(int argc, char* argv[], const std::string& ctx);
 
   ErrorCode ExecGet();
   ErrorCode ExecPut();

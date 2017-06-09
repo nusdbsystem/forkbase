@@ -18,6 +18,7 @@ class Config {
  public:
   static bool is_help;
   static std::string command;
+  static std::string script;
   static std::string file;
   static std::string key;
   static std::string value;

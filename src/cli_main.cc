@@ -24,13 +24,24 @@ int main(int argc, char* argv[]) {
   Command cmd(&client_db);
   // conditional execution
   auto ec = ErrorCode::kUnknownOp;
-  if (Config::ParseCmdArgs(argc, argv)) {
-    ec = cmd.ExecCommand(Config::command);
+  if (argc == 1) {
+    ec = cmd.ExecConsole();
+  } else if (Config::ParseCmdArgs(argc, argv)) {
+    if (!Config::command.empty() && Config::script.empty()) {
+      ec = cmd.ExecCommand(Config::command);
+    } else if (Config::command.empty() && !Config::script.empty()) {
+      ec = cmd.ExecScript(Config::script);
+    } else {
+      std::cerr << BOLD_RED("[ERROR] ")
+                << "Either UStore command or \"--script\" must be given, "
+                << "but not both" << std::endl;
+      ec = ErrorCode::kInvalidCommandArgument;
+    }
   } else if (Config::is_help) {
     DLOG(INFO) << "Help messages have been printed";
     ec = ErrorCode::kOK;
   } else {
-    std::cerr << BOLD_RED("[FAILURE] ")
+    std::cerr << BOLD_RED("[ERROR] ")
               << "Found invalid command-line option" << std::endl;
     ec = ErrorCode::kInvalidCommandArgument;
   }
