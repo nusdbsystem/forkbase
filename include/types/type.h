@@ -98,9 +98,10 @@ enum class ErrorCode : byte_t {
   kKeyNotExists = 24,
   kKeyExists = 25,
   kTableNotExists = 26,
-  kFailedOpenFile = 27,
-  kInvalidCommandArgument = 28,
-  kUnknownCommand = 29
+  kEmptyTable = 27,
+  kFailedOpenFile = 28,
+  kInvalidCommandArgument = 29,
+  kUnknownCommand = 30
 };
 
 }  // namespace ustore

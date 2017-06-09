@@ -1,8 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include "cli/command.h"
 
@@ -129,6 +131,10 @@ Command::Command(DB* db) noexcept
   CMD_ALIAS("LOAD_CSV", "LOAD-CSV");
   CMD_ALIAS("LOAD_CSV", "LOADCSV");
   CMD_ALIAS("LOAD_CSV", "LOAD");
+  CMD_HANDLER("DUMP_CSV", ExecDumpCSV);
+  CMD_ALIAS("DUMP_CSV", "DUMP-CSV");
+  CMD_ALIAS("DUMP_CSV", "DUMPCSV");
+  CMD_ALIAS("DUMP_CSV", "DUMP");
 }
 
 const int kPrintBasicCmdWidth = 12;
@@ -204,6 +210,8 @@ void Command::PrintCommandHelp() {
             << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
             << "{-s <table_2>} {-n <column_2>}" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("LOAD_CSV")
+            << "<file> -t <table> -b <branch>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("DUMP_CSV")
             << "<file> -t <table> -b <branch>" << std::endl;
 }
 
@@ -1224,6 +1232,79 @@ ErrorCode Command::ExecLoadCSV() {
         cs_.PutColumn(tab, branch, col_names[i], cols[i]));
     }
   }
+  f_rpt_success();
+  return ErrorCode::kOK;
+}
+
+const std::string kOutputDelimiter = "\t";
+
+ErrorCode Command::ExecDumpCSV() {
+  const auto& file_path = Config::file;
+  const auto& tab_name = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: DUMP_CSV] ")
+              << "File: \"" << file_path << "\", "
+              << "Table: \"" << tab_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&]() {
+    std::cout << BOLD_GREEN("[SUCCESS: DUMP_CSV] ")
+              << "Table \"" << tab_name << "\" of Branch \"" << branch
+              << "\" " << "has been exported" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: DUMP_CSV] ")
+              << "File: \"" << file_path << "\", "
+              << "Table: \"" << tab_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error Code: " << ec) << std::endl;
+  };
+  // conditional execution
+  if (file_path.empty() || tab_name.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  Table tab;
+  auto ec = cs_.GetTable(tab_name, branch, &tab);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  if (tab.numElements() == 0) {
+    f_rpt_fail(ErrorCode::kEmptyTable);
+    return ErrorCode::kEmptyTable;
+  }
+  // retrieve the column-based table
+  std::vector<std::vector<std::string>> cols;
+  auto n_rows = std::numeric_limits<size_t>::max();
+  for (auto it_tab = tab.Scan(); !it_tab.end(); it_tab.next()) {
+    auto col_name = it_tab.key().ToString();
+    Column col;
+    ec = cs_.GetColumn(tab_name, branch, col_name, &col);
+    if (ec != ErrorCode::kOK) {
+      f_rpt_fail(ec);
+      return ec;
+    }
+    std::vector<std::string> col_str = { std::move(col_name) };
+    for (auto it_col = col.Scan(); !it_col.end(); it_col.next()) {
+      col_str.emplace_back(it_col.value().ToString());
+    }
+    n_rows = std::min(n_rows, col.numElements());
+    cols.push_back(std::move(col_str));
+  }
+  ++n_rows; // counting the schema row
+  // write the column-based table to the row-based CSV file
+  std::ofstream ofs(file_path);
+  for (size_t i = 0; i < n_rows; ++i) {
+    ofs << cols[0][i];
+    for (size_t j = 1; j < cols.size(); ++j) {
+      ofs << kOutputDelimiter << cols[j][i];
+    }
+    ofs << std::endl;
+  }
+  ofs.close();
   f_rpt_success();
   return ErrorCode::kOK;
 }

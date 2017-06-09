@@ -10,6 +10,7 @@ namespace cli {
 
 bool Config::is_help = false;
 std::string Config::command = "";
+std::string Config::file = "";
 std::string Config::key = "";
 std::string Config::value = "";
 std::string Config::branch = "";
@@ -20,11 +21,11 @@ std::string Config::table = "";
 std::string Config::ref_table = "";
 std::string Config::column = "";
 std::string Config::ref_column = "";
-std::string Config::file = "";
 
 void Config::Reset() {
   is_help = false;
   command = "";
+  file = "";
   key = "";
   value = "";
   branch = "";
@@ -35,7 +36,6 @@ void Config::Reset() {
   ref_table = "";
   column = "";
   ref_column = "";
-  file = "";
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -47,6 +47,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     auto arg_command = vm["command"].as<std::string>();
     Command::Normalize(&arg_command);
     command = std::move(arg_command);
+
+    file = vm["file"].as<std::string>();
 
     key = vm["key"].as<std::string>();
     value = vm["value"].as<std::string>();
@@ -68,8 +70,6 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     column = vm["column"].as<std::string>();
     ref_column = vm["ref-column"].as<std::string>();
-
-    file = vm["file"].as<std::string>();
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -82,6 +82,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   desc.add_options()
   ("command", po::value<std::string>()->required(),
    "UStore command [REQUIRED]")
+  ("file", po::value<std::string>()->default_value(""),
+   "path of input/output file")
   ("key,k", po::value<std::string>()->default_value(""),
    "key of data")
   ("value,x", po::value<std::string>()->default_value(""),
@@ -102,8 +104,6 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "the operating column")
   ("ref-column,n", po::value<std::string>()->default_value(""),
    "the referring column")
-  ("file", po::value<std::string>()->default_value(""),
-   "path of input file")
   ("help,?", "print usage message");
 
   po::positional_options_description pos_opts;
