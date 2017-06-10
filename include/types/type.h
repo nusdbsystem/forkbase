@@ -74,34 +74,32 @@ enum class ErrorCode : byte_t {
   kOK = 0,
   kUnknownOp = 1,
   kInvalidRange = 2,
-  kReadFailed = 3,
-  kWriteFailed = 4,
-  kBranchExists = 5,
-  kBranchNotExists = 6,
-  kReferringVersionNotExist = 7,
-  kUCellNotfound = 8,
-  kChunkNotExists = 9,
-  kTypeUnsupported = 10,
-  kInvalidParameters = 11,
-  kFailedCreateUCell = 12,
-  kFailedCreateSBlob = 13,
-  kFailedCreateSString = 14,
-  kFailedCreateSList = 15,
-  kFailedCreateSMap = 16,
-  kInconsistentKey = 17,
-  kInvalidValue = 18,
-  kFailedModifySBlob = 19,
-  kFailedModifySList = 20,
-  kFailedModifySMap = 21,
-  kIndexOutOfRange = 22,
-  kTypeMismatch = 23,
-  kKeyNotExists = 24,
-  kKeyExists = 25,
-  kTableNotExists = 26,
-  kEmptyTable = 27,
-  kFailedOpenFile = 28,
-  kInvalidCommandArgument = 29,
-  kUnknownCommand = 30
+  kBranchExists = 3,
+  kBranchNotExists = 4,
+  kReferringVersionNotExist = 5,
+  kUCellNotfound = 6,
+  kChunkNotExists = 7,
+  kTypeUnsupported = 8,
+  kFailedCreateUCell = 9,
+  kFailedCreateSBlob = 10,
+  kFailedCreateSString = 11,
+  kFailedCreateSList = 12,
+  kFailedCreateSMap = 13,
+  kInconsistentKey = 14,
+  kInvalidValue = 15,
+  kFailedModifySBlob = 16,
+  kFailedModifySList = 17,
+  kFailedModifySMap = 18,
+  kIndexOutOfRange = 19,
+  kTypeMismatch = 20,
+  kKeyNotExists = 21,
+  kKeyExists = 22,
+  kTableNotExists = 23,
+  kEmptyTable = 24,
+  kNotEmptyTable = 25,
+  kFailedOpenFile = 26,
+  kInvalidCommandArgument = 27,
+  kUnknownCommand = 28
 };
 
 }  // namespace ustore
@@ -109,11 +107,26 @@ enum class ErrorCode : byte_t {
 namespace std {
 
 template<>
+struct hash<::ustore::UType> {
+  inline size_t operator()(const ::ustore::UType& obj) const {
+    return static_cast<std::size_t>(obj);
+  }
+};
+
+template<>
 struct hash<::ustore::ChunkType> {
   size_t operator()(const ::ustore::ChunkType& key) const {
     return static_cast<std::size_t>(key);
   }
 };
+
+template<>
+struct hash<::ustore::ErrorCode> {
+  inline size_t operator()(const ::ustore::ErrorCode& obj) const {
+    return static_cast<std::size_t>(obj);
+  }
+};
+
 }  // namespace std
 
 #endif  // USTORE_TYPES_TYPE_H_

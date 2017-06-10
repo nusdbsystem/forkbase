@@ -81,8 +81,9 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
-  po::options_description desc("Options", 120);
+  po::options_description desc(BLUE_STR("Options"), 120);
   desc.add_options()
+  ("help,?", "print usage message")
   ("command", po::value<std::string>()->default_value(""),
    "UStore command")
   ("script", po::value<std::string>()->default_value(""),
@@ -108,8 +109,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("column,m", po::value<std::string>()->default_value(""),
    "the operating column")
   ("ref-column,n", po::value<std::string>()->default_value(""),
-   "the referring column")
-  ("help,?", "print usage message");
+   "the referring column");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);

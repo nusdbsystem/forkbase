@@ -5,28 +5,71 @@
 
 namespace ustore {
 
+static std::unordered_map<std::string, UType> str2type = {
+  {"Bool", UType::kBool},
+  {"Num", UType::kNum},
+  {"String", UType::kString},
+  {"Blob", UType::kBlob},
+  {"List", UType::kList},
+  {"Set", UType::kSet},
+  {"Map", UType::kMap}
+};
+
 UType Utils::ToUType(const std::string& str) {
-  if (str == "Bool") return UType::kBool;
-  if (str == "Num") return UType::kNum;
-  if (str == "String") return UType::kString;
-  if (str == "Blob") return UType::kBlob;
-  if (str == "List") return UType::kList;
-  if (str == "Set") return UType::kSet;
-  if (str == "Map") return UType::kMap;
-  return UType::kUnknown;
+  auto it = str2type.find(str);
+  return it == str2type.end() ? UType::kUnknown : it->second;
 }
 
+static std::unordered_map<UType, std::string> type2str = {
+  {UType::kBool, "Bool"},
+  {UType::kNum, "Num"},
+  {UType::kString, "String"},
+  {UType::kBlob, "Blob"},
+  {UType::kList, "List"},
+  {UType::kSet, "Set"},
+  {UType::kMap, "Map"}
+};
+
 std::string Utils::ToString(const UType& type) {
-  switch (type) {
-    case UType::kBool: return "Bool";
-    case UType::kNum: return "Num";
-    case UType::kString: return "String";
-    case UType::kBlob: return "Blob";
-    case UType::kList: return "List";
-    case UType::kSet: return "Set";
-    case UType::kMap: return "Map";
-    default: return "unknown";
-  }
+  auto it = type2str.find(type);
+  return it == type2str.end() ? "<Unknown>" : it->second;
+}
+
+static std::unordered_map<ErrorCode, std::string> ec2str = {
+  {ErrorCode::kOK, "success"},
+  {ErrorCode::kUnknownOp, "unknown operation"},
+  {ErrorCode::kInvalidRange, "invalid value range"},
+  {ErrorCode::kBranchExists, "branch already exists"},
+  {ErrorCode::kBranchNotExists, "branch does not exist"},
+  {ErrorCode::kReferringVersionNotExist, "reffering version does not exist"},
+  {ErrorCode::kUCellNotfound, "UCell is not found"},
+  {ErrorCode::kChunkNotExists, "chunk does not exist"},
+  {ErrorCode::kTypeUnsupported, "unsupported data type"},
+  {ErrorCode::kFailedCreateUCell, "failed to create UCell"},
+  {ErrorCode::kFailedCreateSBlob, "failed to create SBlob"},
+  {ErrorCode::kFailedCreateSString, "failed to create SString"},
+  {ErrorCode::kFailedCreateSList, "failed to create SList"},
+  {ErrorCode::kFailedCreateSMap, "failed to create SMap"},
+  {ErrorCode::kInconsistentKey, "inconsistent values of key"},
+  {ErrorCode::kInvalidValue, "invalid value"},
+  {ErrorCode::kFailedModifySBlob, "failed to modify SBlob"},
+  {ErrorCode::kFailedModifySList, "failed to modify SList"},
+  {ErrorCode::kFailedModifySMap, "failed to modify SMap"},
+  {ErrorCode::kIndexOutOfRange, "index out of range"},
+  {ErrorCode::kTypeMismatch, "data types mismatch"},
+  {ErrorCode::kKeyNotExists, "key does not exist"},
+  {ErrorCode::kKeyExists, "key already exists"},
+  {ErrorCode::kTableNotExists, "table does not exist"},
+  {ErrorCode::kEmptyTable, "table is empty"},
+  {ErrorCode::kNotEmptyTable, "table is not empty"},
+  {ErrorCode::kFailedOpenFile, "failed to open file"},
+  {ErrorCode::kInvalidCommandArgument, "invalid command-line argument"},
+  {ErrorCode::kUnknownCommand, "unrecognized command"}
+};
+
+std::string Utils::ToString(const ErrorCode& ec) {
+  auto it = ec2str.find(ec);
+  return it == ec2str.end() ? "<Unknown>" : it->second;
 }
 
 std::vector<std::string> Utils::Tokenize(
@@ -38,6 +81,36 @@ std::vector<std::string> Utils::Tokenize(
     vec.push_back(std::move(t));
   }
   return vec;
+}
+
+bool Utils::TokenizeArgs(const std::string& line,
+                         std::vector<std::string>* args) {
+  args->clear();
+  std::stringstream ss;
+  bool in_quote = false;
+  for (auto it = line.begin(); it != line.end(); ++it) {
+    if (in_quote) {
+      if (*it == '\"') {
+        args->emplace_back(ss.str());
+        ss.str("");
+        in_quote = false;
+      } else {
+        ss << *it;
+      }
+    } else if (*it == '\"') {
+      in_quote = true;
+    } else if (*it == ' ' || *it == '\t') {
+      auto elem = ss.str();
+      if (!elem.empty()) {
+        args->push_back(std::move(elem));
+        ss.str("");
+      }
+    } else {
+      ss << *it;
+    }
+  }
+  args->emplace_back(ss.str());
+  return !in_quote;
 }
 
 std::vector<int> Utils::ToIntVector(

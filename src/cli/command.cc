@@ -1,11 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include <algorithm>
-#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iomanip>
-#include <limits>
-#include <sstream>
 #include "cli/command.h"
 
 namespace ustore {
@@ -28,21 +24,16 @@ Command::Command(DB* db) noexcept
   CMD_HANDLER("BRANCH", ExecBranch);
   CMD_HANDLER("RENAME", ExecRename);
   CMD_HANDLER("DELETE", ExecDelete);
+  CMD_ALIAS("DELETE", "DEL");
   CMD_HANDLER("LIST_KEY", ExecListKey);
-  CMD_ALIAS("LIST_KEY", "LIST_KEYS");
   CMD_ALIAS("LIST_KEY", "LIST-KEY");
-  CMD_ALIAS("LIST_KEY", "LIST-KEYS");
   CMD_ALIAS("LIST_KEY", "LISTKEY");
-  CMD_ALIAS("LIST_KEY", "LISTKEYS");
   CMD_ALIAS("LIST_KEY", "LSKEY");
   CMD_ALIAS("LIST_KEY", "LS_KEY");
   CMD_ALIAS("LIST_KEY", "LS-KEY");
   CMD_ALIAS("LIST_KEY", "LSK");
   CMD_HANDLER("LIST_BRANCH", ExecListBranch);
-  CMD_ALIAS("LIST_BRANCH", "LIST_BRANCHES");
   CMD_ALIAS("LIST_BRANCH", "LIST-BRANCH");
-  CMD_ALIAS("LIST_BRANCH", "LIST-BRANCHES");
-  CMD_ALIAS("LIST_BRANCH", "LISTBRANCHES");
   CMD_ALIAS("LIST_BRANCH", "LISTBRANCH");
   CMD_ALIAS("LIST_BRANCH", "LSBRANCH");
   CMD_ALIAS("LIST_BRANCH", "LS_BRANCH");
@@ -72,12 +63,39 @@ Command::Command(DB* db) noexcept
   CMD_HANDLER("BRANCH_TABLE", ExecBranchTable);
   CMD_ALIAS("BRANCH_TABLE", "BRANCH-TABLE");
   CMD_ALIAS("BRANCH_TABLE", "BRANCHTABLE");
+  CMD_ALIAS("BRANCH_TABLE", "BRANCH_TAB");
+  CMD_ALIAS("BRANCH_TABLE", "BRANCH-TAB");
+  CMD_ALIAS("BRANCH_TABLE", "BRANCHTAB");
+  CMD_HANDLER("LIST_TABLE_BRANCH", ExecListTableBranch);
+  CMD_ALIAS("LIST_TABLE_BRANCH", "LIST-TABLE-BRANCH");
+  CMD_ALIAS("LIST_TABLE_BRANCH", "LIST_TAB_BRANCH");
+  CMD_ALIAS("LIST_TABLE_BRANCH", "LIST-TAB-BRANCH");
+  CMD_ALIAS("LIST_TABLE_BRANCH", "LS_TAB_BRANCH");
+  CMD_ALIAS("LIST_TABLE_BRANCH", "LS-TAB-BRANCH");
+  CMD_HANDLER("DELETE_TABLE", ExecDeleteTable);
+  CMD_ALIAS("DELETE_TABLE", "DELETE-TABLE");
+  CMD_ALIAS("DELETE_TABLE", "DELETETABLE");
+  CMD_ALIAS("DELETE_TABLE", "DELETE_TAB");
+  CMD_ALIAS("DELETE_TABLE", "DELETE-TAB");
+  CMD_ALIAS("DELETE_TABLE", "DELETETAB");
+  CMD_ALIAS("DELETE_TABLE", "DEL_TABLE");
+  CMD_ALIAS("DELETE_TABLE", "DEL-TABLE");
+  CMD_ALIAS("DELETE_TABLE", "DELTABLE");
+  CMD_ALIAS("DELETE_TABLE", "DEL_TAB");
+  CMD_ALIAS("DELETE_TABLE", "DEL-TAB");
+  CMD_ALIAS("DELETE_TABLE", "DELTAB");
   CMD_HANDLER("GET_COLUMN", ExecGetColumn);
   CMD_ALIAS("GET_COLUMN", "GET-COLUMN");
   CMD_ALIAS("GET_COLUMN", "GET_COL");
   CMD_ALIAS("GET_COLUMN", "GET-COL");
   CMD_ALIAS("GET_COLUMN", "GETCOLUMN");
   CMD_ALIAS("GET_COLUMN", "GETCOL");
+  CMD_HANDLER("LIST_COLUMN_BRANCH", ExecListColumnBranch);
+  CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST-COLUMN-BRANCH");
+  CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST_COL_BRANCH");
+  CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST-COL-BRANCH");
+  CMD_ALIAS("LIST_COLUMN_BRANCH", "LS_COL_BRANCH");
+  CMD_ALIAS("LIST_COLUMN_BRANCH", "LS-COL-BRANCH");
   CMD_HANDLER("DELETE_COLUMN", ExecDeleteColumn);
   CMD_ALIAS("DELETE_COLUMN", "DELETE-COLUMN");
   CMD_ALIAS("DELETE_COLUMN", "DELETECOLUMN");
@@ -138,7 +156,7 @@ Command::Command(DB* db) noexcept
 }
 
 const int kPrintBasicCmdWidth = 12;
-const int kPrintRelationalCmdWidth = 15;
+const int kPrintRelationalCmdWidth = 20;
 
 #define FORMAT_BASIC_CMD(cmd) \
   "* " << std::left << std::setw(kPrintBasicCmdWidth) << cmd << " "
@@ -147,7 +165,15 @@ const int kPrintRelationalCmdWidth = 15;
   "* " << std::left << std::setw(kPrintRelationalCmdWidth) << cmd << " "
 
 void Command::PrintCommandHelp() {
-  std::cout << "UStore Basic Commands:" << std::endl;
+  std::cout << BLUE("Usage") << ": "
+            << "ustore_cli <command> {{<option>} <argument|file> ...}"
+            << std::endl << std::setw(3) << "" << "or  "
+            << "ustore_cli --script <file>"
+            << std::endl << std::setw(3) << "" << "or  "
+            << "ustore_cli --help" << std::endl;
+  std::cout << std::endl
+            << BLUE("UStore Basic Commands") << ":"
+            << std::endl;
   std::cout << FORMAT_BASIC_CMD("GET")
             << "-k <key> [-b <branch> | "
             << std::endl << std::setw(kPrintBasicCmdWidth + 13) << ""
@@ -187,24 +213,31 @@ void Command::PrintCommandHelp() {
             << "-k <key>" << std::endl;
   std::cout << FORMAT_BASIC_CMD("LIST_KEY") << std::endl;
   std::cout << std::endl
-            << "UStore Relational (Columnar) Commands:" << std::endl;
+            << BLUE("UStore Relational (Columnar) Commands") << ":"
+            << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("CREATE_TABLE")
             << "-t <table> -b <branch>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("EXISTS_TABLE")
+            << "-t <table> {-b <branch>}" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("GET_TABLE")
             << "-t <table> -b <branch>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("BRANCH_TABLE")
             << "-t <table> -b <target_branch> -c <refer_branch>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("EXISTS_TABLE")
-            << "-t <table> {-b <branch>}" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("LIST_TABLE_BRANCH")
+            << "-t <table>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("DELETE_TABLE")
+            << "-t <table> -b <branch>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("DIFF_TABLE")
             << "-t <table> -b <branch> -c <branch_2> {-s <table_2>}"
             << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("GET_COLUMN")
-            << "-t <table> -b <branch> -m <column>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("DELETE_COLUMN")
-            << "-t <table> -b <branch> -m <column>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("EXISTS_COLUMN")
             << "-t <table> -m <column> {-b <branch>}" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("GET_COLUMN")
+            << "-t <table> -b <branch> -m <column>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("LIST_COLUMN_BRANCH")
+            << "-t <table> -m <column>" << std::endl;
+  std::cout << FORMAT_RELATIONAL_CMD("DELETE_COLUMN")
+            << "-t <table> -b <branch> -m <column>" << std::endl;
   std::cout << FORMAT_RELATIONAL_CMD("DIFF_COLUMN")
             << "-t <table> -m <column> -b <branch> -c <branch_2> "
             << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
@@ -220,7 +253,7 @@ ErrorCode Command::ExecCommand(const std::string& cmd) {
   if (it_cmd_exec == cmd_exec_.end()) {
     auto it_alias_exec = alias_exec_.find(cmd);
     if (it_alias_exec == alias_exec_.end()) {
-      std::cerr << BOLD_RED("[FAILURE] ")
+      std::cerr << BOLD_RED("[ERROR] ")
                 << "Unknown command: " << cmd << std::endl;
       return ErrorCode::kUnknownCommand;
     }
@@ -265,15 +298,21 @@ ErrorCode Command::ExecScript(const std::string& script) {
   auto ec = ErrorCode::kOK;
   std::string line;
   size_t cnt_line = 0;
+  std::vector<std::string> args;
   while ((ec == ErrorCode::kOK) && std::getline(ifs, line)) {
     ++cnt_line;
     boost::trim(line);
     if (line.empty() || boost::starts_with(line, "#")) continue;
     std::cout << YELLOW(cnt_line << ":> ") << line << std::endl;
     // construct command-line arguments
-    auto args = Utils::Tokenize(line, " \t");
+    if (!Utils::TokenizeArgs(line, &args)) {
+      std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
+                << std::endl << std::endl;
+      ec = ErrorCode::kInvalidCommandArgument;
+      continue;
+    }
     int argc = args.size() + 1;
-    char dummy_cmd[] = "./ustore_cli";
+    char dummy_cmd[] = "ustore_cli";
     char* argv[argc] = { dummy_cmd };
     for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
       auto& arg = args[j];
@@ -296,6 +335,7 @@ ErrorCode Command::ExecConsole() {
             << "Type \"--help\" for more information." << std::endl
             << "Type \"q\" or \"quit\" to exit." << std::endl << std::endl;
   std::string line;
+  std::vector<std::string> args;
   while (true) {
     std::cout << YELLOW("ustore> ");
     std::getline(std::cin, line);
@@ -303,9 +343,13 @@ ErrorCode Command::ExecConsole() {
     if (line.empty()) continue;
     if (line == "q" || line == "quit") break;
     // construct command-line arguments
-    auto args = Utils::Tokenize(line, " \t");
+    if (!Utils::TokenizeArgs(line, &args)) {
+      std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
+                << std::endl << std::endl;
+      continue;
+    }
     int argc = args.size() + 1;
-    char dummy_cmd[] = "./ustore_cli";
+    char dummy_cmd[] = "ustore_cli";
     char* argv[argc] = { dummy_cmd };
     for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
       auto& arg = args[j];
@@ -362,13 +406,15 @@ ErrorCode Command::ExecGet() {
     std::cerr << BOLD_RED("[FAILED: GET] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&key, &ver](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET] ")
               << "Key: \"" << key << "\", "
               << "Version: \"" << ver << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty()) {
@@ -415,13 +461,15 @@ ErrorCode Command::ExecPut() {
     std::cerr << BOLD_RED("[FAILED: PUT] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&key, &ref_ver](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: PUT] ")
               << "Key: \"" << key << "\", "
               << "Ref. Version: \"" << ref_ver << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || val.empty()) {
@@ -481,21 +529,24 @@ ErrorCode Command::ExecMerge() {
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Ref. Branch: \"" << ref_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   const auto f_rpt_fail_by_branch_ver = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: MERGE] ")
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: MERGE] ")
               << "Key: \"" << key << "\", "
               << "Ref. Version: \"" << ref_ver << "\", "
               << "Ref. Version (2nd): \"" << ref_ver2 << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || val.empty()) {
@@ -561,14 +612,16 @@ ErrorCode Command::ExecBranch() {
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Referring Branch: \"" << ref_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || tgt_branch.empty()) {
@@ -613,7 +666,8 @@ ErrorCode Command::ExecRename() {
               << "Key: \"" << key << "\", "
               << "Referring Branch: \"" << old_branch << "\", "
               << "Target Branch: \"" << new_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || old_branch.empty() || new_branch.empty()) {
@@ -627,9 +681,8 @@ ErrorCode Command::ExecRename() {
 
 ErrorCode Command::ExecDelete() {
   // redirection
-  if (!Config::table.empty() && !Config::column.empty() &&
-      Config::key.empty()) {
-    return ExecDeleteColumn();
+  if (!Config::table.empty() && Config::key.empty()) {
+    return Config::column.empty() ? ExecDeleteTable() : ExecDeleteColumn();
   }
 
   const auto& key = Config::key;
@@ -649,7 +702,8 @@ ErrorCode Command::ExecDelete() {
     std::cerr << BOLD_RED("[FAILED: DELETE] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || branch.empty()) {
@@ -679,6 +733,12 @@ ErrorCode Command::ExecListKey() {
 }
 
 ErrorCode Command::ExecListBranch() {
+  // redirection
+  if (!Config::table.empty() && Config::key.empty()) {
+    return Config::column.empty() ?
+           ExecListTableBranch() : ExecListColumnBranch();
+  }
+
   const auto& key = Config::key;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
@@ -693,7 +753,8 @@ ErrorCode Command::ExecListBranch() {
   const auto f_rpt_fail = [&key](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LIST_BRANCH] ")
               << "Key: \"" << key << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty()) {
@@ -724,7 +785,8 @@ ErrorCode Command::ExecHead() {
     std::cerr << BOLD_RED("[FAILED: HEAD] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || branch.empty()) {
@@ -753,7 +815,8 @@ ErrorCode Command::ExecLatest() {
   const auto f_rpt_fail = [&key](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LATEST] ")
               << "Key: \"" << key << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty()) {
@@ -793,7 +856,8 @@ ErrorCode Command::ExecExists() {
     std::cerr << BOLD_RED("[FAILED: EXISTS] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty()) {
@@ -835,7 +899,8 @@ ErrorCode Command::ExecIsHead() {
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\", "
               << "Version: \"" << ver << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || branch.empty() || ver.empty()) {
@@ -867,7 +932,8 @@ ErrorCode Command::ExecIsLatest() {
     std::cerr << BOLD_RED("[FAILED: IS_LATEST] ")
               << "Key: \"" << key << "\", "
               << "Version: \"" << ver << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (key.empty() || ver.empty()) {
@@ -899,7 +965,8 @@ ErrorCode Command::ExecCreateTable() {
     std::cerr << BOLD_RED("[FAILED: CREATE_TABLE] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (tab.empty() || branch.empty()) {
@@ -929,7 +996,8 @@ ErrorCode Command::ExecGetTable() {
     std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
               << "Table: \"" << tab_name << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (tab_name.empty() || branch.empty()) {
@@ -968,7 +1036,8 @@ ErrorCode Command::ExecBranchTable() {
               << "Table: \"" << tab << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Referring Branch: \"" << ref_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (tab.empty() || tgt_branch.empty() || ref_branch.empty()) {
@@ -976,6 +1045,67 @@ ErrorCode Command::ExecBranchTable() {
     return ErrorCode::kInvalidCommandArgument;
   }
   auto ec = cs_.BranchTable(tab, ref_branch, tgt_branch);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecListTableBranch() {
+  const auto& tab = Config::table;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: LIST_TABLE_BRANCH] ")
+              << "Table: \"" << tab << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const std::vector<std::string>& branches) {
+    std::cout << BOLD_GREEN("[SUCCESS: LIST_TABLE_BRANCH] ")
+              << "Branches: " << Utils::ToStringWithQuote(branches)
+              << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: LIST_TABLE_BRANCH] ")
+              << "Table: \"" << tab << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (tab.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::vector<std::string> branches;
+  auto ec = cs_.ListTableBranch(tab, &branches);
+  ec == ErrorCode::kOK ? f_rpt_success(branches) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecDeleteTable() {
+  const auto& tab = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: DELETE_TABLE] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&]() {
+    std::cout << BOLD_GREEN("[SUCCESS: DELETE_TABLE] ")
+              << "Table \"" << tab << "\" of Branch \"" << branch
+              << "\" has been deleted" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: DELETE_TABLE] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (tab.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto ec = cs_.DeleteTable(tab, branch);
+  ERROR_CODE_FWD(ec, kUCellNotfound, kTableNotExists);
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
   return ec;
 }
@@ -1001,7 +1131,8 @@ ErrorCode Command::ExecGetColumn() {
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (tab.empty() || branch.empty() || col_name.empty()) {
@@ -1011,6 +1142,38 @@ ErrorCode Command::ExecGetColumn() {
   Column col;
   auto ec = cs_.GetColumn(tab, branch, col_name, &col);
   ec == ErrorCode::kOK ? f_rpt_success(col) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecListColumnBranch() {
+  const auto& tab = Config::table;
+  const auto& col = Config::column;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: LIST_COLUMN_BRANCH] ")
+              << "Table: \"" << tab << "\", "
+              << "Column: \"" << col << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const std::vector<std::string>& branches) {
+    std::cout << BOLD_GREEN("[SUCCESS: LIST_COLUMN_BRANCH] ")
+              << "Branches: " << Utils::ToStringWithQuote(branches)
+              << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: LIST_COLUMN_BRANCH] ")
+              << "Table: \"" << tab << "\", "
+              << "Column: \"" << col << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (tab.empty() || col.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::vector<std::string> branches;
+  auto ec = cs_.ListColumnBranch(tab, col, &branches);
+  ec == ErrorCode::kOK ? f_rpt_success(branches) : f_rpt_fail(ec);
   return ec;
 }
 
@@ -1036,7 +1199,8 @@ ErrorCode Command::ExecDeleteColumn() {
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (tab.empty() || branch.empty() || col_name.empty()) {
@@ -1076,13 +1240,15 @@ ErrorCode Command::ExecDiffTable() {
     std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
               << "Table: \"" << lhs_tab_name << "\", "
               << "Branch: \"" << lhs_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
               << "Table (2nd): \"" << rhs_tab_name << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (lhs_tab_name.empty() || lhs_branch.empty() || rhs_branch.empty()) {
@@ -1137,14 +1303,16 @@ ErrorCode Command::ExecDiffColumn() {
               << "Table: \"" << lhs_tab << "\", "
               << "Branch: \"" << lhs_branch << "\", "
               << "Column: \"" << lhs_col_name << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
               << "Table (2nd): \"" << rhs_tab << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\", "
               << "Column (2nd): \"" << rhs_col_name << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (lhs_tab.empty() || lhs_col_name.empty() || lhs_branch.empty() ||
@@ -1192,7 +1360,8 @@ ErrorCode Command::ExecExistsTable() {
     std::cerr << BOLD_RED("[FAILED: EXISTS] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (tab.empty()) {
@@ -1236,7 +1405,8 @@ ErrorCode Command::ExecExistsColumn() {
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (tab.empty() || col_name.empty()) {
@@ -1277,128 +1447,51 @@ ErrorCode Command::ExecLoadCSV() {
               << "File: \"" << file_path << "\", "
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
   if (file_path.empty() || tab.empty() || branch.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  bool exist_tab;
-  auto ec = cs_.ExistsTable(tab, branch, &exist_tab);
-  if (ec != ErrorCode::kOK) {
-    f_rpt_fail(ec);
-    return ec;
-  }
-  if (!exist_tab) {
-    f_rpt_fail(ErrorCode::kTableNotExists);
-    return ErrorCode::kTableNotExists;
-  }
-  std::ifstream ifs(file_path);
-  if (!ifs) {
-    f_rpt_fail(ErrorCode::kFailedOpenFile);
-    return ErrorCode::kFailedOpenFile;
-  }
-  std::string line;
-  if (std::getline(ifs, line)) {
-    // parse table schema
-    auto col_names = Utils::Tokenize(line, " \t,|");
-    std::vector<std::vector<std::string>> cols;
-    for (auto& name : col_names) {
-      cols.emplace_back(std::vector<std::string>());
-    }
-    auto n_cols = cols.size();
-    // convert row-based entries into column-based structure
-    while (std::getline(ifs, line)) {
-      boost::trim(line);
-      if (line.empty()) continue;
-      auto row = Utils::Tokenize(line, " \t,|");
-      for (size_t i = 0; i < n_cols; ++i) {
-        cols[i].push_back(std::move(row[i]));
-      }
-    }
-    ifs.close();
-    // put columns to the storeage
-    for (size_t i = 0; i < n_cols; ++i) {
-      USTORE_GUARD(
-        cs_.PutColumn(tab, branch, col_names[i], cols[i]));
-    }
-  }
-  f_rpt_success();
-  return ErrorCode::kOK;
+  auto ec = cs_.LoadCSV(file_path, tab, branch);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
 }
-
-const std::string kOutputDelimiter = "\t";
 
 ErrorCode Command::ExecDumpCSV() {
   const auto& file_path = Config::file;
-  const auto& tab_name = Config::table;
+  const auto& tab = Config::table;
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cerr << BOLD_RED("[INVALID ARGS: DUMP_CSV] ")
               << "File: \"" << file_path << "\", "
-              << "Table: \"" << tab_name << "\", "
+              << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
   const auto f_rpt_success = [&]() {
     std::cout << BOLD_GREEN("[SUCCESS: DUMP_CSV] ")
-              << "Table \"" << tab_name << "\" of Branch \"" << branch
+              << "Table \"" << tab << "\" of Branch \"" << branch
               << "\" " << "has been exported" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: DUMP_CSV] ")
               << "File: \"" << file_path << "\", "
-              << "Table: \"" << tab_name << "\", "
+              << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
-              << RED(" --> Error Code: " << ec) << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // conditional execution
-  if (file_path.empty() || tab_name.empty() || branch.empty()) {
+  if (file_path.empty() || tab.empty() || branch.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  Table tab;
-  auto ec = cs_.GetTable(tab_name, branch, &tab);
-  if (ec != ErrorCode::kOK) {
-    f_rpt_fail(ec);
-    return ec;
-  }
-  if (tab.numElements() == 0) {
-    f_rpt_fail(ErrorCode::kEmptyTable);
-    return ErrorCode::kEmptyTable;
-  }
-  // retrieve the column-based table
-  std::vector<std::vector<std::string>> cols;
-  auto n_rows = std::numeric_limits<size_t>::max();
-  for (auto it_tab = tab.Scan(); !it_tab.end(); it_tab.next()) {
-    auto col_name = it_tab.key().ToString();
-    Column col;
-    ec = cs_.GetColumn(tab_name, branch, col_name, &col);
-    if (ec != ErrorCode::kOK) {
-      f_rpt_fail(ec);
-      return ec;
-    }
-    std::vector<std::string> col_str = { std::move(col_name) };
-    for (auto it_col = col.Scan(); !it_col.end(); it_col.next()) {
-      col_str.emplace_back(it_col.value().ToString());
-    }
-    n_rows = std::min(n_rows, col.numElements());
-    cols.push_back(std::move(col_str));
-  }
-  ++n_rows; // counting the schema row
-  // write the column-based table to the row-based CSV file
-  std::ofstream ofs(file_path);
-  for (size_t i = 0; i < n_rows; ++i) {
-    ofs << cols[0][i];
-    for (size_t j = 1; j < cols.size(); ++j) {
-      ofs << kOutputDelimiter << cols[j][i];
-    }
-    ofs << std::endl;
-  }
-  ofs.close();
-  f_rpt_success();
-  return ErrorCode::kOK;
+  auto ec = cs_.DumpCSV(file_path, tab, branch);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
 }
 
 }  // namespace cli

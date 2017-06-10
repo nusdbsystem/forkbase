@@ -54,7 +54,10 @@ class Command {
   ErrorCode ExecCreateTable();
   ErrorCode ExecGetTable();
   ErrorCode ExecBranchTable();
+  ErrorCode ExecListTableBranch();
+  ErrorCode ExecDeleteTable();
   ErrorCode ExecGetColumn();
+  ErrorCode ExecListColumnBranch();
   ErrorCode ExecDeleteColumn();
   ErrorCode ExecDiff();
   ErrorCode ExecDiffTable();

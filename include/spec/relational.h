@@ -29,12 +29,23 @@ class ColumnStore {
   ErrorCode CreateTable(const std::string& table_name,
                         const std::string& branch_name);
 
+  ErrorCode LoadCSV(const std::string& file_path,
+                    const std::string& table_name,
+                    const std::string& branch_name);
+
+  ErrorCode DumpCSV(const std::string& file_path,
+                    const std::string& table_name,
+                    const std::string& branch_name);
+
   ErrorCode GetTable(const std::string& table_name,
                      const std::string& branch_name, Table* table);
 
   ErrorCode BranchTable(const std::string& table_name,
                         const std::string& old_branch_name,
                         const std::string& new_branch_name);
+
+  ErrorCode ListTableBranch(const std::string& table_name,
+                            std::vector<std::string>* branches);
 
   inline TableDiffIterator DiffTable(const Table& lhs, const Table& rhs) {
     return UMap::DuallyDiff(lhs, rhs);
@@ -51,11 +62,14 @@ class ColumnStore {
                        const std::string& new_col_name,
                        const std::vector<std::string>& new_col_vals);
 
+  ErrorCode DeleteTable(const std::string& table_name,
+                        const std::string& branch_name);
+
   ErrorCode ExistsColumn(const std::string& table_name,
                          const std::string& col_name, bool* exist);
 
   ErrorCode ExistsColumn(const std::string& table_name,
-                         const std::string& branch_name, 
+                         const std::string& branch_name,
                          const std::string& col_name, bool* exist);
 
   ErrorCode GetColumn(const std::string& table_name,
@@ -66,6 +80,10 @@ class ColumnStore {
                       const std::string& branch_name,
                       const std::string& col_name,
                       const std::vector<std::string>& col_vals);
+
+  ErrorCode ListColumnBranch(const std::string& table_name,
+                             const std::string& col_name,
+                             std::vector<std::string>* branches);
 
   ErrorCode DeleteColumn(const std::string& table_name,
                          const std::string& branch_name,

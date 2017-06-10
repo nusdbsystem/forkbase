@@ -79,6 +79,30 @@ namespace ustore {
 #define BOLD_CYAN(msg)      COLOR(FONT_BOLD_CYAN, msg)
 #define BOLD_WHITE(msg)     COLOR(FONT_BOLD_WHITE, msg)
 
+#define COLOR_STR(font_color, msg) \
+  font_color msg FONT_RESET
+
+#define BLACK_STR(msg)          COLOR_STR(FONT_BLACK, msg)
+#define RED_STR(msg)            COLOR_STR(FONT_RED, msg)
+#define GREEN_STR(msg)          COLOR_STR(FONT_GREEN, msg)
+#define YELLOW_STR(msg)         COLOR_STR(FONT_YELLOW, msg)
+#define BLUE_STR(msg)           COLOR_STR(FONT_BLUE, msg)
+#define MAGENTA_STR(msg)        COLOR_STR(FONT_MAGENTA, msg)
+#define CYAN_STR(msg)           COLOR_STR(FONT_CYAN, msg)
+#define WHITE_STR(msg)          COLOR_STR(FONT_WHITE, msg)
+#define BOLD_BLACK_STR(msg)     COLOR_STR(FONT_BOLD_BLACK, msg)
+#define BOLD_RED_STR(msg)       COLOR_STR(FONT_BOLD_RED, msg)
+#define BOLD_GREEN_STR(msg)     COLOR_STR(FONT_BOLD_GREEN, msg)
+#define BOLD_YELLOW_STR(msg)    COLOR_STR(FONT_BOLD_YELLOW, msg)
+#define BOLD_BLUE_STR(msg)      COLOR_STR(FONT_BOLD_BLUE, msg)
+#define BOLD_MAGENTA_STR(msg)   COLOR_STR(FONT_BOLD_MAGENTA, msg)
+#define BOLD_CYAN_STR(msg)      COLOR_STR(FONT_BOLD_CYAN, msg)
+#define BOLD_WHITE_STR(msg)     COLOR_STR(FONT_BOLD_WHITE, msg)
+
+#define ERROR_CODE_FWD(var, from, to) do { \
+  if (var == ErrorCode::from) var = ErrorCode::to; \
+} while (0)
+
 class Utils {
  public:
   template<typename T>
@@ -126,8 +150,13 @@ class Utils {
 
   static std::string ToString(const UType& type);
 
+  static std::string ToString(const ErrorCode& ec);
+
   static std::vector<std::string> Tokenize(
     const std::string& str, const char* sep_chars = " \t[],");
+
+  static bool TokenizeArgs(const std::string& line,
+                           std::vector<std::string>* args);
 
   template<typename T>
   static std::vector<T> ToVector(
