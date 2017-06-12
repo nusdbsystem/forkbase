@@ -17,6 +17,7 @@ namespace po = boost::program_options;
 class Config {
  public:
   static bool is_help;
+  static std::string command_options_help;
   static std::string command;
   static std::string script;
   static std::string file;
@@ -32,6 +33,8 @@ class Config {
   static std::string ref_column;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
+  
+  static bool ParseCmdArgs(const std::vector<std::string>& args);
 
  private:
   static void Reset();

@@ -3,7 +3,6 @@
 #ifndef USTORE_CLI_COMMAND_H_
 #define USTORE_CLI_COMMAND_H_
 
-#include <boost/algorithm/string.hpp>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -14,29 +13,30 @@
 namespace ustore {
 namespace cli {
 
+#define CMD_HANDLER(cmd, handler) do { \
+  cmd_exec_[cmd] = [this]() { return handler(); }; \
+} while(0)
+
+#define CMD_ALIAS(cmd, alias) do { \
+  alias_exec_[alias] = &cmd_exec_[cmd]; \
+} while(0)
+
 class Command {
  public:
-  static inline void Normalize(std::string* cmd) {
-    boost::algorithm::to_upper(*cmd);
-  }
-
-  static inline bool IsValid(const std::string& cmd) {
-    return kSupportedCommands.find(cmd) != kSupportedCommands.end();
-  }
-
-  static void PrintCommandHelp();
-
   explicit Command(DB* db) noexcept;
   ~Command() = default;
 
+  ErrorCode Run(int argc, char* argv[]);
+
+ protected:
+  void PrintCommandHelp(std::ostream& os = std::cout);
   ErrorCode ExecCommand(const std::string& command);
-  ErrorCode ExecScript(const std::string& script);
-  ErrorCode ExecConsole();
+  
+  std::unordered_map<std::string, std::function<ErrorCode()>> cmd_exec_;
+  std::unordered_map<std::string, std::function<ErrorCode()>*> alias_exec_;
 
  private:
-  static const std::unordered_set<std::string> kSupportedCommands;
-
-  ErrorCode ExecCommand(int argc, char* argv[], const std::string& ctx);
+  ErrorCode ExecScript(const std::string& script);
 
   ErrorCode ExecGet();
   ErrorCode ExecPut();
@@ -69,8 +69,6 @@ class Command {
 
   ObjectDB odb_;
   ColumnStore cs_;
-  std::unordered_map<std::string, std::function<ErrorCode()>> cmd_exec_;
-  std::unordered_map<std::string, std::function<ErrorCode()>*> alias_exec_;
 };
 
 }  // namespace cli

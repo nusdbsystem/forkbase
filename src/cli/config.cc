@@ -2,13 +2,14 @@
 
 #include <utility>
 
-#include "cli/command.h"
+#include <boost/algorithm/string.hpp>
 #include "cli/config.h"
 
 namespace ustore {
 namespace cli {
 
 bool Config::is_help = false;
+std::string Config::command_options_help = "";
 std::string Config::command = "";
 std::string Config::script = "";
 std::string Config::file = "";
@@ -25,6 +26,7 @@ std::string Config::ref_column = "";
 
 void Config::Reset() {
   is_help = false;
+  command_options_help = "";
   command = "";
   script = "";
   file = "";
@@ -44,11 +46,11 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
   Reset();
   po::variables_map vm;
   GUARD(ParseCmdArgs(argc, argv, &vm));
-
   try {
-    auto arg_command = vm["command"].as<std::string>();
-    Command::Normalize(&arg_command);
-    command = std::move(arg_command);
+    is_help = vm.count("help");
+
+    command = vm["command"].as<std::string>();
+    boost::to_upper(command);
 
     script = vm["script"].as<std::string>();
     file = vm["file"].as<std::string>();
@@ -115,27 +117,36 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   pos_opts.add("command", 1);
   pos_opts.add("file", 1);
 
-  auto f_print_help = [&desc]() {
-    Command::PrintCommandHelp();
-    std::cout << std::endl << desc << std::endl;
-  };
-
   try {
     po::store(po::command_line_parser(argc, argv).options(desc)
               .style(po::command_line_style::unix_style)
               .positional(pos_opts).run(), *vm);
     if (vm->count("help")) {
       is_help = true;
-      f_print_help();
-      return false;
+      std::stringstream ss;
+      ss << desc;
+      command_options_help = ss.str();
     }
     po::notify(*vm);
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl << std::endl;
-    f_print_help();
     return false;
   }
   return true;
+}
+
+bool Config::ParseCmdArgs(const std::vector<std::string>& args) {
+  int argc = args.size() + 1;
+  char dummy_cmd[] = "ustore_cli";
+  char* argv[argc] = { dummy_cmd };
+  for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
+    auto& arg = args[j];
+    argv[i] = new char[arg.size()];
+    std::strcpy(argv[i], arg.c_str());
+  }
+  auto ec = ParseCmdArgs(argc, argv);
+  for (size_t i = 1; i < argc; ++i) delete argv[i];
+  return ec;
 }
 
 }  // namespace cli

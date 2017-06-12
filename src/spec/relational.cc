@@ -35,14 +35,14 @@ ErrorCode ColumnStore::CreateTable(const std::string& table_name,
 ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
                                const std::string& table_name,
                                const std::string& branch_name) {
+  std::ifstream ifs(file_path);
+  USTORE_GUARD(ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
   Table tab;
   auto ec = GetTable(table_name, branch_name, &tab);
   ERROR_CODE_FWD(ec, kUCellNotfound, kTableNotExists);
   USTORE_GUARD(ec);
   USTORE_GUARD(tab.numElements() > 0 ?
                ErrorCode::kNotEmptyTable : ErrorCode::kOK);
-  std::ifstream ifs(file_path);
-  USTORE_GUARD(ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
   std::string line;
   if (std::getline(ifs, line)) {
     // parse table schema
@@ -76,6 +76,8 @@ const std::string kOutputDelimiter = "\t";
 ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
                                const std::string& table_name,
                                const std::string& branch_name) {
+  std::ofstream ofs(file_path);
+  USTORE_GUARD(ofs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
   Table tab;
   auto ec = GetTable(table_name, branch_name, &tab);
   ERROR_CODE_FWD(ec, kUCellNotfound, kTableNotExists);
@@ -99,7 +101,6 @@ ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
   }
   ++n_rows; // counting the schema row
   // write the column-based table to the row-based CSV file
-  std::ofstream ofs(file_path);
   for (size_t i = 0; i < n_rows; ++i) {
     ofs << cols[0][i];
     for (size_t j = 1; j < cols.size(); ++j) {

@@ -6,6 +6,7 @@
 
 #include "cli/command.h"
 #include "cli/config.h"
+#include "cli/console.h"
 #include "cli/utils.h"
 
 namespace ustore {
@@ -20,31 +21,10 @@ int main(int argc, char* argv[]) {
   ustore_svc.Init();
   std::thread ustore_svc_thread(&RemoteClientService::Start, &ustore_svc);
   std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
-  auto client_db = ustore_svc.CreateClientDb();
-  Command cmd(&client_db);
+  auto db = ustore_svc.CreateClientDb();
   // conditional execution
-  auto ec = ErrorCode::kUnknownOp;
-  if (argc == 1) {
-    ec = cmd.ExecConsole();
-  } else if (Config::ParseCmdArgs(argc, argv)) {
-    if (!Config::command.empty() && Config::script.empty()) {
-      ec = cmd.ExecCommand(Config::command);
-    } else if (Config::command.empty() && !Config::script.empty()) {
-      ec = cmd.ExecScript(Config::script);
-    } else {
-      std::cerr << BOLD_RED("[ERROR] ")
-                << "Either UStore command or \"--script\" must be given, "
-                << "but not both" << std::endl;
-      ec = ErrorCode::kInvalidCommandArgument;
-    }
-  } else if (Config::is_help) {
-    DLOG(INFO) << "Help messages have been printed";
-    ec = ErrorCode::kOK;
-  } else {
-    std::cerr << BOLD_RED("[ERROR] ")
-              << "Found invalid command-line option" << std::endl;
-    ec = ErrorCode::kInvalidCommandArgument;
-  }
+  auto ec =
+    argc == 1 ? Console(&db).Run() : Command(&db).Run(argc, argv);
   // disconnect with UStore service
   ustore_svc.Stop();
   ustore_svc_thread.join();

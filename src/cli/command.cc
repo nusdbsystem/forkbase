@@ -1,19 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iomanip>
+#include "cli/console.h"
 #include "cli/command.h"
 
 namespace ustore {
 namespace cli {
-
-#define CMD_HANDLER(cmd, handler) do { \
-  cmd_exec_[cmd] = [this]() { return handler(); }; \
-} while(0)
-
-#define CMD_ALIAS(cmd, alias) do { \
-  alias_exec_[alias] = &cmd_exec_[cmd]; \
-} while(0)
 
 Command::Command(DB* db) noexcept
   : odb_(db), cs_(db) {
@@ -164,88 +158,88 @@ const int kPrintRelationalCmdWidth = 20;
 #define FORMAT_RELATIONAL_CMD(cmd) \
   "* " << std::left << std::setw(kPrintRelationalCmdWidth) << cmd << " "
 
-void Command::PrintCommandHelp() {
-  std::cout << BLUE("Usage") << ": "
-            << "ustore_cli <command> {{<option>} <argument|file> ...}"
-            << std::endl << std::setw(3) << "" << "or  "
-            << "ustore_cli --script <file>"
-            << std::endl << std::setw(3) << "" << "or  "
-            << "ustore_cli --help" << std::endl;
-  std::cout << std::endl
-            << BLUE("UStore Basic Commands") << ":"
-            << std::endl;
-  std::cout << FORMAT_BASIC_CMD("GET")
-            << "-k <key> [-b <branch> | "
-            << std::endl << std::setw(kPrintBasicCmdWidth + 13) << ""
-            << "-v <version>]" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("PUT")
-            << "-k <key> -x <value> {-b <branch> | "
-            << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
-            << "-u <refer_version>}" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("BRANCH")
-            << "-k <key> -b <new_branch> [-c <base_branch> | "
-            << std::endl << std::setw(kPrintBasicCmdWidth + 29) << ""
-            << "-u <refer_version>]"
-            << std::endl;
-  std::cout << FORMAT_BASIC_CMD("MERGE")
-            << "-k <key> -x <value> [-b <target_branch> -c <refer_branch> | "
-            << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
-            << "-b <target_branch> -u <refer_version> | "
-            << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
-            << "-u <refer_version> -v <refer_version_2>]"
-            << std::endl;
-  std::cout << FORMAT_BASIC_CMD("RENAME")
-            << "-k <key> "
-            << "-c <from_branch> -b <to_branch>" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("DELETE")
-            << "-k <key> -b <branch>" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("HEAD")
-            << "-k <key> -b <branch>" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("LATEST")
-            << "-k <key>" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("EXISTS")
-            << "-k <key> {-b <branch>}" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("IS_HEAD")
-            << "-k <key> -b <branch> -v <version>" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("IS_LATEST")
-            << "-k <key> -v <version>" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("LIST_BRANCH")
-            << "-k <key>" << std::endl;
-  std::cout << FORMAT_BASIC_CMD("LIST_KEY") << std::endl;
-  std::cout << std::endl
-            << BLUE("UStore Relational (Columnar) Commands") << ":"
-            << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("CREATE_TABLE")
-            << "-t <table> -b <branch>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("EXISTS_TABLE")
-            << "-t <table> {-b <branch>}" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("GET_TABLE")
-            << "-t <table> -b <branch>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("BRANCH_TABLE")
-            << "-t <table> -b <target_branch> -c <refer_branch>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("LIST_TABLE_BRANCH")
-            << "-t <table>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("DELETE_TABLE")
-            << "-t <table> -b <branch>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("DIFF_TABLE")
-            << "-t <table> -b <branch> -c <branch_2> {-s <table_2>}"
-            << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("EXISTS_COLUMN")
-            << "-t <table> -m <column> {-b <branch>}" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("GET_COLUMN")
-            << "-t <table> -b <branch> -m <column>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("LIST_COLUMN_BRANCH")
-            << "-t <table> -m <column>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("DELETE_COLUMN")
-            << "-t <table> -b <branch> -m <column>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("DIFF_COLUMN")
-            << "-t <table> -m <column> -b <branch> -c <branch_2> "
-            << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
-            << "{-s <table_2>} {-n <column_2>}" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("LOAD_CSV")
-            << "<file> -t <table> -b <branch>" << std::endl;
-  std::cout << FORMAT_RELATIONAL_CMD("DUMP_CSV")
-            << "<file> -t <table> -b <branch>" << std::endl;
+void Command::PrintCommandHelp(std::ostream& os) {
+  os << BLUE("Usage") << ": "
+     << "ustore_cli <command> {{<option>} <argument|file> ...}"
+     << std::endl << std::setw(3) << "" << "or  "
+     << "ustore_cli --script <file>"
+     << std::endl << std::setw(3) << "" << "or  "
+     << "ustore_cli --help" << std::endl
+     << std::endl
+     << BLUE("UStore Basic Commands") << ":"
+     << std::endl
+     << FORMAT_BASIC_CMD("GET")
+     << "-k <key> [-b <branch> | "
+     << std::endl << std::setw(kPrintBasicCmdWidth + 13) << ""
+     << "-v <version>]" << std::endl
+     << FORMAT_BASIC_CMD("PUT")
+     << "-k <key> -x <value> {-b <branch> | "
+     << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
+     << "-u <refer_version>}" << std::endl
+     << FORMAT_BASIC_CMD("BRANCH")
+     << "-k <key> -b <new_branch> [-c <base_branch> | "
+     << std::endl << std::setw(kPrintBasicCmdWidth + 29) << ""
+     << "-u <refer_version>]"
+     << std::endl
+     << FORMAT_BASIC_CMD("MERGE")
+     << "-k <key> -x <value> [-b <target_branch> -c <refer_branch> | "
+     << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
+     << "-b <target_branch> -u <refer_version> | "
+     << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
+     << "-u <refer_version> -v <refer_version_2>]"
+     << std::endl
+     << FORMAT_BASIC_CMD("RENAME")
+     << "-k <key> "
+     << "-c <from_branch> -b <to_branch>" << std::endl
+     << FORMAT_BASIC_CMD("DELETE")
+     << "-k <key> -b <branch>" << std::endl
+     << FORMAT_BASIC_CMD("HEAD")
+     << "-k <key> -b <branch>" << std::endl
+     << FORMAT_BASIC_CMD("LATEST")
+     << "-k <key>" << std::endl
+     << FORMAT_BASIC_CMD("EXISTS")
+     << "-k <key> {-b <branch>}" << std::endl
+     << FORMAT_BASIC_CMD("IS_HEAD")
+     << "-k <key> -b <branch> -v <version>" << std::endl
+     << FORMAT_BASIC_CMD("IS_LATEST")
+     << "-k <key> -v <version>" << std::endl
+     << FORMAT_BASIC_CMD("LIST_BRANCH")
+     << "-k <key>" << std::endl
+     << FORMAT_BASIC_CMD("LIST_KEY") << std::endl
+     << std::endl
+     << BLUE("UStore Relational (Columnar) Commands") << ":"
+     << std::endl
+     << FORMAT_RELATIONAL_CMD("CREATE_TABLE")
+     << "-t <table> -b <branch>" << std::endl
+     << FORMAT_RELATIONAL_CMD("EXISTS_TABLE")
+     << "-t <table> {-b <branch>}" << std::endl
+     << FORMAT_RELATIONAL_CMD("GET_TABLE")
+     << "-t <table> -b <branch>" << std::endl
+     << FORMAT_RELATIONAL_CMD("BRANCH_TABLE")
+     << "-t <table> -b <target_branch> -c <refer_branch>" << std::endl
+     << FORMAT_RELATIONAL_CMD("LIST_TABLE_BRANCH")
+     << "-t <table>" << std::endl
+     << FORMAT_RELATIONAL_CMD("DELETE_TABLE")
+     << "-t <table> -b <branch>" << std::endl
+     << FORMAT_RELATIONAL_CMD("DIFF_TABLE")
+     << "-t <table> -b <branch> -c <branch_2> {-s <table_2>}"
+     << std::endl
+     << FORMAT_RELATIONAL_CMD("EXISTS_COLUMN")
+     << "-t <table> -m <column> {-b <branch>}" << std::endl
+     << FORMAT_RELATIONAL_CMD("GET_COLUMN")
+     << "-t <table> -b <branch> -m <column>" << std::endl
+     << FORMAT_RELATIONAL_CMD("LIST_COLUMN_BRANCH")
+     << "-t <table> -m <column>" << std::endl
+     << FORMAT_RELATIONAL_CMD("DELETE_COLUMN")
+     << "-t <table> -b <branch> -m <column>" << std::endl
+     << FORMAT_RELATIONAL_CMD("DIFF_COLUMN")
+     << "-t <table> -m <column> -b <branch> -c <branch_2> "
+     << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
+     << "{-s <table_2>} {-n <column_2>}" << std::endl
+     << FORMAT_RELATIONAL_CMD("LOAD_CSV")
+     << "<file> -t <table> -b <branch>" << std::endl
+     << FORMAT_RELATIONAL_CMD("DUMP_CSV")
+     << "<file> -t <table> -b <branch>" << std::endl;
 }
 
 ErrorCode Command::ExecCommand(const std::string& cmd) {
@@ -262,28 +256,27 @@ ErrorCode Command::ExecCommand(const std::string& cmd) {
   return it_cmd_exec->second();
 }
 
-ErrorCode Command::ExecCommand(int argc, char* argv[],
-                               const std::string& ctx) {
-  if (Config::ParseCmdArgs(argc, argv)) {
-    if (!Config::script.empty()) {
-      std::cerr << BOLD_RED("[ERROR] ") << "\"--script\" cannot be used in "
-                << "UStore " << ctx << std::endl;
-      return ErrorCode::kInvalidCommandArgument;
-    } else if (Config::command.empty()) {
-      std::cerr << BOLD_RED("[ERROR] ") << "UStore command is missing"
-                << std::endl;
-      return ErrorCode::kInvalidCommandArgument;
-    } else {
-      return ExecCommand(Config::command);
-    }
-  } else if (Config::is_help) {
-    DLOG(INFO) << "Help messages have been printed";
-    return ErrorCode::kOK;
-  } else {
+ErrorCode Command::Run(int argc, char* argv[]) {
+  if (!Config::ParseCmdArgs(argc, argv)) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Found invalid command-line option" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
+  if (Config::is_help) {
+    Command::PrintCommandHelp();
+    std::cout << std::endl << Config::command_options_help << std::endl;
+    return ErrorCode::kOK;
+  }
+  if (!Config::command.empty() && Config::script.empty()) {
+    return ExecCommand(Config::command);
+  }
+  if (Config::command.empty() && !Config::script.empty()) {
+    return ExecScript(Config::script);
+  }
+  std::cerr << BOLD_RED("[ERROR] ")
+            << "Either UStore command or \"--script\" must be given, "
+            << "but not both" << std::endl;
+  return ErrorCode::kInvalidCommandArgument;
 }
 
 ErrorCode Command::ExecScript(const std::string& script) {
@@ -304,65 +297,31 @@ ErrorCode Command::ExecScript(const std::string& script) {
     boost::trim(line);
     if (line.empty() || boost::starts_with(line, "#")) continue;
     std::cout << YELLOW(cnt_line << ":> ") << line << std::endl;
-    // construct command-line arguments
     if (!Utils::TokenizeArgs(line, &args)) {
       std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
                 << std::endl << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
-      continue;
+    } else if (!Config::ParseCmdArgs(args)) { // parse command-line arguments
+      std::cerr << BOLD_RED("[ERROR] ")
+                << "Found invalid command-line option" << std::endl;
+      ec = ErrorCode::kInvalidCommandArgument;
+    } else if (Config::is_help) { // ignore printing help message
+      std::cout << "...(ignored for script running)" << std::endl;
+    } else if (!Config::script.empty()) { // prohibit running with script
+      std::cerr << BOLD_RED("[ERROR] ") << "\"--script\" cannot be used in "
+                << "UStore script" << std::endl;
+      ec = ErrorCode::kInvalidCommandArgument;
+    } else if (Config::command.empty()) { // validate the existence of command
+      std::cerr << BOLD_RED("[ERROR] ") << "UStore command is missing"
+                << std::endl;
+      ec = ErrorCode::kInvalidCommandArgument;
+    } else { // everything is ready, go!
+      ec = ExecCommand(Config::command);
     }
-    int argc = args.size() + 1;
-    char dummy_cmd[] = "ustore_cli";
-    char* argv[argc] = { dummy_cmd };
-    for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
-      auto& arg = args[j];
-      argv[i] = new char[arg.size()];
-      std::strcpy(argv[i], arg.c_str());
-    }
-    // command execution
-    ec = ExecCommand(argc, argv, "script");
-    // cleaning
-    for (size_t i = 1; i < argc; ++i) delete argv[i];
     std::cout << std::endl;
   }
   ifs.close();
   return ec;
-}
-
-ErrorCode Command::ExecConsole() {
-  std::cout << "Welcome to UStore console." << std::endl
-            << "Type in commands to have them evaluated." << std::endl
-            << "Type \"--help\" for more information." << std::endl
-            << "Type \"q\" or \"quit\" to exit." << std::endl << std::endl;
-  std::string line;
-  std::vector<std::string> args;
-  while (true) {
-    std::cout << YELLOW("ustore> ");
-    std::getline(std::cin, line);
-    boost::trim(line);
-    if (line.empty()) continue;
-    if (line == "q" || line == "quit") break;
-    // construct command-line arguments
-    if (!Utils::TokenizeArgs(line, &args)) {
-      std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
-                << std::endl << std::endl;
-      continue;
-    }
-    int argc = args.size() + 1;
-    char dummy_cmd[] = "ustore_cli";
-    char* argv[argc] = { dummy_cmd };
-    for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
-      auto& arg = args[j];
-      argv[i] = new char[arg.size()];
-      std::strcpy(argv[i], arg.c_str());
-    }
-    // command execution
-    ExecCommand(argc, argv, "console");
-    // cleaning
-    for (size_t i = 1; i < argc; ++i) delete argv[i];
-    std::cout << std::endl;
-  }
-  return ErrorCode::kOK;
 }
 
 ErrorCode Command::ExecGet() {
