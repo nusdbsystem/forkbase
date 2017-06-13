@@ -79,11 +79,9 @@ int main() {
   // set num_segments large enough for all test cases
   Env::Instance()->m_config().set_num_segments(64);
 
-  /*
   std::cout << "============================\n";
   std::cout << "Benchmarking worker.......\n";
   BenchmarkWorker();
-  */
 
   std::cout << "============================\n";
   std::cout << "Benchmarking client.......\n";
