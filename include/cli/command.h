@@ -3,6 +3,7 @@
 #ifndef USTORE_CLI_COMMAND_H_
 #define USTORE_CLI_COMMAND_H_
 
+#include <iomanip>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -21,6 +22,9 @@ namespace cli {
   alias_exec_[alias] = &cmd_exec_[cmd]; \
 } while(0)
 
+#define FORMAT_CMD(cmd, width) \
+  "* " << std::left << std::setw(width) << cmd << " "
+
 class Command {
  public:
   explicit Command(DB* db) noexcept;
@@ -29,9 +33,11 @@ class Command {
   ErrorCode Run(int argc, char* argv[]);
 
  protected:
+  virtual void PrintHelp();
   void PrintCommandHelp(std::ostream& os = std::cout);
-  ErrorCode ExecCommand(const std::string& command);
   
+  ErrorCode ExecCommand(const std::string& command);
+
   std::unordered_map<std::string, std::function<ErrorCode()>> cmd_exec_;
   std::unordered_map<std::string, std::function<ErrorCode()>*> alias_exec_;
 

@@ -2,15 +2,13 @@
 
 #include <boost/algorithm/string.hpp>
 #include <fstream>
-#include <iomanip>
 #include "cli/console.h"
 #include "cli/command.h"
 
 namespace ustore {
 namespace cli {
 
-Command::Command(DB* db) noexcept
-  : odb_(db), cs_(db) {
+Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   // basic commands
   CMD_HANDLER("GET", ExecGet);
   CMD_HANDLER("PUT", ExecPut);
@@ -152,11 +150,8 @@ Command::Command(DB* db) noexcept
 const int kPrintBasicCmdWidth = 12;
 const int kPrintRelationalCmdWidth = 20;
 
-#define FORMAT_BASIC_CMD(cmd) \
-  "* " << std::left << std::setw(kPrintBasicCmdWidth) << cmd << " "
-
-#define FORMAT_RELATIONAL_CMD(cmd) \
-  "* " << std::left << std::setw(kPrintRelationalCmdWidth) << cmd << " "
+#define FORMAT_BASIC_CMD(cmd)       FORMAT_CMD(cmd, kPrintBasicCmdWidth)
+#define FORMAT_RELATIONAL_CMD(cmd)  FORMAT_CMD(cmd, kPrintRelationalCmdWidth)
 
 void Command::PrintCommandHelp(std::ostream& os) {
   os << BLUE("Usage") << ": "
@@ -242,6 +237,12 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "<file> -t <table> -b <branch>" << std::endl;
 }
 
+void Command::PrintHelp() {
+  DCHECK(Config::is_help);
+  Command::PrintCommandHelp();
+  std::cout << std::endl << Config::command_options_help << std::endl;
+}
+
 ErrorCode Command::ExecCommand(const std::string& cmd) {
   auto it_cmd_exec = cmd_exec_.find(cmd);
   if (it_cmd_exec == cmd_exec_.end()) {
@@ -263,8 +264,7 @@ ErrorCode Command::Run(int argc, char* argv[]) {
     return ErrorCode::kInvalidCommandArgument;
   }
   if (Config::is_help) {
-    Command::PrintCommandHelp();
-    std::cout << std::endl << Config::command_options_help << std::endl;
+    PrintHelp();
     return ErrorCode::kOK;
   }
   if (!Config::command.empty() && Config::script.empty()) {
