@@ -44,6 +44,7 @@ class Command {
  private:
   ErrorCode ExecScript(const std::string& script);
 
+  ErrorCode ExecHelp();
   ErrorCode ExecGet();
   ErrorCode ExecPut();
   ErrorCode ExecMerge();

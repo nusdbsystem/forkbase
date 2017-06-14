@@ -127,7 +127,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
     }
     po::notify(*vm);
   } catch (std::exception& e) {
-    std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl << std::endl;
+    std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
   }
   return true;

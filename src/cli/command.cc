@@ -9,6 +9,7 @@ namespace ustore {
 namespace cli {
 
 Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
+  CMD_HANDLER("HELP", ExecHelp);
   // basic commands
   CMD_HANDLER("GET", ExecGet);
   CMD_HANDLER("PUT", ExecPut);
@@ -76,6 +77,7 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("DELETE_TABLE", "DEL_TAB");
   CMD_ALIAS("DELETE_TABLE", "DEL-TAB");
   CMD_ALIAS("DELETE_TABLE", "DELTAB");
+  CMD_ALIAS("DELETE_TABLE", "DROP");
   CMD_HANDLER("GET_COLUMN", ExecGetColumn);
   CMD_ALIAS("GET_COLUMN", "GET-COLUMN");
   CMD_ALIAS("GET_COLUMN", "GET_COL");
@@ -241,6 +243,15 @@ void Command::PrintHelp() {
   DCHECK(Config::is_help);
   Command::PrintCommandHelp();
   std::cout << std::endl << Config::command_options_help << std::endl;
+}
+
+ErrorCode Command::ExecHelp() {
+  char arg0[] = "ustore_cli";
+  char arg1[] = "--help";
+  char* argv[] = {arg0, arg1};
+  Run(2, argv);
+  Config::command = "HELP";
+  return ErrorCode::kOK;
 }
 
 ErrorCode Command::ExecCommand(const std::string& cmd) {

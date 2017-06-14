@@ -9,6 +9,7 @@ namespace ustore {
 namespace cli {
 
 Console::Console(DB* db) noexcept : Command(db) {
+  console_commands_.insert("HELP");
   // console-specific commands
   CONSOLE_CMD_HANDLER("HISTORY", ExecHistory);
   CONSOLE_CMD_HANDLER("DUMP_HISTORY", ExecDumpHistory);
@@ -63,7 +64,7 @@ void Console::Run(const std::string& cmd_line) {
   std::vector<std::string> args;
   if (!Utils::TokenizeArgs(cmd_line, &args)) {  // tokenize command line
     std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
-              << std::endl << std::endl;
+              << std::endl;
     MarkCurrentCommandLineToComment();
   } else if (!Config::ParseCmdArgs(args)) {  // parse command-line arguments
     std::cerr << BOLD_RED("[ERROR] ")
@@ -141,7 +142,8 @@ bool Console::ReplaceWithHistory(std::string& cmd_line) {
 
 void Console::MarkCurrentCommandLineToComment() {
   auto line_num = history_.size();
-  CHECK_GT(line_num, comment_history_lines.back());
+  CHECK(comment_history_lines.empty() ||
+        line_num > comment_history_lines.back());
   comment_history_lines.emplace_back(line_num);
 }
 
