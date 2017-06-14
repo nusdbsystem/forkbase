@@ -6,6 +6,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <string>
+#include <vector>
 #include "utils/logging.h"
 #include "cli/utils.h"
 
@@ -33,7 +34,7 @@ class Config {
   static std::string ref_column;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
-  
+
   static bool ParseCmdArgs(const std::vector<std::string>& args);
 
  private:

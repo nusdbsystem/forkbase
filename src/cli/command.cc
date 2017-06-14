@@ -301,21 +301,21 @@ ErrorCode Command::ExecScript(const std::string& script) {
       std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
                 << std::endl << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
-    } else if (!Config::ParseCmdArgs(args)) { // parse command-line arguments
+    } else if (!Config::ParseCmdArgs(args)) {  // parse command-line arguments
       std::cerr << BOLD_RED("[ERROR] ")
                 << "Found invalid command-line option" << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
-    } else if (Config::is_help) { // ignore printing help message
+    } else if (Config::is_help) {  // ignore printing help message
       std::cout << "...(ignored for script running)" << std::endl;
-    } else if (!Config::script.empty()) { // prohibit running with script
+    } else if (!Config::script.empty()) {  // prohibit running with script
       std::cerr << BOLD_RED("[ERROR] ") << "\"--script\" cannot be used in "
                 << "UStore script" << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
-    } else if (Config::command.empty()) { // validate the existence of command
+    } else if (Config::command.empty()) {  // validate the existence of command
       std::cerr << BOLD_RED("[ERROR] ") << "UStore command is missing"
                 << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
-    } else { // everything is ready, go!
+    } else {  // everything is ready, go!
       ec = ExecCommand(Config::command);
     }
     std::cout << std::endl;

@@ -4,6 +4,7 @@
 #define USTORE_CLI_CONSOLE_H_
 
 #include <list>
+#include <string>
 #include <unordered_set>
 #include <vector>
 #include "cli/command.h"

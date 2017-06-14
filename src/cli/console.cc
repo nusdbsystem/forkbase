@@ -61,26 +61,26 @@ ErrorCode Console::Run() {
 
 void Console::Run(const std::string& cmd_line) {
   std::vector<std::string> args;
-  if (!Utils::TokenizeArgs(cmd_line, &args)) { // tokenize command line
+  if (!Utils::TokenizeArgs(cmd_line, &args)) {  // tokenize command line
     std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
               << std::endl << std::endl;
     MarkCurrentCommandLineToComment();
-  } else if (!Config::ParseCmdArgs(args)) { // parse command-line arguments
+  } else if (!Config::ParseCmdArgs(args)) {  // parse command-line arguments
     std::cerr << BOLD_RED("[ERROR] ")
               << "Found invalid command-line option" << std::endl;
     MarkCurrentCommandLineToComment();
-  } else if (Config::is_help) { // print help message, if specified
+  } else if (Config::is_help) {  // print help message, if specified
     PrintHelp();
     MarkCurrentCommandLineToComment();
-  } else if (!Config::script.empty()) { // prohibit running with script
+  } else if (!Config::script.empty()) {  // prohibit running with script
     std::cerr << BOLD_RED("[ERROR] ") << "\"--script\" cannot be used in "
               << "UStore console" << std::endl;
     MarkCurrentCommandLineToComment();
-  } else if (Config::command.empty()) { // validate the existence of command
+  } else if (Config::command.empty()) {  // validate the existence of command
     std::cerr << BOLD_RED("[ERROR] ") << "UStore command is missing"
               << std::endl;
     MarkCurrentCommandLineToComment();
-  } else { // everything is ready, go!
+  } else {  // everything is ready, go!
     auto ec = ExecCommand(Config::command);
     if (ec != ErrorCode::kOK ||
         console_commands_.find(Config::command) != console_commands_.end()) {

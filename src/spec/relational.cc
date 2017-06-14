@@ -71,7 +71,7 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
   return ErrorCode::kOK;
 }
 
-const std::string kOutputDelimiter = "\t";
+const char kOutputDelimiter[] = "|";
 
 ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
                                const std::string& table_name,
@@ -99,7 +99,7 @@ ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
     n_rows = std::min(n_rows, col.numElements());
     cols.push_back(std::move(col_str));
   }
-  ++n_rows; // counting the schema row
+  ++n_rows;  // counting the schema row
   // write the column-based table to the row-based CSV file
   for (size_t i = 0; i < n_rows; ++i) {
     ofs << cols[0][i];

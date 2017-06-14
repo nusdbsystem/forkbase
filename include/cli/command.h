@@ -35,7 +35,7 @@ class Command {
  protected:
   virtual void PrintHelp();
   void PrintCommandHelp(std::ostream& os = std::cout);
-  
+
   ErrorCode ExecCommand(const std::string& command);
 
   std::unordered_map<std::string, std::function<ErrorCode()>> cmd_exec_;

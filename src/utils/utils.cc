@@ -41,7 +41,7 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kInvalidRange, "invalid value range"},
   {ErrorCode::kBranchExists, "branch already exists"},
   {ErrorCode::kBranchNotExists, "branch does not exist"},
-  {ErrorCode::kReferringVersionNotExist, "reffering version does not exist"},
+  {ErrorCode::kReferringVersionNotExist, "refering version does not exist"},
   {ErrorCode::kUCellNotfound, "UCell is not found"},
   {ErrorCode::kChunkNotExists, "chunk does not exist"},
   {ErrorCode::kTypeUnsupported, "unsupported data type"},
