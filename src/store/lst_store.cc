@@ -225,8 +225,10 @@ LSTSegment* LSTStore::AllocateMinor() {
 }
 
 LSTSegment* LSTStore::Allocate(LSTSegment* current) {
-  if (free_list_ == nullptr)
+  if (free_list_ == nullptr) {
+    GetInfo().Print();
     LOG(FATAL) << "Chunk store: out of log memory";
+  }
   LSTSegment* next = free_list_;
   if (current != nullptr) {
     // write the hash of the first chunk into the last 20 bytes of the

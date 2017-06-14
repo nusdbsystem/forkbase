@@ -38,7 +38,7 @@ class Timer {
 
 class Profiler {
  public:
-  static const unsigned kSamplingInterval; // milliseconds
+  static const unsigned kSamplingInterval;  // milliseconds
   explicit Profiler(size_t);
   ~Profiler();
   void SamplerThread();

@@ -39,7 +39,7 @@ ZmqNetContext::ZmqNetContext(const node_id_t& src, const node_id_t& dest,
     ClientZmqNet *net) : NetContext(src, dest), client_net_(net) {
   // start connection to the remote host
   send_sock_ = zsock_new(ZMQ_DEALER);
-  zsock_connect((zsock_t *)send_sock_, "%s", 
+  zsock_connect((zsock_t *)send_sock_, "%s",
       client_net_->request_ep_.c_str());
 }
 
@@ -145,7 +145,7 @@ void ClientZmqNet::Start() {
   zpoller_t *zpoller = zpoller_new(request_sock_);
   // start DEALER socket to other
   unordered_map<node_id_t, void*> out_socks;
-  for (auto n : netmap_) { 
+  for (auto n : netmap_) {
     void *sock_ = zsock_new(ZMQ_DEALER);
     string host = "tcp://" + n.first;
     CHECK_EQ(zsock_connect((zsock_t *)sock_, "%s", host.c_str()), 0);
@@ -171,7 +171,7 @@ void ClientZmqNet::Start() {
         zmsg_send(&msg, out_socks[dest_id]);
         request_counter_++;
         timeout_counter_ = kPollRetries;
-      } else {  // send to backend 
+      } else {  // send to backend
         zmsg_send(&msg, backend_sock_);
         request_counter_--;
         timeout_counter_ = kPollRetries;

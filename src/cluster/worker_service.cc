@@ -70,8 +70,7 @@ void WorkerService::Init() {
   // net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
   // net_ = new ServerZmqNet(node_addr_,
   // Env::Instance()->config().recv_threads());
-  net_.reset(new ServerZmqNet(node_addr_, 
-              Env::Instance()->config().recv_threads()));
+  net_.reset(new ServerZmqNet(node_addr_, 1));
 #endif
 }
 

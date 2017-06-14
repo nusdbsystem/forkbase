@@ -461,14 +461,22 @@ bool WorkerList::Update(const std::vector<RangeInfo> &workers) {
 }
 
 node_id_t WorkerList::GetWorker(const Slice& key) {
-  string h = Hash::ComputeFrom(key.data(), key.len()).ToBase32();
-  Slice hk = Slice(h.data(), h.length());
-
-  for (const RangeInfo& ri : workers_)
-    if (Slice(ri.start()) > hk) {
-      return ri.address();
-    }
-  return workers_[0].address();
+// TODO(wangsh): consider partition based on content later,
+//							 as this will affect latency
+//   string h = Hash::ComputeFrom(key.data(), key.len()).ToBase32();
+//   Slice hk = Slice(h.data(), h.length());
+//
+//   for (const RangeInfo& ri : workers_)
+//     if (Slice(ri.start()) > hk) {
+//       return ri.address();
+//     }
+//   return workers_[0].address();
+  int mod = workers_.size();
+  int res = 0;
+  for (size_t i = 0; i < key.len(); ++i) {
+    res = (res * mod + key.data()[i]) % mod;
+  }
+  return workers_[res].address();
 }
 
 vector<node_id_t> WorkerList::GetWorkerIds() {
