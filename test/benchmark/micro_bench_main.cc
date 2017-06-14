@@ -7,6 +7,7 @@
 #include <thread>
 #include <vector>
 #include "benchmark/benchmark.h"
+#include "benchmark/benchmark_config.h"
 #include "cluster/remote_client_service.h"
 #include "cluster/worker_service.h"
 #include "spec/object_db.h"
@@ -45,7 +46,7 @@ void BenchmarkClient() {
   sleep(1);
 
   // create client
-  size_t n_client = Env::Instance()->config().n_clients();
+  size_t n_client = BenchmarkConfig::num_clients;
   std::vector<ClientDb> clientdbs;
   std::vector<ObjectDB*> dbs;
   for (size_t i = 0; i < n_client; ++i)
@@ -57,7 +58,7 @@ void BenchmarkClient() {
 
   service.Stop();
   client_service_thread.join();
-  for (auto &p : dbs) delete p;
+  for (auto& p : dbs) delete p;
   usleep(kSleepTime);
 
   for (int i = 0; i < worker_threads.size(); ++i) {
@@ -68,7 +69,14 @@ void BenchmarkClient() {
   }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+  if (BenchmarkConfig::ParseCmdArgs(argc, argv)) {
+    if (BenchmarkConfig::is_help) return 0;
+  } else {
+    std::cerr << BOLD_RED("[FAILURE] ")
+              << "Found invalid command-line option" << std::endl;
+    return -1;
+  }
   // set num_segments large enough for all test cases
   Env::Instance()->m_config().set_num_segments(128);
   Env::Instance()->m_config().set_worker_file("conf/workers_micro_bench");

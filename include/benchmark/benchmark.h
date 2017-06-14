@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 #include "benchmark/random_generator.h"
+#include "benchmark/benchmark_config.h"
 #include "spec/object_db.h"
 #include "spec/slice.h"
 
@@ -21,15 +22,15 @@ class Timer {
   inline void Reset() { t_begin_ = std::chrono::steady_clock::now(); }
   inline int64_t Elapse() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
-               std::chrono::steady_clock::now() - t_begin_).count();
+             std::chrono::steady_clock::now() - t_begin_).count();
   }
   inline int64_t ElapseMicro() const {
     return std::chrono::duration_cast<std::chrono::microseconds>(
-               std::chrono::steady_clock::now() - t_begin_).count();
+             std::chrono::steady_clock::now() - t_begin_).count();
   }
   inline int64_t ElapseNano() const {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
-               std::chrono::steady_clock::now() - t_begin_).count();
+             std::chrono::steady_clock::now() - t_begin_).count();
   }
 
  private:
@@ -56,16 +57,22 @@ class Profiler {
 };
 
 static const char CASES_benchmark[] =
-    "stringvalidation,"
-    "blobvalidation,"
-    "fixedstring,"
-    "fixedblob,"
-    "randomstring,"
-    "randomblob,";
+  "stringvalidation,"
+  "blobvalidation,"
+  "fixedstring,"
+  "fixedblob,"
+  "randomstring,"
+  "randomblob,";
 
 class Benchmark {
  public:
-  explicit Benchmark(const std::vector<ObjectDB*>& dbs) : dbs_(dbs) {
+  explicit Benchmark(const std::vector<ObjectDB*>& dbs)
+    : dbs_(dbs),
+      kNumValidations(BenchmarkConfig::num_validations),
+      kNumStrings(BenchmarkConfig::num_strings),
+      kNumBlobs(BenchmarkConfig::num_blobs),
+      kStringLength(BenchmarkConfig::string_len),
+      kBlobSize(BenchmarkConfig::blob_size) {
     n_threads_ = dbs.size();
   }
   ~Benchmark() = default;
@@ -82,16 +89,11 @@ class Benchmark {
   void FixedBlob(int n, int size);
 
  private:
-  static constexpr int kNumValidations = 100;
-  static constexpr int kNumStrings = 100000;
-  static constexpr int kNumBlobs = 5000;
-  static constexpr int kStringLength = 64;
-  static constexpr int kBlobSize = 8192;  // ensure blob are chunked
-  // static constexpr int kNumValidations = 10;
-  // static constexpr int kNumStrings = 10;
-  // static constexpr int kNumBlobs = 10;
-  // static constexpr int kStringLength = 10;
-  // static constexpr int kBlobSize = 10;  // ensure blob are chunked
+  const int kNumValidations;
+  const int kNumStrings;
+  const int kNumBlobs;
+  const int kStringLength;
+  const int kBlobSize;
 
   std::vector<Hash> PutString(const std::vector<std::string>& keys,
                               const Slice& branch,

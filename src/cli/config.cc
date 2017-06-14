@@ -47,8 +47,6 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
   po::variables_map vm;
   GUARD(ParseCmdArgs(argc, argv, &vm));
   try {
-    is_help = vm.count("help");
-
     command = vm["command"].as<std::string>();
     boost::to_upper(command);
 
