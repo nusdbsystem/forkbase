@@ -53,10 +53,10 @@ struct ResponseBlob {
  * Each ClientDb can be run on a separate thread, processing requests synchronously.
  * Responses arrive asynchronously from the network. To route the response back to the
  * correct thread, we use thread ID to identify the message. That is:
- *    + Each UStoreMessage request now contains a field named "source"
+ *    + Each UMessage request now contains a field named "source"
  *    + After sending the message, the thread waits on a ResponseBlob
  *      (associated with this "source")
- *    + When a UStoreMessage response arrives, the network thread (callback)
+ *    + When a UMessage response arrives, the network thread (callback)
  *      checks for the source and wakes up the corresponding ResponseBlob
  *
  */
@@ -123,30 +123,28 @@ class ClientDb : public DB {
  private:
   // send request to a node. Return false if there are
   // errors with network communication.
-  bool Send(const Message* msg, const node_id_t& node_id);
+  bool Send(const Message& msg, const node_id_t& node_id);
   // wait for response, and take ownership of the message.
-  std::unique_ptr<UStoreMessage> WaitForResponse();
+  std::unique_ptr<UMessage> WaitForResponse();
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
   // helper methods for creating messages
-  std::unique_ptr<UStoreMessage> CreatePutRequest(const Slice& key,
-                                                  const Value& value);
-  std::unique_ptr<UStoreMessage> CreateGetRequest(const Slice& key);
-  std::unique_ptr<UStoreMessage> CreateGetChunkRequest(const Slice& key);
-  std::unique_ptr<UStoreMessage> CreateBranchRequest(const Slice& key,
-                                                     const Slice& new_branch);
-  std::unique_ptr<UStoreMessage> CreateMergeRequest(const Slice& key,
-                                                    const Value& value);
+  void CreatePutMessage(const Slice& key, const Value& value, UMessage* msg);
+  void CreateGetMessage(const Slice& key, UMessage* msg);
+  void CreateBranchMessage(const Slice& key, const Slice& new_branch,
+                           UMessage* msg);
+  void CreateMergeMessage(const Slice& key, const Value& value, UMessage* msg);
   // helper methods for getting response
   ErrorCode GetEmptyResponse();
-  ErrorCode GetPutResponse(Hash* version);
-  ErrorCode GetMergeResponse(Hash* version);
+  ErrorCode GetVersionResponse(Hash* version);
   ErrorCode GetUCellResponse(UCell* value);
-  ErrorCode GetStringList(std::vector<string> *vals);
-  ErrorCode GetVersionList(std::vector<Hash> *versions);
-  ErrorCode GetBool(bool* exists);
-  ErrorCode GetBranchHeadVersion(Hash *version);
+  ErrorCode GetStringListResponse(std::vector<string>* vals);
+  ErrorCode GetVersionListResponse(std::vector<Hash>* versions);
+  ErrorCode GetBoolResponse(bool* exists);
   ErrorCode GetChunkResponse(Chunk* chunk);
+  inline Hash ToHash(const std::string& request) {
+    return Hash(reinterpret_cast<const byte_t*>(request.data()));
+  }
 
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
@@ -168,7 +166,7 @@ class ClientDb : public DB {
 class WorkerList {
  public:
   WorkerList() = default;
-  WorkerList(const std::vector<RangeInfo>& workers);
+  explicit WorkerList(const std::vector<RangeInfo>& workers);
   ~WorkerList() = default;
 
   /**

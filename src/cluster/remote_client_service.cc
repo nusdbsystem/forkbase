@@ -75,7 +75,7 @@ void RemoteClientService::Start() {
 
 void RemoteClientService::HandleResponse(const void *msg, int size,
                                    const node_id_t& source) {
-  UStoreMessage *ustore_msg = new UStoreMessage();
+  UMessage *ustore_msg = new UMessage();
   ustore_msg->ParseFromArray(msg, size);
   ResponseBlob* res_blob = responses_[ustore_msg->source()].get();
 

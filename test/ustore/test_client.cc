@@ -18,7 +18,6 @@
 #include "spec/value.h"
 #include "utils/logging.h"
 
-using ustore::UStoreMessage;
 using ustore::byte_t;
 using ustore::WorkerService;
 using ustore::RemoteClientService;

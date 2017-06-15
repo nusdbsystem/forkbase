@@ -5,11 +5,12 @@
 #include <fstream>
 #include <vector>
 #include "gtest/gtest.h"
+#include "cluster/worker_service.h"
+#include "cluster/remote_client_service.h"
 #include "utils/env.h"
 #include "utils/logging.h"
 #include "http/server.h"
 #include "http/net.h"
-#include "worker/worker.h"
 #include "http/http_request.h"
 
 using namespace ustore;
@@ -237,11 +238,31 @@ string Delete(const string& key, const string& branch, ClientSocket& cs) {
 }
 
 TEST(HttpTest, BasicOps) {
-  Worker worker {2017, false};
   int port = Env::Instance()->config().http_port();
+  // launch workers
+  std::ifstream fin(Env::Instance()->config().worker_file());
+  string worker_addr;
+  std::vector<ustore::WorkerService*> workers;
+  while (fin >> worker_addr)
+    workers.push_back(new ustore::WorkerService(worker_addr, "", false));
+
+  std::vector<std::thread> worker_threads;
+  for (int i = 0; i < workers.size(); i++)
+    workers[i]->Init();
+  for (int i = 0; i < workers.size(); i++)
+    worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
+
+  // launch clients
+  ustore::RemoteClientService service("");
+  service.Init();
+  // service->Start();
+  std::thread client_service_thread(&RemoteClientService::Start, &service);
+  usleep(kSleepTime);
+  // 1 thread
+  ClientDb client = service.CreateClientDb();
 
   // start the http server
-  HttpServer server(&worker, port);
+  HttpServer server(&client, port);
   std::thread server_thread(Start, &server);
   sleep(1);
 
@@ -387,4 +408,16 @@ TEST(HttpTest, BasicOps) {
   server.Stop();
   sleep(1);
   server_thread.join();
+
+  // stop the client service
+  service.Stop();
+  client_service_thread.join();
+  usleep(kSleepTime);
+  // stop workers
+  for (int i = 0; i < worker_threads.size(); i++) {
+    workers[i]->Stop();
+    worker_threads[i].join();
+    delete workers[i];
+    usleep(kSleepTime);
+  }
 }

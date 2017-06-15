@@ -4,6 +4,7 @@
 #define USTORE_CLUSTER_WORKER_SERVICE_H_
 
 #include <memory>
+#include <string>
 #include <vector>
 #include "net/net.h"
 #include "proto/messages.pb.h"
@@ -48,8 +49,27 @@ class WorkerService {
 
  private:
     // helper methods for parsing request/response
-    bool CreateUCellPayload(const UCell &val, UCellPayload *payload);
+    inline Hash ToHash(const std::string& request) {
+      return Hash(reinterpret_cast<const byte_t*>(request.data()));
+    }
     Value ValueFromRequest(const ValuePayload& payload);
+    void HandlePutRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleGetRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleMergeRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleListRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleExistsRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleGetBranchHeadRequest(const UMessage& umsg,
+                                    ResponsePayload* response);
+    void HandleIsBranchHeadRequest(const UMessage& umsg,
+                                   ResponsePayload* response);
+    void HandleGetLatestVersionRequest(const UMessage& umsg,
+                                       ResponsePayload* response);
+    void HandleIsLatestVersionRequest(const UMessage& umsg,
+                                      ResponsePayload* response);
+    void HandleBranchRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleRenameRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleDeleteRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* response);
 
     node_id_t master_;  // master node
     node_id_t node_addr_;  // this node's address

@@ -13,106 +13,58 @@ package ustore;
  *
  * To extend the message: define a new type, and define a new payload inside this object.
  */
-message UStoreMessage {
+message UMessage {
   enum Type {
     PUT_REQUEST = 1;
-    PUT_RESPONSE = 2;
-    GET_REQUEST = 3;
-    GET_RESPONSE = 4;
-    BRANCH_REQUEST = 5;
-    BRANCH_RESPONSE = 6;
-    RENAME_REQUEST = 7;
-    RENAME_RESPONSE = 8;
-    MERGE_REQUEST = 9;
-    MERGE_RESPONSE = 10;
-    GET_CHUNK_REQUEST = 11;
-    LIST_KEY_REQUEST = 12;
-    LIST_BRANCH_REQUEST = 13;
-    EXISTS_REQUEST = 14;
-    GET_BRANCH_HEAD_REQUEST = 15;
-    IS_BRANCH_HEAD_REQUEST = 16;
-    GET_LATEST_VERSION_REQUEST = 17;
-    IS_LATEST_VERSION_REQUEST = 18;
-    DELETE_REQUEST = 19;
-    LIST_RESPONSE = 20;
-    BOOL_RESPONSE = 21;
-    BRANCH_VERSION_RESPONSE = 22;
-    DELETE_RESPONSE = 23;
+    GET_REQUEST = 2;
+    MERGE_REQUEST = 3;
+    LIST_REQUEST = 10;
+    EXISTS_REQUEST = 11;
+    GET_BRANCH_HEAD_REQUEST = 12;
+    IS_BRANCH_HEAD_REQUEST = 13;
+    GET_LATEST_VERSION_REQUEST = 14;
+    IS_LATEST_VERSION_REQUEST = 15;
+    BRANCH_REQUEST = 20;
+    RENAME_REQUEST = 21;
+    DELETE_REQUEST = 22;
+    GET_CHUNK_REQUEST = 30;
+    RESPONSE = 40;
   }
 
-  /**
-   * HEADER
-   */
-  optional Type type = 1;
-  // key
-  optional bytes key = 2;
-  // version
-  optional bytes version = 3;
-  // branch
-  optional bytes branch = 4;
-  // status (only for RESPONSE messages)
-  optional int32 status = 5;
-  // to identify the sending thread
-  required int32 source = 15;
+  required Type type = 1;
+  required int32 source = 2;
 
-  optional PutRequestPayload put_request_payload = 6;
-  optional PutResponsePayload put_response_payload = 7;
-  optional GetResponsePayload get_response_payload = 8;
-  optional BranchRequestPayload branch_request_payload = 9;
-  optional RenameRequestPayload rename_request_payload = 10;
-  optional MergeRequestPayload merge_request_payload = 11;
-  optional MergeResponsePayload merge_response_payload = 12;
-  optional BoolResponsePayload bool_response_payload = 13;
-  optional MultiVersionResponsePayload multi_version_response_payload = 14;
-  optional BranchVersionResponsePayload branch_version_response_payload = 16;
+  optional RequestPayload request_payload = 10;
+  optional ValuePayload value_payload = 11;
+  optional ResponsePayload response_payload = 12;
 }
 
 /**
    * PAYLOAD
    */
-  // PUT_REQUEST payload
-message PutRequestPayload {
-    //required bytes value = 3;
-    required ValuePayload value = 3;
+message RequestPayload {
+  optional bytes key = 1;
+  optional bytes version = 2;
+  optional bytes branch = 3;
+  optional bytes ref_version = 4;
+  optional bytes ref_branch = 5;
 }
 
-  // PUT_RESPONSE payload
-message PutResponsePayload {
-    required bytes new_version = 1;
+// Value payload is to simulate spec/value class
+message ValuePayload {
+  required int32 type = 1;
+  optional bytes base = 2;
+  optional int32 pos = 3;
+  optional int32 dels = 4;
+  repeated bytes values = 5;  // vector<Slice> vals
+  repeated bytes keys = 6;  // vector<Slice> keys
 }
 
-  // MERGE_RESPONSE payload
-message MergeResponsePayload {
-    required bytes new_version = 1;
-}
-
-  // GET_REQUEST payload - Nothing to do
-
-  // GET_RESPONSE payload
-message GetResponsePayload {
-    //required bytes value = 1;
-    required UCellPayload meta = 1;
-}
-
-  // BRANCH_REQUEST
-message BranchRequestPayload {
-    required bytes new_branch = 1;
-}
-
-  // BRANCH_RESPONSE, MOVE_RESPONSE, MERGE_RESPONSE
-  // Status field indicates success or failure
-
-  // MOVE_REQUEST
-message RenameRequestPayload {
-    required bytes new_branch = 1;
-}
-
-  // MERGE_REQUEST
-message MergeRequestPayload {
-    optional bytes ref_branch = 1;
-    optional bytes ref_version = 2;
-    //required bytes value = 3;
-    required ValuePayload value = 3;
+message ResponsePayload {
+  required int32 stat = 1;
+  optional bytes value = 2;  // bytes value, used for both string and hash
+  optional bool bvalue = 3;  // bool value
+  repeated bytes lvalue = 4;  // list of bytes
 }
 
 /**
@@ -142,29 +94,4 @@ message RangeInfo {
 
   // Worker information
   required string address = 4;
-}
-
-message UCellPayload {
-  required bytes value = 1;
-}
-
-message ValuePayload {
-  required int32 type = 1;
-  optional bytes base = 2;
-  optional int32 pos = 3;
-  optional int32 dels = 4;
-  repeated bytes values = 5;  // vector<Slice> vals
-  repeated bytes keys = 6;  // vector<Slice> keys
-}
-
-message MultiVersionResponsePayload {
-  repeated bytes versions = 1;
-}
-
-message BranchVersionResponsePayload {
-  optional bytes version = 2;
-}
-
-message BoolResponsePayload {
-  required bool value = 3;
 }
