@@ -34,41 +34,90 @@ ErrorCode ColumnStore::CreateTable(const std::string& table_name,
 
 ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
                                const std::string& table_name,
-                               const std::string& branch_name) {
-  std::ifstream ifs(file_path);
-  USTORE_GUARD(ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
+                               const std::string& branch_name,
+                               const size_t batch_size) {
   Table tab;
-  auto ec = GetTable(table_name, branch_name, &tab);
-  ERROR_CODE_FWD(ec, kUCellNotfound, kTableNotExists);
-  USTORE_GUARD(ec);
+  USTORE_GUARD(GetTable(table_name, branch_name, &tab));
   USTORE_GUARD(tab.numElements() > 0 ?
                ErrorCode::kNotEmptyTable : ErrorCode::kOK);
+  std::ifstream ifs(file_path);
+  auto ec = ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile;
+  USTORE_GUARD(ec);
   std::string line;
+  std::vector<std::vector<std::string>> cols;
+  std::vector<std::string> col_names;
+  std::vector<std::string> col_keys;
   if (std::getline(ifs, line)) {
     // parse table schema
-    auto col_names = Utils::Tokenize(line, " \t,|");
-    std::vector<std::vector<std::string>> cols;
+    col_names = Utils::Tokenize(line, " \t,|");
+    // initialization
     for (auto& name : col_names) {
       cols.emplace_back(std::vector<std::string>());
+      auto key = GlobalKey(table_name, name);
+      static const Column empty_col(std::vector<Slice>({}));
+      ec = odb_.Put(Slice(key), empty_col, Slice(branch_name)).stat;
+      if (ec != ErrorCode::kOK) break;
+      col_keys.push_back(std::move(key));
     }
+  }
+  if (ec == ErrorCode::kOK) {
     auto n_cols = cols.size();
-    // convert row-based entries into column-based structure
-    while (std::getline(ifs, line)) {
-      boost::trim(line);
+    // iteratively load data batches into storage
+    const auto f_flush =
+    [&n_cols, &table_name, &branch_name, &col_keys, &cols, this]() {
+      const size_t batch_size = cols[0].size();
+      for (size_t i = 0; i < n_cols; ++i) {
+        // retrieve the previous column from storage
+        auto col_get_rst = odb_.Get(Slice(col_keys[i]), Slice(branch_name));
+        USTORE_GUARD(col_get_rst.stat);
+        auto col = col_get_rst.value.List();
+        // concatenate the current column to storage
+        std::vector<Slice> col_slices;
+        for (const auto& str : cols[i]) col_slices.emplace_back(str);
+        col.Append(col_slices);
+        USTORE_GUARD(
+          odb_.Put(Slice(col_keys[i]), col, Slice(branch_name)).stat);
+        // reset the buffer
+        cols[i].clear();
+      }
+      if (batch_size > 0) {
+        std::cout << GREEN("[FLUSHED] ")
+                  << "Number of rows loaded into storage: " << batch_size 
+                  << std::endl;
+      }
+      return ErrorCode::kOK;
+    };
+    for (size_t cnt = 0; std::getline(ifs, line);) {
       if (line.empty()) continue;
       auto row = Utils::Tokenize(line, " \t,|");
       for (size_t i = 0; i < n_cols; ++i) {
         cols[i].push_back(std::move(row[i]));
       }
+      if (++cnt >= batch_size) {
+        ec = f_flush();
+        if (ec != ErrorCode::kOK) break;
+        cnt = 0;
+      }
     }
-    ifs.close();
-    // put columns to the storeage
-    for (size_t i = 0; i < n_cols; ++i) {
-      USTORE_GUARD(
-        PutColumn(table_name, branch_name, col_names[i], cols[i]));
+    if (ec == ErrorCode::kOK) ec = f_flush();
+    if (ec == ErrorCode::kOK) {
+      Table tab;
+      // update table
+      for (auto& name : col_names) {
+        ec = GetTable(table_name, branch_name, &tab);
+        if (ec != ErrorCode::kOK) break;
+        auto col_key = GlobalKey(table_name, name);
+        auto rst = odb_.GetBranchHead(Slice(col_key), Slice(branch_name));
+        ec = rst.stat;
+        if (ec != ErrorCode::kOK) break;
+        auto col_ver = rst.value.ToBase32();
+        tab.Set(Slice(name), Slice(col_ver));
+        ec = odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
+      }
     }
   }
-  return ErrorCode::kOK;
+  ifs.close();
+  return ec;
 }
 
 const char kOutputDelimiter[] = "|";
@@ -116,6 +165,7 @@ ErrorCode ColumnStore::GetTable(const std::string& table_name,
                                 const std::string& branch_name,
                                 Table* table) {
   auto tab_rst = odb_.Get(Slice(table_name), Slice(branch_name));
+  ERROR_CODE_FWD(tab_rst.stat, kUCellNotfound, kTableNotExists);
   USTORE_GUARD(tab_rst.stat);
   *table = tab_rst.value.Map();
   return ErrorCode::kOK;

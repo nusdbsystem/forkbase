@@ -31,7 +31,8 @@ class ColumnStore {
 
   ErrorCode LoadCSV(const std::string& file_path,
                     const std::string& table_name,
-                    const std::string& branch_name);
+                    const std::string& branch_name,
+                    const size_t batch_size = 1024);
 
   ErrorCode DumpCSV(const std::string& file_path,
                     const std::string& table_name,

@@ -32,6 +32,7 @@ class Config {
   static std::string ref_table;
   static std::string column;
   static std::string ref_column;
+  static size_t batch_size;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 

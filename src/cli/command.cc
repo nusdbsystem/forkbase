@@ -77,6 +77,12 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("DELETE_TABLE", "DEL_TAB");
   CMD_ALIAS("DELETE_TABLE", "DEL-TAB");
   CMD_ALIAS("DELETE_TABLE", "DELTAB");
+  CMD_ALIAS("DELETE_TABLE", "DROP_TABLE");
+  CMD_ALIAS("DELETE_TABLE", "DROP-TABLE");
+  CMD_ALIAS("DELETE_TABLE", "DROPTABLE");
+  CMD_ALIAS("DELETE_TABLE", "DROP_TAB");
+  CMD_ALIAS("DELETE_TABLE", "DROP-TAB");
+  CMD_ALIAS("DELETE_TABLE", "DROPTAB");
   CMD_ALIAS("DELETE_TABLE", "DROP");
   CMD_HANDLER("GET_COLUMN", ExecGetColumn);
   CMD_ALIAS("GET_COLUMN", "GET-COLUMN");
@@ -976,12 +982,8 @@ ErrorCode Command::ExecGetTable() {
   }
   Table tab;
   auto ec = cs_.GetTable(tab_name, branch, &tab);
-  if (ec != ErrorCode::kOK) {
-    f_rpt_fail(ec);
-    return ec;
-  }
-  f_rpt_success(tab);
-  return ErrorCode::kOK;
+  ec == ErrorCode::kOK ? f_rpt_success(tab) : f_rpt_fail(ec);
+  return ec;
 }
 
 ErrorCode Command::ExecBranchTable() {
@@ -1075,7 +1077,6 @@ ErrorCode Command::ExecDeleteTable() {
     return ErrorCode::kInvalidCommandArgument;
   }
   auto ec = cs_.DeleteTable(tab, branch);
-  ERROR_CODE_FWD(ec, kUCellNotfound, kTableNotExists);
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
   return ec;
 }
@@ -1400,6 +1401,7 @@ ErrorCode Command::ExecLoadCSV() {
   const auto& file_path = Config::file;
   const auto& tab = Config::table;
   const auto& branch = Config::branch;
+  const auto& batch_size = Config::batch_size;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cerr << BOLD_RED("[INVALID ARGS: LOAD_CSV] ")
@@ -1425,7 +1427,7 @@ ErrorCode Command::ExecLoadCSV() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  auto ec = cs_.LoadCSV(file_path, tab, branch);
+  auto ec = cs_.LoadCSV(file_path, tab, branch, batch_size);
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
   return ec;
 }

@@ -23,6 +23,7 @@ std::string Config::table = "";
 std::string Config::ref_table = "";
 std::string Config::column = "";
 std::string Config::ref_column = "";
+size_t Config::batch_size = 1000;
 
 void Config::Reset() {
   is_help = false;
@@ -40,6 +41,7 @@ void Config::Reset() {
   ref_table = "";
   column = "";
   ref_column = "";
+  batch_size = 1000;
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -73,6 +75,10 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     column = vm["column"].as<std::string>();
     ref_column = vm["ref-column"].as<std::string>();
+
+    auto arg_batch_size = vm["batch-size"].as<int>();
+    GUARD(CheckArgGT(arg_batch_size, 0, "Batch size"));
+    batch_size = static_cast<size_t>(arg_batch_size);
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -109,7 +115,9 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("column,m", po::value<std::string>()->default_value(""),
    "the operating column")
   ("ref-column,n", po::value<std::string>()->default_value(""),
-   "the referring column");
+   "the referring column")
+  ("batch-size", po::value<int>()->default_value(1000),
+   "batch size for data loading");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);
