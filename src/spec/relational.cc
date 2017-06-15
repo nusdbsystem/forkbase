@@ -65,27 +65,39 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
     // iteratively load data batches into storage
     const auto f_flush =
     [&n_cols, &table_name, &branch_name, &col_keys, &cols, this]() {
-      const size_t batch_size = cols[0].size();
+      const int load_size = cols[0].size();
       for (size_t i = 0; i < n_cols; ++i) {
         // retrieve the previous column from storage
         auto col_get_rst = odb_.Get(Slice(col_keys[i]), Slice(branch_name));
-        USTORE_GUARD(col_get_rst.stat);
+        auto& ec_get = col_get_rst.stat;
+        if (ec_get != ErrorCode::kOK) return -static_cast<int>(ec_get);
         auto col = col_get_rst.value.List();
         // concatenate the current column to storage
         std::vector<Slice> col_slices;
         for (const auto& str : cols[i]) col_slices.emplace_back(str);
         col.Append(col_slices);
-        USTORE_GUARD(
-          odb_.Put(Slice(col_keys[i]), col, Slice(branch_name)).stat);
+        auto ec_put =
+          odb_.Put(Slice(col_keys[i]), col, Slice(branch_name)).stat;
+        if (ec_put != ErrorCode::kOK) return -static_cast<int>(ec_put);
         // reset the buffer
         cols[i].clear();
       }
-      if (batch_size > 0) {
+      return load_size;
+    };
+    size_t cnt_loaded = 0;
+    const auto f_flush_and_report = [&cnt_loaded, &f_flush]() {
+      const int num_loaded = f_flush();
+      if (num_loaded > 0) {
+        cnt_loaded += num_loaded;
         std::cout << GREEN("[FLUSHED] ")
-                  << "Number of rows loaded into storage: " << batch_size 
+                  << "Number of rows loaded into storage: " << cnt_loaded
                   << std::endl;
+        return ErrorCode::kOK;
+      } else if (num_loaded == 0) {
+        return ErrorCode::kOK;
+      } else {
+        return static_cast<ErrorCode>(-num_loaded);
       }
-      return ErrorCode::kOK;
     };
     for (size_t cnt = 0; std::getline(ifs, line);) {
       if (line.empty()) continue;
@@ -94,12 +106,12 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
         cols[i].push_back(std::move(row[i]));
       }
       if (++cnt >= batch_size) {
-        ec = f_flush();
+        ec = f_flush_and_report();
         if (ec != ErrorCode::kOK) break;
         cnt = 0;
       }
     }
-    if (ec == ErrorCode::kOK) ec = f_flush();
+    if (ec == ErrorCode::kOK) ec = f_flush_and_report();
     if (ec == ErrorCode::kOK) {
       Table tab;
       // update table
