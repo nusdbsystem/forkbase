@@ -35,7 +35,7 @@ ErrorCode ColumnStore::CreateTable(const std::string& table_name,
 ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
                                const std::string& table_name,
                                const std::string& branch_name,
-                               const size_t batch_size) {
+                               size_t batch_size) {
   Table tab;
   USTORE_GUARD(GetTable(table_name, branch_name, &tab));
   USTORE_GUARD(tab.numElements() > 0 ?

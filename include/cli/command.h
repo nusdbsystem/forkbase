@@ -16,11 +16,11 @@ namespace cli {
 
 #define CMD_HANDLER(cmd, handler) do { \
   cmd_exec_[cmd] = [this]() { return handler(); }; \
-} while(0)
+} while (0)
 
 #define CMD_ALIAS(cmd, alias) do { \
   alias_exec_[alias] = &cmd_exec_[cmd]; \
-} while(0)
+} while (0)
 
 #define FORMAT_CMD(cmd, width) \
   "* " << std::left << std::setw(width) << cmd << " "
