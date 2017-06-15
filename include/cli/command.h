@@ -73,6 +73,7 @@ class Command {
   ErrorCode ExecExistsColumn();
   ErrorCode ExecLoadCSV();
   ErrorCode ExecDumpCSV();
+  ErrorCode ExecGetRow();
 
   ObjectDB odb_;
   ColumnStore cs_;

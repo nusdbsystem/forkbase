@@ -15,6 +15,7 @@ std::string Config::script = "";
 std::string Config::file = "";
 std::string Config::key = "";
 std::string Config::value = "";
+std::string Config::ref_value = "";
 std::string Config::branch = "";
 std::string Config::ref_branch = "";
 std::string Config::version = "";
@@ -23,7 +24,7 @@ std::string Config::table = "";
 std::string Config::ref_table = "";
 std::string Config::column = "";
 std::string Config::ref_column = "";
-size_t Config::batch_size = 1000;
+size_t Config::batch_size = 5000;
 
 void Config::Reset() {
   is_help = false;
@@ -33,6 +34,7 @@ void Config::Reset() {
   file = "";
   key = "";
   value = "";
+  ref_value = "";
   branch = "";
   ref_branch = "";
   version = "";
@@ -41,7 +43,7 @@ void Config::Reset() {
   ref_table = "";
   column = "";
   ref_column = "";
-  batch_size = 1000;
+  batch_size = 5000;
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -57,6 +59,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     key = vm["key"].as<std::string>();
     value = vm["value"].as<std::string>();
+    ref_value = vm["ref-value"].as<std::string>();
 
     branch = vm["branch"].as<std::string>();
     ref_branch = vm["ref-branch"].as<std::string>();
@@ -100,6 +103,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "key of data")
   ("value,x", po::value<std::string>()->default_value(""),
    "data value")
+  ("ref-value,y", po::value<std::string>()->default_value(""),
+   "the reffering data value")
   ("branch,b", po::value<std::string>()->default_value(""),
    "the operating branch")
   ("ref-branch,c", po::value<std::string>()->default_value(""),

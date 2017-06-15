@@ -324,4 +324,40 @@ ErrorCode ColumnStore::DeleteColumn(const std::string& table_name,
   return odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
 }
 
+ErrorCode ColumnStore::GetRow(const std::string& table_name,
+                              const std::string& branch_name,
+                              const std::string& ref_col_name,
+                              const std::string& ref_val,
+                              std::unordered_map<size_t, Row>* rows) {
+  rows->clear();
+  Column ref_col;
+  USTORE_GUARD(
+    GetColumn(table_name, branch_name, ref_col_name, &ref_col));
+  // search for row indices
+  for (auto it = ref_col.Scan(); !it.end(); it.next()) {
+    if (it.value() == ref_val) {
+      Row r;
+      r.emplace_back(std::make_pair(ref_col_name, ref_val));
+      rows->emplace(it.index() + 1, std::move(r));
+    }
+  }
+  if (rows->empty()) return ErrorCode::kRowNotExists;
+  // construct rows according to the indices
+  Table tab;
+  USTORE_GUARD(
+    GetTable(table_name, branch_name, &tab));
+  for (auto it = tab.Scan(); !it.end(); it.next()) {
+    auto col_name = it.key().ToString();
+    if (col_name == ref_col_name) continue;
+    Column col;
+    USTORE_GUARD(
+      ReadColumn(table_name, branch_name, col_name, &col));
+    for (auto i_r : *rows) {
+      auto field = std::make_pair(col_name, col.Get(i_r.first).ToString());
+      rows->at(i_r.first).emplace_back(std::move(field));
+    }
+  }
+  return ErrorCode::kOK;
+}
+
 }  // namespace ustore

@@ -198,6 +198,10 @@ class Utils {
   static void PrintDiff(T& it_diff, const bool show_diff = true,
                         const bool elem_in_quote = false,
                         std::ostream& os = std::cout);
+
+  static void PrintRow(
+    const std::vector<std::pair<std::string, std::string>>& row,
+    const bool elem_in_quote = false, std::ostream& os = std::cout);
 };
 
 template<typename T>

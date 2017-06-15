@@ -12,6 +12,7 @@ namespace ustore {
 
 using Table = VMap;
 using Column = VList;
+using Row = std::vector<std::pair<std::string, std::string>>;
 using Version = std::string;
 using TableDiffIterator = DuallyDiffKeyIterator;
 using ColumnDiffIterator = DuallyDiffIndexIterator;
@@ -32,7 +33,7 @@ class ColumnStore {
   ErrorCode LoadCSV(const std::string& file_path,
                     const std::string& table_name,
                     const std::string& branch_name,
-                    size_t batch_size = 1024);
+                    size_t batch_size = 5000);
 
   ErrorCode DumpCSV(const std::string& file_path,
                     const std::string& table_name,
@@ -89,6 +90,12 @@ class ColumnStore {
   ErrorCode DeleteColumn(const std::string& table_name,
                          const std::string& branch_name,
                          const std::string& col_name);
+
+  ErrorCode GetRow(const std::string& table_name,
+                   const std::string& branch_name,
+                   const std::string& ref_col_name,
+                   const std::string& ref_val, 
+                   std::unordered_map<size_t, Row>* rows);
 
   inline ColumnDiffIterator DiffColumn(const Column& lhs, const Column& rhs) {
     return UList::DuallyDiff(lhs, rhs);

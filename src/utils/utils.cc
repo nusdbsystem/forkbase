@@ -62,6 +62,7 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kTableNotExists, "table does not exist"},
   {ErrorCode::kEmptyTable, "table is empty"},
   {ErrorCode::kNotEmptyTable, "table is not empty"},
+  {ErrorCode::kRowNotExists, "row does not exist"},
   {ErrorCode::kFailedOpenFile, "failed to open file"},
   {ErrorCode::kInvalidCommandArgument, "invalid command-line argument"},
   {ErrorCode::kUnknownCommand, "unrecognized command"}
@@ -216,6 +217,26 @@ void Utils::PrintListDiff(DuallyDiffIndexIterator& it_diff,
     }
   }
   os << "]";
+}
+
+void Utils::PrintRow(
+  const std::vector<std::pair<std::string, std::string>>& row,
+  const bool elem_in_quote, std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = row.begin();
+  auto f_print_it = [&os, &quote, &it]() {
+    os << quote << it->first << quote << ":" << quote
+       << it->second << quote;
+  };
+  os << "{";
+  if (it != row.end()) {
+    f_print_it();
+    while (++it != row.end()) {
+      os << ", ";
+      f_print_it();
+    }
+  }
+  os << "}";
 }
 
 }  // namespace ustore

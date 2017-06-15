@@ -145,6 +145,9 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("EXISTS_COLUMN", "EXIST_COL");
   CMD_ALIAS("EXISTS_COLUMN", "EXIST-COL");
   CMD_ALIAS("EXISTS_COLUMN", "EXISTCOL");
+  CMD_HANDLER("GET_ROW", ExecGetRow);
+  CMD_ALIAS("GET_ROW", "GET-ROW");
+  CMD_ALIAS("GET_ROW", "GETROW");
   CMD_HANDLER("LOAD_CSV", ExecLoadCSV);
   CMD_ALIAS("LOAD_CSV", "LOAD-CSV");
   CMD_ALIAS("LOAD_CSV", "LOADCSV");
@@ -344,7 +347,11 @@ ErrorCode Command::ExecScript(const std::string& script) {
 ErrorCode Command::ExecGet() {
   // redirection
   if (!Config::table.empty() && Config::key.empty()) {
-    return Config::column.empty() ? ExecGetTable() : ExecGetColumn();
+    if (Config::column.empty()) {
+      return Config::ref_column.empty() ? ExecGetTable() : ExecGetRow();
+    } else {
+      return ExecGetColumn();
+    }
   }
 
   const auto& key = Config::key;
@@ -1463,6 +1470,48 @@ ErrorCode Command::ExecDumpCSV() {
   }
   auto ec = cs_.DumpCSV(file_path, tab, branch);
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecGetRow() {
+  const auto& tab = Config::table;
+  const auto& branch = Config::branch;
+  const auto& ref_col = Config::ref_column;
+  const auto& ref_val = Config::ref_value;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: GET_ROW] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Ref. Column: \"" << ref_col << "\", "
+              << "Ref. Value: \"" << ref_val << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](const std::unordered_map<size_t, Row>& rows) {
+    DCHECK(!rows.empty());
+    for (auto& i_r : rows) {
+      std::cout << BOLD_GREEN("[SUCCESS: GET_ROW] ") << "Row "
+                << i_r.first << ": ";
+      Utils::PrintRow(i_r.second, true);
+      std::cout << std::endl;
+    }
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: GET_ROW] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Ref. Column: \"" << ref_col << "\", "
+              << "Ref. Value: \"" << ref_val << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (tab.empty() || branch.empty() || ref_col.empty() || ref_val.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::unordered_map<size_t, Row> rows;
+  auto ec = cs_.GetRow(tab, branch, ref_col, ref_val, &rows);
+  ec == ErrorCode::kOK ? f_rpt_success(rows) : f_rpt_fail(ec);
   return ec;
 }
 

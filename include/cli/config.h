@@ -24,6 +24,7 @@ class Config {
   static std::string file;
   static std::string key;
   static std::string value;
+  static std::string ref_value;
   static std::string branch;
   static std::string ref_branch;
   static std::string version;
