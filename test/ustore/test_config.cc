@@ -15,7 +15,6 @@ const std::string kConfigArg = std::string("--config=")
                                + Env::kDefaultConfigFile;
 const std::string kDefaultWorkerFile = "conf/workers";
 const int kDefaultRecvThreads = 1;
-const int kDefaultServiceThreads = 1;
 
 TEST(ConfigTest, ConfigFile) {
   int argc = 2;
@@ -32,5 +31,4 @@ TEST(ConfigTest, ConfigParse) {
   const Config& c = Env::Instance()->config();
   CHECK_EQ(c.worker_file(), kDefaultWorkerFile);
   CHECK_EQ(c.recv_threads(), kDefaultRecvThreads);  // default value
-  CHECK_EQ(c.service_threads(), kDefaultServiceThreads);  // default value
 }
