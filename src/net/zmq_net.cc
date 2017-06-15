@@ -21,7 +21,7 @@ namespace ustore {
 
 // total wait time for socket: kWaitInterval*kPollRetries
 constexpr int kWaitInterval = 10;
-constexpr int kPollRetries = 1000;
+constexpr int kPollRetries = 2000;
 constexpr int kSocketBindTimeout = 1;
 constexpr int kSocketTrials = 5;
 

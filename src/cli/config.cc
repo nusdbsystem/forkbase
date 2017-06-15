@@ -1,8 +1,8 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <boost/algorithm/string.hpp>
 #include <utility>
 
-#include <boost/algorithm/string.hpp>
 #include "cli/config.h"
 
 namespace ustore {
@@ -135,8 +135,9 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
 
 bool Config::ParseCmdArgs(const std::vector<std::string>& args) {
   int argc = args.size() + 1;
-  char dummy_cmd[] = "ustore_cli";
-  char* argv[argc] = { dummy_cmd };
+  static char dummy_cmd[] = "ustore_cli";
+  char* argv[argc];
+  argv[0] = dummy_cmd;
   for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
     auto& arg = args[j];
     argv[i] = new char[arg.size()];
