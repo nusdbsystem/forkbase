@@ -1,7 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
+
+#ifndef USTORE_EXAMPLE_HUAWEI_UTILS_H_
+#define USTORE_EXAMPLE_HUAWEI_UTILS_H_
+
 #include <cstdlib>
 
-#include <codecvt>
 #include <locale>
 #include <string>
 #include <vector>
@@ -46,3 +49,5 @@ std::string GenerateHeader(const std::vector<ColSchema>&);
 }  // namespace huawei
 }  // namespace example
 }  // namespace ustore
+
+#endif  // USTORE_EXAMPLE_HUAWEI_UTILS_H_

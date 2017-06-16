@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "utils.h"
+#include "huawei/utils.h"
 #include "utils/logging.h"
 
 using namespace ustore;
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     if (old_percentage != percentage) {
       old_percentage = percentage;
       if (percentage % 5 == 0)
-        std::cout << percentage << "\% genereated..." << std::endl;
+        std::cout << percentage << "% genereated..." << std::endl;
     }
   }
   std::cout << "hbase.csv generated" << std::endl;

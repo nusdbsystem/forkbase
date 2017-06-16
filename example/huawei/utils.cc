@@ -1,8 +1,8 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include <algorithm>
+#include <memory>
 #include <sstream>
-#include <iostream>
 
 #include "utils.h"
 
@@ -10,7 +10,7 @@ namespace ustore {
 namespace example {
 namespace huawei {
 
-constexpr char delimiter = ',';
+constexpr char delimiter = '|';
 
 static const char alphabet[] =
     "0123456789"
