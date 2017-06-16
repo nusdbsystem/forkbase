@@ -2,8 +2,10 @@
 
 #include <boost/algorithm/string.hpp>
 #include <fstream>
+#include <future>
 #include <limits>
 #include <sstream>
+// #include <thread>
 #include "spec/relational.h"
 #include "utils/logging.h"
 
@@ -44,92 +46,138 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
   auto ec = ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile;
   USTORE_GUARD(ec);
   std::string line;
-  std::vector<std::vector<std::string>> cols;
   std::vector<std::string> col_names;
-  std::vector<std::string> col_keys;
   if (std::getline(ifs, line)) {
     // parse table schema
     col_names = Utils::Tokenize(line, " \t,|");
     // initialization
     for (auto& name : col_names) {
-      cols.emplace_back(std::vector<std::string>());
       auto key = GlobalKey(table_name, name);
       static const Column empty_col(std::vector<Slice>({}));
       ec = odb_.Put(Slice(key), empty_col, Slice(branch_name)).stat;
       if (ec != ErrorCode::kOK) break;
-      col_keys.push_back(std::move(key));
     }
   }
   if (ec == ErrorCode::kOK) {
-    auto n_cols = cols.size();
-    // iteratively load data batches into storage
-    const auto f_flush =
-    [&n_cols, &table_name, &branch_name, &col_keys, &cols, this]() {
-      const int load_size = cols[0].size();
-      for (size_t i = 0; i < n_cols; ++i) {
-        // retrieve the previous column from storage
-        auto col_get_rst = odb_.Get(Slice(col_keys[i]), Slice(branch_name));
-        auto& ec_get = col_get_rst.stat;
-        if (ec_get != ErrorCode::kOK) return -static_cast<int>(ec_get);
-        auto col = col_get_rst.value.List();
-        // concatenate the current column to storage
-        std::vector<Slice> col_slices;
-        for (const auto& str : cols[i]) col_slices.emplace_back(str);
-        col.Append(col_slices);
-        auto ec_put =
-          odb_.Put(Slice(col_keys[i]), col, Slice(branch_name)).stat;
-        if (ec_put != ErrorCode::kOK) return -static_cast<int>(ec_put);
-        // reset the buffer
-        cols[i].clear();
-      }
-      return load_size;
-    };
-    size_t cnt_loaded = 0;
-    const auto f_flush_and_report = [&cnt_loaded, &f_flush]() {
-      const int num_loaded = f_flush();
-      if (num_loaded > 0) {
-        cnt_loaded += num_loaded;
-        std::cout << GREEN("[FLUSHED] ")
-                  << "Number of rows loaded into storage: " << cnt_loaded
-                  << std::endl;
-        return ErrorCode::kOK;
-      } else if (num_loaded == 0) {
-        return ErrorCode::kOK;
-      } else {
-        return static_cast<ErrorCode>(-num_loaded);
-      }
-    };
-    for (size_t cnt = 0; std::getline(ifs, line);) {
-      if (line.empty()) continue;
-      auto row = Utils::Tokenize(line, " \t,|");
-      for (size_t i = 0; i < n_cols; ++i) {
-        cols[i].push_back(std::move(row[i]));
-      }
-      if (++cnt >= batch_size) {
-        ec = f_flush_and_report();
-        if (ec != ErrorCode::kOK) break;
-        cnt = 0;
-      }
-    }
-    if (ec == ErrorCode::kOK) ec = f_flush_and_report();
-    if (ec == ErrorCode::kOK) {
-      Table tab;
-      // update table
-      for (auto& name : col_names) {
-        ec = GetTable(table_name, branch_name, &tab);
-        if (ec != ErrorCode::kOK) break;
-        auto col_key = GlobalKey(table_name, name);
-        auto rst = odb_.GetBranchHead(Slice(col_key), Slice(branch_name));
-        ec = rst.stat;
-        if (ec != ErrorCode::kOK) break;
-        auto col_ver = rst.value.ToBase32();
-        tab.Set(Slice(name), Slice(col_ver));
-        ec = odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
-      }
-    }
+    ec = LoadCSV(ifs, table_name, branch_name, col_names, batch_size);
   }
   ifs.close();
   return ec;
+}
+
+ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
+                               const std::string& table_name,
+                               const std::string& branch_name,
+                               const std::vector<std::string>& col_names,
+                               size_t batch_size) {
+  BlockingQueue<std::vector<std::vector<std::string>>> batch_queue(2);
+  auto stat_flush = ErrorCode::kOK;
+  auto thread_flush = std::async(std::launch::async, [&]() {
+    FlushCSV(table_name, branch_name, col_names, batch_queue, stat_flush);
+  });
+  auto ec =
+    ShardCSV(ifs, batch_size, col_names.size(), batch_queue, stat_flush);
+  thread_flush.wait();
+  if ((ec = stat_flush) == ErrorCode::kOK) {
+    Table tab;
+    // update table
+    for (auto& name : col_names) {
+      ec = GetTable(table_name, branch_name, &tab);
+      if (ec != ErrorCode::kOK) break;
+      auto col_key = GlobalKey(table_name, name);
+      auto rst = odb_.GetBranchHead(Slice(col_key), Slice(branch_name));
+      ec = rst.stat;
+      if (ec != ErrorCode::kOK) break;
+      auto col_ver = rst.value.ToBase32();
+      tab.Set(Slice(name), Slice(col_ver));
+      ec = odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
+    }
+  }
+  return ec;
+}
+
+ErrorCode ColumnStore::ShardCSV(
+  std::ifstream& ifs, size_t batch_size, size_t n_cols,
+  BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
+  ErrorCode& stat_flush) {
+  auto f_get_empty_batch = [&n_cols] {
+    std::vector<std::vector<std::string>> cols;
+    for (size_t i = 0; i < n_cols; ++i) {
+      cols.emplace_back(std::vector<std::string>());
+    }
+    return cols;
+  };
+  auto cols = f_get_empty_batch();
+  std::string line;
+  auto ec = ErrorCode::kOK;
+  while (std::getline(ifs, line)) {
+    if (line.empty()) continue;
+    auto row = Utils::Tokenize(line, " \t,|");
+    for (size_t i = 0; i < n_cols; ++i) {
+      cols[i].push_back(std::move(row[i]));
+    }
+    if (cols[0].size() >= batch_size) {
+      if ((ec = stat_flush) != ErrorCode::kOK) break;
+      batch_queue.Put(std::move(cols));
+      cols = f_get_empty_batch();
+    }
+  }
+  if (cols[0].empty()) {
+    batch_queue.Put(std::move(cols));
+  } else {
+    batch_queue.Put(std::move(cols));
+    batch_queue.Put(f_get_empty_batch());
+  }
+  return ec;
+}
+
+void ColumnStore::FlushCSV(
+  const std::string& table_name, const std::string& branch_name,
+  const std::vector<std::string>& col_names,
+  BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
+  ErrorCode& stat) {
+  auto n_cols = col_names.size();
+  std::vector<std::string> col_keys;
+  for (auto& name : col_names) {
+    col_keys.emplace_back(GlobalKey(table_name, name));
+  }
+  // load data into storage by batches
+  auto f_flush = [&n_cols, &branch_name, &col_keys, this](
+  const std::vector<std::vector<std::string>>& cols) {
+    const int load_size = cols[0].size();
+    for (size_t i = 0; i < n_cols; ++i) {
+      DCHECK_EQ(cols[i], load_size);
+      // retrieve the previous column from storage
+      auto col_get_rst = odb_.Get(Slice(col_keys[i]), Slice(branch_name));
+      auto& ec_get = col_get_rst.stat;
+      if (ec_get != ErrorCode::kOK) return -static_cast<int>(ec_get);
+      auto col = col_get_rst.value.List();
+      // concatenate the current column to storage
+      std::vector<Slice> col_slices;
+      for (const auto& str : cols[i]) col_slices.emplace_back(str);
+      col.Append(col_slices);
+      auto ec_put =
+        odb_.Put(Slice(col_keys[i]), col, Slice(branch_name)).stat;
+      if (ec_put != ErrorCode::kOK) return -static_cast<int>(ec_put);
+    }
+    return load_size;
+  };
+  size_t cnt_loaded = 0;
+  while (true) {
+    auto cols = batch_queue.Take();
+    if (cols[0].empty()) break;
+    const int num_loaded = f_flush(cols);
+    if (num_loaded < 0) {
+      stat = static_cast<ErrorCode>(-num_loaded);
+      break;
+    }
+    if (num_loaded > 0) {
+      cnt_loaded += num_loaded;
+      std::cout << GREEN("[FLUSHED] ")
+                << "Number of rows loaded into storage: " << cnt_loaded
+                << std::endl;
+    }
+  }
 }
 
 const char kOutputDelimiter[] = "|";
