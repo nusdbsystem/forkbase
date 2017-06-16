@@ -121,7 +121,7 @@ class Utils {
   static inline std::string ToStringSeq(
     const T& begin, const T& end, const std::string& lsymbol = "[",
     const std::string& rsymbol = "]", const std::string& sep = ", ",
-    const bool elem_in_quote = false);
+    bool elem_in_quote = false);
 
   template<class T>
   static inline std::string ToString(const std::list<T>& list) {
@@ -175,33 +175,33 @@ class Utils {
 
   static UType ToUType(const std::string& str);
 
-  static ErrorCode CheckIndex(const size_t idx, const SList& list);
+  static ErrorCode CheckIndex(size_t idx, const SList& list);
 
   template <typename T>
   static std::vector<size_t> SortIndexes(const std::vector<T>& v);
 
-  static void PrintList(const UList& list, const bool elem_in_quote = false,
+  static void PrintList(const UList& list, bool elem_in_quote = false,
                         std::ostream& os = std::cout);
 
-  static void PrintMap(const UMap& map, const bool elem_in_quote = false,
+  static void PrintMap(const UMap& map, bool elem_in_quote = false,
                        std::ostream& os = std::cout);
 
-  static void PrintMapKeys(const UMap& map, const bool elem_in_quote = false,
+  static void PrintMapKeys(const UMap& map, bool elem_in_quote = false,
                            std::ostream& os = std::cout);
 
   static void PrintListDiff(DuallyDiffIndexIterator& it_diff,
-                            const bool show_diff = true,
-                            const bool elem_in_quote = false,
+                            bool show_diff = true,
+                            bool elem_in_quote = false,
                             std::ostream& os = std::cout);
 
   template<class T>
-  static void PrintDiff(T& it_diff, const bool show_diff = true,
-                        const bool elem_in_quote = false,
+  static void PrintDiff(T& it_diff, bool show_diff = true,
+                        bool elem_in_quote = false,
                         std::ostream& os = std::cout);
 
   static void PrintRow(
     const std::vector<std::pair<std::string, std::string>>& row,
-    const bool elem_in_quote = false, std::ostream& os = std::cout);
+    bool elem_in_quote = false, std::ostream& os = std::cout);
 };
 
 template<typename T>
@@ -224,7 +224,7 @@ template<typename T>
 std::string Utils::ToStringSeq(
   const T& begin, const T& end, const std::string& lsymbol,
   const std::string& rsymbol, const std::string& sep,
-  const bool elem_in_quote) {
+  bool elem_in_quote) {
   const auto quote = elem_in_quote ? "\"" : "";
   std::stringstream ss;
   ss << lsymbol;
@@ -264,8 +264,8 @@ std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
 }
 
 template<class T>
-void Utils::PrintDiff(T& it_diff, const bool show_diff,
-                      const bool elem_in_quote, std::ostream& os) {
+void Utils::PrintDiff(T& it_diff, bool show_diff, bool elem_in_quote,
+                      std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto f_print_diff_key = [&os, &it_diff, &quote]() {
     os << quote << it_diff.key() << quote;

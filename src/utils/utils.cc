@@ -132,7 +132,7 @@ std::vector<long> Utils::ToLongVector(
   return ToVector<long>(str, f, sep_chars);
 }
 
-ErrorCode Utils::CheckIndex(const size_t idx, const SList& list) {
+ErrorCode Utils::CheckIndex(size_t idx, const SList& list) {
   if (idx >= list.numElements()) {
     LOG(WARNING) << "Index out of range: [Actual] " << idx
                  << ", [Expected] <" << list.numElements();
@@ -141,7 +141,7 @@ ErrorCode Utils::CheckIndex(const size_t idx, const SList& list) {
   return ErrorCode::kOK;
 }
 
-void Utils::PrintList(const UList& list, const bool elem_in_quote,
+void Utils::PrintList(const UList& list, bool elem_in_quote,
                       std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = list.Scan();
@@ -155,7 +155,7 @@ void Utils::PrintList(const UList& list, const bool elem_in_quote,
   os << "]";
 }
 
-void Utils::PrintMap(const UMap& map, const bool elem_in_quote,
+void Utils::PrintMap(const UMap& map, bool elem_in_quote,
                      std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = map.Scan();
@@ -174,7 +174,7 @@ void Utils::PrintMap(const UMap& map, const bool elem_in_quote,
   os << "]";
 }
 
-void Utils::PrintMapKeys(const UMap& map, const bool elem_in_quote,
+void Utils::PrintMapKeys(const UMap& map, bool elem_in_quote,
                          std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = map.Scan();
@@ -192,8 +192,8 @@ void Utils::PrintMapKeys(const UMap& map, const bool elem_in_quote,
 //               it_diff.index() so that the following print function for
 //               diff of UList be the template function of PrintDiff.
 void Utils::PrintListDiff(DuallyDiffIndexIterator& it_diff,
-                          const bool show_diff,
-                          const bool elem_in_quote, std::ostream& os) {
+                          bool show_diff,
+                          bool elem_in_quote, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto f_print_diff_key = [&os, &it_diff, &quote]() {
     os << quote << it_diff.index() << quote;
@@ -221,7 +221,7 @@ void Utils::PrintListDiff(DuallyDiffIndexIterator& it_diff,
 
 void Utils::PrintRow(
   const std::vector<std::pair<std::string, std::string>>& row,
-  const bool elem_in_quote, std::ostream& os) {
+  bool elem_in_quote, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = row.begin();
   auto f_print_it = [&os, &quote, &it]() {

@@ -4,6 +4,8 @@
 #define USTORE_SPEC_RELATIONAL_H_
 
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 #include "spec/object_db.h"
 #include "utils/utils.h"
@@ -94,7 +96,7 @@ class ColumnStore {
   ErrorCode GetRow(const std::string& table_name,
                    const std::string& branch_name,
                    const std::string& ref_col_name,
-                   const std::string& ref_val, 
+                   const std::string& ref_val,
                    std::unordered_map<size_t, Row>* rows);
 
   inline ColumnDiffIterator DiffColumn(const Column& lhs, const Column& rhs) {
