@@ -68,7 +68,7 @@ TEST(LSTStore, Put) {
     lstStore->Put(chunk.hash(), chunk);
   }
   lstStore->Sync();
-  lstStore->GetInfo().Print();
+  std::cout << lstStore->GetInfo();
 }
 
 TEST(LSTStore, Get) {
@@ -90,10 +90,7 @@ TEST(LSTStore, Get) {
       EXPECT_EQ(c.type(), ustore::ChunkType::kBlob);
       EXPECT_EQ(c.numBytes(), LEN + ::ustore::Chunk::kMetaLength);
       EXPECT_EQ(c.capacity(), LEN);
-      //EXPECT_EQ(c->hash(), chunk.forceHash());
   }
-  //DLOG(INFO) << std::chrono::duration_cast<std::chrono::microseconds>(
-  //    std::chrono::steady_clock::now() - tp).count();
 }
 
 TEST(LSTStore, Iterator) {

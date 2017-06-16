@@ -4,7 +4,6 @@
 
 #include <cstdio>
 #include <iomanip>
-#include <iostream>
 
 #include "utils/iterator.h"
 #include "utils/logging.h"
@@ -15,7 +14,6 @@
 
 namespace ustore {
 
-using std::cout;
 using std::setw;
 using std::left;
 using std::right;
@@ -46,48 +44,49 @@ std::string Readable(size_t bytes) {
   return os.str();
 }
 
-void StoreInfo::Print() const {
+std::ostream& operator<<(std::ostream& os, const StoreInfo& obj) {
   constexpr int kSegmentAlign = 12;
   constexpr int kChunkAlign = 12;
 
-  cout << "============= Storage Usage Information ==============" << endl;
+  os << "============= Storage Usage Information ==============" << endl;
   // segment type
-  cout << setw(kSegmentAlign) << left << "Segment Type"
-       << " |" << setw(kSegmentAlign) << right << "Total"
-       << " |" << setw(kSegmentAlign) << right << "Free"
-       << " |" << setw(kSegmentAlign) << right << "Used"
-       << endl;
+  os << setw(kSegmentAlign) << left << "Segment Type"
+     << " |" << setw(kSegmentAlign) << right << "Total"
+     << " |" << setw(kSegmentAlign) << right << "Free"
+     << " |" << setw(kSegmentAlign) << right << "Used"
+     << endl;
   // segment count
-  cout << setw(kSegmentAlign) << left << "Count"
-       << " |" << setw(kSegmentAlign) << right << segments
-       << " |" << setw(kSegmentAlign) << right << freeSegments
-       << " |" << setw(kSegmentAlign) << right << usedSegments
-       << endl;
-  cout << "======================================================" << endl;
+  os << setw(kSegmentAlign) << left << "Count"
+     << " |" << setw(kSegmentAlign) << right << obj.segments
+     << " |" << setw(kSegmentAlign) << right << obj.freeSegments
+     << " |" << setw(kSegmentAlign) << right << obj.usedSegments
+     << endl;
+  os << "======================================================" << endl;
   // chunk meta
-  cout << setw(kChunkAlign) << left << "Chunk Type"
-       << " |" << setw(kChunkAlign) << right << "Count"
-       << " |" << setw(kChunkAlign) << right << "Readable"
-       << " |" << setw(kChunkAlign) << right << "Bytes"
-       << endl;
+  os << setw(kChunkAlign) << left << "Chunk Type"
+     << " |" << setw(kChunkAlign) << right << "Count"
+     << " |" << setw(kChunkAlign) << right << "Readable"
+     << " |" << setw(kChunkAlign) << right << "Bytes"
+     << endl;
   // chunk info
-  cout << setw(kChunkAlign) << left << "Total"
-       << " |" << setw(kChunkAlign) << right << chunks
-       << " |" << setw(kChunkAlign) << right << Readable(chunkBytes)
-       << " |" << setw(kChunkAlign) << right << chunkBytes
-       << endl;
-  cout << setw(kChunkAlign) << left << "Valid"
-       << " |" << setw(kChunkAlign) << right << validChunks
-       << " |" << setw(kChunkAlign) << right << Readable(validChunkBytes)
-       << " |" << setw(kChunkAlign) << right << validChunkBytes
-       << endl;
+  os << setw(kChunkAlign) << left << "Total"
+     << " |" << setw(kChunkAlign) << right << obj.chunks
+     << " |" << setw(kChunkAlign) << right << Readable(obj.chunkBytes)
+     << " |" << setw(kChunkAlign) << right << obj.chunkBytes
+     << endl;
+  os << setw(kChunkAlign) << left << "Valid"
+     << " |" << setw(kChunkAlign) << right << obj.validChunks
+     << " |" << setw(kChunkAlign) << right << Readable(obj.validChunkBytes)
+     << " |" << setw(kChunkAlign) << right << obj.validChunkBytes
+     << endl;
   for (auto type : Enum<ChunkType>())
-    cout << setw(kChunkAlign) << left << chunkTypeNames[type]
-         << " |" << setw(kChunkAlign) << right << chunksPerType.at(type)
-         << " |" << setw(kChunkAlign) << right << Readable(bytesPerType.at(type))  // NOLINT
-         << " |" << setw(kChunkAlign) << right << bytesPerType.at(type)
-         << endl;
-  cout << "======================================================" << endl;
+    os << setw(kChunkAlign) << left << chunkTypeNames[type]
+       << " |" << setw(kChunkAlign) << right << obj.chunksPerType.at(type)
+       << " |" << setw(kChunkAlign) << right << Readable(obj.bytesPerType.at(type))  // NOLINT
+       << " |" << setw(kChunkAlign) << right << obj.bytesPerType.at(type)
+       << endl;
+  os << "======================================================" << endl;
+  return os;
 }
 
 namespace store {

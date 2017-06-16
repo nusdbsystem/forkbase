@@ -58,13 +58,13 @@ Result<Hash> ObjectDB::Merge(const Slice& key, const VObject& object,
 Result<std::vector<std::string>> ObjectDB::ListKeys() {
   std::vector<std::string> keys;
   ErrorCode code = db_->ListKeys(&keys);
-  return {keys, code};
+  return {std::move(keys), code};
 }
 
 Result<std::vector<std::string>> ObjectDB::ListBranches(const Slice& key) {
   std::vector<std::string> branches;
   ErrorCode code = db_->ListBranches(key, &branches);
-  return {branches, code};
+  return {std::move(branches), code};
 }
 
 Result<bool> ObjectDB::Exists(const Slice& key) {
@@ -121,6 +121,12 @@ ErrorCode ObjectDB::Rename(const Slice& key, const Slice& old_branch,
 
 ErrorCode ObjectDB::Delete(const Slice& key, const Slice& branch) {
   return db_->Delete(key, branch);
+}
+
+Result<std::vector<StoreInfo>> ObjectDB::GetStorageInfo() {
+  std::vector<StoreInfo> info;
+  ErrorCode code = db_->GetStorageInfo(&info);
+  return {std::move(info), code};
 }
 
 }  // namespace ustore

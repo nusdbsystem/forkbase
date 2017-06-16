@@ -3,6 +3,7 @@
 #ifndef USTORE_STORE_CHUNK_STORE_H_
 #define USTORE_STORE_CHUNK_STORE_H_
 
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include "chunk/chunk.h"
@@ -25,7 +26,7 @@ struct StoreInfo {
   size_t freeSegments;
   size_t usedSegments;
 
-  void Print() const;
+  friend std::ostream& operator<<(std::ostream& os, const StoreInfo& obj);
 };
 
 class ChunkStore {

@@ -226,7 +226,7 @@ LSTSegment* LSTStore::AllocateMinor() {
 
 LSTSegment* LSTStore::Allocate(LSTSegment* current) {
   if (free_list_ == nullptr) {
-    GetInfo().Print();
+    std::cout << GetInfo();
     LOG(FATAL) << "Chunk store: out of log memory";
   }
   LSTSegment* next = free_list_;
@@ -441,7 +441,7 @@ void LSTStore::Sync() const {
 
 LSTStore::~LSTStore() noexcept(false) {
   Sync();
-  GetInfo().Print();
+  std::cout << GetInfo();
   DestroySegmentList(free_list_);
   DestroySegmentList(major_list_);
   DestroySegmentList(minor_list_);

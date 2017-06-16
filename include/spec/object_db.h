@@ -57,6 +57,8 @@ class ObjectDB {
                    const Slice& new_branch);
   // Delete Branch
   ErrorCode Delete(const Slice& key, const Slice& branch);
+  // Get Storage Info
+  Result<std::vector<StoreInfo>> GetStorageInfo();
 
  private:
   DB* db_;
