@@ -280,7 +280,7 @@ ErrorCode ColumnStore::GetColumn(
   if (tab.Get(Slice(col_name)).empty()) {
     LOG(WARNING) << "Column \"" << col_name << "\" does not exist in Table \""
                  << table_name << "\" of Branch \"" << branch_name << "\"";
-    return ErrorCode::kKeyNotExists;
+    return ErrorCode::kColumnNotExists;
   }
   return ReadColumn(table_name, branch_name, col_name, col);
 }

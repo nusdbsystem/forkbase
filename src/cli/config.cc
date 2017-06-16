@@ -121,7 +121,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "the operating column")
   ("ref-column,n", po::value<std::string>()->default_value(""),
    "the referring column")
-  ("batch-size", po::value<int>()->default_value(1000),
+  ("batch-size", po::value<int>()->default_value(5000),
    "batch size for data loading");
 
   po::positional_options_description pos_opts;
