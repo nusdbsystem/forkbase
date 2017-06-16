@@ -10,8 +10,6 @@ namespace ustore {
 namespace example {
 namespace huawei {
 
-using ConverterT = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>;
-
 constexpr char delimiter = ',';
 
 static const char alphabet[] =
@@ -19,16 +17,18 @@ static const char alphabet[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz";
 
-static std::string zh_dict = "中华人民共和国与世界大团结万岁";
+static std::wstring zh_dict = L"中华人民共和国与世界大团结万岁";
 
-std::wstring s2ws(const std::string& str) {
-  ConverterT converter;
-  return converter.from_bytes(str);
-}
-
-std::string ws2s(const std::wstring& wstr) {
-  ConverterT converter;
-  return converter.to_bytes(wstr);
+std::string ws2s(const std::wstring& w_str) {
+  if (w_str.empty()) {
+    return "";
+  }
+  unsigned len = w_str.size() * 4 + 1;
+  setlocale(LC_CTYPE, "en_US.UTF-8");
+  std::unique_ptr<char[]> p(new char[len]);
+  wcstombs(p.get(), w_str.c_str(), len);
+  std::string str(p.get());
+  return str;
 }
 
 std::string CreateIntColumn(int max) {
@@ -48,12 +48,11 @@ std::string CreateStrColumn(int length) {
 }
 
 std::string CreateZhStrColumn(int length) {
-  auto ws = s2ws(zh_dict);
-  auto len = ws.length();
+  auto len = zh_dict.length();
   std::wstring str;
   std::generate_n(std::back_inserter(str), length, [&]() {
     int idx = rand() % len;
-    return ws[idx];
+    return zh_dict[idx];
   });
   return ws2s(str);
 }
