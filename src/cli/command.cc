@@ -9,7 +9,6 @@ namespace ustore {
 namespace cli {
 
 Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
-  CMD_HANDLER("HELP", ExecHelp);
   // basic commands
   CMD_HANDLER("GET", ExecGet);
   CMD_HANDLER("PUT", ExecPut);
@@ -156,23 +155,24 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("DUMP_CSV", "DUMP-CSV");
   CMD_ALIAS("DUMP_CSV", "DUMPCSV");
   CMD_ALIAS("DUMP_CSV", "DUMP");
+  // utility commands
+  CMD_HANDLER("HELP", ExecHelp);
+  CMD_HANDLER("INFO", ExecInfo);
+  CMD_ALIAS("INFO", "STATE");
+  CMD_ALIAS("INFO", "STATUS");
+  CMD_ALIAS("INFO", "STAT");
 }
 
 const int kPrintBasicCmdWidth = 12;
 const int kPrintRelationalCmdWidth = 20;
+const int kPrintUtilCmdWidth = 12;
 
 #define FORMAT_BASIC_CMD(cmd)       FORMAT_CMD(cmd, kPrintBasicCmdWidth)
 #define FORMAT_RELATIONAL_CMD(cmd)  FORMAT_CMD(cmd, kPrintRelationalCmdWidth)
+#define FORMAT_UTIL_CMD(cmd)        FORMAT_CMD(cmd, kPrintUtilCmdWidth)
 
 void Command::PrintCommandHelp(std::ostream& os) {
-  os << BLUE("Usage") << ": "
-     << "ustore_cli <command> {{<option>} <argument|file> ...}"
-     << std::endl << std::setw(3) << "" << "or  "
-     << "ustore_cli --script <file>"
-     << std::endl << std::setw(3) << "" << "or  "
-     << "ustore_cli --help" << std::endl
-     << std::endl
-     << BLUE("UStore Basic Commands") << ":"
+  os << BLUE("UStore Basic Commands") << ":"
      << std::endl
      << FORMAT_BASIC_CMD("GET")
      << "-k <key> [-b <branch> | "
@@ -245,11 +245,23 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_RELATIONAL_CMD("LOAD_CSV")
      << "<file> -t <table> -b <branch>" << std::endl
      << FORMAT_RELATIONAL_CMD("DUMP_CSV")
-     << "<file> -t <table> -b <branch>" << std::endl;
+     << "<file> -t <table> -b <branch>" << std::endl
+     << std::endl
+     << BLUE("UStore Utility Commands") << ":"
+     << std::endl
+     << FORMAT_UTIL_CMD("HELP") << std::endl
+     << FORMAT_UTIL_CMD("INFO") << std::endl;
 }
 
 void Command::PrintHelp() {
   DCHECK(Config::is_help);
+  std::cout << BOLD_GREEN("Usage") << ": "
+            << "ustore_cli <command> {{<option>} <argument|file> ...}"
+            << std::endl << std::setw(3) << "" << "or  "
+            << "ustore_cli --script <file>"
+            << std::endl << std::setw(3) << "" << "or  "
+            << "ustore_cli --help" << std::endl
+            << std::endl;
   Command::PrintCommandHelp();
   std::cout << std::endl << Config::command_options_help << std::endl;
 }
@@ -708,6 +720,7 @@ ErrorCode Command::ExecListKey() {
     std::cerr << BOLD_RED("[FAILED: LIST_KEY] ")
               << "--> ErrorCode: " << ec << std::endl;
   };
+  // execution
   auto rst = odb_.ListKeys();
   auto& ec = rst.stat;
   auto& keys = rst.value;
@@ -1512,6 +1525,27 @@ ErrorCode Command::ExecGetRow() {
   std::unordered_map<size_t, Row> rows;
   auto ec = cs_.GetRow(tab, branch, ref_col, ref_val, &rows);
   ec == ErrorCode::kOK ? f_rpt_success(rows) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecInfo() {
+  // screen printing
+  const auto f_rpt_success = [](const std::vector<StoreInfo>& info) {
+    auto n_workers = info.size();
+    std::cout << BOLD_GREEN("[SUCCESS: INFO] ")
+              << "UStore is running with " << n_workers << " worker instance"
+              << (n_workers > 1 ? "s" : "") << std::endl << std::endl;
+    for (auto& e : info) std::cout << e << std::endl;
+  };
+  const auto f_rpt_fail = [](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: INFO] ")
+              << "--> ErrorCode: " << ec << std::endl;
+  };
+  // execution
+  auto rst = odb_.GetStorageInfo();
+  auto& ec = rst.stat;
+  auto& info = rst.value;
+  ec == ErrorCode::kOK ? f_rpt_success(info) : f_rpt_fail(ec);
   return ec;
 }
 

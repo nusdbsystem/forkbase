@@ -74,6 +74,7 @@ class Command {
   ErrorCode ExecLoadCSV();
   ErrorCode ExecDumpCSV();
   ErrorCode ExecGetRow();
+  ErrorCode ExecInfo();
 
   ObjectDB odb_;
   ColumnStore cs_;

@@ -10,6 +10,10 @@ namespace cli {
 
 Console::Console(DB* db) noexcept : Command(db) {
   console_commands_.insert("HELP");
+  console_commands_.insert("INFO");
+  console_commands_.insert("STATE");
+  console_commands_.insert("STATUS");
+  console_commands_.insert("STAT");
   // console-specific commands
   CONSOLE_CMD_HANDLER("HISTORY", ExecHistory);
   CONSOLE_CMD_HANDLER("DUMP_HISTORY", ExecDumpHistory);
@@ -21,7 +25,7 @@ const int kPrintConsoleCmdWidth = 20;
 #define FORMAT_CONSOLE_CMD(cmd) FORMAT_CMD(cmd, kPrintConsoleCmdWidth)
 
 void Console::PrintConsoleCommandHelp(std::ostream& os) {
-  os << BLUE("Console-specific Commands") << ":" << std::endl
+  os << BLUE("UStore Console Commands") << ":" << std::endl
      << FORMAT_CONSOLE_CMD("HISTORY") << std::endl
      << FORMAT_CONSOLE_CMD("!!") << "{...}" << std::endl
      << FORMAT_CONSOLE_CMD("!<number>") << "{...}" << std::endl
@@ -31,6 +35,9 @@ void Console::PrintConsoleCommandHelp(std::ostream& os) {
 
 void Console::PrintHelp() {
   DCHECK(Config::is_help);
+  std::cout << BOLD_GREEN("Usage") << ": "
+            << "<command> {{<option>} <argument|file> ...}" << std::endl
+            << std::endl;
   PrintCommandHelp();
   std::cout << std::endl;
   PrintConsoleCommandHelp();
@@ -40,7 +47,7 @@ void Console::PrintHelp() {
 ErrorCode Console::Run() {
   std::cout << "Welcome to UStore console." << std::endl
             << "Type in commands to have them evaluated." << std::endl
-            << "Type \"--help\" for more information." << std::endl
+            << "Type \"help\" for more information." << std::endl
             << "Type \"q\" or \"quit\" to exit." << std::endl << std::endl;
   std::string line;
   std::vector<std::string> args;
