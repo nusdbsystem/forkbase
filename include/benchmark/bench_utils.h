@@ -1,0 +1,86 @@
+// Copyright (c) 2017 The Ustore Authors.
+
+#ifndef USTORE_BENCHMARK_BENCH_UTILS_H_
+#define USTORE_BENCHMARK_BENCH_UTILS_H_
+
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <iostream>
+#include <random>
+#include <string>
+#include <vector>
+#include "spec/slice.h"
+
+namespace ustore {
+
+static const char alphabet[] =
+  "0123456789"
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  "abcdefghijklmnopqrstuvwxyz";
+
+class RandomGenerator {
+ public:
+  RandomGenerator();
+  ~RandomGenerator() = default;
+
+  std::string FixedString(int length);
+  std::vector<std::string> NFixedString(int size, int length);
+  std::string RandomString(int maxLength);
+  std::vector<std::string> NRandomString(int size, int maxLength);
+  std::vector<std::string> SequentialNumString(const std::string& prefix,
+                                               int size);
+  std::vector<std::string> PrefixSeqString(const std::string& prefix, int size,
+                                           int mod);
+  std::vector<std::string> PrefixRandString(const std::string& prefix, int size,
+                                           int mod);
+
+ private:
+  std::default_random_engine engine_;
+  std::uniform_int_distribution<> alph_dist_;
+};
+
+class Timer {
+ public:
+  Timer() : t_begin_(std::chrono::steady_clock::now()) {}
+  ~Timer() = default;
+  inline void Reset() { t_begin_ = std::chrono::steady_clock::now(); }
+  inline int64_t Elapse() const {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::steady_clock::now() - t_begin_).count();
+  }
+  inline int64_t ElapseMicro() const {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+             std::chrono::steady_clock::now() - t_begin_).count();
+  }
+  inline int64_t ElapseNano() const {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::steady_clock::now() - t_begin_).count();
+  }
+
+ private:
+  std::chrono::time_point<std::chrono::steady_clock> t_begin_;
+};
+
+class Profiler {
+ public:
+  static const unsigned kSamplingInterval;  // milliseconds
+  explicit Profiler(size_t n_thread);
+  ~Profiler();
+  void SamplerThread();
+  double PeakThroughput();
+  inline void Terminate() { finished_.store(true, std::memory_order_release); }
+  inline void IncCounter(size_t n) {
+    counters_[n].fetch_add(1, std::memory_order_acq_rel);
+  }
+
+ private:
+  size_t n_thread_;
+  std::atomic<unsigned>* counters_;
+  std::vector<std::vector<unsigned>> samples_;
+  std::atomic<bool> finished_;
+};
+
+}  // namespace ustore
+
+#endif  // USTORE_BENCHMARK_BENCH_UTILS_H_

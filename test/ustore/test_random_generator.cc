@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include "gtest/gtest.h"
-#include "benchmark/random_generator.h"
+#include "benchmark/bench_utils.h"
 
 using namespace ustore;
 using Vec = std::vector<std::string>;

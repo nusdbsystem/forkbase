@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "benchmark/benchmark_config.h"
+#include "benchmark/bench_config.h"
 
 namespace ustore {
 

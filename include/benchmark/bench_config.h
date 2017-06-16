@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_BENCHMARK_BENCHMARK_CONFIG_H_
-#define USTORE_BENCHMARK_BENCHMARK_CONFIG_H_
+#ifndef USTORE_BENCHMARK_BENCH_CONFIG_H_
+#define USTORE_BENCHMARK_BENCH_CONFIG_H_
 
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -118,4 +118,4 @@ bool BenchmarkConfig::CheckArg(const T& var, const bool expr,
 
 }  // namespace ustore
 
-#endif  // USTORE_BENCHMARK_BENCHMARK_CONFIG_H_
+#endif  // USTORE_BENCHMARK_BENCH_CONFIG_H_

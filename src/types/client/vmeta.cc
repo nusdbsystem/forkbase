@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include "types/client/vmeta.h"
+#include "utils/utils.h"
 
 namespace ustore {
 
@@ -9,7 +10,7 @@ VBlob VMeta::Blob() const {
     return VBlob(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                  cell_.dataHash());
   }
-  LOG(WARNING) << "Not a Blob value, return an empty VBlob";
+  LOG(WARNING) << "Get empty VBlob, actual type: " << cell_.type();
   return VBlob();
 }
 
@@ -18,7 +19,7 @@ VString VMeta::String() const {
     return VString(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                    cell_.dataHash());
   }
-  LOG(WARNING) << "Not a String value, return an empty VString";
+  LOG(WARNING) << "Get empty VString, actual type: " << cell_.type();
   return VString();
 }
 
@@ -27,7 +28,7 @@ VList VMeta::List() const {
     return VList(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                  cell_.dataHash());
   }
-  LOG(WARNING) << "Not a List value, return an empty VList";
+  LOG(WARNING) << "Get empty VList, actual type: " << cell_.type();
   return VList();
 }
 
@@ -36,7 +37,7 @@ VMap VMeta::Map() const {
     return VMap(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                 cell_.dataHash());
   }
-  LOG(WARNING) << "Not a Map value, return an empty VMap";
+  LOG(WARNING) << "Get empty VMap, actual type: " << cell_.type();
   return VMap();
 }
 

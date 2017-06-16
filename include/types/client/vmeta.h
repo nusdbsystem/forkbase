@@ -33,6 +33,7 @@ class VMeta : private Noncopyable {
     return *this;
   }
 
+  inline UType type() const { return cell_.type(); }
   inline const UCell& cell() const { return cell_; }
 
   VBlob Blob() const;

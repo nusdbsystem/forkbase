@@ -1,123 +1,84 @@
 // Copyright (c) 2017 The Ustore Authors.
-
 #ifndef USTORE_BENCHMARK_BENCHMARK_H_
 #define USTORE_BENCHMARK_BENCHMARK_H_
 
-#include <atomic>
-#include <chrono>
 #include <string>
 #include <thread>
 #include <vector>
-#include "benchmark/random_generator.h"
-#include "benchmark/benchmark_config.h"
+#include "benchmark/bench_config.h"
+#include "benchmark/bench_utils.h"
 #include "spec/object_db.h"
 #include "spec/slice.h"
 
 namespace ustore {
 
-class Timer {
- public:
-  Timer() : t_begin_(std::chrono::steady_clock::now()) {}
-  ~Timer() {}
-  inline void Reset() { t_begin_ = std::chrono::steady_clock::now(); }
-  inline int64_t Elapse() const {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-             std::chrono::steady_clock::now() - t_begin_).count();
-  }
-  inline int64_t ElapseMicro() const {
-    return std::chrono::duration_cast<std::chrono::microseconds>(
-             std::chrono::steady_clock::now() - t_begin_).count();
-  }
-  inline int64_t ElapseNano() const {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(
-             std::chrono::steady_clock::now() - t_begin_).count();
-  }
-
- private:
-  std::chrono::time_point<std::chrono::steady_clock> t_begin_;
+struct BenchParam {
+  size_t ops;
+  size_t length;
+  size_t elements;
+  std::string prefix;
 };
-
-class Profiler {
- public:
-  static const unsigned kSamplingInterval;  // milliseconds
-  explicit Profiler(size_t);
-  ~Profiler();
-  void SamplerThread();
-  double PeakThroughput();
-  inline void Terminate() { finished_.store(true, std::memory_order_release); }
-  inline void IncCounter(size_t n) {
-    counters_[n].fetch_add(1, std::memory_order_acq_rel);
-  }
-
- private:
-  size_t n_thread_;
-  std::atomic<unsigned>* counters_;
-  std::vector<std::vector<unsigned>> samples_;
-  std::atomic<bool> finished_;
-};
-
-static const char CASES_benchmark[] =
-  "stringvalidation,"
-  "blobvalidation,"
-  "fixedstring,"
-  "fixedblob,"
-  "randomstring,"
-  "randomblob,";
 
 class Benchmark {
  public:
   explicit Benchmark(const std::vector<ObjectDB*>& dbs)
-    : dbs_(dbs),
-      kNumValidations(BenchmarkConfig::num_validations),
-      kNumStrings(BenchmarkConfig::num_strings),
-      kNumBlobs(BenchmarkConfig::num_blobs),
-      kStringLength(BenchmarkConfig::string_len),
-      kBlobSize(BenchmarkConfig::blob_size) {
-    n_threads_ = dbs.size();
+    : dbs_(dbs) {
+  //    kNumValidations(BenchmarkConfig::num_validations),
+  //    kNumStrings(BenchmarkConfig::num_strings),
+  //    kNumBlobs(BenchmarkConfig::num_blobs),
+  //    kStringLength(BenchmarkConfig::string_len),
+  //    kBlobSize(BenchmarkConfig::blob_size) {
+    LoadParameters();
+    num_threads_ = dbs.size();
   }
   ~Benchmark() = default;
 
   void RunAll();
-  // Correctness Validation
-  void StringValidation(int n, int len);
-  void BlobValidation(int n, int size);
-  // String
-  void FixedString(int n, int len);
-  void RandomString(int n, int len);
-  // Blob
-  void RandomBlob(int n, int size);
-  void FixedBlob(int n, int size);
+  void Put(UType type, bool validate);
+  void Get(UType type, bool scan);
+  void Branch();
+  void Merge();
 
  private:
-  const int kNumValidations;
-  const int kNumStrings;
-  const int kNumBlobs;
-  const int kStringLength;
-  const int kBlobSize;
+  using StrVec = std::vector<std::string>;
+  using StrVecVec = std::vector<std::vector<std::string>>;
+  using SliceVec = std::vector<Slice>;
+  using SliceVecVec = std::vector<std::vector<Slice>>;
 
-  std::vector<Hash> PutString(const std::vector<std::string>& keys,
-                              const Slice& branch,
-                              const std::vector<std::string>& values);
-  std::vector<Hash> PutBlob(const std::vector<std::string>& keys,
-                            const Slice& branch,
-                            const std::vector<std::string>& values);
-  void GetBlobMeta(const std::vector<std::string>& keys,
-                   const std::vector<Hash>& versions);
-  void GetBlob(const std::vector<std::string>& keys,
-               const std::vector<Hash>& versions);
-  void GetString(const std::vector<std::string>& keys,
-                 const std::vector<Hash>& versions);
-  void ValidateString(const std::vector<std::string>& keys,
-                      const std::vector<Hash>& versions,
-                      const std::vector<std::string>& values);
-  void ValidateBlob(const std::vector<std::string>& keys,
-                    const std::vector<Hash>& versions,
-                    const std::vector<std::string>& values);
+  void LoadParameters();
+  void ExecPut(UType type, const StrVec& keys, const std::string& branch,
+               const StrVecVec& values, bool validate);
+  void ExecGet(UType type, const StrVec& keys, const std::string& branch,
+               bool scan);
+  void ExecBranch(const StrVec& keys, const std::string& ref_branch,
+                  const StrVec& branches);
+  void ExecMerge(const StrVec& keys, const std::string& ref_branch,
+                 const StrVec& branches);
+  void ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
+                 const Slice& branch, const SliceVecVec& values, bool validate);
+  void ThreadGet(ObjectDB* db, UType type, const SliceVec& keys,
+                 const Slice& branch, bool scan);
+  void ThreadBranch(ObjectDB* db, const SliceVec& keys,
+                    const Slice& ref_branch, const SliceVec& branches);
+  void ThreadMerge(ObjectDB* db, const SliceVec& keys,
+                   const Slice& ref_branch, const SliceVec& branches);
 
+  size_t kValidateOps = 10;
+  size_t kBranchOps = 1000;
+  size_t kMergeOps = 1000;
+  bool kSuffix = true;
+  size_t kSuffixRange = 100;
+  std::string kDefaultBranch;
+  std::string kBranchPrefix;
+  std::string kMergePrefix;
+
+  std::map<UType, BenchParam> params_;
   std::vector<ObjectDB*> dbs_;
+  std::vector<std::string> subkeys_;
+  std::vector<Slice> subkeys_slice_;
   Timer timer_;
   RandomGenerator rg_;
-  size_t n_threads_;
+  size_t num_threads_;
 };
 }  // namespace ustore
 

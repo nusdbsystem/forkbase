@@ -7,7 +7,7 @@
 #include <thread>
 #include <vector>
 #include "benchmark/benchmark.h"
-#include "benchmark/benchmark_config.h"
+#include "benchmark/bench_config.h"
 #include "cluster/remote_client_service.h"
 #include "cluster/worker_service.h"
 #include "spec/object_db.h"
@@ -24,6 +24,8 @@ void BenchmarkWorker() {
   std::vector<ObjectDB*> dbs;
   dbs.push_back(&db);
   Benchmark bm(dbs);
+  std::cout << "============================\n";
+  std::cout << "Benchmarking worker (single-threaded) .......\n";
   bm.RunAll();
 }
 
@@ -38,8 +40,7 @@ void BenchmarkClient() {
   for (int i = 0; i < workers.size(); ++i) workers[i]->Init();
   for (int i = 0; i < workers.size(); ++i)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
-
-  // create client service
+// create client service
   RemoteClientService service("");
   service.Init();
   std::thread client_service_thread(&RemoteClientService::Start, &service);
@@ -54,6 +55,9 @@ void BenchmarkClient() {
   for (auto& db : clientdbs)
     dbs.push_back(new ObjectDB(&db));
   Benchmark bm(dbs);
+  std::cout << "============================\n";
+  std::cout << "Benchmarking "
+            << n_client << " clients to local worker .......\n";
   bm.RunAll();
 
   service.Stop();
@@ -78,15 +82,11 @@ int main(int argc, char* argv[]) {
     return -1;
   }
   // set num_segments large enough for all test cases
-  Env::Instance()->m_config().set_num_segments(80);
+  // Env::Instance()->m_config().set_num_segments(80);
   Env::Instance()->m_config().set_worker_file("conf/workers_micro_bench");
 
-  std::cout << "============================\n";
-  std::cout << "Benchmarking worker.......\n";
   BenchmarkWorker();
 
-  std::cout << "============================\n";
-  std::cout << "Benchmarking client.......\n";
   BenchmarkClient();
   return 0;
 }

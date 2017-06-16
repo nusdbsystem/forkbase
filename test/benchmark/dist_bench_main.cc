@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <thread>
 #include "benchmark/benchmark.h"
-#include "benchmark/benchmark_config.h"
+#include "benchmark/bench_config.h"
 #include "cluster/remote_client_service.h"
 #include "spec/object_db.h"
 #include "utils/env.h"
@@ -29,6 +29,9 @@ void BenchmarkClient() {
   for (auto& db : clientdbs)
     dbs.push_back(new ObjectDB(&db));
   Benchmark bm(dbs);
+  std::cout << "============================\n";
+  std::cout << "Benchmarking " << n_client
+            << " clients connected to ustore service.......\n";
   bm.RunAll();
 
   service.Stop();
@@ -45,8 +48,6 @@ int main(int argc, char* argv[]) {
               << "Found invalid command-line option" << std::endl;
     return -1;
   }
-  std::cout << "============================\n";
-  std::cout << "Benchmarking client connected to ustore service.......\n";
   BenchmarkClient();
   return 0;
 }

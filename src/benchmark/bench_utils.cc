@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include "benchmark/random_generator.h"
+#include <thread>
+#include "benchmark/bench_utils.h"
 
 namespace ustore {
 
@@ -66,6 +67,64 @@ std::vector<std::string> RandomGenerator::SequentialNumString(
   std::generate_n(std::back_inserter(keys), (keys).capacity(), [&k, &prefix]() {
     return prefix + std::to_string(++k); });
   return keys;
+}
+
+std::vector<std::string> RandomGenerator::PrefixSeqString(
+    const std::string& prefix, int size, int mod) {
+  std::vector<std::string> res(size);
+  for (size_t i = 0; i < size; ++i)
+    res[i] = prefix + std::to_string((i)%mod);
+  return res;
+}
+
+std::vector<std::string> RandomGenerator::PrefixRandString(
+    const std::string& prefix, int size, int mod) {
+  std::vector<std::string> res(size);
+  for (size_t i = 0; i < size; ++i)
+    res[i] = prefix + std::to_string(alph_dist_(engine_)%mod);
+  return res;
+}
+
+
+const unsigned Profiler::kSamplingInterval = 500;
+
+Profiler::Profiler(size_t n_th) : n_thread_(n_th) {
+  counters_ = new std::atomic<unsigned>[n_th];
+  for (size_t i = 0; i < n_th; ++i) {
+    samples_.emplace_back();
+    counters_[i].store(0);
+  }
+  finished_.store(false, std::memory_order_release);
+}
+
+Profiler::~Profiler() { delete[] counters_; }
+
+double Profiler::PeakThroughput() {
+  std::vector<unsigned> ops;
+  unsigned prev_sum = 0;
+  double ret = -1;
+  for (size_t i = 0; i < samples_[0].size(); ++i) {
+    unsigned sum = 0;
+    // std::cout << i << "-th: " << std::endl;
+    for (size_t t = 0; t < n_thread_; ++t) {
+      //  std::cout << " " << samples_[t][i];
+      sum += samples_[t][i];
+    }
+    // std::cout << std::endl
+    //           << "\tsum: " << sum << "\tprev_sum: " << prev_sum << std::endl;
+    double tp = 1000.0 * (sum - prev_sum) / kSamplingInterval;
+    prev_sum = sum;
+    if (tp > ret) ret = tp;
+  }
+  return ret;
+}
+
+void Profiler::SamplerThread() {
+  while (!finished_.load(std::memory_order_acquire)) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(kSamplingInterval));
+    for (size_t t = 0; t < n_thread_; ++t)
+      samples_[t].push_back(counters_[t].load(std::memory_order_acquire));
+  }
 }
 
 }  // namespace ustore

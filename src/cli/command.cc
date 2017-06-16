@@ -379,7 +379,7 @@ ErrorCode Command::ExecGet() {
               << "Version: \"" << ver << "\"" << std::endl;
   };
   const auto f_rpt_success = [](const VMeta & meta) {
-    auto type = meta.cell().type();
+    auto type = meta.type();
     std::cout << BOLD_GREEN("[SUCCESS: GET] ") << "Value"
               << "<" << Utils::ToString(type) << ">: ";
     switch (type) {
