@@ -70,6 +70,7 @@ class WorkerService {
     void HandleRenameRequest(const UMessage& umsg, ResponsePayload* response);
     void HandleDeleteRequest(const UMessage& umsg, ResponsePayload* response);
     void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleGetInfoRequest(const UMessage& umsg, UMessage* response);
 
     node_id_t master_;  // master node
     node_id_t node_addr_;  // this node's address

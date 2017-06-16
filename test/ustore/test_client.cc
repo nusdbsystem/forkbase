@@ -30,6 +30,7 @@ using ustore::ClientDb;
 using ustore::Value;
 using ustore::UType;
 using ustore::UCell;
+using ustore::StoreInfo;
 using std::thread;
 using std::vector;
 using std::set;
@@ -157,6 +158,11 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   EXPECT_TRUE(exists);
   client->Exists(Slice(random_key), &exists);
   EXPECT_TRUE(!exists);
+
+  // check info
+  std::vector<StoreInfo> info;
+  ErrorCode err = client->GetStorageInfo(&info);
+  EXPECT_EQ(err, ErrorCode::kOK);
 }
 
 TEST(TestMessage, TestClient1Thread) {

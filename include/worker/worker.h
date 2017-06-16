@@ -205,6 +205,8 @@ class Worker : public DB, private Noncopyable {
 
   ErrorCode GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) override;
 
+  ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) override;
+
   ErrorCode ListKeys(std::vector<std::string>* keys) override;
 
   ErrorCode ListBranches(const Slice& key,

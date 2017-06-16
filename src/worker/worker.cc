@@ -315,6 +315,12 @@ ErrorCode Worker::GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) {
   return ErrorCode::kOK;
 }
 
+ErrorCode Worker::GetStorageInfo(std::vector<StoreInfo>* info) {
+  static const auto chunk_store = store::GetChunkStore();
+  info->push_back(chunk_store->GetInfo());
+  return ErrorCode::kOK;
+}
+
 ErrorCode Worker::ListKeys(std::vector<std::string>* keys) {
   keys->clear();
   for (auto& k : head_ver_.ListKey()) {

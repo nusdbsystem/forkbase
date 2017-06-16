@@ -134,6 +134,9 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UMessage::GET_CHUNK_REQUEST:
       HandleGetChunkRequest(umsg, response.mutable_response_payload());
       break;
+    case UMessage::GET_INFO_REQUEST:
+      HandleGetInfoRequest(umsg, &response);
+      break;
     default:
       LOG(WARNING) << "Unrecognized request type: " << umsg.type();
       break;
@@ -316,6 +319,28 @@ void WorkerService::HandleGetChunkRequest(const UMessage& umsg,
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;
   response->set_value(c.head(), c.numBytes());
+}
+
+void WorkerService::HandleGetInfoRequest(const UMessage& umsg,
+                                         UMessage* res) {
+  auto response = res->mutable_response_payload();
+  std::vector<StoreInfo> store;
+  ErrorCode code = worker_->GetStorageInfo(&store);
+  response->set_stat(static_cast<int>(code));
+  if (code != ErrorCode::kOK) return;
+  auto info = res->mutable_info_payload();
+  info->set_chunks(store[0].chunks);
+  info->set_chunk_bytes(store[0].chunkBytes);
+  info->set_valid_chunks(store[0].validChunks);
+  info->set_valid_chunk_bytes(store[0].validChunkBytes);
+  info->set_segments(store[0].segments);
+  info->set_free_segments(store[0].freeSegments);
+  info->set_used_segments(store[0].usedSegments);
+  for (auto& kv : store[0].chunksPerType) {
+    info->add_chunk_types(static_cast<int>(kv.first));
+    info->add_chunks_per_type(store[0].chunksPerType.at(kv.first));
+    info->add_bytes_per_type(store[0].bytesPerType.at(kv.first));
+  }
 }
 
 }  // namespace ustore

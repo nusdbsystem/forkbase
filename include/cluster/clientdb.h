@@ -118,6 +118,8 @@ class ClientDb : public DB {
   ErrorCode GetChunk(const Slice& key, const Hash& version,
                      Chunk* chunk) override;
 
+  ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) override;
+
   inline int id() const noexcept { return id_; }
 
  private:
@@ -142,6 +144,7 @@ class ClientDb : public DB {
   ErrorCode GetVersionListResponse(std::vector<Hash>* versions);
   ErrorCode GetBoolResponse(bool* exists);
   ErrorCode GetChunkResponse(Chunk* chunk);
+  ErrorCode GetInfoResponse(std::vector<StoreInfo>* info);
   inline Hash ToHash(const std::string& request) {
     return Hash(reinterpret_cast<const byte_t*>(request.data()));
   }

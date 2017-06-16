@@ -121,6 +121,20 @@ ErrorCode ClientDb::GetChunk(const Slice& key, const Hash& version,
   return GetChunkResponse(chunk);
 }
 
+ErrorCode ClientDb::GetStorageInfo(std::vector<StoreInfo>* info) {
+  UMessage msg;
+  // header
+  msg.set_type(UMessage::GET_INFO_REQUEST);
+  msg.set_source(id_);
+  // go through all workers to retrieve keys
+  for (const auto& dest : workers_->GetWorkerIds()) {
+    Send(msg, dest);
+    ErrorCode err = GetInfoResponse(info);
+    if (err != ErrorCode::kOK) return err;
+  }
+  return ErrorCode::kOK;
+}
+
 void ClientDb::CreateBranchMessage(const Slice &key, const Slice &new_branch,
                                    UMessage* msg) {
   // header
@@ -436,6 +450,32 @@ ErrorCode ClientDb::GetBoolResponse(bool *value) {
   ErrorCode err = static_cast<ErrorCode>(response.stat());
   if (err == ErrorCode::kOK) {
     *value = response.bvalue();
+  }
+  return err;
+}
+
+ErrorCode ClientDb::GetInfoResponse(std::vector<StoreInfo>* stores) {
+  auto msg = WaitForResponse();
+  auto response = msg->response_payload();
+  ErrorCode err = static_cast<ErrorCode>(response.stat());
+  if (err == ErrorCode::kOK) {
+    auto info = msg->info_payload();
+    StoreInfo v;
+    v.chunks = info.chunks();
+    v.chunkBytes = info.chunk_bytes();
+    v.validChunks = info.valid_chunks();
+    v.validChunkBytes = info.valid_chunk_bytes();
+    v.segments = info.segments();
+    v.freeSegments = info.free_segments();
+    v.usedSegments = info.used_segments();
+    size_t size = info.chunk_types_size();
+    for (size_t i = 0; i < size; ++i) {
+      v.chunksPerType.emplace(static_cast<ChunkType>(info.chunk_types(i)),
+                              info.chunks_per_type(i));
+      v.bytesPerType.emplace(static_cast<ChunkType>(info.chunk_types(i)),
+                             info.bytes_per_type(i));
+    }
+    stores->push_back(std::move(v));
   }
   return err;
 }

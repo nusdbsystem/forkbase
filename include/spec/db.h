@@ -9,6 +9,7 @@
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"
+#include "store/chunk_store.h"
 #include "types/type.h"
 #include "types/ucell.h"
 
@@ -224,6 +225,13 @@ class DB {
    */
   virtual ErrorCode GetChunk(const Slice& key, const Hash& version,
                              Chunk* chunk) = 0;
+  /**
+   * @brief Read storage information.
+   *
+   * @param info    Returned storage information.
+   * @return        Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) = 0;
 
  protected:
   DB() = default;
