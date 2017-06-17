@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include "spec/object_db.h"
+#include "utils/blocking_queue.h"
 #include "utils/utils.h"
 
 namespace ustore {
@@ -127,6 +128,22 @@ class ColumnStore {
     for (const auto& str : col_vals) col_slices.emplace_back(str);
     return WriteColumn(table_name, branch_name, col_name, col_slices, ver);
   }
+
+  ErrorCode LoadCSV(
+    std::ifstream& ifs, const std::string& table_name,
+    const std::string& branch_name, const std::vector<std::string>& col_names,
+    size_t batch_size);
+
+  ErrorCode ShardCSV(
+    std::ifstream& ifs, size_t batch_size, size_t n_cols,
+    BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
+    ErrorCode& stat_flush);
+
+  void FlushCSV(
+    const std::string& table_name, const std::string& branch_name,
+    const std::vector<std::string>& col_names,
+    BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
+    ErrorCode& stat);
 
   ObjectDB odb_;
 };

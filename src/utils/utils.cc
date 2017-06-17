@@ -62,6 +62,7 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kTableNotExists, "table does not exist"},
   {ErrorCode::kEmptyTable, "table is empty"},
   {ErrorCode::kNotEmptyTable, "table is not empty"},
+  {ErrorCode::kColumnNotExists, "column does not exist"},
   {ErrorCode::kRowNotExists, "row does not exist"},
   {ErrorCode::kFailedOpenFile, "failed to open file"},
   {ErrorCode::kInvalidCommandArgument, "invalid command-line argument"},

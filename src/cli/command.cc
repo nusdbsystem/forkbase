@@ -164,7 +164,7 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
 }
 
 const int kPrintBasicCmdWidth = 12;
-const int kPrintRelationalCmdWidth = 20;
+const int kPrintRelationalCmdWidth = 19;
 const int kPrintUtilCmdWidth = 12;
 
 #define FORMAT_BASIC_CMD(cmd)       FORMAT_CMD(cmd, kPrintBasicCmdWidth)
@@ -242,6 +242,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-t <table> -m <column> -b <branch> -c <branch_2> "
      << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
      << "{-s <table_2>} {-n <column_2>}" << std::endl
+     << FORMAT_RELATIONAL_CMD("GET_ROW") << "-t <table> -b <branch> "
+     << "-n <refer_colum> -y <refer_value>" << std::endl
      << FORMAT_RELATIONAL_CMD("LOAD_CSV")
      << "<file> -t <table> -b <branch>" << std::endl
      << FORMAT_RELATIONAL_CMD("DUMP_CSV")
@@ -1113,7 +1115,8 @@ ErrorCode Command::ExecGetColumn() {
               << "Column: \"" << col_name << "\"" << std::endl;
   };
   const auto f_rpt_success = [&](const Column & col) {
-    std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Values: ";
+    std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Column \""
+              << col_name << "\": ";
     Utils::PrintList(col, true);
     std::cout << std::endl;
   };
