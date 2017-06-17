@@ -26,6 +26,8 @@ struct StoreInfo {
   size_t freeSegments;
   size_t usedSegments;
 
+  std::string nodeId;
+
   friend std::ostream& operator<<(std::ostream& os, const StoreInfo& obj);
 };
 

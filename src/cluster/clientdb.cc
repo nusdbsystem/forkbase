@@ -475,6 +475,8 @@ ErrorCode ClientDb::GetInfoResponse(std::vector<StoreInfo>* stores) {
       v.bytesPerType.emplace(static_cast<ChunkType>(info.chunk_types(i)),
                              info.bytes_per_type(i));
     }
+    // set node id
+    v.nodeId = info.node_id();
     stores->push_back(std::move(v));
   }
   return err;
@@ -502,12 +504,8 @@ node_id_t WorkerList::GetWorker(const Slice& key) {
 //       return ri.address();
 //     }
 //   return workers_[0].address();
-  int mod = workers_.size();
-  int res = 0;
-  for (size_t i = 0; i < key.len(); ++i) {
-    res = (res * mod + key.data()[i]) % mod;
-  }
-  return workers_[res].address();
+  size_t idx = MurmurHash(key.data(), key.len()) % workers_.size();
+  return workers_[idx].address();
 }
 
 vector<node_id_t> WorkerList::GetWorkerIds() {

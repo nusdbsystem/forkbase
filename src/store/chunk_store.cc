@@ -45,10 +45,15 @@ std::string Readable(size_t bytes) {
 }
 
 std::ostream& operator<<(std::ostream& os, const StoreInfo& obj) {
+  constexpr int kNodeAlign = 12;
   constexpr int kSegmentAlign = 12;
   constexpr int kChunkAlign = 12;
 
   os << "============= Storage Usage Information ==============" << endl
+     // node info
+     << setw(kNodeAlign) << left << "Node Info"
+     << " |" << setw(kSegmentAlign*3 + 4) << right << obj.nodeId << endl
+     << "======================================================" << endl
      // segment type
      << setw(kSegmentAlign) << left << "Segment Type"
      << " |" << setw(kSegmentAlign) << right << "Total"

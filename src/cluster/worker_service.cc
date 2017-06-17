@@ -341,6 +341,8 @@ void WorkerService::HandleGetInfoRequest(const UMessage& umsg,
     info->add_chunks_per_type(store[0].chunksPerType.at(kv.first));
     info->add_bytes_per_type(store[0].bytesPerType.at(kv.first));
   }
+  // add node id
+  info->set_node_id(node_addr_);
 }
 
 }  // namespace ustore

@@ -70,6 +70,8 @@ message ResponsePayload {
 }
 
 message InfoPayload {
+  required bytes node_id = 20;
+
   required int64 chunks = 1;
   required int64 chunk_bytes = 2;
   required int64 valid_chunks = 3;
