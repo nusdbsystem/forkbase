@@ -10,6 +10,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -180,14 +181,24 @@ class Utils {
   template <typename T>
   static std::vector<size_t> SortIndexes(const std::vector<T>& v);
 
-  static void PrintList(const UList& list, bool elem_in_quote = false,
+  static void Print(const UList& list, const std::string& lsymbol = "[",
+                    const std::string& rsymbol = "]",
+                    const std::string& sep = ", ", bool elem_in_quote = false,
+                    std::ostream& os = std::cout);
+
+  static void Print(const UMap& map, const std::string& lsymbol = "[",
+                    const std::string& rsymbol = "]",
+                    const std::string& sep = ", ",
+                    const std::string& lentry = "(",
+                    const std::string& rentry = ")",
+                    const std::string& entry_sep = "->",
+                    bool elem_in_quote = false, std::ostream& os = std::cout);
+
+  static void PrintKeys(const UMap& map, const std::string& lsymbol = "[",
+                        const std::string& rsymbol = "]",
+                        const std::string& sep = ", ",
+                        bool elem_in_quote = false,
                         std::ostream& os = std::cout);
-
-  static void PrintMap(const UMap& map, bool elem_in_quote = false,
-                       std::ostream& os = std::cout);
-
-  static void PrintMapKeys(const UMap& map, bool elem_in_quote = false,
-                           std::ostream& os = std::cout);
 
   static void PrintListDiff(DuallyDiffIndexIterator& it_diff,
                             bool show_diff = true,
@@ -199,9 +210,15 @@ class Utils {
                         bool elem_in_quote = false,
                         std::ostream& os = std::cout);
 
-  static void PrintRow(
-    const std::vector<std::pair<std::string, std::string>>& row,
-    bool elem_in_quote = false, std::ostream& os = std::cout);
+  template<class T1, class T2>
+  static void Print(const std::unordered_map<T1, T2>& map,
+                    const std::string& lsymbol = "[",
+                    const std::string& rsymbol = "]",
+                    const std::string& sep = ", ",
+                    const std::string& lentry = "(",
+                    const std::string& rentry = ")",
+                    const std::string& entry_sep = "->",
+                    bool elem_in_quote = false, std::ostream& os = std::cout);
 };
 
 template<typename T>
@@ -291,6 +308,29 @@ void Utils::PrintDiff(T& it_diff, bool show_diff, bool elem_in_quote,
   os << "]";
 }
 
+template<class T1, class T2>
+void Utils::Print(const std::unordered_map<T1, T2>& map,
+                  const std::string& lsymbol, const std::string& rsymbol,
+                  const std::string& sep, const std::string& lentry,
+                  const std::string& rentry, const std::string& entry_sep,
+                  bool elem_in_quote, std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = map.begin();
+  auto f_print_it = [&]() {
+    os << lentry << quote << it->first << quote << entry_sep << quote
+       << it->second << quote << rentry;
+  };
+  os << lsymbol;
+  if (it != map.end()) {
+    f_print_it();
+    while (++it != map.end()) {
+      os << sep;
+      f_print_it();
+    }
+  }
+  os << rsymbol;
+}
+
 inline std::ostream& operator<<(std::ostream& os, const UType& obj) {
   os << Utils::ToString(obj);
   return os;
@@ -298,6 +338,16 @@ inline std::ostream& operator<<(std::ostream& os, const UType& obj) {
 
 inline std::ostream& operator<<(std::ostream& os, const ErrorCode& obj) {
   os << static_cast<int>(obj);
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const UList& obj) {
+  Utils::Print(obj, "[", "]", ", ", false, os);
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const UMap& obj) {
+  Utils::Print(obj, "[", "]", ", ", "(", ")", "->", false, os);
   return os;
 }
 

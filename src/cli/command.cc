@@ -388,10 +388,10 @@ ErrorCode Command::ExecGet() {
         std::cout << "\"" << meta << "\"";
         break;
       case UType::kList:
-        Utils::PrintList(meta.List(), true);
+        Utils::Print(meta.List(), "[", "]", ", ", true);
         break;
       case UType::kMap:
-        Utils::PrintMap(meta.Map(), true);
+        Utils::Print(meta.Map(), "[", "]", ", ", "(", ")", "->", true);
         break;
       default:
         std::cout << meta;
@@ -987,7 +987,7 @@ ErrorCode Command::ExecGetTable() {
   };
   const auto f_rpt_success = [](const Table & tab) {
     std::cout << BOLD_GREEN("[SUCCESS: GET_TABLE] ") << "Columns: ";
-    Utils::PrintMapKeys(tab, true);
+    Utils::PrintKeys(tab, "[", "]", ", ", true);
     std::cout << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
@@ -1117,7 +1117,7 @@ ErrorCode Command::ExecGetColumn() {
   const auto f_rpt_success = [&](const Column & col) {
     std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Column \""
               << col_name << "\": ";
-    Utils::PrintList(col, true);
+    Utils::Print(col, "[", "]", ", ", true);
     std::cout << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
@@ -1507,7 +1507,7 @@ ErrorCode Command::ExecGetRow() {
     for (auto& i_r : rows) {
       std::cout << BOLD_GREEN("[SUCCESS: GET_ROW] ") << "Row "
                 << i_r.first << ": ";
-      Utils::PrintRow(i_r.second, true);
+      Utils::Print(i_r.second, "{", "}", "|", " ", " ", ":", true);
       std::cout << std::endl;
     }
   };

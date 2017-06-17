@@ -5,8 +5,8 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_map>
 #include <utility>
-#include <vector>
 #include "spec/object_db.h"
 #include "utils/blocking_queue.h"
 #include "utils/utils.h"
@@ -15,7 +15,7 @@ namespace ustore {
 
 using Table = VMap;
 using Column = VList;
-using Row = std::vector<std::pair<std::string, std::string>>;
+using Row = std::unordered_map<std::string, std::string>;
 using Version = std::string;
 using TableDiffIterator = DuallyDiffKeyIterator;
 using ColumnDiffIterator = DuallyDiffIndexIterator;
@@ -36,7 +36,7 @@ class ColumnStore {
   ErrorCode LoadCSV(const std::string& file_path,
                     const std::string& table_name,
                     const std::string& branch_name,
-                    size_t batch_size = 5000);
+                    size_t batch_size = 5000, bool print_progress = true);
 
   ErrorCode DumpCSV(const std::string& file_path,
                     const std::string& table_name,
@@ -132,7 +132,7 @@ class ColumnStore {
   ErrorCode LoadCSV(
     std::ifstream& ifs, const std::string& table_name,
     const std::string& branch_name, const std::vector<std::string>& col_names,
-    size_t batch_size);
+    size_t batch_size, bool print_progress);
 
   ErrorCode ShardCSV(
     std::ifstream& ifs, size_t batch_size, size_t n_cols,
@@ -143,7 +143,7 @@ class ColumnStore {
     const std::string& table_name, const std::string& branch_name,
     const std::vector<std::string>& col_names,
     BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
-    ErrorCode& stat);
+    ErrorCode& stat, bool print_progress);
 
   ObjectDB odb_;
 };

@@ -34,7 +34,7 @@ void Utils::Print(const std::string& table_name,
   const std::string list_key(table_name + "::" + list_name);
   std::cout << std::left << std::setw(kKeyPrintWidth) << list_key
             << " @" << std::setw(kBrnachPrintWidth) << branch_name << ": ";
-  PrintList(list);
+  ::ustore::Utils::Print(list);
   std::cout << std::endl;
 }
 

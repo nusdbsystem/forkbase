@@ -142,51 +142,56 @@ ErrorCode Utils::CheckIndex(size_t idx, const SList& list) {
   return ErrorCode::kOK;
 }
 
-void Utils::PrintList(const UList& list, bool elem_in_quote,
-                      std::ostream& os) {
+void Utils::Print(const UList& list, const std::string& lsymbol,
+                  const std::string& rsymbol, const std::string& sep,
+                  bool elem_in_quote, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = list.Scan();
-  os << "[";
+  os << lsymbol;
   if (!it.end()) {
     os << quote << it.value() << quote;
     for (it.next(); !it.end(); it.next()) {
-      os << ", " << quote << it.value() << quote;
+      os << sep << quote << it.value() << quote;
     }
   }
-  os << "]";
+  os << rsymbol;
 }
 
-void Utils::PrintMap(const UMap& map, bool elem_in_quote,
-                     std::ostream& os) {
+void Utils::Print(const UMap& map, const std::string& lsymbol,
+                  const std::string& rsymbol, const std::string& sep,
+                  const std::string& lentry, const std::string& rentry,
+                  const std::string& entry_sep, bool elem_in_quote,
+                  std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = map.Scan();
-  auto f_print_it = [&os, &quote, &it]() {
-    os << "(" << quote << it.key() << quote << "->" << quote
-       << it.value() << quote << ")";
+  auto f_print_it = [&]() {
+    os << lentry << quote << it.key() << quote << entry_sep << quote
+       << it.value() << quote << rentry;
   };
-  os << "[";
+  os << lsymbol;
   if (!it.end()) {
     f_print_it();
     for (it.next(); !it.end(); it.next()) {
-      os << ", ";
+      os << sep;
       f_print_it();
     }
   }
-  os << "]";
+  os << rsymbol;
 }
 
-void Utils::PrintMapKeys(const UMap& map, bool elem_in_quote,
-                         std::ostream& os) {
+void Utils::PrintKeys(const UMap& map, const std::string& lsymbol,
+                      const std::string& rsymbol, const std::string& sep,
+                      bool elem_in_quote, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = map.Scan();
-  os << "[";
+  os << lsymbol;
   if (!it.end()) {
     os << quote << it.key() << quote;
     for (it.next(); !it.end(); it.next()) {
-      os << ", " << quote << it.key() << quote;
+      os << sep << quote << it.key() << quote;
     }
   }
-  os << "]";
+  os << rsymbol;
 }
 
 // TODO(ruanpc): make it_diff.key() of DuallyDiffIndexIterator refer to
@@ -218,26 +223,6 @@ void Utils::PrintListDiff(DuallyDiffIndexIterator& it_diff,
     }
   }
   os << "]";
-}
-
-void Utils::PrintRow(
-  const std::vector<std::pair<std::string, std::string>>& row,
-  bool elem_in_quote, std::ostream& os) {
-  const auto quote = elem_in_quote ? "\"" : "";
-  auto it = row.begin();
-  auto f_print_it = [&os, &quote, &it]() {
-    os << quote << it->first << quote << ":" << quote
-       << it->second << quote;
-  };
-  os << "{";
-  if (it != row.end()) {
-    f_print_it();
-    while (++it != row.end()) {
-      os << ", ";
-      f_print_it();
-    }
-  }
-  os << "}";
 }
 
 }  // namespace ustore

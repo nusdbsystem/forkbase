@@ -37,7 +37,7 @@ ErrorCode ColumnStore::CreateTable(const std::string& table_name,
 ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
                                const std::string& table_name,
                                const std::string& branch_name,
-                               size_t batch_size) {
+                               size_t batch_size, bool print_progress) {
   Table tab;
   USTORE_GUARD(GetTable(table_name, branch_name, &tab));
   USTORE_GUARD(tab.numElements() > 0 ?
@@ -59,7 +59,8 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
     }
   }
   if (ec == ErrorCode::kOK) {
-    ec = LoadCSV(ifs, table_name, branch_name, col_names, batch_size);
+    ec = LoadCSV(ifs, table_name, branch_name, col_names, batch_size,
+                 print_progress);
   }
   ifs.close();
   return ec;
@@ -69,11 +70,12 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
                                const std::string& table_name,
                                const std::string& branch_name,
                                const std::vector<std::string>& col_names,
-                               size_t batch_size) {
+                               size_t batch_size, bool print_progress) {
   BlockingQueue<std::vector<std::vector<std::string>>> batch_queue(2);
   auto stat_flush = ErrorCode::kOK;
   auto thread_flush = std::async(std::launch::async, [&]() {
-    FlushCSV(table_name, branch_name, col_names, batch_queue, stat_flush);
+    FlushCSV(table_name, branch_name, col_names, batch_queue, stat_flush,
+             print_progress);
   });
   auto ec =
     ShardCSV(ifs, batch_size, col_names.size(), batch_queue, stat_flush);
@@ -135,7 +137,7 @@ void ColumnStore::FlushCSV(
   const std::string& table_name, const std::string& branch_name,
   const std::vector<std::string>& col_names,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
-  ErrorCode& stat) {
+  ErrorCode& stat, bool print_progress) {
   auto n_cols = col_names.size();
   std::vector<std::string> col_keys;
   for (auto& name : col_names) {
@@ -171,7 +173,7 @@ void ColumnStore::FlushCSV(
       stat = static_cast<ErrorCode>(-num_loaded);
       break;
     }
-    if (num_loaded > 0) {
+    if (print_progress && num_loaded > 0) {
       cnt_loaded += num_loaded;
       std::cout << GREEN("[FLUSHED] ")
                 << "Number of rows loaded into storage: " << cnt_loaded
@@ -385,7 +387,7 @@ ErrorCode ColumnStore::GetRow(const std::string& table_name,
   for (auto it = ref_col.Scan(); !it.end(); it.next()) {
     if (it.value() == ref_val) {
       Row r;
-      r.emplace_back(std::make_pair(ref_col_name, ref_val));
+      r.emplace(ref_col_name, ref_val);
       rows->emplace(it.index() + 1, std::move(r));
     }
   }
@@ -401,8 +403,7 @@ ErrorCode ColumnStore::GetRow(const std::string& table_name,
     USTORE_GUARD(
       ReadColumn(table_name, branch_name, col_name, &col));
     for (auto i_r : *rows) {
-      auto field = std::make_pair(col_name, col.Get(i_r.first).ToString());
-      rows->at(i_r.first).emplace_back(std::move(field));
+      rows->at(i_r.first).emplace(col_name, col.Get(i_r.first).ToString());
     }
   }
   return ErrorCode::kOK;
