@@ -13,7 +13,7 @@ namespace ustore {
 template<typename T>
 class BlockingQueue : private Noncopyable {
  public:
-  BlockingQueue(size_t capacity) : capacity_(capacity) {}
+  explicit BlockingQueue(size_t capacity) : capacity_(capacity) {}
 
   void Put(const T& x) {
     {
