@@ -12,7 +12,7 @@
 namespace ustore {
 namespace cli {
 
-constexpr int kInitForMs = 75;
+const int kInitForMs = 75;
 
 int main(int argc, char* argv[]) {
   SetStderrLogging(ERROR);

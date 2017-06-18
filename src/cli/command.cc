@@ -1506,7 +1506,7 @@ ErrorCode Command::ExecGetRow() {
     DCHECK(!rows.empty());
     for (auto& i_r : rows) {
       std::cout << BOLD_GREEN("[SUCCESS: GET_ROW] ") << "Row "
-                << i_r.first << ": ";
+                << (i_r.first + 1) << ": ";
       Utils::Print(i_r.second, "{", "}", "|", " ", " ", ":", true);
       std::cout << std::endl;
     }

@@ -1,13 +1,16 @@
 // Copyright (c) 2017 The UStore Authors.
 
 #include <boost/algorithm/string.hpp>
+#include <ctime>
 #include <fstream>
 #include <future>
+#include <iomanip>
 #include <limits>
 #include <sstream>
-// #include <thread>
+#include "cluster/remote_client_service.h"
 #include "spec/relational.h"
 #include "utils/logging.h"
+#include "utils/sync_task_line.h"
 
 namespace ustore {
 
@@ -73,16 +76,18 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
                                size_t batch_size, bool print_progress) {
   BlockingQueue<std::vector<std::vector<std::string>>> batch_queue(2);
   auto stat_flush = ErrorCode::kOK;
+  // launch another thread for data flushing
   auto thread_flush = std::async(std::launch::async, [&]() {
     FlushCSV(table_name, branch_name, col_names, batch_queue, stat_flush,
              print_progress);
   });
-  auto ec =
-    ShardCSV(ifs, batch_size, col_names.size(), batch_queue, stat_flush);
+  // this thread shards the input data
+  ShardCSV(ifs, batch_size, col_names.size(), batch_queue, stat_flush);
   thread_flush.wait();
-  if ((ec = stat_flush) == ErrorCode::kOK) {
+  // update table once loading columns completes with success
+  auto ec = stat_flush;
+  if (ec == ErrorCode::kOK) {
     Table tab;
-    // update table
     for (auto& name : col_names) {
       ec = GetTable(table_name, branch_name, &tab);
       if (ec != ErrorCode::kOK) break;
@@ -98,10 +103,10 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
   return ec;
 }
 
-ErrorCode ColumnStore::ShardCSV(
+void ColumnStore::ShardCSV(
   std::ifstream& ifs, size_t batch_size, size_t n_cols,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
-  ErrorCode& stat_flush) {
+  const ErrorCode& stat_flush) {
   auto f_get_empty_batch = [&n_cols] {
     std::vector<std::vector<std::string>> cols;
     for (size_t i = 0; i < n_cols; ++i) {
@@ -111,7 +116,6 @@ ErrorCode ColumnStore::ShardCSV(
   };
   auto cols = f_get_empty_batch();
   std::string line;
-  auto ec = ErrorCode::kOK;
   while (std::getline(ifs, line)) {
     if (line.empty()) continue;
     auto row = Utils::Tokenize(line, " \t,|");
@@ -119,19 +123,77 @@ ErrorCode ColumnStore::ShardCSV(
       cols[i].push_back(std::move(row[i]));
     }
     if (cols[0].size() >= batch_size) {
-      if ((ec = stat_flush) != ErrorCode::kOK) break;
+      if (stat_flush != ErrorCode::kOK) return;
       batch_queue.Put(std::move(cols));
       cols = f_get_empty_batch();
     }
   }
-  if (cols[0].empty()) {
-    batch_queue.Put(std::move(cols));
-  } else {
-    batch_queue.Put(std::move(cols));
-    batch_queue.Put(f_get_empty_batch());
-  }
-  return ec;
+  // deal with the residuals and exit
+  batch_queue.Put(std::move(cols));
+  batch_queue.Put(f_get_empty_batch());
 }
+
+const int kInitForMs = 50;
+
+class FlushTaskLine
+  : public SyncTaskLine<std::vector<std::string>, ErrorCode> {
+ public:
+  FlushTaskLine() : SyncTaskLine<DataType, ErrorCodeType>() {
+    ustore_svc_ = new RemoteClientService("");
+    ustore_svc_->Init();
+    ustore_svc_thread_ = std::thread(&RemoteClientService::Start, ustore_svc_);
+    std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
+    db_ = new ClientDb(ustore_svc_->CreateClientDb());
+    odb_ = new ObjectDB(db_);
+  }
+
+  ~FlushTaskLine() {
+    ustore_svc_->Stop();
+    ustore_svc_thread_.join();
+    delete odb_;
+    delete db_;
+    delete ustore_svc_;
+  }
+
+  ErrorCode Consume(const std::vector<std::string>& sector) override {
+    // retrieve the previous column from storage
+    auto col_get_rst = odb_->Get(col_key_, branch_);
+    USTORE_GUARD(col_get_rst.stat);
+    auto col = col_get_rst.value.List();
+    // concatenate the current column to storage
+    std::vector<Slice> col_slices;
+    for (const auto& str : sector) col_slices.emplace_back(str);
+    col.Append(col_slices);
+    return odb_->Put(col_key_, col, branch_).stat;
+  }
+
+  bool Terminate(const std::vector<std::string>& sector) override {
+    return sector.empty();
+  }
+
+  inline void SetColumn(const std::string& tab_name,
+                        const std::string& branch_name,
+                        const std::string& col_name) {
+    col_key_str_ = ColumnStore::GlobalKey(tab_name, col_name);
+    col_key_ = Slice(col_key_str_);
+    branch_str_ = branch_name;
+    branch_ = Slice(branch_str_);
+  }
+
+ private:
+  using DataType = std::vector<std::string>;
+  using ErrorCodeType = ErrorCode;
+
+  RemoteClientService* ustore_svc_;
+  std::thread ustore_svc_thread_;
+  ClientDb* db_;
+  ObjectDB* odb_;
+
+  std::string col_key_str_;
+  Slice col_key_;
+  std::string branch_str_;
+  Slice branch_;
+};
 
 void ColumnStore::FlushCSV(
   const std::string& table_name, const std::string& branch_name,
@@ -139,47 +201,58 @@ void ColumnStore::FlushCSV(
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
   ErrorCode& stat, bool print_progress) {
   auto n_cols = col_names.size();
-  std::vector<std::string> col_keys;
-  for (auto& name : col_names) {
-    col_keys.emplace_back(GlobalKey(table_name, name));
+  // launch the sector-flushing threads
+  FlushTaskLine task_lines[n_cols];
+  std::thread threads[n_cols];
+  for (size_t i = 0; i < n_cols; ++i) {
+    auto& tl = task_lines[i];
+    tl.SetColumn(table_name, branch_name, col_names[i]);
+    threads[i] = tl.Launch();
   }
-  // load data into storage by batches
-  auto f_flush = [&n_cols, &branch_name, &col_keys, this](
+  // load data into storage by batches in parallel
+  auto f_current_flush = [&n_cols, &task_lines](
   const std::vector<std::vector<std::string>>& cols) {
     const int load_size = cols[0].size();
+    // dispatch task to the task lines
     for (size_t i = 0; i < n_cols; ++i) {
-      DCHECK_EQ(cols[i], load_size);
-      // retrieve the previous column from storage
-      auto col_get_rst = odb_.Get(Slice(col_keys[i]), Slice(branch_name));
-      auto& ec_get = col_get_rst.stat;
-      if (ec_get != ErrorCode::kOK) return -static_cast<int>(ec_get);
-      auto col = col_get_rst.value.List();
-      // concatenate the current column to storage
-      std::vector<Slice> col_slices;
-      for (const auto& str : cols[i]) col_slices.emplace_back(str);
-      col.Append(col_slices);
-      auto ec_put =
-        odb_.Put(Slice(col_keys[i]), col, Slice(branch_name)).stat;
-      if (ec_put != ErrorCode::kOK) return -static_cast<int>(ec_put);
+      task_lines[i].Produce(std::move(cols[i]));
+    }
+    // barrier: wait for all talks lines to complete
+    for (auto& tl : task_lines) {
+      tl.Sync();
+      auto ec = tl.Stat();
+      if (ec != ErrorCode::kOK) return -static_cast<int>(ec);
     }
     return load_size;
   };
+  // flush data batches iteratively
   size_t cnt_loaded = 0;
+  clock_t start, end;
   while (true) {
     auto cols = batch_queue.Take();
-    if (cols[0].empty()) break;
-    const int num_loaded = f_flush(cols);
+    // flush data batch into storage
+    if (print_progress) start = std::clock();
+    const int num_loaded = f_current_flush(cols);
+    if (print_progress) end = std::clock();
+    if (num_loaded == 0) break;
     if (num_loaded < 0) {
       stat = static_cast<ErrorCode>(-num_loaded);
+      static std::vector<std::string> empty_sector;
+      for (auto& tl : task_lines) tl.Produce(empty_sector);
       break;
     }
+    // print progress
     if (print_progress && num_loaded > 0) {
       cnt_loaded += num_loaded;
+      auto n_rows_per_sec = num_loaded * CLOCKS_PER_SEC / (end - start);
       std::cout << GREEN("[FLUSHED] ")
                 << "Number of rows loaded into storage: " << cnt_loaded
-                << std::endl;
+                << BLUE("  [" << std::right << std::setw(7)
+                        << n_rows_per_sec << " rows/s]") << std::endl;
     }
   }
+  // barrier: wait for the sector-flushing threads to complete
+  for (auto& t : threads) t.join();
 }
 
 const char kOutputDelimiter[] = "|";
@@ -388,7 +461,7 @@ ErrorCode ColumnStore::GetRow(const std::string& table_name,
     if (it.value() == ref_val) {
       Row r;
       r.emplace(ref_col_name, ref_val);
-      rows->emplace(it.index() + 1, std::move(r));
+      rows->emplace(it.index(), std::move(r));
     }
   }
   if (rows->empty()) return ErrorCode::kRowNotExists;

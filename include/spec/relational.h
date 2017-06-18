@@ -104,13 +104,13 @@ class ColumnStore {
     return UList::DuallyDiff(lhs, rhs);
   }
 
- private:
   template<class T1, class T2>
-  inline std::string GlobalKey(const T1& table_name,
-                               const T2& col_name) const {
+  static inline std::string GlobalKey(const T1& table_name,
+                                      const T2& col_name) {
     return Utils::ToString(table_name) + "::" + Utils::ToString(col_name);
   }
 
+ private:
   template<class T1, class T2, class T3>
   ErrorCode WriteColumn(
     const T1& table_name, const T2& branch_name, const T3& col_name,
@@ -134,10 +134,10 @@ class ColumnStore {
     const std::string& branch_name, const std::vector<std::string>& col_names,
     size_t batch_size, bool print_progress);
 
-  ErrorCode ShardCSV(
+  void ShardCSV(
     std::ifstream& ifs, size_t batch_size, size_t n_cols,
     BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
-    ErrorCode& stat_flush);
+    const ErrorCode& stat_flush);
 
   void FlushCSV(
     const std::string& table_name, const std::string& branch_name,
