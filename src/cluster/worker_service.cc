@@ -66,12 +66,13 @@ void WorkerService::Init() {
 // instead of directly use USE_RDMA flag everywhere
 #ifdef USE_RDMA
   // net_ = new RdmaNet(node_addr_, Env::Instance()->config().recv_threads());
-  net_.reset(new RdmaNet(node_addr_, 1));
+  net_.reset(new RdmaNet(node_addr_, Env::Instance()->config().recv_threads()));
 #else
   // net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
   // net_ = new ServerZmqNet(node_addr_,
   // Env::Instance()->config().recv_threads());
-  net_.reset(new ServerZmqNet(node_addr_, 1));
+  net_.reset(new ServerZmqNet(node_addr_,
+             Env::Instance()->config().recv_threads()));
 #endif
 }
 
