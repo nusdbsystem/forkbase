@@ -1,7 +1,10 @@
+// Copyright (c) 2017 The Ustore Authors.
+
 #ifndef USTORE_UTILS_SYNC_TASK_LINE_H_
 #define USTORE_UTILS_SYNC_TASK_LINE_H_
 
 #include <mutex>
+#include <utility>
 #include "utils/blocking_queue.h"
 
 namespace ustore {

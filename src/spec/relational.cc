@@ -218,7 +218,8 @@ void ColumnStore::FlushCSV(
       task_lines[i].Produce(std::move(cols[i]));
     }
     // barrier: wait for all talks lines to complete
-    for (auto& tl : task_lines) {
+    for (size_t i = 0; i < n_cols; ++i) {
+      auto& tl = task_lines[i];
       tl.Sync();
       auto ec = tl.Stat();
       if (ec != ErrorCode::kOK) return -static_cast<int>(ec);
