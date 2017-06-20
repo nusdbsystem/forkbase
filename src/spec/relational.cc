@@ -264,9 +264,8 @@ ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
   std::ofstream ofs(file_path);
   USTORE_GUARD(ofs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
   Table tab;
-  auto ec = GetTable(table_name, branch_name, &tab);
-  ERROR_CODE_FWD(ec, kUCellNotfound, kTableNotExists);
-  USTORE_GUARD(ec);
+  USTORE_GUARD(
+    GetTable(table_name, branch_name, &tab));
   USTORE_GUARD(tab.numElements() == 0 ?
                ErrorCode::kEmptyTable : ErrorCode::kOK);
   // retrieve the column-based table
@@ -301,10 +300,13 @@ ErrorCode ColumnStore::GetTable(const std::string& table_name,
                                 const std::string& branch_name,
                                 Table* table) {
   auto tab_rst = odb_.Get(Slice(table_name), Slice(branch_name));
-  ERROR_CODE_FWD(tab_rst.stat, kUCellNotfound, kTableNotExists);
-  USTORE_GUARD(tab_rst.stat);
-  *table = tab_rst.value.Map();
-  return ErrorCode::kOK;
+  auto& ec = tab_rst.stat;
+  if (ec == ErrorCode::kOK) {
+    *table = tab_rst.value.Map();
+  } else {
+    ERROR_CODE_FWD(ec, kKeyNotExists, kTableNotExists);
+  }
+  return ec;
 }
 
 ErrorCode ColumnStore::BranchTable(const std::string& table_name,

@@ -58,9 +58,14 @@ Worker::~Worker() {
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
   const auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
-    LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
-                 << "\" does not exist!";
-    return ErrorCode::kBranchNotExists;
+    if (Exists(key)) {
+      LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
+                   << "\" does not exist!";
+      return ErrorCode::kBranchNotExists;
+    } {
+      LOG(WARNING) << "Key \"" << key << "\" does not exist!";
+      return ErrorCode::kKeyNotExists;
+    }
   }
   return Get(key, *version_opt, ucell);
 }
