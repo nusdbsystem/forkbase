@@ -6,12 +6,13 @@ namespace ustore {
 
 VMap::VMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals)
     noexcept {
-  buffer_ = {UType::kMap, Hash::kNull, 0, 0, vals, keys};
+  buffer_ = {UType::kMap, {}, 0, 0, vals, keys};
 }
 
 VMap::VMap(std::shared_ptr<ChunkLoader> loader, const Hash& root_hash)
     noexcept : UMap(loader) {
   SetNodeForHash(root_hash);
+  buffer_ = {UType::kMap, root_node_->hash(), 0, 0, {}, {}};
 }
 
 Hash VMap::Set(const Slice& key, const Slice& val) const {

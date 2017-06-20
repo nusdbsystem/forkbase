@@ -154,7 +154,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
 Value WorkerService::ValueFromRequest(const ValuePayload& payload) {
   Value val;
   val.type = static_cast<UType>(payload.type());
-  val.base = payload.has_base() ? ToHash(payload.base()) : Hash::kNull;
+  val.base = payload.has_base() ? ToHash(payload.base()) : Hash();
   val.pos = payload.pos();
   val.dels = payload.dels();
   // TODO(anh): a lot of memory copy in the following

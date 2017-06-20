@@ -41,7 +41,7 @@ class UString : public BaseType {
     return os;
   }
 
- private:
+ protected:
   // Responsible to remove during destructing
   std::unique_ptr<const StringNode> node_;
 };

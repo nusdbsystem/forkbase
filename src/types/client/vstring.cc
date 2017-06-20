@@ -5,12 +5,13 @@
 namespace ustore {
 
 VString::VString(const Slice& data) noexcept : UString(nullptr) {
-  buffer_ = {UType::kString, Hash::kNull, 0, 0, {data}, {}};
+  buffer_ = {UType::kString, {}, 0, 0, {data}, {}};
 }
 
 VString::VString(std::shared_ptr<ChunkLoader> loader, const Hash& root_hash)
     noexcept : UString(loader) {
   SetNodeForHash(root_hash);
+  buffer_ = {UType::kString, node_->hash(), 0, 0, {}, {}};
 }
 
 }  // namespace ustore

@@ -17,6 +17,7 @@
 #include "spec/slice.h"
 #include "spec/value.h"
 #include "utils/logging.h"
+#include "utils/utils.h"
 
 using ustore::byte_t;
 using ustore::WorkerService;
@@ -58,7 +59,6 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
     // put a string
     Value string_val;
     string_val.type = UType::kString;
-    string_val.base = Hash::kNull;
     string_val.vals.push_back(Slice(values[idx]));
     Hash version;
     EXPECT_EQ(client->Put(Slice(keys[idx]), string_val, HEAD_VERSION, &version),
@@ -68,7 +68,6 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
     // put a list of 2 values
     Value list_val;
     list_val.type = UType::kList;
-    list_val.base = Hash::kNull;
     list_val.vals.push_back(Slice(values[0]));
     list_val.vals.push_back(Slice(values[idx]));
     Hash version_list;

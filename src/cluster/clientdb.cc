@@ -42,7 +42,8 @@ void ClientDb::CreatePutMessage(const Slice &key, const Value &value,
   request->set_key(key.data(), key.len());
   auto payload = msg->mutable_value_payload();
   payload->set_type(static_cast<int>(value.type));
-  payload->set_base(value.base.value(), Hash::kByteLength);
+  if (!value.base.empty())
+    payload->set_base(value.base.value(), Hash::kByteLength);
   payload->set_pos(value.pos);
   payload->set_dels(value.dels);
   for (const Slice& s : value.vals)
@@ -196,7 +197,8 @@ void ClientDb::CreateMergeMessage(const Slice &key, const Value &value,
   request->set_key(key.data(), key.len());
   auto payload = msg->mutable_value_payload();
   payload->set_type(static_cast<int>(value.type));
-  payload->set_base(value.base.value(), Hash::kByteLength);
+  if (!value.base.empty())
+    payload->set_base(value.base.value(), Hash::kByteLength);
   payload->set_pos(value.pos);
   payload->set_dels(value.dels);
   for (const Slice& s : value.vals)
