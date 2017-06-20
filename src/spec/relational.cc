@@ -133,38 +133,25 @@ void ColumnStore::ShardCSV(
   batch_queue.Put(f_get_empty_batch());
 }
 
-const int kInitForMs = 50;
-
 class FlushTaskLine
   : public SyncTaskLine<std::vector<std::string>, ErrorCode> {
  public:
-  FlushTaskLine() : SyncTaskLine<DataType, ErrorCodeType>() {
-    ustore_svc_ = new RemoteClientService("");
-    ustore_svc_->Init();
-    ustore_svc_thread_ = std::thread(&RemoteClientService::Start, ustore_svc_);
-    std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
-    db_ = new ClientDb(ustore_svc_->CreateClientDb());
-    odb_ = new ObjectDB(db_);
-  }
+  FlushTaskLine()
+    : SyncTaskLine<DataType, ErrorCodeType>(),
+      db_(GetUStoreService()->CreateClientDb()), odb_(&db_) {}
 
-  ~FlushTaskLine() {
-    ustore_svc_->Stop();
-    ustore_svc_thread_.join();
-    delete odb_;
-    delete db_;
-    delete ustore_svc_;
-  }
+  ~FlushTaskLine() = default;
 
   ErrorCode Consume(const std::vector<std::string>& sector) override {
     // retrieve the previous column from storage
-    auto col_get_rst = odb_->Get(col_key_, branch_);
+    auto col_get_rst = odb_.Get(col_key_, branch_);
     USTORE_GUARD(col_get_rst.stat);
     auto col = col_get_rst.value.List();
     // concatenate the current column to storage
     std::vector<Slice> col_slices;
     for (const auto& str : sector) col_slices.emplace_back(str);
     col.Append(col_slices);
-    return odb_->Put(col_key_, col, branch_).stat;
+    return odb_.Put(col_key_, col, branch_).stat;
   }
 
   bool Terminate(const std::vector<std::string>& sector) override {
@@ -180,14 +167,33 @@ class FlushTaskLine
     branch_ = Slice(branch_str_);
   }
 
+  static void StartUStoreService() {
+    auto svc = GetUStoreService().get();
+    svc->Init();
+    svc_thread_ = new std::thread(&RemoteClientService::Start, svc);
+    std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
+  }
+
+  static void StopUStoreService() {
+    GetUStoreService()->Stop();
+    svc_thread_->join();
+    delete svc_thread_;
+  }
+
  private:
   using DataType = std::vector<std::string>;
   using ErrorCodeType = ErrorCode;
+  using RemoteClientServicePtr = std::shared_ptr<RemoteClientService>;
 
-  RemoteClientService* ustore_svc_;
-  std::thread ustore_svc_thread_;
-  ClientDb* db_;
-  ObjectDB* odb_;
+  static RemoteClientServicePtr GetUStoreService() {
+    static RemoteClientServicePtr svc(new RemoteClientService(""));
+    return svc;
+  }
+
+  static const int kInitForMs;
+  static std::thread* svc_thread_;
+  ClientDb db_;
+  ObjectDB odb_;
 
   std::string col_key_str_;
   Slice col_key_;
@@ -195,12 +201,17 @@ class FlushTaskLine
   Slice branch_;
 };
 
+const int FlushTaskLine::kInitForMs = 50;
+std::thread* FlushTaskLine::svc_thread_ = nullptr;
+
 void ColumnStore::FlushCSV(
   const std::string& table_name, const std::string& branch_name,
   const std::vector<std::string>& col_names,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
   ErrorCode& stat, bool print_progress) {
   auto n_cols = col_names.size();
+  // establish UStore service for sector-flushing task line
+  FlushTaskLine::StartUStoreService();
   // launch the sector-flushing threads
   FlushTaskLine task_lines[n_cols];
   std::thread threads[n_cols];
@@ -219,9 +230,7 @@ void ColumnStore::FlushCSV(
     }
     // barrier: wait for all talks lines to complete
     for (size_t i = 0; i < n_cols; ++i) {
-      auto& tl = task_lines[i];
-      tl.Sync();
-      auto ec = tl.Stat();
+      auto ec = task_lines[i].Sync();
       if (ec != ErrorCode::kOK) return -static_cast<int>(ec);
     }
     return load_size;
@@ -254,6 +263,8 @@ void ColumnStore::FlushCSV(
   }
   // barrier: wait for the sector-flushing threads to complete
   for (auto& t : threads) t.join();
+  // terminate UStore service for sector-flushing task line
+  FlushTaskLine::StopUStoreService();
 }
 
 const char kOutputDelimiter[] = "|";
