@@ -10,6 +10,7 @@
 #include "cluster/remote_client_service.h"
 #include "spec/relational.h"
 #include "utils/logging.h"
+#include "utils/service_context.h"
 #include "utils/sync_task_line.h"
 
 namespace ustore {
@@ -138,7 +139,7 @@ class FlushTaskLine
  public:
   FlushTaskLine()
     : SyncTaskLine<DataType, ErrorCodeType>(),
-      db_(GetUStoreService()->CreateClientDb()), odb_(&db_) {}
+      db_(GetClientDb()), odb_(&db_) {}
 
   ~FlushTaskLine() = default;
 
@@ -167,31 +168,15 @@ class FlushTaskLine
     branch_ = Slice(branch_str_);
   }
 
-  static void StartUStoreService() {
-    auto svc = GetUStoreService().get();
-    svc->Init();
-    svc_thread_ = new std::thread(&RemoteClientService::Start, svc);
-    std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
-  }
-
-  static void StopUStoreService() {
-    GetUStoreService()->Stop();
-    svc_thread_->join();
-    delete svc_thread_;
-  }
-
  private:
   using DataType = std::vector<std::string>;
   using ErrorCodeType = ErrorCode;
-  using RemoteClientServicePtr = std::shared_ptr<RemoteClientService>;
 
-  static RemoteClientServicePtr GetUStoreService() {
-    static RemoteClientServicePtr svc(new RemoteClientService(""));
-    return svc;
+  static ClientDb GetClientDb() {
+    static ServiceContext svc_ctx;
+    return svc_ctx.GetClientDb();
   }
 
-  static const int kInitForMs;
-  static std::thread* svc_thread_;
   ClientDb db_;
   ObjectDB odb_;
 
@@ -201,17 +186,12 @@ class FlushTaskLine
   Slice branch_;
 };
 
-const int FlushTaskLine::kInitForMs = 50;
-std::thread* FlushTaskLine::svc_thread_ = nullptr;
-
 void ColumnStore::FlushCSV(
   const std::string& table_name, const std::string& branch_name,
   const std::vector<std::string>& col_names,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
   ErrorCode& stat, bool print_progress) {
   auto n_cols = col_names.size();
-  // establish UStore service for sector-flushing task line
-  FlushTaskLine::StartUStoreService();
   // launch the sector-flushing threads
   FlushTaskLine task_lines[n_cols];
   std::thread threads[n_cols];
@@ -263,8 +243,6 @@ void ColumnStore::FlushCSV(
   }
   // barrier: wait for the sector-flushing threads to complete
   for (auto& t : threads) t.join();
-  // terminate UStore service for sector-flushing task line
-  FlushTaskLine::StopUStoreService();
 }
 
 const char kOutputDelimiter[] = "|";
