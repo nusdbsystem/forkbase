@@ -112,16 +112,13 @@ void Benchmark::Put(UType type, bool validate) {
   auto prefix = params_[type].prefix;
   if (validate) ops = kValidateOps;
   std::cout << GREEN((validate ? "[Validate]" : "[Put]"))
-            << " type: " << GREEN(type)
-            << " ops: " << ops
-            << " bytes: (" << length << "*" << elements
-            << ") key: \"" << GREEN(prefix)
+            << " type: " << GREEN(type) << " ops: " << ops << " bytes: ("
+            << length << "*" << elements << ") key: \"" << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
             << "\"" << std::endl;
   // generate key
-  auto keys = kSuffix
-            ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-            : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, prefix);
   auto branch = validate ? "validate" : kDefaultBranch;
   StrVecVec values(ops);
   // generate value
@@ -133,16 +130,13 @@ void Benchmark::Put(UType type, bool validate) {
 void Benchmark::Get(UType type) {
   auto ops = params_[type].ops;
   auto prefix = params_[type].prefix;
-  std::cout << GREEN("[Get]")
-            << " type: " << GREEN(type)
-            << " ops: " << ops
+  std::cout << GREEN("[Get]") << " type: " << GREEN(type) << " ops: " << ops
             << " key: \"" << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
             << "\"" << std::endl;
   // generate key
-  auto keys = kSuffix
-            ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-            : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, prefix);
   auto branch = kDefaultBranch;
   ExecGet(type, keys, branch, false);
   ExecGet(type, keys, branch, true);
@@ -151,15 +145,13 @@ void Benchmark::Get(UType type) {
 void Benchmark::Branch() {
   auto ops = kBranchOps;
   auto prefix = kBranchPrefix;
-  std::cout << GREEN("[Branch]")
-            << " ops: " << ops
-            << " key: \"" << GREEN(prefix)
+  std::cout << GREEN("[Branch]") << " ops: " << ops << " key: \""
+            << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
             << "\"" << std::endl;
   // generate key
-  auto keys = kSuffix
-            ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-            : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, prefix);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);
@@ -169,15 +161,13 @@ void Benchmark::Branch() {
 void Benchmark::Merge() {
   auto ops = kMergeOps;
   auto prefix = kMergePrefix;
-  std::cout << GREEN("[Merge]")
-            << " ops: " << ops
-            << " key: \"" << GREEN(prefix)
+  std::cout << GREEN("[Merge]") << " ops: " << ops << " key: \""
+            << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
             << "\"" << std::endl;
   // generate key
-  auto keys = kSuffix
-            ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-            : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, prefix);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);
@@ -185,35 +175,58 @@ void Benchmark::Merge() {
 }
 
 void Benchmark::ExecPut(UType type, const StrVec& keys,
-    const std::string& branch, const StrVecVec& values, bool validate) {
+                        const std::string& branch, const StrVecVec& values,
+                        bool validate) {
   Timer timer;
   auto split_keys = vec_split(ToSlice(keys), num_threads_);
   auto split_branch = Slice(branch);
   auto split_vals = vec_split(ToSlice(values), num_threads_);
+  profiler_.Clear();
+  std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
   timer.Reset();
   std::vector<std::thread> threads;
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadPut, this, dbs_[i], type,
-        split_keys[i], split_branch, split_vals[i], validate);
+                         split_keys[i], split_branch, split_vals[i], validate,
+                         i);
   for (auto& t : threads) t.join();
-  std::cout << YELLOW((validate ? "[Validate] " : "[Put] ")) << type << " Time: "
-            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
+  auto total_time = timer.Elapse();
+  profiler_.Terminate();
+  profiler_th.join();
+  double avg_tp = keys.size() * 1000.0 / total_time;
+  auto pk_tp = profiler_.PeakThroughput();
+  std::cout << YELLOW((validate ? "[Validate] " : "[Put] ")) << type
+            << " Time: " << YELLOW(total_time) << YELLOW(" ms") << std::endl
+            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
+            << YELLOW(" ops/s") << std::endl
+            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
+            << YELLOW(" ops/s") << std::endl;
 }
 
 void Benchmark::ExecGet(UType type, const StrVec& keys,
-    const std::string& branch, bool scan) {
+                        const std::string& branch, bool scan) {
   Timer timer;
   auto split_keys = vec_split(ToSlice(keys), num_threads_);
   auto split_branch = Slice(branch);
+  profiler_.Clear();
+  std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
   timer.Reset();
   std::vector<std::thread> threads;
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadGet, this, dbs_[i], type,
-        split_keys[i], split_branch, scan);
+                         split_keys[i], split_branch, scan, i);
   for (auto& t : threads) t.join();
-  std::cout << YELLOW("[Get") << YELLOW((scan ? "] " : " Meta] "))
-            << type << " Time: "
-            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
+  auto total_time = timer.Elapse();
+  profiler_.Terminate();
+  profiler_th.join();
+  double avg_tp = keys.size() * 1000.0 / total_time;
+  auto pk_tp = profiler_.PeakThroughput();
+  std::cout << YELLOW("[Get") << YELLOW((scan ? "] " : " Meta] ")) << type
+            << " Time: " << YELLOW(total_time) << YELLOW(" ms") << std::endl
+            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
+            << YELLOW(" ops/s") << std::endl
+            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
+            << YELLOW(" ops/s") << std::endl;
 }
 
 void Benchmark::ExecBranch(const StrVec& keys, const std::string& ref_branch,
@@ -222,14 +235,25 @@ void Benchmark::ExecBranch(const StrVec& keys, const std::string& ref_branch,
   auto split_keys = vec_split(ToSlice(keys), num_threads_);
   auto split_branch = Slice(ref_branch);
   auto split_branches = vec_split(ToSlice(branches), num_threads_);
-  timer.Reset();
+  profiler_.Clear();
   std::vector<std::thread> threads;
+  std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
+  timer.Reset();
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadBranch, this, dbs_[i], split_keys[i],
-        split_branch, split_branches[i]);
+                         split_branch, split_branches[i], i);
   for (auto& t : threads) t.join();
-  std::cout << YELLOW("[Branch]") << " Time: "
-            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
+  auto total_time = timer.Elapse();
+  profiler_.Terminate();
+  profiler_th.join();
+  double avg_tp = keys.size() * 1000.0 / total_time;
+  auto pk_tp = profiler_.PeakThroughput();
+  std::cout << YELLOW("[Branch]") << " Time: " << YELLOW(total_time)
+            << YELLOW(" ms") << std::endl
+            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
+            << YELLOW(" ops/s") << std::endl
+            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
+            << YELLOW(" ops/s") << std::endl;
 }
 
 void Benchmark::ExecMerge(const StrVec& keys, const std::string& ref_branch,
@@ -238,22 +262,35 @@ void Benchmark::ExecMerge(const StrVec& keys, const std::string& ref_branch,
   auto split_keys = vec_split(ToSlice(keys), num_threads_);
   auto split_branch = Slice(ref_branch);
   auto split_branches = vec_split(ToSlice(branches), num_threads_);
-  timer.Reset();
+  profiler_.Clear();
   std::vector<std::thread> threads;
+  std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
+  timer.Reset();
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadMerge, this, dbs_[i], split_keys[i],
-        split_branch, split_branches[i]);
+                         split_branch, split_branches[i], i);
   for (auto& t : threads) t.join();
-  std::cout << YELLOW("[Merge]") << " Time: "
-            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
+  auto total_time = timer.Elapse();
+  profiler_.Terminate();
+  profiler_th.join();
+  double avg_tp = keys.size() * 1000.0 / total_time;
+  auto pk_tp = profiler_.PeakThroughput();
+  std::cout << YELLOW("[Merge]") << " Time: " << YELLOW(total_time)
+            << YELLOW(" ms") << std::endl
+            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
+            << YELLOW(" ops/s") << std::endl
+            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
+            << YELLOW(" ops/s") << std::endl;
 }
 
 void Benchmark::ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
-    const Slice& branch, const SliceVecVec& values, bool validate) {
+                          const Slice& branch, const SliceVecVec& values,
+                          bool validate, size_t tid) {
   switch (type) {
     case UType::kString:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto ver = db->Put(keys[i], VString(values[i][0]), branch);
+        profiler_.IncCounter(tid);
         if (!validate) continue;
         auto val = db->Get(keys[i], ver.value).value.String();
         CHECK_EQ(values[i][0], val.slice());
@@ -262,6 +299,7 @@ void Benchmark::ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
     case UType::kBlob:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto ver = db->Put(keys[i], VBlob(values[i][0]), branch);
+        profiler_.IncCounter(tid);
         if (!validate) continue;
         auto val = db->Get(keys[i], ver.value).value.Blob();
         byte_t* buf = new byte_t[val.size()];
@@ -273,6 +311,7 @@ void Benchmark::ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
     case UType::kList:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto ver = db->Put(keys[i], VList(values[i]), branch);
+        profiler_.IncCounter(tid);
         if (!validate) continue;
         auto val = db->Get(keys[i], ver.value).value.List();
         auto it = val.Scan();
@@ -285,6 +324,7 @@ void Benchmark::ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
     case UType::kMap:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto ver = db->Put(keys[i], VMap(subkeys_slice_, values[i]), branch);
+        profiler_.IncCounter(tid);
         if (!validate) continue;
         auto val = db->Get(keys[i], ver.value).value.Map();
         auto it = val.Scan();
@@ -300,37 +340,45 @@ void Benchmark::ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
 }
 
 void Benchmark::ThreadGet(ObjectDB* db, UType type, const SliceVec& keys,
-    const Slice& branch, bool scan) {
+                          const Slice& branch, bool scan, size_t tid) {
   switch (type) {
     case UType::kString:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto meta = db->Get(keys[i], branch);
-        if (!scan) continue;
-        auto val = meta.value.String();
+        if (scan) {
+          auto val = meta.value.String();
+        }
+        profiler_.IncCounter(tid);
       }
       break;
     case UType::kBlob:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto meta = db->Get(keys[i], branch);
-        if (!scan) continue;
-        auto val = meta.value.Blob();
-        for (auto it = val.ScanChunk(); !it.end(); it.next()) it.value();
+        if (scan) {
+          auto val = meta.value.Blob();
+          for (auto it = val.ScanChunk(); !it.end(); it.next()) it.value();
+        }
+        profiler_.IncCounter(tid);
       }
       break;
     case UType::kList:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto meta = db->Get(keys[i], branch);
-        if (!scan) continue;
-        auto val = meta.value.List();
-        for (auto it = val.Scan(); !it.end(); it.next()) it.value();
+        if (scan) {
+          auto val = meta.value.List();
+          for (auto it = val.Scan(); !it.end(); it.next()) it.value();
+        }
+        profiler_.IncCounter(tid);
       }
       break;
     case UType::kMap:
       for (size_t i = 0; i < keys.size(); ++i) {
         auto meta = db->Get(keys[i], branch);
-        if (!scan) continue;
-        auto val = meta.value.Map();
-        for (auto it = val.Scan(); !it.end(); it.next()) it.value();
+        if (scan) {
+          auto val = meta.value.Map();
+          for (auto it = val.Scan(); !it.end(); it.next()) it.value();
+        }
+        profiler_.IncCounter(tid);
       }
       break;
     default:
@@ -339,16 +387,20 @@ void Benchmark::ThreadGet(ObjectDB* db, UType type, const SliceVec& keys,
 }
 
 void Benchmark::ThreadBranch(ObjectDB* db, const SliceVec& keys,
-    const Slice& ref_branch, const SliceVec& branches) {
-  for (size_t i = 0; i < keys.size(); ++i)
+                             const Slice& ref_branch, const SliceVec& branches,
+                             size_t tid) {
+  for (size_t i = 0; i < keys.size(); ++i) {
     auto res = db->Branch(keys[i], ref_branch, branches[i]);
+    profiler_.IncCounter(tid);
+  }
 }
 
 void Benchmark::ThreadMerge(ObjectDB* db, const SliceVec& keys,
-    const Slice& ref_branch, const SliceVec& branches) {
+                            const Slice& ref_branch, const SliceVec& branches,
+                            size_t tid) {
   for (size_t i = 0; i < keys.size(); ++i) {
     auto meta = db->Get(keys[i], branches[i]);
-    switch(meta.value.type()) {
+    switch (meta.value.type()) {
       case UType::kString:
         db->Merge(keys[i], meta.value.String(), branches[i], ref_branch);
         break;
@@ -364,6 +416,7 @@ void Benchmark::ThreadMerge(ObjectDB* db, const SliceVec& keys,
       default:
         LOG(FATAL) << "Unsupported type: " << meta.value.type();
     }
+    profiler_.IncCounter(tid);
   }
 }
 

@@ -22,14 +22,13 @@ struct BenchParam {
 class Benchmark {
  public:
   explicit Benchmark(const std::vector<ObjectDB*>& dbs)
-    : dbs_(dbs) {
-  //    kNumValidations(BenchmarkConfig::num_validations),
-  //    kNumStrings(BenchmarkConfig::num_strings),
-  //    kNumBlobs(BenchmarkConfig::num_blobs),
-  //    kStringLength(BenchmarkConfig::string_len),
-  //    kBlobSize(BenchmarkConfig::blob_size) {
+      : dbs_(dbs), num_threads_(dbs.size()), profiler_(num_threads_) {
+    //    kNumValidations(BenchmarkConfig::num_validations),
+    //    kNumStrings(BenchmarkConfig::num_strings),
+    //    kNumBlobs(BenchmarkConfig::num_blobs),
+    //    kStringLength(BenchmarkConfig::string_len),
+    //    kBlobSize(BenchmarkConfig::blob_size) {
     LoadParameters();
-    num_threads_ = dbs.size();
   }
   ~Benchmark() = default;
 
@@ -55,13 +54,14 @@ class Benchmark {
   void ExecMerge(const StrVec& keys, const std::string& ref_branch,
                  const StrVec& branches);
   void ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
-                 const Slice& branch, const SliceVecVec& values, bool validate);
+                 const Slice& branch, const SliceVecVec& values, bool validate,
+                 size_t tid);
   void ThreadGet(ObjectDB* db, UType type, const SliceVec& keys,
-                 const Slice& branch, bool scan);
-  void ThreadBranch(ObjectDB* db, const SliceVec& keys,
-                    const Slice& ref_branch, const SliceVec& branches);
-  void ThreadMerge(ObjectDB* db, const SliceVec& keys,
-                   const Slice& ref_branch, const SliceVec& branches);
+                 const Slice& branch, bool scan, size_t tid);
+  void ThreadBranch(ObjectDB* db, const SliceVec& keys, const Slice& ref_branch,
+                    const SliceVec& branches, size_t tid);
+  void ThreadMerge(ObjectDB* db, const SliceVec& keys, const Slice& ref_branch,
+                   const SliceVec& branches, size_t tid);
 
   size_t kValidateOps = 10;
   size_t kBranchOps = 1000;
@@ -79,6 +79,7 @@ class Benchmark {
   Timer timer_;
   RandomGenerator rg_;
   size_t num_threads_;
+  Profiler profiler_;
 };
 }  // namespace ustore
 

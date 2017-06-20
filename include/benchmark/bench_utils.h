@@ -68,6 +68,7 @@ class Profiler {
   explicit Profiler(size_t n_thread);
   ~Profiler();
   void SamplerThread();
+  void Clear();
   double PeakThroughput();
   inline void Terminate() { finished_.store(true, std::memory_order_release); }
   inline void IncCounter(size_t n) {
