@@ -8,11 +8,35 @@ namespace ustore {
 
 bool BenchmarkConfig::is_help = false;
 int BenchmarkConfig::num_clients = 2;
-int BenchmarkConfig::num_validations = 100;
-int BenchmarkConfig::num_strings = 100000;
-int BenchmarkConfig::num_blobs = 5000;
-int BenchmarkConfig::string_len = 64;
-int BenchmarkConfig::blob_size = 8192;
+  // common
+int BenchmarkConfig::validate_ops = 10;
+std::string BenchmarkConfig::default_branch = "master";
+bool BenchmarkConfig::suffix = true;
+int BenchmarkConfig::suffix_range = 100;
+// string
+int BenchmarkConfig::string_ops = 5000;
+int BenchmarkConfig::string_length = 128;
+std::string BenchmarkConfig::string_prefix = "String";
+// blob
+int BenchmarkConfig::blob_ops = 100;
+int BenchmarkConfig::blob_length = 16 * 1024;
+std::string BenchmarkConfig::blob_prefix = "Blob";
+// list
+int BenchmarkConfig::list_ops = 100;
+int BenchmarkConfig::list_length = 64;
+int BenchmarkConfig::list_elements = 256;
+std::string BenchmarkConfig::list_prefix = "List";
+// map
+int BenchmarkConfig::map_ops = 100;
+int BenchmarkConfig::map_length = 64;
+int BenchmarkConfig::map_elements = 256;
+std::string BenchmarkConfig::map_prefix = "Map";
+// branch
+int BenchmarkConfig::branch_ops = 1000;
+std::string BenchmarkConfig::branch_prefix = "Blob";
+// merge
+int BenchmarkConfig::merge_ops = 1000;
+std::string BenchmarkConfig::merge_prefix = "Blob";
 
 bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[]) {
   po::variables_map vm;
@@ -21,20 +45,9 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[]) {
     num_clients = vm["num-client"].as<int>();
     GUARD(CheckArgGT(num_clients, 0, "Number of clients"));
 
-    num_validations = vm["num-validate"].as<int>();
-    GUARD(CheckArgGT(num_validations, 0, "Number of validations"));
+    // validate_ops = vm["validate-ops"].as<int>();
+    // GUARD(CheckArgGT(validate_ops, 0, "Number of validate operations"));
 
-    num_strings = vm["num-string"].as<int>();
-    GUARD(CheckArgGT(num_strings, 0, "Number of strings"));
-
-    num_blobs = vm["num-blob"].as<int>();
-    GUARD(CheckArgGT(num_blobs, 0, "Number of Blobs"));
-
-    string_len = vm["string-len"].as<int>();
-    GUARD(CheckArgGT(string_len, 0, "String length"));
-
-    blob_size = vm["blob-size"].as<int>();
-    GUARD(CheckArgGT(blob_size, 0, "Blob size"));
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -49,15 +62,16 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[],
   ("help,?", "print usage message")
   ("num-client,c", po::value<int>()->default_value(2),
    "number of clients")
-  ("num-validate,v", po::value<int>()->default_value(100),
-   "number of validations")
-  ("num-string,s", po::value<int>()->default_value(100000),
-   "number of strings")
-  ("num-blob,b", po::value<int>()->default_value(5000),
-   "number of blobs")
-  ("string-len,l", po::value<int>()->default_value(64),
-   "string length")
-  ("blob-size,z", po::value<int>()->default_value(8192));
+  // ("num-validate,v", po::value<int>()->default_value(100),
+  //  "number of validations")
+  // ("num-string,s", po::value<int>()->default_value(100000),
+  //  "number of strings")
+  // ("num-blob,b", po::value<int>()->default_value(5000),
+  //  "number of blobs")
+  // ("string-len,l", po::value<int>()->default_value(64),
+  //  "string length")
+  // ("blob-size,z", po::value<int>()->default_value(8192));
+  ;
 
   try {
     po::store(po::command_line_parser(argc, argv).options(desc)

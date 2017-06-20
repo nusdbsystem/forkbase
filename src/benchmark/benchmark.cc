@@ -90,20 +90,16 @@ void Benchmark::RunAll() {
   Put(UType::kMap, true);
   // String
   Put(UType::kString, false);
-  Get(UType::kString, false);
-  Get(UType::kString, true);
+  Get(UType::kString);
   // Blob
   Put(UType::kBlob, false);
-  Get(UType::kBlob, false);
-  Get(UType::kBlob, true);
+  Get(UType::kBlob);
   // List
   Put(UType::kList, false);
-  Get(UType::kList, false);
-  Get(UType::kList, true);
+  Get(UType::kList);
   // Map
   Put(UType::kMap, false);
-  Get(UType::kMap, false);
-  Get(UType::kMap, true);
+  Get(UType::kMap);
   // Branch
   Branch();
   Merge();
@@ -115,11 +111,13 @@ void Benchmark::Put(UType type, bool validate) {
   auto elements = params_[type].elements;
   auto prefix = params_[type].prefix;
   if (validate) ops = kValidateOps;
-  std::cout << (validate ? "Validating " : "Putting ") << ops << " "
-            << type << " with size (" << length << " * "<< elements
-            << ") | key = \"" << prefix
+  std::cout << GREEN((validate ? "[Validate]" : "[Put]"))
+            << " type: " << GREEN(type)
+            << " ops: " << ops
+            << " bytes: (" << length << "*" << elements
+            << ") key: \"" << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\" ......" << std::endl;
+            << "\"" << std::endl;
   // generate key
   auto keys = kSuffix
             ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
@@ -132,27 +130,32 @@ void Benchmark::Put(UType type, bool validate) {
   ExecPut(type, keys, branch, values, validate);
 }
 
-void Benchmark::Get(UType type, bool scan) {
+void Benchmark::Get(UType type) {
   auto ops = params_[type].ops;
   auto prefix = params_[type].prefix;
-  std::cout << "Getting " << ops << " " << type << (scan ? "" : " Meta")
-            << " | key = \"" << prefix
+  std::cout << GREEN("[Get]")
+            << " type: " << GREEN(type)
+            << " ops: " << ops
+            << " key: \"" << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\" ......" << std::endl;
+            << "\"" << std::endl;
   // generate key
   auto keys = kSuffix
             ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
             : std::vector<std::string>(ops, prefix);
   auto branch = kDefaultBranch;
-  ExecGet(type, keys, branch, scan);
+  ExecGet(type, keys, branch, false);
+  ExecGet(type, keys, branch, true);
 }
 
 void Benchmark::Branch() {
   auto ops = kBranchOps;
   auto prefix = kBranchPrefix;
-  std::cout << "Branching " << ops << " branches | key = \"" << prefix
+  std::cout << GREEN("[Branch]")
+            << " ops: " << ops
+            << " key: \"" << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\" ......" << std::endl;
+            << "\"" << std::endl;
   // generate key
   auto keys = kSuffix
             ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
@@ -166,9 +169,11 @@ void Benchmark::Branch() {
 void Benchmark::Merge() {
   auto ops = kMergeOps;
   auto prefix = kMergePrefix;
-  std::cout << "Merging " << ops << " branches | key = \"" << prefix
+  std::cout << GREEN("[Merge]")
+            << " ops: " << ops
+            << " key: \"" << GREEN(prefix)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\" ......" << std::endl;
+            << "\"" << std::endl;
   // generate key
   auto keys = kSuffix
             ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
@@ -191,8 +196,8 @@ void Benchmark::ExecPut(UType type, const StrVec& keys,
     threads.emplace_back(&Benchmark::ThreadPut, this, dbs_[i], type,
         split_keys[i], split_branch, split_vals[i], validate);
   for (auto& t : threads) t.join();
-  std::cout << (validate ? "Validate " : "Put ") << type << " Time: "
-            << timer.Elapse() << " ms" << std::endl;
+  std::cout << YELLOW((validate ? "[Validate] " : "[Put] ")) << type << " Time: "
+            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
 }
 
 void Benchmark::ExecGet(UType type, const StrVec& keys,
@@ -206,8 +211,9 @@ void Benchmark::ExecGet(UType type, const StrVec& keys,
     threads.emplace_back(&Benchmark::ThreadGet, this, dbs_[i], type,
         split_keys[i], split_branch, scan);
   for (auto& t : threads) t.join();
-  std::cout << "Get " << type << (scan ? "" : " Meta") << " Time: "
-            << timer.Elapse() << " ms" << std::endl;
+  std::cout << YELLOW("[Get") << YELLOW((scan ? "] " : " Meta] "))
+            << type << " Time: "
+            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
 }
 
 void Benchmark::ExecBranch(const StrVec& keys, const std::string& ref_branch,
@@ -222,7 +228,8 @@ void Benchmark::ExecBranch(const StrVec& keys, const std::string& ref_branch,
     threads.emplace_back(&Benchmark::ThreadBranch, this, dbs_[i], split_keys[i],
         split_branch, split_branches[i]);
   for (auto& t : threads) t.join();
-  std::cout << "Branch Time: " << timer.Elapse() << " ms" << std::endl;
+  std::cout << YELLOW("[Branch]") << " Time: "
+            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
 }
 
 void Benchmark::ExecMerge(const StrVec& keys, const std::string& ref_branch,
@@ -237,7 +244,8 @@ void Benchmark::ExecMerge(const StrVec& keys, const std::string& ref_branch,
     threads.emplace_back(&Benchmark::ThreadMerge, this, dbs_[i], split_keys[i],
         split_branch, split_branches[i]);
   for (auto& t : threads) t.join();
-  std::cout << "Merge Time: " << timer.Elapse() << " ms" << std::endl;
+  std::cout << YELLOW("[Merge]") << " Time: "
+            << YELLOW(timer.Elapse()) << YELLOW(" ms") << std::endl;
 }
 
 void Benchmark::ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,
@@ -359,383 +367,4 @@ void Benchmark::ThreadMerge(ObjectDB* db, const SliceVec& keys,
   }
 }
 
-// template <typename T>
-// inline static std::vector<std::vector<T>> vec_split(const std::vector<T>& vec,
-//                                                     size_t n) {
-//   size_t s_subvec = vec.size() / n;
-//   std::vector<std::vector<T>> ret;
-//   for (size_t i = 0; i < n - 1; ++i) {
-//     ret.emplace_back(vec.begin() + i * s_subvec,
-//                      vec.begin() + (i + 1) * s_subvec);
-//   }
-//   ret.emplace_back(vec.begin() + (n - 1) * s_subvec, vec.end());
-//   return ret;
-// }
-//
-// template <typename T>
-// inline static std::vector<T> vec_merge(const std::vector<std::vector<T>*>& vecs,
-//                                        size_t size) {
-//   std::vector<T> ret;
-//   ret.reserve(size);
-//   for (const auto& p : vecs) ret.insert(ret.end(), p->begin(), p->end());
-//   return ret;
-// }
-//
-// inline static std::vector<Hash> vec_merge(
-//     const std::vector<std::vector<Hash>*>& vecs) {
-//   std::vector<Hash> ret;
-//   for (const auto& p : vecs) {
-//     for (const auto& h : *p) {
-//       ret.push_back(h.Clone());
-//     }
-//   }
-//   return ret;
-// }
-//
-// template <typename T>
-// static std::vector<Hash>* PutThread(ObjectDB* db,
-//                                     const std::vector<std::string>& keys,
-//                                     const Slice& branch,
-//                                     const std::vector<std::string>& values,
-//                                     Profiler* profiler, size_t tid) {
-//   std::vector<Hash>* versions = new std::vector<Hash>();
-//   for (size_t i = 0; i < keys.size(); ++i) {
-//     versions->push_back(
-//         db->Put(Slice(keys[i]), T(Slice(values[i])), branch).value);
-//     profiler->IncCounter(tid);
-//   }
-//   return versions;
-// }
-//
-// static void GetStringThread(ObjectDB* db, const std::vector<std::string>& keys,
-//                             const std::vector<Hash>& versions,
-//                             Profiler* profiler, size_t tid) {
-//   for (size_t i = 0; i < keys.size(); ++i) {
-//     auto s = db->Get(Slice(keys[i]), versions[i]).value.String();
-//     profiler->IncCounter(tid);
-//     // std::cout << tid << " : " << i << std::endl;
-//   }
-// }
-//
-// static void ValidateStringThread(ObjectDB* db,
-//                                  const std::vector<std::string>& keys,
-//                                  const std::vector<Hash>& versions,
-//                                  const std::vector<std::string>& values) {
-//   CHECK_EQ(keys.size(), versions.size());
-//   CHECK_EQ(keys.size(), values.size());
-//   for (size_t i = 0; i < keys.size(); ++i) {
-//     auto s = db->Get(Slice(keys[i]), versions[i]).value.String();
-//     CHECK(Slice(values[i]) == s.slice());
-//   }
-// }
-//
-// static void GetBlobMetaThread(ObjectDB* db,
-//                               const std::vector<std::string>& keys,
-//                               const std::vector<Hash>& versions,
-//                               Profiler* profiler, size_t tid) {
-//   for (size_t i = 0; i < keys.size(); ++i) {
-//     auto s = db->Get(Slice(keys[i]), versions[i]).value.Blob();
-//     profiler->IncCounter(tid);
-//   }
-// }
-//
-// static void GetBlobThread(ObjectDB* db, const std::vector<std::string>& keys,
-//                           const std::vector<Hash>& versions, Profiler* profiler,
-//                           size_t tid) {
-//   for (size_t i = 0; i < keys.size(); ++i) {
-//     auto b = db->Get(Slice(keys[i]), versions[i]).value.Blob();
-//     for (auto it = b.ScanChunk(); !it.end(); it.next()) it.value();
-//     profiler->IncCounter(tid);
-//   }
-// }
-//
-// static void ValidateBlobThread(ObjectDB* db,
-//                                const std::vector<std::string>& keys,
-//                                const std::vector<Hash>& versions,
-//                                const std::vector<std::string>& values) {
-//   CHECK_EQ(keys.size(), versions.size());
-//   CHECK_EQ(keys.size(), values.size());
-//   for (size_t i = 0; i < keys.size(); ++i) {
-//     auto b = db->Get(Slice(keys[i]), versions[i]).value.Blob();
-//     byte_t* buf = new byte_t[b.size()];
-//     b.Read(0, b.size(), buf);
-//     CHECK(Slice(values[i]) == Slice(buf, b.size()));
-//     delete[] buf;
-//   }
-// }
-//
-// void Benchmark::RunAll() {
-//   // Validation
-//   StringValidation(kNumValidations, kStringLength);
-//   BlobValidation(kNumValidations, kBlobSize);
-//   // String
-//   FixedString(kNumStrings, kStringLength);
-//   RandomString(kNumStrings, kStringLength);
-//   // Blob
-//   FixedBlob(kNumBlobs, kBlobSize);
-//   RandomBlob(kNumBlobs, kBlobSize);
-// }
-//
-// // String Benchmarks
-//
-// std::vector<Hash> Benchmark::PutString(const std::vector<std::string>& keys,
-//                                        const Slice& branch,
-//                                        const std::vector<std::string>& values) {
-//   Timer timer;
-//   std::vector<std::vector<Hash>*> vers;
-//   for (size_t i = 0; i < n_threads_; ++i)
-//     vers.push_back(new std::vector<Hash>());
-//   auto splited_keys = vec_split(keys, n_threads_);
-//   auto splited_vals = vec_split(values, n_threads_);
-//   std::vector<std::future<std::vector<Hash>*>> ops;
-//   Profiler p(n_threads_);
-//   std::thread profiler_th(&Profiler::SamplerThread, &p);
-//   timer.Reset();
-//   for (size_t i = 0; i < n_threads_; ++i) {
-//     ops.emplace_back(std::async(std::launch::async, PutThread<VString>, dbs_[i],
-//                                 splited_keys[i], branch, splited_vals[i], &p,
-//                                 i));
-//   }
-//   CHECK_EQ(n_threads_, ops.size());
-//
-//   for (auto& t : ops) {
-//     CHECK(t.valid());
-//     vers.push_back(t.get());
-//   }
-//
-//   auto elapsed_time = timer.Elapse();
-//   p.Terminate();
-//   profiler_th.join();
-//   double avg_tp = keys.size() * 1000.0 / elapsed_time;
-//   auto pk_tp = p.PeakThroughput();
-//   if (avg_tp > pk_tp) pk_tp = avg_tp;
-//   std::cout << "Put String Time: " << elapsed_time << " ms" << std::endl
-//             << "\tPeak Throughput: " << static_cast<unsigned>(pk_tp) << " ops/s"
-//             << std::endl;
-//
-//   auto ret = vec_merge(vers);
-//   for (auto& p : vers) {
-//     delete p;
-//   }
-//   return ret;
-// }
-//
-// void Benchmark::GetString(const std::vector<std::string>& keys,
-//                           const std::vector<Hash>& versions) {
-//   Timer timer;
-//   auto splited_keys = vec_split(keys, n_threads_);
-//   auto splited_vers = vec_split(versions, n_threads_);
-//
-//   Profiler p(n_threads_);
-//   std::thread profiler_th(&Profiler::SamplerThread, &p);
-//   timer.Reset();
-//   std::vector<std::thread> ths;
-//   for (size_t i = 0; i < n_threads_; ++i)
-//     ths.emplace_back(GetStringThread, dbs_[i], splited_keys[i], splited_vers[i],
-//                      &p, i);
-//   for (auto& th : ths) th.join();
-//
-//   auto elapsed_time = timer.Elapse();
-//   p.Terminate();
-//   profiler_th.join();
-//   double avg_tp = keys.size() * 1000.0 / elapsed_time;
-//   auto pk_tp = p.PeakThroughput();
-//   if (avg_tp > pk_tp) pk_tp = avg_tp;
-//   std::cout << "Get String Time: " << elapsed_time << " ms" << std::endl
-//             << "\tPeak Throughput: " << static_cast<unsigned>(pk_tp) << " ops/s"
-//             << std::endl;
-// }
-//
-// void Benchmark::ValidateString(const std::vector<std::string>& keys,
-//                                const std::vector<Hash>& versions,
-//                                const std::vector<std::string>& values) {
-//   Timer timer;
-//   auto splited_keys = vec_split(keys, n_threads_);
-//   auto splited_vers = vec_split(versions, n_threads_);
-//   auto splited_vals = vec_split(values, n_threads_);
-//   timer.Reset();
-//
-//   std::vector<std::thread> ths;
-//   for (size_t i = 0; i < n_threads_; ++i)
-//     ths.emplace_back(ValidateStringThread, dbs_[i], splited_keys[i],
-//                      splited_vers[i], splited_vals[i]);
-//   for (auto& th : ths) th.join();
-//   std::cout << "Validate String Time: " << timer.Elapse() << " ms" << std::endl;
-// }
-//
-// void Benchmark::StringValidation(int n, int len) {
-//   std::cout << "Validating " << n << " Strings with Fixed Length (" << len
-//             << ")......" << std::endl;
-//   std::vector<std::string> keys = rg_.SequentialNumString("String", n);
-//   Slice branch("Validation");
-//   std::vector<std::string> values = rg_.NRandomString(n, len);
-//   auto versions = PutString(keys, branch, values);
-//   ValidateString(keys, versions, values);
-// }
-//
-// void Benchmark::FixedString(int n, int len) {
-//   std::cout << "Benchmarking " << n << " Strings with Fixed Length (" << len
-//             << ")......" << std::endl;
-//   std::vector<std::string> keys = rg_.SequentialNumString("String", n);
-//   Slice branch("Fixed");
-//   std::vector<std::string> values = rg_.NFixedString(n, len);
-//   auto versions = PutString(keys, branch, values);
-//   GetString(keys, versions);
-// }
-//
-// void Benchmark::RandomString(int n, int len) {
-//   std::cout << "Benchmarking " << n
-//             << " Strings with Random Length (max=" << len << ")......"
-//             << std::endl;
-//   std::vector<std::string> keys = rg_.SequentialNumString("String", n);
-//   Slice branch("Random");
-//   std::vector<std::string> values = rg_.NRandomString(n, len);
-//   auto versions = PutString(keys, branch, values);
-//   GetString(keys, versions);
-// }
-//
-// // Blob Benchmarks
-//
-// std::vector<Hash> Benchmark::PutBlob(const std::vector<std::string>& keys,
-//                                      const Slice& branch,
-//                                      const std::vector<std::string>& values) {
-//   Timer timer;
-//   std::vector<std::vector<Hash>*> vers;
-//   for (size_t i = 0; i < n_threads_; ++i)
-//     vers.push_back(new std::vector<Hash>());
-//   auto splited_keys = vec_split(keys, n_threads_);
-//   auto splited_vals = vec_split(values, n_threads_);
-//   std::vector<std::future<std::vector<Hash>*>> ops;
-//   Profiler p(n_threads_);
-//   std::thread profiler_th(&Profiler::SamplerThread, &p);
-//   timer.Reset();
-//   for (size_t i = 0; i < n_threads_; ++i) {
-//     ops.emplace_back(std::async(std::launch::async, PutThread<VBlob>, dbs_[i],
-//                                 splited_keys[i], branch, splited_vals[i], &p,
-//                                 i));
-//   }
-//   CHECK_EQ(n_threads_, ops.size());
-//
-//   for (auto& t : ops) {
-//     CHECK(t.valid());
-//     vers.push_back(t.get());
-//   }
-//
-//   auto elapsed_time = timer.Elapse();
-//   p.Terminate();
-//   profiler_th.join();
-//   double avg_tp = keys.size() * 1000.0 / elapsed_time;
-//   auto pk_tp = p.PeakThroughput();
-//   if (avg_tp > pk_tp) pk_tp = avg_tp;
-//   std::cout << "Put Blob Time: " << elapsed_time << " ms" << std::endl
-//             << "\tPeak Throughput: " << static_cast<unsigned>(pk_tp) << " ops/s"
-//             << std::endl;
-//
-//   auto ret = vec_merge(vers);
-//   for (auto& p : vers) {
-//     delete p;
-//   }
-//   return ret;
-// }
-//
-// void Benchmark::GetBlobMeta(const std::vector<std::string>& keys,
-//                             const std::vector<Hash>& versions) {
-//   Timer timer;
-//   auto splited_keys = vec_split(keys, n_threads_);
-//   auto splited_vers = vec_split(versions, n_threads_);
-//   Profiler p(n_threads_);
-//   std::thread profiler_th(&Profiler::SamplerThread, &p);
-//   timer.Reset();
-//
-//   std::vector<std::thread> ths;
-//   for (size_t i = 0; i < n_threads_; ++i)
-//     ths.emplace_back(GetBlobMetaThread, dbs_[i], splited_keys[i],
-//                      splited_vers[i], &p, i);
-//   for (auto& th : ths) th.join();
-//
-//   auto elapsed_time = timer.Elapse();
-//   p.Terminate();
-//   profiler_th.join();
-//   double avg_tp = keys.size() * 1000.0 / elapsed_time;
-//   auto pk_tp = p.PeakThroughput();
-//   if (avg_tp > pk_tp) pk_tp = avg_tp;
-//   std::cout << "Get Blob Meta Time: " << elapsed_time << " ms" << std::endl
-//             << "\tPeak Throughput: " << static_cast<unsigned>(pk_tp) << " ops/s"
-//             << std::endl;
-// }
-//
-// void Benchmark::GetBlob(const std::vector<std::string>& keys,
-//                         const std::vector<Hash>& versions) {
-//   Timer timer;
-//   auto splited_keys = vec_split(keys, n_threads_);
-//   auto splited_vers = vec_split(versions, n_threads_);
-//   Profiler p(n_threads_);
-//   std::thread profiler_th(&Profiler::SamplerThread, &p);
-//   timer.Reset();
-//
-//   std::vector<std::thread> ths;
-//   for (size_t i = 0; i < n_threads_; ++i)
-//     ths.emplace_back(GetBlobThread, dbs_[i], splited_keys[i], splited_vers[i],
-//                      &p, i);
-//   for (auto& th : ths) th.join();
-//
-//   auto elapsed_time = timer.Elapse();
-//   p.Terminate();
-//   profiler_th.join();
-//   double avg_tp = keys.size() * 1000.0 / elapsed_time;
-//   auto pk_tp = p.PeakThroughput();
-//   if (avg_tp > pk_tp) pk_tp = avg_tp;
-//   std::cout << "Get Blob Time: " << elapsed_time << " ms" << std::endl
-//             << "\tPeak Throughput: " << static_cast<unsigned>(pk_tp) << " ops/s"
-//             << std::endl;
-// }
-//
-// void Benchmark::ValidateBlob(const std::vector<std::string>& keys,
-//                              const std::vector<Hash>& versions,
-//                              const std::vector<std::string>& values) {
-//   Timer timer;
-//   auto splited_keys = vec_split(keys, n_threads_);
-//   auto splited_vers = vec_split(versions, n_threads_);
-//   auto splited_vals = vec_split(values, n_threads_);
-//   timer.Reset();
-//
-//   std::vector<std::thread> ths;
-//   for (size_t i = 0; i < n_threads_; ++i)
-//     ths.emplace_back(ValidateBlobThread, dbs_[i], splited_keys[i],
-//                      splited_vers[i], splited_vals[i]);
-//   for (auto& th : ths) th.join();
-//   std::cout << "Validate Blob Time: " << timer.Elapse() << " ms\n";
-// }
-//
-// void Benchmark::BlobValidation(int n, int size) {
-//   std::cout << "Validating " << n << " Blobs with Fixed Size (" << size
-//             << ")......" << std::endl;
-//   std::vector<std::string> keys = rg_.SequentialNumString("Blob", n);
-//   Slice branch("Validation");
-//   std::vector<std::string> values = rg_.NRandomString(n, size);
-//   auto versions = PutBlob(keys, branch, values);
-//   ValidateBlob(keys, versions, values);
-// }
-//
-// void Benchmark::FixedBlob(int n, int size) {
-//   std::cout << "Benchmarking " << n << " Blobs with Fixed Size (" << size
-//             << ")......" << std::endl;
-//   std::vector<std::string> keys = rg_.SequentialNumString("Blob", n);
-//   Slice branch("Fixed");
-//   std::vector<std::string> values = rg_.NFixedString(n, size);
-//   auto versions = PutBlob(keys, branch, values);
-//   GetBlobMeta(keys, versions);
-//   GetBlob(keys, versions);
-// }
-//
-// void Benchmark::RandomBlob(int n, int size) {
-//   std::cout << "Benchmarking " << n << " Blobs with Random Size (max=" << size
-//             << ")......" << std::endl;
-//   std::vector<std::string> keys = rg_.SequentialNumString("Blob", n);
-//   Slice branch("Random");
-//   std::vector<std::string> values = rg_.NRandomString(n, size);
-//   auto versions = PutBlob(keys, branch, values);
-//   GetBlobMeta(keys, versions);
-//   GetBlob(keys, versions);
-// }
 }  // namespace ustore

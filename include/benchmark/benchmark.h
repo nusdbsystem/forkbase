@@ -35,7 +35,7 @@ class Benchmark {
 
   void RunAll();
   void Put(UType type, bool validate);
-  void Get(UType type, bool scan);
+  void Get(UType type);
   void Branch();
   void Merge();
 

@@ -17,11 +17,35 @@ class BenchmarkConfig {
  public:
   static bool is_help;
   static int num_clients;
-  static int num_validations;
-  static int num_strings;
-  static int num_blobs;
-  static int string_len;
-  static int blob_size;
+  // common
+  static int validate_ops;
+  static std::string default_branch;
+  static bool suffix;
+  static int suffix_range;
+  // string
+  static int string_ops;
+  static int string_length;
+  static std::string string_prefix;
+  // blob
+  static int blob_ops;
+  static int blob_length;
+  static std::string blob_prefix;
+  // list
+  static int list_ops;
+  static int list_length;
+  static int list_elements;
+  static std::string list_prefix;
+  // map
+  static int map_ops;
+  static int map_length;
+  static int map_elements;
+  static std::string map_prefix;
+  // branch
+  static int branch_ops;
+  static std::string branch_prefix;
+  // merge
+  static int merge_ops;
+  static std::string merge_prefix;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 
