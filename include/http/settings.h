@@ -18,7 +18,7 @@ namespace ustore {
 #define USE_CACHE
 constexpr int kDefaultCacheSize = 100;  // default cache size
 
-constexpr int kMaxHeaderSize = 512;  // max http header size
+constexpr int kMaxHeaderSize = 10240;  // max http header size
 
 /*
  * max file size
@@ -26,7 +26,7 @@ constexpr int kMaxHeaderSize = 512;  // max http header size
  * it is ok since we have a dynamic strategy to decide the file size
  * and allocate the response buffer
  */
-constexpr int kMaxFileSize = 10240;
+constexpr int kMaxFileSize = 102400;
 constexpr int kMaxResponseSize = kMaxHeaderSize + kMaxFileSize;
 
 /*

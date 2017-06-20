@@ -244,11 +244,12 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
   memcpy(header+pos, kContentLen.c_str(), kContentLen.length());
   pos += kContentLen.length();
   // end of header
-  pos += sprintf(header+pos, "%ld\r\n\r\n", response.length());
+  pos += sprintf(header+pos, "%ld\r\n\r\n",
+                 response.length() > kMaxFileSize ? kMaxFileSize : response.length());
 
   int res_len;
-  if (response.length() > kMaxResponseSize - pos) {
-    res_len = kMaxResponseSize - pos;
+  if (response.length() > kMaxFileSize) {
+    res_len = kMaxFileSize;
     LOG(WARNING) << "response length is too long: " << response.length()
                  << ", cut it to " << res_len;
   } else {
