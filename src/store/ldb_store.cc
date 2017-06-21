@@ -74,6 +74,17 @@ bool LDBStore::Put(const Hash& key, const Chunk& chunk) {
   return false;
 }
 
+bool LDBStore::Exists(const Hash& key) {
+  std::string val;
+  auto s = db_->Get(
+      rd_opt_,
+      leveldb::Slice(reinterpret_cast<char*>(const_cast<byte_t*>(key.value())),
+                     Hash::kByteLength),
+      &val);
+  if (s.ok()) return true;
+  return false;
+}
+
 const StoreInfo& LDBStore::GetInfo() const {
   static StoreInfo info;
   return info;
