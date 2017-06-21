@@ -10,6 +10,7 @@
 #include "cluster/remote_client_service.h"
 #include "spec/relational.h"
 #include "utils/logging.h"
+#include "utils/service_context.h"
 #include "utils/sync_task_line.h"
 
 namespace ustore {
@@ -133,38 +134,25 @@ void ColumnStore::ShardCSV(
   batch_queue.Put(f_get_empty_batch());
 }
 
-const int kInitForMs = 50;
-
 class FlushTaskLine
   : public SyncTaskLine<std::vector<std::string>, ErrorCode> {
  public:
-  FlushTaskLine() : SyncTaskLine<DataType, ErrorCodeType>() {
-    ustore_svc_ = new RemoteClientService("");
-    ustore_svc_->Init();
-    ustore_svc_thread_ = std::thread(&RemoteClientService::Start, ustore_svc_);
-    std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
-    db_ = new ClientDb(ustore_svc_->CreateClientDb());
-    odb_ = new ObjectDB(db_);
-  }
+  FlushTaskLine()
+    : SyncTaskLine<DataType, ErrorCodeType>(),
+      db_(GetClientDb()), odb_(&db_) {}
 
-  ~FlushTaskLine() {
-    ustore_svc_->Stop();
-    ustore_svc_thread_.join();
-    delete odb_;
-    delete db_;
-    delete ustore_svc_;
-  }
+  ~FlushTaskLine() = default;
 
   ErrorCode Consume(const std::vector<std::string>& sector) override {
     // retrieve the previous column from storage
-    auto col_get_rst = odb_->Get(col_key_, branch_);
+    auto col_get_rst = odb_.Get(col_key_, branch_);
     USTORE_GUARD(col_get_rst.stat);
     auto col = col_get_rst.value.List();
     // concatenate the current column to storage
     std::vector<Slice> col_slices;
     for (const auto& str : sector) col_slices.emplace_back(str);
     col.Append(col_slices);
-    return odb_->Put(col_key_, col, branch_).stat;
+    return odb_.Put(col_key_, col, branch_).stat;
   }
 
   bool Terminate(const std::vector<std::string>& sector) override {
@@ -184,10 +172,13 @@ class FlushTaskLine
   using DataType = std::vector<std::string>;
   using ErrorCodeType = ErrorCode;
 
-  RemoteClientService* ustore_svc_;
-  std::thread ustore_svc_thread_;
-  ClientDb* db_;
-  ObjectDB* odb_;
+  static ClientDb GetClientDb() {
+    static ServiceContext svc_ctx;
+    return svc_ctx.GetClientDb();
+  }
+
+  ClientDb db_;
+  ObjectDB odb_;
 
   std::string col_key_str_;
   Slice col_key_;
@@ -219,9 +210,7 @@ void ColumnStore::FlushCSV(
     }
     // barrier: wait for all talks lines to complete
     for (size_t i = 0; i < n_cols; ++i) {
-      auto& tl = task_lines[i];
-      tl.Sync();
-      auto ec = tl.Stat();
+      auto ec = task_lines[i].Sync();
       if (ec != ErrorCode::kOK) return -static_cast<int>(ec);
     }
     return load_size;
@@ -264,9 +253,8 @@ ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
   std::ofstream ofs(file_path);
   USTORE_GUARD(ofs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
   Table tab;
-  auto ec = GetTable(table_name, branch_name, &tab);
-  ERROR_CODE_FWD(ec, kUCellNotfound, kTableNotExists);
-  USTORE_GUARD(ec);
+  USTORE_GUARD(
+    GetTable(table_name, branch_name, &tab));
   USTORE_GUARD(tab.numElements() == 0 ?
                ErrorCode::kEmptyTable : ErrorCode::kOK);
   // retrieve the column-based table
@@ -301,10 +289,13 @@ ErrorCode ColumnStore::GetTable(const std::string& table_name,
                                 const std::string& branch_name,
                                 Table* table) {
   auto tab_rst = odb_.Get(Slice(table_name), Slice(branch_name));
-  ERROR_CODE_FWD(tab_rst.stat, kUCellNotfound, kTableNotExists);
-  USTORE_GUARD(tab_rst.stat);
-  *table = tab_rst.value.Map();
-  return ErrorCode::kOK;
+  auto& ec = tab_rst.stat;
+  if (ec == ErrorCode::kOK) {
+    *table = tab_rst.value.Map();
+  } else {
+    ERROR_CODE_FWD(ec, kKeyNotExists, kTableNotExists);
+  }
+  return ec;
 }
 
 ErrorCode ColumnStore::BranchTable(const std::string& table_name,

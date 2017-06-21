@@ -15,13 +15,11 @@ class SyncTaskLine {
   virtual T2 Consume(const T1& data) = 0;
   virtual bool Terminate(const T1& data) = 0;
 
-  explicit SyncTaskLine(size_t queue_size)
-    : queue_(new BlockingQueue<T1>(queue_size)),
+  SyncTaskLine()
+    : queue_(new BlockingQueue<T1>(1)),
       mtx_(new std::mutex()),
       cv_(new std::condition_variable()),
       processed_(false) {}
-
-  SyncTaskLine() : SyncTaskLine(2) {}
 
   ~SyncTaskLine() {
     delete queue_;
@@ -29,26 +27,34 @@ class SyncTaskLine {
     delete cv_;
   }
 
-  void Run();
-
-  void Produce(const T1& data);
-  void Produce(const T1&& data);
-
   inline std::thread Launch() {
     return std::thread([this] { Run(); });
   }
 
-  inline void Sync() {
-    std::unique_lock<std::mutex> lock(*mtx_);
-    cv_->wait(lock, [this] { return processed_; });
+  void Produce(const T1& data) {
+    UnsetProcessed();
+    queue_->Put(data);
   }
 
-  inline T2 Stat() {
-    std::lock_guard<std::mutex> lock(*mtx_);
+  void Produce(const T1&& data) {
+    UnsetProcessed();
+    queue_->Put(std::move(data));
+  }
+
+  T2 Sync() {
+    std::unique_lock<std::mutex> lock(*mtx_);
+    cv_->wait(lock, [this] { return processed_; });
     return stat_;
   }
 
  private:
+  inline void UnsetProcessed() {
+    std::lock_guard<std::mutex> lock(*mtx_);
+    processed_ = false;
+  }
+
+  void Run();
+
   ustore::BlockingQueue<T1>* queue_;
   std::mutex* mtx_;
   std::condition_variable* cv_;
@@ -68,24 +74,6 @@ void SyncTaskLine<T1, T2>::Run() {
     }
     cv_->notify_one();
   } while (!Terminate(data));
-}
-
-template<class T1, class T2>
-void SyncTaskLine<T1, T2>::Produce(const T1& data) {
-  {
-    std::lock_guard<std::mutex> lock(*mtx_);
-    processed_ = false;
-  }
-  queue_->Put(data);
-}
-
-template<class T1, class T2>
-void SyncTaskLine<T1, T2>::Produce(const T1&& data) {
-  {
-    std::lock_guard<std::mutex> lock(*mtx_);
-    processed_ = false;
-  }
-  queue_->Put(std::move(data));
 }
 
 }  // namespace ustore
