@@ -3,10 +3,9 @@
 #ifndef USTORE_UTILS_SERVICE_CONTEXT_H_
 #define USTORE_UTILS_SERVICE_CONTEXT_H_
 
-#include <chrono>
-#include <memory>
 #include <thread>
 #include "cluster/remote_client_service.h"
+#include "utils/noncopyable.h"
 
 namespace ustore {
 

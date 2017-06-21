@@ -1,17 +1,14 @@
 // Copyright (c) 2017 The UStore Authors.
 
-#include <boost/algorithm/string.hpp>
-#include <ctime>
 #include <fstream>
 #include <future>
 #include <iomanip>
 #include <limits>
-#include <sstream>
 #include "cluster/remote_client_service.h"
-#include "spec/relational.h"
 #include "utils/logging.h"
 #include "utils/service_context.h"
 #include "utils/sync_task_line.h"
+#include "spec/relational.h"
 
 namespace ustore {
 
@@ -217,13 +214,10 @@ void ColumnStore::FlushCSV(
   };
   // flush data batches iteratively
   size_t cnt_loaded = 0;
-  clock_t start, end;
   while (true) {
     auto cols = batch_queue.Take();
     // flush data batch into storage
-    if (print_progress) start = std::clock();
     const int num_loaded = f_current_flush(cols);
-    if (print_progress) end = std::clock();
     if (num_loaded == 0) break;
     if (num_loaded < 0) {
       stat = static_cast<ErrorCode>(-num_loaded);
@@ -234,11 +228,9 @@ void ColumnStore::FlushCSV(
     // print progress
     if (print_progress && num_loaded > 0) {
       cnt_loaded += num_loaded;
-      int n_rows_per_sec = (double)num_loaded * CLOCKS_PER_SEC / (end - start);
       std::cout << GREEN("[FLUSHED] ")
                 << "Number of rows loaded into storage: " << cnt_loaded
-                << BLUE("  [" << std::right << std::setw(7)
-                        << n_rows_per_sec << " rows/s]") << std::endl;
+                << std::endl;
     }
   }
   // barrier: wait for the sector-flushing threads to complete
