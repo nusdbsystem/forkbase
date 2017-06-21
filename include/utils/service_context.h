@@ -3,8 +3,8 @@
 #ifndef USTORE_UTILS_SERVICE_CONTEXT_H_
 #define USTORE_UTILS_SERVICE_CONTEXT_H_
 
-#include <boost/optional.hpp>
 #include <chrono>
+#include <memory>
 #include <thread>
 #include "cluster/remote_client_service.h"
 
@@ -24,7 +24,7 @@ class ServiceContext : private Noncopyable {
  private:
   static const int kInitForMs;
   RemoteClientService svc_;
-  boost::optional<std::thread> svc_thread_opt_;
+  std::unique_ptr<std::thread> svc_thread_;
 };
 
 }  // namespace ustore
