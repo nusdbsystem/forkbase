@@ -4,6 +4,7 @@
 #define USTORE_CLUSTER_WORKER_SERVICE_H_
 
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 #include "net/net.h"
@@ -79,6 +80,7 @@ class WorkerService {
     std::unique_ptr<Worker> worker_;  // where the logic happens
     std::unique_ptr<Net> net_;
     std::unique_ptr<CallBack> cb_ = nullptr;
+    std::mutex lock_;
     bool persist_;
 };
 }  // namespace ustore

@@ -106,7 +106,7 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[],
   po::options_description desc(BLUE_STR("Options"), 120);
   desc.add_options()
   ("help,?", "print usage message")
-  ("num-client,c", po::value<int>()->default_value(2),
+  ("num-client,c", po::value<int>()->default_value(8),
    "number of clients")
   // common
   ("validate-ops", po::value<int>()->default_value(10),

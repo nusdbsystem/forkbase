@@ -14,7 +14,7 @@ using ustore::Config;
 const std::string kConfigArg = std::string("--config=")
                                + Env::kDefaultConfigFile;
 const std::string kDefaultWorkerFile = "conf/workers";
-const int kDefaultRecvThreads = 1;
+const int kDefaultRecvThreads = 2;
 
 TEST(ConfigTest, ConfigFile) {
   int argc = 2;

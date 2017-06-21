@@ -1,9 +1,9 @@
 data_dir: "ustore_data"
 data_file_pattern: "ustore"
-num_segments: 32
+num_segments: 64
 
 worker_file: "conf/workers"
 
-recv_threads: 1
+recv_threads: 2
 
 http_port: 60600
