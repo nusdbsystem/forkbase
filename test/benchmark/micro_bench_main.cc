@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     return -1;
   }
   // set num_segments large enough for all test cases
-  // Env::Instance()->m_config().set_num_segments(80);
+  Env::Instance()->m_config().set_num_segments(200);
   Env::Instance()->m_config().set_worker_file("conf/workers_micro_bench");
 
   BenchmarkWorker();

@@ -86,7 +86,7 @@ std::vector<std::string> RandomGenerator::PrefixRandString(
 }
 
 
-const unsigned Profiler::kSamplingInterval = 2;
+const unsigned Profiler::kSamplingInterval = 200;
 
 Profiler::Profiler(size_t n_th) : n_thread_(n_th) {
   counters_ = new std::atomic<unsigned>[n_th];

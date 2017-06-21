@@ -38,6 +38,28 @@ inline std::vector<std::vector<T>> vec_split(const std::vector<T>& vec,
   return ret;
 }
 
+void Benchmark::HeaderInfo(const std::string& cmd, UType type, size_t ops,
+    size_t length, size_t elements, const std::string& prefix) {
+  std::cout << BOLD_RED("[" << cmd << "]");
+  if (type != UType::kUnknown) std::cout << " type=" << BOLD_RED(type);
+  std::cout << " ops=" << ops;
+  if (length) std::cout << " bytes=("<< length << "*" << elements << ")";
+  std::cout << " key=\"" << BOLD_RED(prefix)
+            << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
+            << "\"" << std::endl;
+}
+
+void Benchmark::FooterInfo(const std::string& cmd, UType type,
+    size_t total_time, size_t pk_tp, size_t avg_tp) {
+  std::cout << BOLD_GREEN("[" << cmd);
+  if (type != UType::kUnknown) std::cout << BOLD_GREEN(" " << type);
+  std::cout << BOLD_GREEN("]")
+            << " Elapsed Time: " << BOLD_GREEN(total_time << " ms") << std::endl
+            << "\tPeak Throughput: " << BOLD_BLUE(pk_tp << " ops/s") << std::endl
+            << "\tAverage Throughput: " << BOLD_BLUE(avg_tp << " ops/s")
+            << std::endl;
+}
+
 void Benchmark::LoadParameters() {
   BenchParam param;
   // Common
@@ -46,34 +68,34 @@ void Benchmark::LoadParameters() {
   kSuffix = true;
   kSuffixRange = 100;
   // String
-  param.ops = 5000;
+  param.ops = 200000;
   param.length = 128;
   param.elements = 1;
   param.prefix = "String";
   params_.emplace(UType::kString, param);
   // Blob
-  param.ops = 100;
+  param.ops = 5000;
   param.length = 16 * 1024;
   param.elements = 1;
   param.prefix = "Blob";
   params_.emplace(UType::kBlob, param);
   // List
-  param.ops = 100;
+  param.ops = 5000;
   param.length = 64;
   param.elements = 256;
   param.prefix = "List";
   params_.emplace(UType::kList, param);
   // Map
-  param.ops = 100;
+  param.ops = 5000;
   param.length = 64;
   param.elements = 256;
   param.prefix = "Map";
   params_.emplace(UType::kMap, param);
   // Branch
-  kBranchOps = 1000;
+  kBranchOps = 1000000;
   kBranchPrefix = "Blob";
   // Merge
-  kMergeOps = 1000;
+  kMergeOps = 100000;
   kMergePrefix = "Blob";
 
   // Init subkeys for Map
@@ -111,11 +133,9 @@ void Benchmark::Put(UType type, bool validate) {
   auto elements = params_[type].elements;
   auto prefix = params_[type].prefix;
   if (validate) ops = kValidateOps;
-  std::cout << GREEN((validate ? "[Validate]" : "[Put]"))
-            << " type: " << GREEN(type) << " ops: " << ops << " bytes: ("
-            << length << "*" << elements << ") key: \"" << GREEN(prefix)
-            << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\"" << std::endl;
+  if (validate && !ops) return;
+  HeaderInfo(validate ? "Validate" : "Put", type, ops, length, elements,
+             prefix);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
                       : std::vector<std::string>(ops, prefix);
@@ -130,10 +150,7 @@ void Benchmark::Put(UType type, bool validate) {
 void Benchmark::Get(UType type) {
   auto ops = params_[type].ops;
   auto prefix = params_[type].prefix;
-  std::cout << GREEN("[Get]") << " type: " << GREEN(type) << " ops: " << ops
-            << " key: \"" << GREEN(prefix)
-            << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\"" << std::endl;
+  HeaderInfo("Get", type, ops, 0, 0, prefix);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
                       : std::vector<std::string>(ops, prefix);
@@ -145,10 +162,7 @@ void Benchmark::Get(UType type) {
 void Benchmark::Branch() {
   auto ops = kBranchOps;
   auto prefix = kBranchPrefix;
-  std::cout << GREEN("[Branch]") << " ops: " << ops << " key: \""
-            << GREEN(prefix)
-            << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\"" << std::endl;
+  HeaderInfo("Branch", UType::kUnknown, ops, 0, 0, prefix);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
                       : std::vector<std::string>(ops, prefix);
@@ -161,10 +175,7 @@ void Benchmark::Branch() {
 void Benchmark::Merge() {
   auto ops = kMergeOps;
   auto prefix = kMergePrefix;
-  std::cout << GREEN("[Merge]") << " ops: " << ops << " key: \""
-            << GREEN(prefix)
-            << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
-            << "\"" << std::endl;
+  HeaderInfo("Merge", UType::kUnknown, ops, 0, 0, prefix);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
                       : std::vector<std::string>(ops, prefix);
@@ -195,12 +206,7 @@ void Benchmark::ExecPut(UType type, const StrVec& keys,
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
   auto pk_tp = profiler_.PeakThroughput();
-  std::cout << YELLOW((validate ? "[Validate] " : "[Put] ")) << type
-            << " Time: " << YELLOW(total_time) << YELLOW(" ms") << std::endl
-            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
-            << YELLOW(" ops/s") << std::endl
-            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
-            << YELLOW(" ops/s") << std::endl;
+  FooterInfo((validate ? "Validate" : "Put"), type, total_time, pk_tp, avg_tp);
 }
 
 void Benchmark::ExecGet(UType type, const StrVec& keys,
@@ -221,12 +227,7 @@ void Benchmark::ExecGet(UType type, const StrVec& keys,
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
   auto pk_tp = profiler_.PeakThroughput();
-  std::cout << YELLOW("[Get") << YELLOW((scan ? "] " : " Meta] ")) << type
-            << " Time: " << YELLOW(total_time) << YELLOW(" ms") << std::endl
-            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
-            << YELLOW(" ops/s") << std::endl
-            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
-            << YELLOW(" ops/s") << std::endl;
+  FooterInfo((scan ? "Get" : "Get Meta"), type, total_time, pk_tp, avg_tp);
 }
 
 void Benchmark::ExecBranch(const StrVec& keys, const std::string& ref_branch,
@@ -248,12 +249,7 @@ void Benchmark::ExecBranch(const StrVec& keys, const std::string& ref_branch,
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
   auto pk_tp = profiler_.PeakThroughput();
-  std::cout << YELLOW("[Branch]") << " Time: " << YELLOW(total_time)
-            << YELLOW(" ms") << std::endl
-            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
-            << YELLOW(" ops/s") << std::endl
-            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
-            << YELLOW(" ops/s") << std::endl;
+  FooterInfo("Branch", UType::kUnknown, total_time, pk_tp, avg_tp);
 }
 
 void Benchmark::ExecMerge(const StrVec& keys, const std::string& ref_branch,
@@ -275,12 +271,7 @@ void Benchmark::ExecMerge(const StrVec& keys, const std::string& ref_branch,
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
   auto pk_tp = profiler_.PeakThroughput();
-  std::cout << YELLOW("[Merge]") << " Time: " << YELLOW(total_time)
-            << YELLOW(" ms") << std::endl
-            << YELLOW("\tPeak Throughput: ") << static_cast<unsigned>(pk_tp)
-            << YELLOW(" ops/s") << std::endl
-            << YELLOW("\tAverage Throughput: ") << static_cast<unsigned>(avg_tp)
-            << YELLOW(" ops/s") << std::endl;
+  FooterInfo("Merge", UType::kUnknown, total_time, pk_tp, avg_tp);
 }
 
 void Benchmark::ThreadPut(ObjectDB* db, UType type, const SliceVec& keys,

@@ -2,6 +2,7 @@
 #ifndef USTORE_BENCHMARK_BENCHMARK_H_
 #define USTORE_BENCHMARK_BENCHMARK_H_
 
+#include <map>
 #include <string>
 #include <thread>
 #include <vector>
@@ -45,6 +46,10 @@ class Benchmark {
   using SliceVecVec = std::vector<std::vector<Slice>>;
 
   void LoadParameters();
+  void HeaderInfo(const std::string& cmd, UType type, size_t ops, size_t length,
+      size_t elements, const std::string& prefix);
+  void FooterInfo(const std::string& cmd, UType type, size_t total_time,
+      size_t pk_tp, size_t avg_tp);
   void ExecPut(UType type, const StrVec& keys, const std::string& branch,
                const StrVecVec& values, bool validate);
   void ExecGet(UType type, const StrVec& keys, const std::string& branch,
