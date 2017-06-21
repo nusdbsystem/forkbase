@@ -39,12 +39,12 @@ inline std::vector<std::vector<T>> vec_split(const std::vector<T>& vec,
 }
 
 void Benchmark::HeaderInfo(const std::string& cmd, UType type, size_t ops,
-    size_t length, size_t elements, const std::string& prefix) {
+    size_t length, size_t elements, const std::string& key) {
   std::cout << BOLD_RED("[" << cmd << "]");
   if (type != UType::kUnknown) std::cout << " type=" << BOLD_RED(type);
   std::cout << " ops=" << ops;
   if (length) std::cout << " bytes=("<< length << "*" << elements << ")";
-  std::cout << " key=\"" << BOLD_RED(prefix)
+  std::cout << " key=\"" << BOLD_RED(key)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
             << "\"" << std::endl;
 }
@@ -54,8 +54,10 @@ void Benchmark::FooterInfo(const std::string& cmd, UType type,
   std::cout << BOLD_GREEN("[" << cmd);
   if (type != UType::kUnknown) std::cout << BOLD_GREEN(" " << type);
   std::cout << BOLD_GREEN("]")
-            << " Elapsed Time: " << BOLD_GREEN(total_time << " ms") << std::endl
-            << "\tPeak Throughput: " << BOLD_BLUE(pk_tp << " ops/s") << std::endl
+            << " Elapsed Time: " << BOLD_GREEN(total_time << " ms")
+            << std::endl
+            << "\tPeak Throughput: " << BOLD_BLUE(pk_tp << " ops/s")
+            << std::endl
             << "\tAverage Throughput: " << BOLD_BLUE(avg_tp << " ops/s")
             << std::endl;
 }
@@ -63,40 +65,40 @@ void Benchmark::FooterInfo(const std::string& cmd, UType type,
 void Benchmark::LoadParameters() {
   BenchParam param;
   // Common
-  kValidateOps = 10;
-  kDefaultBranch = "master";
-  kSuffix = true;
-  kSuffixRange = 100;
+  kValidateOps = BenchmarkConfig::validate_ops;
+  kDefaultBranch = BenchmarkConfig::default_branch;
+  kSuffix = BenchmarkConfig::suffix;
+  kSuffixRange = BenchmarkConfig::suffix_range;
   // String
-  param.ops = 200000;
-  param.length = 128;
+  param.ops = BenchmarkConfig::string_ops;
+  param.length = BenchmarkConfig::string_length;
   param.elements = 1;
-  param.prefix = "String";
+  param.key = BenchmarkConfig::string_key;
   params_.emplace(UType::kString, param);
   // Blob
-  param.ops = 5000;
-  param.length = 16 * 1024;
+  param.ops = BenchmarkConfig::blob_ops;
+  param.length = BenchmarkConfig::blob_length;
   param.elements = 1;
-  param.prefix = "Blob";
+  param.key = BenchmarkConfig::blob_key;
   params_.emplace(UType::kBlob, param);
   // List
-  param.ops = 5000;
-  param.length = 64;
-  param.elements = 256;
-  param.prefix = "List";
+  param.ops = BenchmarkConfig::list_ops;
+  param.length = BenchmarkConfig::list_length;
+  param.elements = BenchmarkConfig::list_elements;
+  param.key = BenchmarkConfig::list_key;
   params_.emplace(UType::kList, param);
   // Map
-  param.ops = 5000;
-  param.length = 64;
-  param.elements = 256;
-  param.prefix = "Map";
+  param.ops = BenchmarkConfig::map_ops;
+  param.length = BenchmarkConfig::map_length;
+  param.elements = BenchmarkConfig::map_elements;
+  param.key = BenchmarkConfig::map_key;
   params_.emplace(UType::kMap, param);
   // Branch
-  kBranchOps = 1000000;
-  kBranchPrefix = "Blob";
+  kBranchOps = BenchmarkConfig::branch_ops;
+  kBranchKey = BenchmarkConfig::branch_key;
   // Merge
-  kMergeOps = 100000;
-  kMergePrefix = "Blob";
+  kMergeOps = BenchmarkConfig::merge_ops;
+  kMergeKey = BenchmarkConfig::merge_key;
 
   // Init subkeys for Map
   subkeys_ = rg_.PrefixSeqString("k", params_[UType::kMap].elements, 100000000);
@@ -131,14 +133,14 @@ void Benchmark::Put(UType type, bool validate) {
   auto ops = params_[type].ops;
   auto length = params_[type].length;
   auto elements = params_[type].elements;
-  auto prefix = params_[type].prefix;
+  auto key = params_[type].key;
   if (validate) ops = kValidateOps;
   if (validate && !ops) return;
   HeaderInfo(validate ? "Validate" : "Put", type, ops, length, elements,
-             prefix);
+             key);
   // generate key
-  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, key);
   auto branch = validate ? "validate" : kDefaultBranch;
   StrVecVec values(ops);
   // generate value
@@ -149,11 +151,11 @@ void Benchmark::Put(UType type, bool validate) {
 
 void Benchmark::Get(UType type) {
   auto ops = params_[type].ops;
-  auto prefix = params_[type].prefix;
-  HeaderInfo("Get", type, ops, 0, 0, prefix);
+  auto key = params_[type].key;
+  HeaderInfo("Get", type, ops, 0, 0, key);
   // generate key
-  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   ExecGet(type, keys, branch, false);
   ExecGet(type, keys, branch, true);
@@ -161,11 +163,11 @@ void Benchmark::Get(UType type) {
 
 void Benchmark::Branch() {
   auto ops = kBranchOps;
-  auto prefix = kBranchPrefix;
-  HeaderInfo("Branch", UType::kUnknown, ops, 0, 0, prefix);
+  auto key = kBranchKey;
+  HeaderInfo("Branch", UType::kUnknown, ops, 0, 0, key);
   // generate key
-  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);
@@ -174,11 +176,11 @@ void Benchmark::Branch() {
 
 void Benchmark::Merge() {
   auto ops = kMergeOps;
-  auto prefix = kMergePrefix;
-  HeaderInfo("Merge", UType::kUnknown, ops, 0, 0, prefix);
+  auto key = kMergeKey;
+  HeaderInfo("Merge", UType::kUnknown, ops, 0, 0, key);
   // generate key
-  auto keys = kSuffix ? rg_.PrefixSeqString(prefix, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, prefix);
+  auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
+                      : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);
@@ -206,7 +208,7 @@ void Benchmark::ExecPut(UType type, const StrVec& keys,
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
   auto pk_tp = profiler_.PeakThroughput();
-  FooterInfo((validate ? "Validate" : "Put"), type, total_time, pk_tp, avg_tp);
+  if (!validate) FooterInfo("Put", type, total_time, pk_tp, avg_tp);
 }
 
 void Benchmark::ExecGet(UType type, const StrVec& keys,

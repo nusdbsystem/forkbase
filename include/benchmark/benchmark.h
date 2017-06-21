@@ -17,18 +17,13 @@ struct BenchParam {
   size_t ops;
   size_t length;
   size_t elements;
-  std::string prefix;
+  std::string key;
 };
 
 class Benchmark {
  public:
   explicit Benchmark(const std::vector<ObjectDB*>& dbs)
       : dbs_(dbs), num_threads_(dbs.size()), profiler_(num_threads_) {
-    //    kNumValidations(BenchmarkConfig::num_validations),
-    //    kNumStrings(BenchmarkConfig::num_strings),
-    //    kNumBlobs(BenchmarkConfig::num_blobs),
-    //    kStringLength(BenchmarkConfig::string_len),
-    //    kBlobSize(BenchmarkConfig::blob_size) {
     LoadParameters();
   }
   ~Benchmark() = default;
@@ -47,7 +42,7 @@ class Benchmark {
 
   void LoadParameters();
   void HeaderInfo(const std::string& cmd, UType type, size_t ops, size_t length,
-      size_t elements, const std::string& prefix);
+      size_t elements, const std::string& key);
   void FooterInfo(const std::string& cmd, UType type, size_t total_time,
       size_t pk_tp, size_t avg_tp);
   void ExecPut(UType type, const StrVec& keys, const std::string& branch,
@@ -74,8 +69,8 @@ class Benchmark {
   bool kSuffix = true;
   size_t kSuffixRange = 100;
   std::string kDefaultBranch;
-  std::string kBranchPrefix;
-  std::string kMergePrefix;
+  std::string kBranchKey;
+  std::string kMergeKey;
 
   std::map<UType, BenchParam> params_;
   std::vector<ObjectDB*> dbs_;

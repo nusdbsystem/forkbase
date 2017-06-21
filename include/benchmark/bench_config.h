@@ -25,27 +25,27 @@ class BenchmarkConfig {
   // string
   static int string_ops;
   static int string_length;
-  static std::string string_prefix;
+  static std::string string_key;
   // blob
   static int blob_ops;
   static int blob_length;
-  static std::string blob_prefix;
+  static std::string blob_key;
   // list
   static int list_ops;
   static int list_length;
   static int list_elements;
-  static std::string list_prefix;
+  static std::string list_key;
   // map
   static int map_ops;
   static int map_length;
   static int map_elements;
-  static std::string map_prefix;
+  static std::string map_key;
   // branch
   static int branch_ops;
-  static std::string branch_prefix;
+  static std::string branch_key;
   // merge
   static int merge_ops;
-  static std::string merge_prefix;
+  static std::string merge_key;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 
