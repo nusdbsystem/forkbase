@@ -26,7 +26,7 @@ void BenchmarkWorker() {
   Benchmark bm(dbs);
   std::cout << "============================\n";
   std::cout << "Benchmarking worker (single-threaded) .......\n";
-  bm.RunAll();
+  bm.Run();
 }
 
 void BenchmarkClient() {
@@ -58,7 +58,7 @@ void BenchmarkClient() {
   std::cout << "============================\n";
   std::cout << "Benchmarking "
             << n_client << " clients to local worker .......\n";
-  bm.RunAll();
+  bm.Run();
 
   service.Stop();
   client_service_thread.join();

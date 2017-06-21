@@ -32,7 +32,7 @@ void BenchmarkClient() {
   std::cout << "============================\n";
   std::cout << "Benchmarking " << n_client
             << " clients connected to ustore service.......\n";
-  bm.RunAll();
+  bm.Run();
 
   service.Stop();
   client_service_thread.join();

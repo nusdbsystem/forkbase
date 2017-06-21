@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 #include "benchmark/bench_config.h"
 #include "benchmark/bench_utils.h"
@@ -12,6 +13,10 @@
 #include "spec/slice.h"
 
 namespace ustore {
+
+#define BENCHMARK_HANDLER(cmd, handler_func) do { \
+  cmd_exec_[cmd] = [this] { return handler_func; }; \
+} while (0)
 
 struct BenchParam {
   size_t ops;
@@ -22,17 +27,19 @@ struct BenchParam {
 
 class Benchmark {
  public:
-  explicit Benchmark(const std::vector<ObjectDB*>& dbs)
-      : dbs_(dbs), num_threads_(dbs.size()), profiler_(num_threads_) {
-    LoadParameters();
-  }
+  explicit Benchmark(const std::vector<ObjectDB*>& dbs);
   ~Benchmark() = default;
 
+  void Run();
+
+ protected:
   void RunAll();
-  void Put(UType type, bool validate);
+  void Put(UType type, bool validate = false);
   void Get(UType type);
   void Branch();
   void Merge();
+
+  std::unordered_map<std::string, std::function<void()>> cmd_exec_;
 
  private:
   using StrVec = std::vector<std::string>;
@@ -42,9 +49,9 @@ class Benchmark {
 
   void LoadParameters();
   void HeaderInfo(const std::string& cmd, UType type, size_t ops, size_t length,
-      size_t elements, const std::string& key);
+                  size_t elements, const std::string& key);
   void FooterInfo(const std::string& cmd, UType type, size_t total_time,
-      size_t pk_tp, size_t avg_tp);
+                  size_t pk_tp, size_t avg_tp);
   void ExecPut(UType type, const StrVec& keys, const std::string& branch,
                const StrVecVec& values, bool validate);
   void ExecGet(UType type, const StrVec& keys, const std::string& branch,

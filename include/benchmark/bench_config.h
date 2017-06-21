@@ -15,6 +15,8 @@ namespace po = boost::program_options;
 
 class BenchmarkConfig {
  public:
+  static std::string command;
+  static std::string type;
   static bool is_help;
   static int num_clients;
   // common

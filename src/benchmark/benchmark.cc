@@ -9,8 +9,30 @@
 #include "types/client/vblob.h"
 #include "types/client/vstring.h"
 #include "utils/logging.h"
+#include "utils/utils.h"
 
 namespace ustore {
+
+Benchmark::Benchmark(const std::vector<ObjectDB*>& dbs)
+  : dbs_(dbs), num_threads_(dbs.size()), profiler_(num_threads_) {
+  LoadParameters();
+  BENCHMARK_HANDLER("ALL", RunAll());
+  BENCHMARK_HANDLER("PUT", Put(Utils::ToUType(BenchmarkConfig::type)));
+  BENCHMARK_HANDLER("GET", Get(Utils::ToUType(BenchmarkConfig::type)));
+  BENCHMARK_HANDLER("BRANCH", Branch());
+  BENCHMARK_HANDLER("MERGE", Merge());
+}
+
+void Benchmark::Run() {
+  auto& cmd = BenchmarkConfig::command;
+  auto it_cmd_exec = cmd_exec_.find(cmd);
+  if (it_cmd_exec == cmd_exec_.end()) {
+    std::cerr << BOLD_RED("[ERROR] ")
+              << "Unknown command: " << cmd << std::endl;
+  } else {
+    it_cmd_exec->second();
+  }
+}
 
 inline std::vector<Slice> ToSlice(std::vector<std::string> vec) {
   std::vector<Slice> res(vec.size());
@@ -19,7 +41,7 @@ inline std::vector<Slice> ToSlice(std::vector<std::string> vec) {
 }
 
 inline std::vector<std::vector<Slice>> ToSlice(
-    std::vector<std::vector<std::string>> vec) {
+std::vector<std::vector<std::string>> vec) {
   std::vector<std::vector<Slice>> res(vec.size());
   for (size_t i = 0; i < vec.size(); ++i) res[i] = ToSlice(vec[i]);
   return res;
@@ -27,7 +49,7 @@ inline std::vector<std::vector<Slice>> ToSlice(
 
 template <typename T>
 inline std::vector<std::vector<T>> vec_split(const std::vector<T>& vec,
-                                             size_t n) {
+size_t n) {
   size_t s_subvec = vec.size() / n;
   std::vector<std::vector<T>> ret;
   for (size_t i = 0; i < n - 1; ++i) {
@@ -39,18 +61,18 @@ inline std::vector<std::vector<T>> vec_split(const std::vector<T>& vec,
 }
 
 void Benchmark::HeaderInfo(const std::string& cmd, UType type, size_t ops,
-    size_t length, size_t elements, const std::string& key) {
+                           size_t length, size_t elements, const std::string& key) {
   std::cout << BOLD_RED("[" << cmd << "]");
   if (type != UType::kUnknown) std::cout << " type=" << BOLD_RED(type);
   std::cout << " ops=" << ops;
-  if (length) std::cout << " bytes=("<< length << "*" << elements << ")";
+  if (length) std::cout << " bytes=(" << length << "*" << elements << ")";
   std::cout << " key=\"" << BOLD_RED(key)
             << (kSuffix ? "[0-" + std::to_string(kSuffixRange) + ")" : "")
             << "\"" << std::endl;
 }
 
 void Benchmark::FooterInfo(const std::string& cmd, UType type,
-    size_t total_time, size_t pk_tp, size_t avg_tp) {
+                           size_t total_time, size_t pk_tp, size_t avg_tp) {
   std::cout << BOLD_GREEN("[" << cmd);
   if (type != UType::kUnknown) std::cout << BOLD_GREEN(" " << type);
   std::cout << BOLD_GREEN("]")
@@ -140,7 +162,7 @@ void Benchmark::Put(UType type, bool validate) {
              key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, key);
+              : std::vector<std::string>(ops, key);
   auto branch = validate ? "validate" : kDefaultBranch;
   StrVecVec values(ops);
   // generate value
@@ -155,7 +177,7 @@ void Benchmark::Get(UType type) {
   HeaderInfo("Get", type, ops, 0, 0, key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, key);
+              : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   ExecGet(type, keys, branch, false);
   ExecGet(type, keys, branch, true);
@@ -167,7 +189,7 @@ void Benchmark::Branch() {
   HeaderInfo("Branch", UType::kUnknown, ops, 0, 0, key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, key);
+              : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);
@@ -180,7 +202,7 @@ void Benchmark::Merge() {
   HeaderInfo("Merge", UType::kUnknown, ops, 0, 0, key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-                      : std::vector<std::string>(ops, key);
+              : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);

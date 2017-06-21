@@ -234,7 +234,7 @@ void ColumnStore::FlushCSV(
     // print progress
     if (print_progress && num_loaded > 0) {
       cnt_loaded += num_loaded;
-      auto n_rows_per_sec = num_loaded * CLOCKS_PER_SEC / (end - start);
+      int n_rows_per_sec = (double)num_loaded * CLOCKS_PER_SEC / (end - start);
       std::cout << GREEN("[FLUSHED] ")
                 << "Number of rows loaded into storage: " << cnt_loaded
                 << BLUE("  [" << std::right << std::setw(7)
