@@ -41,7 +41,7 @@ inline std::vector<Slice> ToSlice(std::vector<std::string> vec) {
 }
 
 inline std::vector<std::vector<Slice>> ToSlice(
-std::vector<std::vector<std::string>> vec) {
+    std::vector<std::vector<std::string>> vec) {
   std::vector<std::vector<Slice>> res(vec.size());
   for (size_t i = 0; i < vec.size(); ++i) res[i] = ToSlice(vec[i]);
   return res;
@@ -61,7 +61,7 @@ size_t n) {
 }
 
 void Benchmark::HeaderInfo(const std::string& cmd, UType type, size_t ops,
-                           size_t length, size_t elements, const std::string& key) {
+    size_t length, size_t elements, const std::string& key) {
   std::cout << BOLD_RED("[" << cmd << "]");
   if (type != UType::kUnknown) std::cout << " type=" << BOLD_RED(type);
   std::cout << " ops=" << ops;
