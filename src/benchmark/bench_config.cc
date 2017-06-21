@@ -1,14 +1,18 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <boost/algorithm/string.hpp>
+#include <iomanip>
 #include <utility>
 
 #include "benchmark/bench_config.h"
 
 namespace ustore {
 
+std::string BenchmarkConfig::command;
+std::string BenchmarkConfig::type;
 bool BenchmarkConfig::is_help = false;
 int BenchmarkConfig::num_clients;
-  // common
+// common
 int BenchmarkConfig::validate_ops;
 std::string BenchmarkConfig::default_branch;
 bool BenchmarkConfig::suffix;
@@ -42,6 +46,10 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[]) {
   po::variables_map vm;
   GUARD(ParseCmdArgs(argc, argv, &vm));
   try {
+    command = vm["command"].as<std::string>();
+    boost::to_upper(command);
+    type = vm["type"].as<std::string>();
+    boost::to_lower(type);
     num_clients = vm["num-client"].as<int>();
     GUARD(CheckArgGT(num_clients, 0, "Number of clients"));
     // common
@@ -101,11 +109,18 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[]) {
   return true;
 }
 
+#define FORMAT_BENCHMARK_CMD(cmd) \
+  "* " << std::left << std::setw(8) << cmd << " "
+
 bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[],
                                    po::variables_map* vm) {
   po::options_description desc(BLUE_STR("Options"), 120);
   desc.add_options()
   ("help,?", "print usage message")
+  ("command", po::value<std::string>()->default_value("ALL"),
+   "benchmark command")
+  ("type,p", po::value<std::string>()->default_value("blob"),
+   "data type")
   ("num-client,c", po::value<int>()->default_value(8),
    "number of clients")
   // common
@@ -160,12 +175,25 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[],
   ("merge-key", po::value<std::string>()->default_value("BLOB"),
    "key of merge related operations");
 
+  po::positional_options_description pos_opts;
+  pos_opts.add("command", 1);
+  pos_opts.add("type", 1);
+
   try {
     po::store(po::command_line_parser(argc, argv).options(desc)
-              .style(po::command_line_style::unix_style).run(), *vm);
+              .style(po::command_line_style::unix_style)
+              .positional(pos_opts).run(), *vm);
     if (vm->count("help")) {
       is_help = true;
-      std::cout << desc << std::endl;
+      auto& os = std::cout;
+      os << BLUE("Benchmark Commands") << ":" << std::endl
+         << FORMAT_BENCHMARK_CMD("ALL") << std::endl
+         << FORMAT_BENCHMARK_CMD("PUT") << "-p <type>" << std::endl
+         << FORMAT_BENCHMARK_CMD("GET") << "-p <type>" << std::endl
+         << FORMAT_BENCHMARK_CMD("BRANCH") << std::endl
+         << FORMAT_BENCHMARK_CMD("MERGE") << std::endl
+         << std::endl
+         << desc << std::endl;
     }
     po::notify(*vm);
   } catch (std::exception& e) {

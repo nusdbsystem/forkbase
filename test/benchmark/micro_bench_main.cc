@@ -26,7 +26,7 @@ void BenchmarkWorker() {
   Benchmark bm(dbs);
   std::cout << "============================\n";
   std::cout << "Benchmarking worker (single-threaded) .......\n";
-  bm.RunAll();
+  bm.Run();
 }
 
 void BenchmarkClient() {
@@ -58,7 +58,7 @@ void BenchmarkClient() {
   std::cout << "============================\n";
   std::cout << "Benchmarking "
             << n_client << " clients to local worker .......\n";
-  bm.RunAll();
+  bm.Run();
 
   service.Stop();
   client_service_thread.join();
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     return -1;
   }
   // set num_segments large enough for all test cases
-  Env::Instance()->m_config().set_num_segments(100);
+  Env::Instance()->m_config().set_num_segments(180);
   Env::Instance()->m_config().set_worker_file("conf/workers_micro_bench");
 
   BenchmarkWorker();

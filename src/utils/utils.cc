@@ -6,13 +6,13 @@
 namespace ustore {
 
 static std::unordered_map<std::string, UType> str2type = {
-  {"Bool", UType::kBool},
-  {"Num", UType::kNum},
-  {"String", UType::kString},
-  {"Blob", UType::kBlob},
-  {"List", UType::kList},
-  {"Set", UType::kSet},
-  {"Map", UType::kMap}
+  {"bool", UType::kBool},
+  {"num", UType::kNum},
+  {"string", UType::kString},
+  {"blob", UType::kBlob},
+  {"list", UType::kList},
+  {"set", UType::kSet},
+  {"map", UType::kMap}
 };
 
 UType Utils::ToUType(const std::string& str) {

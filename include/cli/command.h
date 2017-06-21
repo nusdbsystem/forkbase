@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include "spec/object_db.h"
 #include "spec/relational.h"
 #include "cli/config.h"
@@ -15,7 +14,7 @@ namespace ustore {
 namespace cli {
 
 #define CMD_HANDLER(cmd, handler) do { \
-  cmd_exec_[cmd] = [this]() { return handler(); }; \
+  cmd_exec_[cmd] = [this] { return handler(); }; \
 } while (0)
 
 #define CMD_ALIAS(cmd, alias) do { \
