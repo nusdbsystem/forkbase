@@ -15,18 +15,17 @@ namespace ustore {
 NodeBuilder::NodeBuilder(const Hash& root_hash, const OrderedKey& key,
                          ChunkLoader* chunk_loader, const Chunker* chunker,
                          bool isFixedEntryLen) noexcept
-  : NodeBuilder(std::unique_ptr<NodeCursor>(
-                new NodeCursor(root_hash, key, chunk_loader)),
-                0, chunker, isFixedEntryLen) {}
+    : NodeBuilder(std::unique_ptr<NodeCursor>(new NodeCursor(root_hash, key,
+                                                             chunk_loader)),
+                  0, chunker, isFixedEntryLen) {}
 
 // Perform operation at idx-th element at leaf rooted at root_hash
 NodeBuilder::NodeBuilder(const Hash& root_hash, size_t idx,
                          ChunkLoader* chunk_loader, const Chunker* chunker,
                          bool isFixedEntryLen) noexcept
-  : NodeBuilder(std::unique_ptr<NodeCursor>(
-                new NodeCursor(root_hash, idx, chunk_loader)),
-                0, chunker, isFixedEntryLen) {
-}
+    : NodeBuilder(std::unique_ptr<NodeCursor>(new NodeCursor(root_hash, idx,
+                                                             chunk_loader)),
+                  0, chunker, isFixedEntryLen) {}
 
 NodeBuilder::NodeBuilder(size_t level, const Chunker* chunker,
                          bool isFixedEntryLen) noexcept
@@ -74,7 +73,7 @@ NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
 
     // non-leaf builder must work on MetaNode, which is of var len entry
     parent_builder_.reset(new NodeBuilder(std::move(parent_cr), level + 1,
-                          MetaChunker::Instance(), false));
+                                          MetaChunker::Instance(), false));
   }
   if (cursor_->node()->numEntries() > 0) {
     Resume();
@@ -118,12 +117,12 @@ size_t NodeBuilder::SkipEntries(size_t num_elements) {
     // whether the cursor points to the chunk end
     bool advance2end = !cursor_->Advance(false);
 
-    if (advance2end)  {
+    if (advance2end) {
       // Here, cursor has already reached this chunk end
       //   we need to skip and remove the parent metaentry
       //     which points to current chunk
 
-     // Try to skip one entry in parent node builder
+      // Try to skip one entry in parent node builder
       bool end_parent = parent_builder_ == nullptr;
 
       if (!end_parent) {
@@ -148,7 +147,7 @@ size_t NodeBuilder::SkipEntries(size_t num_elements) {
         CHECK(notEnd);
       }  // end if parent_chunker
     }
-  }    // end for
+  }  // end for
   num_skip_entries_ += num_elements;
   return num_elements;
 }
@@ -177,8 +176,7 @@ NodeBuilder* NodeBuilder::parent_builder() {
   return parent_builder_.get();
 }
 
-Chunk NodeBuilder::HandleBoundary(
-    const std::vector<const Segment*>& segments) {
+Chunk NodeBuilder::HandleBoundary(const std::vector<const Segment*>& segments) {
   // DLOG(INFO) << "Start Handing Boundary. ";
   ChunkInfo chunk_info = chunker_->Make(segments);
 
@@ -235,25 +233,20 @@ Hash NodeBuilder::Commit() {
     CHECK(cur_seg != nullptr);
     bool hasBoundary = false;
     size_t num_entries = cur_seg->numEntries();
-    for (size_t entryIdx = 0; entryIdx < num_entries; entryIdx++) {
-      rhasher_->HashBytes(cur_seg->entry(entryIdx),
-                          cur_seg->entryNumBytes(entryIdx));
 
-      if (!rhasher_->CrossedBoundary()) continue;
-      // Start to handle chunking
+    size_t boundary_pos =
+        rhasher_->TryHashBytes(cur_seg->data(), cur_seg->numBytes());
+    size_t entryIdx = cur_seg->PosToIdx(boundary_pos);
+    if (rhasher_->CrossedBoundary()) {
       hasBoundary = true;
-
       auto splitted_segs = cur_seg->Split(entryIdx + 1);
       chunk_segs.push_back(splitted_segs.first.get());
       last_created_chunk = HandleBoundary(chunk_segs);
       chunk_segs.clear();
-
       cur_seg = splitted_segs.second.get();
       created_segs_.push_back(std::move(splitted_segs.first));
       created_segs_.push_back(std::move(splitted_segs.second));
-
-      break;
-    }  // end of for entryIdx
+    }
 
     // Detect boundary at segment middle
     //   Start from loop head to handle the leftover segment after splitting

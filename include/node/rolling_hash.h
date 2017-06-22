@@ -33,8 +33,17 @@ class RollingHasher : private Noncopyable {
   RollingHasher();
   RollingHasher(uint32_t chunk_pattern, size_t window_size, size_t max_size);
 
-  void HashByte(byte_t b);
+  inline void HashByte(byte_t b) {
+    ++byte_hashed_;
+    buz_.HashByte(b);
+    crossed_boundary_ = (byte_hashed_ >= window_size_) &&
+                        (crossed_boundary_ ||
+                         ((buz_.Sum32() & chunk_pattern_) == chunk_pattern_) ||
+                         (byte_hashed_ == max_size_));
+  }
+
   void HashBytes(const byte_t* data, size_t numBytes);
+  size_t TryHashBytes(const byte_t* data, size_t numBytes);
   inline void ClearLastBoundary() {
     crossed_boundary_ = false;
     byte_hashed_ = 0;

@@ -45,6 +45,9 @@ class Segment {
   virtual std::pair<std::unique_ptr<const Segment>,
                     std::unique_ptr<const Segment>>
   Split(size_t idx) const = 0;
+  // Given a position in the raw byte data, find the
+  // index of corresponding entry.
+  virtual size_t PosToIdx(size_t) const = 0;
   // Append this segment on the chunk buffer
   //   number of appended bytes = numBytes()
   // Current implementation is the same for VarSegment and FixSegment
@@ -82,6 +85,7 @@ class FixedSegment : public Segment {
     return num_bytes_ / bytes_per_entry_;
   }
 
+  size_t PosToIdx(size_t) const override;
   std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment>>
   Split(size_t idx) const override;
 
@@ -108,6 +112,7 @@ class VarSegment : public Segment {
   size_t entryNumBytes(size_t idx) const override;
   inline size_t numEntries() const override { return entry_offsets_.size(); }
 
+  size_t PosToIdx(size_t) const override;
   std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment>>
   Split(size_t idx) const override;
 
