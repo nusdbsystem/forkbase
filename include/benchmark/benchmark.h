@@ -83,7 +83,6 @@ class Benchmark {
   std::vector<ObjectDB*> dbs_;
   std::vector<std::string> subkeys_;
   std::vector<Slice> subkeys_slice_;
-  Timer timer_;
   RandomGenerator rg_;
   size_t num_threads_;
   Profiler profiler_;

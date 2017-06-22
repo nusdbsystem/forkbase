@@ -14,6 +14,7 @@
 #include "utils/chars.h"
 #include "utils/iterator.h"
 #include "utils/logging.h"
+#include "utils/timer.h"
 
 #define LOG_LST_STORE_FATAL_ERROR_IF(condition, errmsg) \
   do { \
@@ -396,6 +397,8 @@ Chunk LSTStore::Get(const Hash& key) {
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   if (Exists(key)) return true;
+  static Timer& timer = TimerPool::GetTimer("Put Chunk");
+  timer.Start();
 
   static size_t to_sync_chunks = 0;
   static auto last_sync_time_point = std::chrono::steady_clock::now();
@@ -429,6 +432,7 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
     to_sync_chunks = 0;
     last_sync_time_point = std::chrono::steady_clock::now();
   }
+  timer.Stop();
   return true;
 }
 

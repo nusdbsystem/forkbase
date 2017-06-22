@@ -7,6 +7,7 @@
 #include <map>
 #include <utility>
 #include "utils/logging.h"
+#include "utils/timer.h"
 
 #ifdef USE_SHA256
 #include "hash/sha2.h"
@@ -113,11 +114,14 @@ void Hash::Alloc() {
 
 #ifdef USE_SHA256
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
+  static Timer& timer = TimerPool::GetTimer("Compute Hash");
+  timer.Start();
   Hash h;
   h.Alloc();
   byte_t fullhash[kBase32Length];
   picosha2::hash256(data, data + len, fullhash, fullhash + kBase32Length);
   std::copy(fullhash, fullhash + kByteLength, h.own_.get());
+  timer.Stop();
   return h;
 }
 

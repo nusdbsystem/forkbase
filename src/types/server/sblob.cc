@@ -4,6 +4,7 @@
 
 #include "node/blob_node.h"
 #include "node/node_builder.h"
+#include "utils/timer.h"
 
 namespace ustore {
 
@@ -14,6 +15,8 @@ SBlob::SBlob(const Hash& root_hash) noexcept :
 
 SBlob::SBlob(const Slice& data) noexcept :
     UBlob(std::make_shared<ServerChunkLoader>()) {
+  static Timer& timer = TimerPool::GetTimer("Create Blob");
+  timer.Start();
   if (data.empty()) {
     ChunkInfo chunk_info = BlobChunker::Instance()->Make({});
     store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
@@ -25,6 +28,7 @@ SBlob::SBlob(const Slice& data) noexcept :
     Hash root_hash(nb.Commit());
     SetNodeForHash(root_hash);
   }
+  timer.Stop();
 }
 
 Hash SBlob::Splice(size_t pos, size_t num_delete, const byte_t* data,
