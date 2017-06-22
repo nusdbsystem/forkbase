@@ -8,6 +8,7 @@
 #include "utils/logging.h"
 #include "utils/service_context.h"
 #include "utils/sync_task_line.h"
+#include "utils/timer.h"
 #include "spec/relational.h"
 
 namespace ustore {
@@ -105,10 +106,13 @@ void ColumnStore::ShardCSV(
   std::ifstream& ifs, size_t batch_size, size_t n_cols,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
   const ErrorCode& stat_flush) {
-  auto f_get_empty_batch = [&n_cols] {
+  auto f_get_empty_batch = [&n_cols, &batch_size] {
     std::vector<std::vector<std::string>> cols;
+    cols.reserve(n_cols);
     for (size_t i = 0; i < n_cols; ++i) {
-      cols.emplace_back(std::vector<std::string>());
+      auto col = std::vector<std::string>();
+      col.reserve(batch_size);
+      cols.push_back(std::move(col));
     }
     return cols;
   };
@@ -214,6 +218,9 @@ void ColumnStore::FlushCSV(
   };
   // flush data batches iteratively
   size_t cnt_loaded = 0;
+  if (print_progress) std::cout << GREEN("Loading...");
+  Timer tm;
+  tm.Start();
   while (true) {
     auto cols = batch_queue.Take();
     // flush data batch into storage
@@ -226,12 +233,21 @@ void ColumnStore::FlushCSV(
       break;
     }
     // print progress
-    if (print_progress && num_loaded > 0) {
-      cnt_loaded += num_loaded;
-      std::cout << GREEN("[FLUSHED] ")
-                << "Number of rows loaded into storage: " << cnt_loaded
-                << std::endl;
+    if (print_progress) {
+      if (num_loaded > 0) {
+        cnt_loaded += num_loaded;
+        std::cout << GREEN_STR(".");
+      } else {
+        std::cout << RED_STR("x");
+      }
     }
+  }
+  if (print_progress) {
+    std::string final_stat =
+      stat == ErrorCode::kOK ? GREEN_STR("Done") : RED_STR("Failed");
+    std::cout << ' ' << final_stat << " (Rows: " << cnt_loaded
+              << ", Time: " << std::fixed << std::setprecision(3)
+              << tm.ElapsedSeconds() << " s)" << std::endl;
   }
   // barrier: wait for the sector-flushing threads to complete
   for (auto& t : threads) t.join();

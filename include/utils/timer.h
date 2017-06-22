@@ -17,30 +17,33 @@ namespace ustore {
 using namespace std::chrono;
 
 class Timer : private Noncopyable {
-  friend class TimerPool;
-
  public:
   Timer() { Reset(); }
   ~Timer() = default;
 
-  inline void Reset() {
+  inline Timer& Reset() {
     elapsed_ = {};
     counter_ = 0;
     running_ = false;
+    return *this;
   }
 
-  inline void Start() {
+  inline Timer& Start() {
     CHECK(!running_);
-    start_ = clock::now();
-    ++counter_;
     running_ = true;
+    ++counter_;
+    start_ = clock::now();
+    return *this;
   }
 
-  inline void Stop() {
+  inline Timer& Stop() {
     CHECK(running_);
     elapsed_ += clock::now() - start_;
     running_ = false;
+    return *this;
   }
+
+  inline size_t GetStartCounter() { return counter_; }
 
   inline double ElapsedNanoseconds() const { return Elapsed<std::nano>(); }
   inline double ElapsedMicroseconds() const { return Elapsed<std::micro>(); }
@@ -55,8 +58,8 @@ class Timer : private Noncopyable {
 
   template<typename T>
   inline double Elapsed() const {
-    clock::duration elapsed = running_ ? elapsed_ + (clock::now() - start_)
-                                       : elapsed_;
+    clock::duration elapsed =
+      running_ ? elapsed_ + (clock::now() - start_) : elapsed_;
     return duration_cast<duration<double, T>>(elapsed).count();
   }
 
@@ -67,18 +70,21 @@ class Timer : private Noncopyable {
 };
 
 class TimerPool : private Noncopyable, public Singleton<TimerPool> {
-  friend class Singleton<TimerPool>;
+  friend Singleton<TimerPool>;
  public:
   static Timer& GetTimer(const std::string& name) {
     return TimerPool::Instance()->timers_[name];
   }
 
-  static void ListTimers() {
-    for (auto& kv : TimerPool::Instance()->timers_) {
-      std::cout << "[Timer] Tag: \"" << kv.first << "\""
-                << " Elapsed: " << kv.second.ElapsedMilliseconds() << " ms"
-                << " Counter: " << kv.second.counter_ << " ops" << std::endl;
+  static size_t ListTimers(std::ostream& os = std::cout) {
+    auto& timers = TimerPool::Instance()->timers_;
+    for (auto& kv : timers) {
+      auto& tm = kv.second;
+      os << "[Timer] Tag: \"" << kv.first << "\", Elapsed: "
+         << tm.ElapsedMilliseconds() << " ms, Counter: "
+         << tm.GetStartCounter() << " ops" << std::endl;
     }
+    return timers.size();
   }
 
  private:
