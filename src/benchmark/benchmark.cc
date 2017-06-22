@@ -36,15 +36,17 @@ void Benchmark::Run() {
 }
 
 inline std::vector<Slice> ToSlice(const std::vector<std::string>& vec) {
-  std::vector<Slice> res(vec.size());
-  for (size_t i = 0; i < vec.size(); ++i) res[i] = Slice(vec[i]);
+  std::vector<Slice> res;
+  res.reserve(vec.size());
+  for (size_t i = 0; i < vec.size(); ++i) res.emplace_back(vec[i]);
   return res;
 }
 
 inline std::vector<std::vector<Slice>> ToSlice(
     const std::vector<std::vector<std::string>>& vec) {
-  std::vector<std::vector<Slice>> res(vec.size());
-  for (size_t i = 0; i < vec.size(); ++i) res[i] = ToSlice(vec[i]);
+  std::vector<std::vector<Slice>> res;
+  res.reserve(vec.size());
+  for (size_t i = 0; i < vec.size(); ++i) res.emplace_back(ToSlice(vec[i]));
   return res;
 }
 

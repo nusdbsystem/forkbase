@@ -7,7 +7,6 @@
 #include <map>
 #include <utility>
 #include "utils/logging.h"
-#include "utils/timer.h"
 
 #ifdef USE_CRYPTOPP
 #include "cryptopp/cryptlib.h"
@@ -121,41 +120,32 @@ void Hash::Alloc() {
 #ifdef USE_CRYPTOPP
 #ifdef USE_SHA256
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
-  static Timer& timer = TimerPool::GetTimer("Compute Hash");
   byte_t fullhash[CryptoPP::SHA256::DIGESTSIZE];
-  timer.Start();
   Hash h;
   h.Alloc();
   CryptoPP::SHA256 hash_gen;
   hash_gen.CalculateDigest(fullhash, data, len);
   std::copy(fullhash, fullhash + kByteLength, h.own_.get());
-  timer.Stop();
   return h;
 }
 #elif USE_BLAKE2b
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
-  static Timer& timer = TimerPool::GetTimer("Compute Hash");
   byte_t fullhash[CryptoPP::BLAKE2b::DIGESTSIZE];
-  timer.Start();
   Hash h;
   h.Alloc();
   CryptoPP::BLAKE2b hash_gen;
   hash_gen.CalculateDigest(fullhash, data, len);
   std::copy(fullhash, fullhash + kByteLength, h.own_.get());
-  timer.Stop();
   return h;
 }
 #endif  // USE_SHA256
 #else
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
-  static Timer& timer = TimerPool::GetTimer("Compute Hash");
   byte_t fullhash[Hash::kBase32Length];
-  timer.Start();
   Hash h;
   h.Alloc();
   picosha2::hash256(data, data + len, fullhash, fullhash + kBase32Length);
   std::copy(fullhash, fullhash + kByteLength, h.own_.get());
-  timer.Stop();
   return h;
 }
 #endif  // USE_CRYPTOPP

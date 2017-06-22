@@ -6,6 +6,7 @@
 #include "node/node_builder.h"
 #include "utils/debug.h"
 #include "utils/utils.h"
+#include "utils/timer.h"
 
 namespace ustore {
 SMap::SMap(const Hash& root_hash) noexcept :
@@ -18,7 +19,8 @@ SMap::SMap(const std::vector<Slice>& keys,
     UMap(std::make_shared<ServerChunkLoader>()) {
   CHECK_GE(keys.size(), 0);
   CHECK_EQ(vals.size(), keys.size());
-
+  static Timer& timer = TimerPool::GetTimer("Create Map");
+  timer.Start();
   if (keys.size() == 0) {
     ChunkInfo chunk_info = MapChunker::Instance()->Make({});
     store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
@@ -34,6 +36,7 @@ SMap::SMap(const std::vector<Slice>& keys,
     nb.SpliceElements(0, seg.get());
     SetNodeForHash(nb.Commit());
   }
+  timer.Stop();
 }
 
 Hash SMap::Set(const Slice& key, const Slice& val) const {
