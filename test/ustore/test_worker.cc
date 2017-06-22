@@ -384,7 +384,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
   Hash version;
   UCell ucell;
 
-  Value val;
+  Value val = {};
   val.type = UType::kMap;
   EXPECT_EQ(0, val.keys.size());
   EXPECT_EQ(0, val.vals.size());
@@ -445,6 +445,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
   val.keys.clear();
   val.keys.emplace_back(vals[1]);
   val.vals.clear();
+  val.dels = 1;
 
   ec = worker().Put(key[4], val, branch[0], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);

@@ -40,28 +40,6 @@ class RandomGenerator {
   std::uniform_int_distribution<> alph_dist_;
 };
 
-class Timer {
- public:
-  Timer() : t_begin_(std::chrono::steady_clock::now()) {}
-  ~Timer() = default;
-  inline void Reset() { t_begin_ = std::chrono::steady_clock::now(); }
-  inline int64_t Elapse() const {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-             std::chrono::steady_clock::now() - t_begin_).count();
-  }
-  inline int64_t ElapseMicro() const {
-    return std::chrono::duration_cast<std::chrono::microseconds>(
-             std::chrono::steady_clock::now() - t_begin_).count();
-  }
-  inline int64_t ElapseNano() const {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(
-             std::chrono::steady_clock::now() - t_begin_).count();
-  }
-
- private:
-  std::chrono::time_point<std::chrono::steady_clock> t_begin_;
-};
-
 class Profiler {
  public:
   static const unsigned kSamplingInterval;  // milliseconds

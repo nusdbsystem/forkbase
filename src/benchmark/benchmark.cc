@@ -9,6 +9,7 @@
 #include "types/client/vblob.h"
 #include "types/client/vstring.h"
 #include "utils/logging.h"
+#include "utils/timer.h"
 #include "utils/utils.h"
 
 namespace ustore {
@@ -218,14 +219,14 @@ void Benchmark::ExecPut(UType type, const StrVec& keys,
   auto split_vals = vec_split(ToSlice(values), num_threads_);
   profiler_.Clear();
   std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
-  timer.Reset();
+  timer.Start();
   std::vector<std::thread> threads;
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadPut, this, dbs_[i], type,
                          split_keys[i], split_branch, split_vals[i], validate,
                          i);
   for (auto& t : threads) t.join();
-  auto total_time = timer.Elapse();
+  auto total_time = timer.ElapsedMilliseconds();
   profiler_.Terminate();
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
@@ -240,13 +241,13 @@ void Benchmark::ExecGet(UType type, const StrVec& keys,
   auto split_branch = Slice(branch);
   profiler_.Clear();
   std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
-  timer.Reset();
+  timer.Start();
   std::vector<std::thread> threads;
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadGet, this, dbs_[i], type,
                          split_keys[i], split_branch, scan, i);
   for (auto& t : threads) t.join();
-  auto total_time = timer.Elapse();
+  auto total_time = timer.ElapsedMilliseconds();
   profiler_.Terminate();
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
@@ -263,12 +264,12 @@ void Benchmark::ExecBranch(const StrVec& keys, const std::string& ref_branch,
   profiler_.Clear();
   std::vector<std::thread> threads;
   std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
-  timer.Reset();
+  timer.Start();
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadBranch, this, dbs_[i], split_keys[i],
                          split_branch, split_branches[i], i);
   for (auto& t : threads) t.join();
-  auto total_time = timer.Elapse();
+  auto total_time = timer.ElapsedMilliseconds();
   profiler_.Terminate();
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
@@ -285,12 +286,12 @@ void Benchmark::ExecMerge(const StrVec& keys, const std::string& ref_branch,
   profiler_.Clear();
   std::vector<std::thread> threads;
   std::thread profiler_th(&Profiler::SamplerThread, &profiler_);
-  timer.Reset();
+  timer.Start();
   for (size_t i = 0; i < num_threads_; ++i)
     threads.emplace_back(&Benchmark::ThreadMerge, this, dbs_[i], split_keys[i],
                          split_branch, split_branches[i], i);
   for (auto& t : threads) t.join();
-  auto total_time = timer.Elapse();
+  auto total_time = timer.ElapsedMilliseconds();
   profiler_.Terminate();
   profiler_th.join();
   double avg_tp = keys.size() * 1000.0 / total_time;
