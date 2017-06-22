@@ -26,7 +26,14 @@
 * libibverbs >= 1.0
 * libboost_thread >= 1.5.4 (Thread)
 
-### Other
+### For Cryptographic Hashing
+
+* libcrypto++
+```
+Download from https://github.com/weidai11/cryptopp/releases
+```
+
+### For Storage
 
 * LevelDB
 ```
