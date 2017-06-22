@@ -4,6 +4,7 @@
 
 #include "node/list_node.h"
 #include "node/node_builder.h"
+#include "utils/timer.h"
 
 namespace ustore {
 
@@ -14,6 +15,8 @@ SList::SList(const Hash& root_hash) noexcept :
 
 SList::SList(const std::vector<Slice>& elements) noexcept:
     UList(std::make_shared<ServerChunkLoader>()) {
+  static Timer& timer = TimerPool::GetTimer("Create List");
+  timer.Start();
   CHECK_GE(elements.size(), 0);
   if (elements.size() == 0) {
     ChunkInfo chunk_info = ListChunker::Instance()->Make({});
@@ -25,6 +28,7 @@ SList::SList(const std::vector<Slice>& elements) noexcept:
     nb.SpliceElements(0, seg.get());
     SetNodeForHash(nb.Commit());
   }
+  timer.Stop();
 }
 
 Hash SList::Splice(size_t start_idx, size_t num_to_delete,

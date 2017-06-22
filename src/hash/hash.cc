@@ -120,9 +120,9 @@ void Hash::Alloc() {
 
 #ifdef USE_CRYPTOPP
 #ifdef USE_SHA256
-byte_t fullhash[CryptoPP::SHA256::DIGESTSIZE];
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
   static Timer& timer = TimerPool::GetTimer("Compute Hash");
+  byte_t fullhash[CryptoPP::SHA256::DIGESTSIZE];
   timer.Start();
   Hash h;
   h.Alloc();
@@ -133,9 +133,9 @@ Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
   return h;
 }
 #elif USE_BLAKE2b
-byte_t fullhash[CryptoPP::BLAKE2b::DIGESTSIZE];
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
   static Timer& timer = TimerPool::GetTimer("Compute Hash");
+  byte_t fullhash[CryptoPP::BLAKE2b::DIGESTSIZE];
   timer.Start();
   Hash h;
   h.Alloc();
@@ -147,9 +147,9 @@ Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
 }
 #endif  // USE_SHA256
 #else
-byte_t fullhash[Hash::kBase32Length];
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
   static Timer& timer = TimerPool::GetTimer("Compute Hash");
+  byte_t fullhash[Hash::kBase32Length];
   timer.Start();
   Hash h;
   h.Alloc();

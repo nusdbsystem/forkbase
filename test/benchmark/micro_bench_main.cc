@@ -57,7 +57,7 @@ void BenchmarkClient() {
   Benchmark bm(dbs);
   std::cout << "============================\n";
   std::cout << "Benchmarking "
-            << n_client << " clients to local worker .......\n";
+            << n_client << " clients to in-proc worker service .......\n";
   bm.Run();
 
   service.Stop();
@@ -81,9 +81,14 @@ int main(int argc, char* argv[]) {
               << "Found invalid command-line option" << std::endl;
     return -1;
   }
-  // set num_segments large enough for all test cases
-  Env::Instance()->m_config().set_num_segments(180);
   Env::Instance()->m_config().set_worker_file("conf/workers_micro_bench");
+  // set num_segments large enough for all test cases
+  if (BenchmarkConfig::command == "ALL") {
+    constexpr int seg = 180;
+    std::cout << "Increase to " << seg << " segments for running all tests"
+              << std::endl;
+    Env::Instance()->m_config().set_num_segments(seg);
+  }
 
   BenchmarkWorker();
   BenchmarkClient();
