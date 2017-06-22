@@ -9,9 +9,16 @@
 #include "utils/logging.h"
 #include "utils/timer.h"
 
+#ifdef USE_CRYPTOPP
+#include "cryptopp/cryptlib.h"
 #ifdef USE_SHA256
+#include "cryptopp/sha.h"
+#elif USE_BLAKE2b
+#include "cryptopp/blake2.h"
+#endif
+#else
 #include "hash/sha2.h"
-#endif  // USE_SHA256
+#endif
 
 namespace ustore {
 
@@ -20,38 +27,37 @@ const Hash Hash::kNull(kEmptyBytes);
 
 constexpr char base32alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const std::map<char, byte_t> base32dict = {{'A', 0},
-  {'B', 1},
-  {'C', 2},
-  {'D', 3},
-  {'E', 4},
-  {'F', 5},
-  {'G', 6},
-  {'H', 7},
-  {'I', 8},
-  {'J', 9},
-  {'K', 10},
-  {'L', 11},
-  {'M', 12},
-  {'N', 13},
-  {'O', 14},
-  {'P', 15},
-  {'Q', 16},
-  {'R', 17},
-  {'S', 18},
-  {'T', 19},
-  {'U', 20},
-  {'V', 21},
-  {'W', 22},
-  {'X', 23},
-  {'Y', 24},
-  {'Z', 25},
-  {'2', 26},
-  {'3', 27},
-  {'4', 28},
-  {'5', 29},
-  {'6', 30},
-  {'7', 31}
-};
+                                           {'B', 1},
+                                           {'C', 2},
+                                           {'D', 3},
+                                           {'E', 4},
+                                           {'F', 5},
+                                           {'G', 6},
+                                           {'H', 7},
+                                           {'I', 8},
+                                           {'J', 9},
+                                           {'K', 10},
+                                           {'L', 11},
+                                           {'M', 12},
+                                           {'N', 13},
+                                           {'O', 14},
+                                           {'P', 15},
+                                           {'Q', 16},
+                                           {'R', 17},
+                                           {'S', 18},
+                                           {'T', 19},
+                                           {'U', 20},
+                                           {'V', 21},
+                                           {'W', 22},
+                                           {'X', 23},
+                                           {'Y', 24},
+                                           {'Z', 25},
+                                           {'2', 26},
+                                           {'3', 27},
+                                           {'4', 28},
+                                           {'5', 29},
+                                           {'6', 30},
+                                           {'7', 31}};
 
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
@@ -112,23 +118,45 @@ void Hash::Alloc() {
   }
 }
 
+#ifdef USE_CRYPTOPP
 #ifdef USE_SHA256
+byte_t fullhash[CryptoPP::SHA256::DIGESTSIZE];
+Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
+  Hash h;
+  h.Alloc();
+  CryptoPP::SHA256 hash_gen;
+  hash_gen.CalculateDigest(fullhash, data, len);
+  std::copy(fullhash, fullhash + kByteLength, h.own_.get());
+  return h;
+}
+#elif USE_BLAKE2b
+byte_t fullhash[CryptoPP::BLAKE2b::DIGESTSIZE];
+Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
+  Hash h;
+  h.Alloc();
+  CryptoPP::BLAKE2b hash_gen;
+  hash_gen.CalculateDigest(fullhash, data, len);
+  std::copy(fullhash, fullhash + kByteLength, h.own_.get());
+  return h;
+}
+#endif  // USE_SHA256
+#else
+byte_t fullhash[Hash::kBase32Length];
 Hash Hash::ComputeFrom(const byte_t* data, size_t len) {
   static Timer& timer = TimerPool::GetTimer("Compute Hash");
   timer.Start();
   Hash h;
   h.Alloc();
-  byte_t fullhash[kBase32Length];
   picosha2::hash256(data, data + len, fullhash, fullhash + kBase32Length);
   std::copy(fullhash, fullhash + kByteLength, h.own_.get());
   timer.Stop();
   return h;
 }
+#endif  // USE_CRYPTOPP
 
 Hash Hash::ComputeFrom(const std::string& data) {
   return Hash::ComputeFrom(reinterpret_cast<const byte_t*>(data.c_str()),
                            data.size());
 }
-#endif  // USE_SHA256
 
 }  // namespace ustore

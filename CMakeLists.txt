@@ -27,17 +27,34 @@ include(cmake/Utils.cmake)
 OPTION(DYNAMIC_LIB "Generate dynamic library libustore.so,
        otherwise libustore.a" ON)
 # --- [ Options
-OPTION(USE_SHA256 "Choose SHA-256 hash for calculating versions" ON)
 OPTION(USE_LEVELDB "Use LevelDB as chunk storage" OFF)
+OPTION(USE_CRYPTOPP "Use Crypto++ library to calculate chunk hash" ON)
+OPTION(USE_SHA256 "Choose SHA-256 hash to calculate chunk hash" ON)
+OPTION(USE_BLAKE2b "Choose BLAKE2b hash to calculate chunk hash,
+                    need to turn USE_CRYPTOPP ON first" OFF)
 OPTION(ENABLE_TEST "Compile test module" ON)
 OPTION(TEST_NODEBUILDER "Test node builder" OFF)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
 OPTION(USE_RDMA "Use RDMA" OFF)
 OPTION(ENABLE_EXAMPLE "Compile example module" ON)
 
-if(TEST_NODEBUILDER)
-  message(STATUS "Test Node Builder with Specific Rolling Hasher")
-  add_definitions(-DTEST_NODEBUILDER)
+if (USE_BLAKE2b AND USE_SHA256)
+  message(FATAL_ERROR "options USE_BLAKE2b and USE_BLAKE2b are"
+    " mutually exclusive, choose *ONE* only")
+endif()
+
+if (USE_CRYPTOPP)
+  message(STATUS "Use Crypto++ library")
+  add_definitions(-DUSE_CRYPTOPP)
+endif()
+
+if (USE_BLAKE2b)
+  if (NOT USE_CRYPTOPP)
+    message(FATAL_ERROR "Cannot use BLAKE2b to calculate"
+                        " chunk hash without Crypto++")
+  endif()
+  message(STATUS "Use BLAKE2b hash")
+  add_definitions(-DUSE_BLAKE2b)
 endif()
 
 if(USE_SHA256)
@@ -45,10 +62,16 @@ if(USE_SHA256)
   add_definitions(-DUSE_SHA256)
 endif()
 
+if(TEST_NODEBUILDER)
+  message(STATUS "Test Node Builder with Specific Rolling Hasher")
+  add_definitions(-DTEST_NODEBUILDER)
+endif()
+
 if(ENABLE_DEBUG)
   message(STATUS "Use debug mode")
   add_definitions(-DDEBUG)
 endif()
+
 if(USE_RDMA)
   message(STATUS "Use RDMA")
   add_definitions(-DUSE_RDMA)
