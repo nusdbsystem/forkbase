@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The UStore Authors.
 
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <future>
 #include <iomanip>
@@ -119,8 +120,13 @@ void ColumnStore::ShardCSV(
   auto cols = f_get_empty_batch();
   std::string line;
   while (std::getline(ifs, line)) {
+    boost::trim(line);
     if (line.empty()) continue;
-    auto row = Utils::Tokenize(line, " \t,|");
+#if defined(__FAST_STRING_TOKENIZE__)
+    auto row = Utils::Split(line, ',', n_cols);
+#else
+    auto row = Utils::Tokenize(line, " \t,|", n_cols);
+#endif
     for (size_t i = 0; i < n_cols; ++i) {
       cols[i].push_back(std::move(row[i]));
     }
@@ -135,6 +141,7 @@ void ColumnStore::ShardCSV(
   batch_queue.Put(f_get_empty_batch());
 }
 
+#ifndef __MOCK_FLUSH__
 class FlushTaskLine
   : public SyncTaskLine<std::vector<std::string>, ErrorCode> {
  public:
@@ -186,6 +193,7 @@ class FlushTaskLine
   std::string branch_str_;
   Slice branch_;
 };
+#endif
 
 void ColumnStore::FlushCSV(
   const std::string& table_name, const std::string& branch_name,
@@ -193,6 +201,7 @@ void ColumnStore::FlushCSV(
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
   ErrorCode& stat, bool print_progress) {
   auto n_cols = col_names.size();
+#ifndef __MOCK_FLUSH__
   // launch the sector-flushing threads
   FlushTaskLine task_lines[n_cols];
   std::thread threads[n_cols];
@@ -202,7 +211,7 @@ void ColumnStore::FlushCSV(
     threads[i] = tl.Launch();
   }
   // load data into storage by batches in parallel
-  auto f_current_flush = [&n_cols, &task_lines](
+  auto f_concurrent_flush = [&n_cols, &task_lines](
   const std::vector<std::vector<std::string>>& cols) {
     const int load_size = cols[0].size();
     // dispatch task to the task lines
@@ -216,6 +225,7 @@ void ColumnStore::FlushCSV(
     }
     return load_size;
   };
+#endif
   // flush data batches iteratively
   size_t cnt_loaded = 0;
   if (print_progress) std::cout << GREEN("Loading...");
@@ -224,12 +234,18 @@ void ColumnStore::FlushCSV(
   while (true) {
     auto cols = batch_queue.Take();
     // flush data batch into storage
-    const int num_loaded = f_current_flush(cols);
+#if defined(__MOCK_FLUSH__)
+    const int num_loaded = cols[0].size();
+#else
+    const int num_loaded = f_concurrent_flush(cols);
+#endif
     if (num_loaded == 0) break;
     if (num_loaded < 0) {
       stat = static_cast<ErrorCode>(-num_loaded);
       static std::vector<std::string> empty_sector;
+#ifndef __MOCK_FLUSH__
       for (auto& tl : task_lines) tl.Produce(empty_sector);
+#endif
       break;
     }
     // print progress
@@ -240,6 +256,7 @@ void ColumnStore::FlushCSV(
       } else {
         std::cout << RED_STR("x");
       }
+      std::cout << std::flush;
     }
   }
   if (print_progress) {
@@ -250,7 +267,9 @@ void ColumnStore::FlushCSV(
               << tm.ElapsedSeconds() << " s)" << std::endl;
   }
   // barrier: wait for the sector-flushing threads to complete
+#ifndef __MOCK_FLUSH__
   for (auto& t : threads) t.join();
+#endif
 }
 
 const char kOutputDelimiter[] = "|";

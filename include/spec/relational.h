@@ -3,6 +3,9 @@
 #ifndef USTORE_SPEC_RELATIONAL_H_
 #define USTORE_SPEC_RELATIONAL_H_
 
+// #define __MOCK_FLUSH__  // for bottleneck test only
+#define __FAST_STRING_TOKENIZE__
+
 #include <string>
 #include <unordered_map>
 #include <utility>

@@ -154,7 +154,14 @@ class Utils {
   static std::string ToString(const ErrorCode& ec);
 
   static std::vector<std::string> Tokenize(
-    const std::string& str, const char* sep_chars = " \t[],");
+    const std::string& str, const char* sep_chars = " \t[],",
+    size_t hint_size = 8);
+
+  template<typename T>
+  static void Split(const std::string& s, char delim, T result);
+
+  static std::vector<std::string> Split(const std::string& str, char delim,
+                                        size_t hint_size = 8);
 
   static bool TokenizeArgs(const std::string& line,
                            std::vector<std::string>* args);
@@ -329,6 +336,14 @@ void Utils::Print(const std::unordered_map<T1, T2>& map,
     }
   }
   os << rsymbol;
+}
+
+template<typename T>
+void Utils::Split(const std::string& s, char delim, T result) {
+  std::stringstream ss;
+  ss.str(s);
+  std::string item;
+  while (std::getline(ss, item, delim)) *(result++) = item;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const UType& obj) {

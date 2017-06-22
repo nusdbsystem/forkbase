@@ -75,14 +75,23 @@ std::string Utils::ToString(const ErrorCode& ec) {
 }
 
 std::vector<std::string> Utils::Tokenize(
-  const std::string& str, const char* sep_chars) {
+  const std::string& str, const char* sep_chars, size_t hint_size) {
   using Tokenizer = boost::tokenizer<boost::char_separator<char>>;
   using CharSep = boost::char_separator<char>;
-  std::vector<std::string> vec;
+  std::vector<std::string> elems;
+  elems.reserve(hint_size);
   for (const auto& t : Tokenizer(str, CharSep(sep_chars))) {
-    vec.push_back(std::move(t));
+    elems.push_back(std::move(t));
   }
-  return vec;
+  return elems;
+}
+
+std::vector<std::string> Utils::Split(const std::string& str, char delim,
+                                      size_t hint_size) {
+  std::vector<std::string> elems;
+  elems.reserve(hint_size);
+  Split(str, delim, std::back_inserter(elems));
+  return elems;
 }
 
 bool Utils::TokenizeArgs(const std::string& line,
