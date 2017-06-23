@@ -123,7 +123,7 @@ void ColumnStore::ShardCSV(
     boost::trim(line);
     if (line.empty()) continue;
 #if defined(__FAST_STRING_TOKENIZE__)
-    auto row = Utils::Split(line, ',', n_cols);
+    auto row = Utils::Split(line, '|', n_cols);
 #else
     auto row = Utils::Tokenize(line, " \t,|", n_cols);
 #endif

@@ -70,7 +70,7 @@ class Timer : private Noncopyable {
 };
 
 class TimerPool : private Noncopyable, public Singleton<TimerPool> {
-  friend Singleton<TimerPool>;
+  friend class Singleton<TimerPool>;
  public:
   static Timer& GetTimer(const std::string& name) {
     return TimerPool::Instance()->timers_[name];
