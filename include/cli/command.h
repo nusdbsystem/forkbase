@@ -14,7 +14,7 @@ namespace ustore {
 namespace cli {
 
 #define CMD_HANDLER(cmd, handler) do { \
-  cmd_exec_[cmd] = [this] { return handler(); }; \
+  cmd_exec_[cmd] = [this] { return handler; }; \
 } while (0)
 
 #define CMD_ALIAS(cmd, alias) do { \
@@ -74,6 +74,14 @@ class Command {
   ErrorCode ExecDumpCSV();
   ErrorCode ExecGetRow();
   ErrorCode ExecInfo();
+
+  ErrorCode ExecGetAll();
+  ErrorCode ExecListKeyAll();
+  ErrorCode ExecLatestAll();
+  ErrorCode ExecGetColumnAll();
+
+  static const size_t kDefaultLimitPrintElems;
+  static size_t limit_print_elems;
 
   ObjectDB odb_;
   ColumnStore cs_;

@@ -106,6 +106,8 @@ namespace ustore {
 
 class Utils {
  public:
+  static const size_t max_size_t;
+
   template<typename T>
   static inline std::string ToString(const T& obj);
 
@@ -188,10 +190,16 @@ class Utils {
   template <typename T>
   static std::vector<size_t> SortIndexes(const std::vector<T>& v);
 
+  template<typename T>
+  static void PrintSeq(
+    const T& begin, const T& end, const std::string& lsymbol = "[",
+    const std::string& rsymbol = "]", const std::string& sep = ", ",
+    bool elem_in_quote = false, std::ostream& os = std::cout);
+
   static void Print(const UList& list, const std::string& lsymbol = "[",
                     const std::string& rsymbol = "]",
                     const std::string& sep = ", ", bool elem_in_quote = false,
-                    std::ostream& os = std::cout);
+                    size_t limit = max_size_t, std::ostream& os = std::cout);
 
   static void Print(const UMap& map, const std::string& lsymbol = "[",
                     const std::string& rsymbol = "]",
@@ -200,6 +208,13 @@ class Utils {
                     const std::string& rentry = ")",
                     const std::string& entry_sep = "->",
                     bool elem_in_quote = false, std::ostream& os = std::cout);
+
+  template<typename T>
+  static void Print(
+    const std::vector<T> elems, const std::string& lsymbol = "[",
+    const std::string& rsymbol = "]", const std::string& sep = ", ",
+    bool elem_in_quote = false, size_t limit = max_size_t,
+    std::ostream& os = std::cout);
 
   static void PrintKeys(const UMap& map, const std::string& lsymbol = "[",
                         const std::string& rsymbol = "]",
@@ -287,6 +302,38 @@ std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
   return idx;
 }
 
+template<typename T>
+void Utils::PrintSeq(const T& begin, const T& end,
+                     const std::string& lsymbol, const std::string& rsymbol,
+                     const std::string& sep, bool elem_in_quote,
+                     std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  os << lsymbol;
+  auto it = begin;
+  if (it != end) {
+    os << quote << *it++ << quote;
+    size_t cnt(1);
+    while (it != end) os << sep << quote << *it++ << quote;
+  }
+  os << rsymbol;
+}
+
+template<typename T>
+void Utils::Print(const std::vector<T> elems, const std::string& lsymbol,
+                  const std::string& rsymbol, const std::string& sep,
+                  bool elem_in_quote, size_t limit, std::ostream& os) {
+  auto seq_size = elems.size();
+  auto begin = elems.begin();
+  auto end = elems.end();
+  std::string tail("");
+  if (seq_size > limit) {
+    auto remain  = seq_size - limit;
+    tail = ", ...(and " + std::to_string(remain) + " more)";
+    end -= remain;
+  }
+  PrintSeq(begin, end, lsymbol, tail + rsymbol, sep, elem_in_quote, os);
+}
+
 template<class T>
 void Utils::PrintDiff(T& it_diff, bool show_diff, bool elem_in_quote,
                       std::ostream& os) {
@@ -357,7 +404,7 @@ inline std::ostream& operator<<(std::ostream& os, const ErrorCode& obj) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const UList& obj) {
-  Utils::Print(obj, "[", "]", ", ", false, os);
+  Utils::Print(obj, "[", "]", ", ", false, Utils::max_size_t, os);
   return os;
 }
 

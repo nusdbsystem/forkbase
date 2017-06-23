@@ -2,69 +2,85 @@
 
 #include <boost/algorithm/string.hpp>
 #include <fstream>
+#include <limits>
 #include "cli/console.h"
 #include "cli/command.h"
 
 namespace ustore {
 namespace cli {
 
+const size_t Command::kDefaultLimitPrintElems(5);
+size_t Command::limit_print_elems(kDefaultLimitPrintElems);
+
 Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   // basic commands
-  CMD_HANDLER("GET", ExecGet);
-  CMD_HANDLER("PUT", ExecPut);
-  CMD_HANDLER("MERGE", ExecMerge);
-  CMD_HANDLER("BRANCH", ExecBranch);
-  CMD_HANDLER("RENAME", ExecRename);
-  CMD_HANDLER("DELETE", ExecDelete);
+  CMD_HANDLER("GET", ExecGet());
+  CMD_HANDLER("GET_ALL", ExecGetAll());
+  CMD_ALIAS("GET_ALL", "GET-ALL");
+  CMD_HANDLER("PUT", ExecPut());
+  CMD_HANDLER("MERGE", ExecMerge());
+  CMD_HANDLER("BRANCH", ExecBranch());
+  CMD_HANDLER("RENAME", ExecRename());
+  CMD_HANDLER("DELETE", ExecDelete());
   CMD_ALIAS("DELETE", "DEL");
-  CMD_HANDLER("LIST_KEY", ExecListKey);
+  CMD_HANDLER("LIST_KEY", ExecListKey());
   CMD_ALIAS("LIST_KEY", "LIST-KEY");
   CMD_ALIAS("LIST_KEY", "LISTKEY");
   CMD_ALIAS("LIST_KEY", "LSKEY");
   CMD_ALIAS("LIST_KEY", "LS_KEY");
   CMD_ALIAS("LIST_KEY", "LS-KEY");
   CMD_ALIAS("LIST_KEY", "LSK");
-  CMD_HANDLER("LIST_BRANCH", ExecListBranch);
+  CMD_HANDLER("LIST_KEY_ALL", ExecListKeyAll());
+  CMD_ALIAS("LIST_KEY_ALL", "LIST-KEY-ALL");
+  CMD_ALIAS("LIST_KEY_ALL", "LSKEY_ALL");
+  CMD_ALIAS("LIST_KEY_ALL", "LSKEY-ALL");
+  CMD_ALIAS("LIST_KEY_ALL", "LS_KEY_ALL");
+  CMD_ALIAS("LIST_KEY_ALL", "LS-KEY-ALL");
+  CMD_ALIAS("LIST_KEY_ALL", "LSK_ALL");
+  CMD_ALIAS("LIST_KEY_ALL", "LSK-ALL");
+  CMD_HANDLER("LIST_BRANCH", ExecListBranch());
   CMD_ALIAS("LIST_BRANCH", "LIST-BRANCH");
   CMD_ALIAS("LIST_BRANCH", "LISTBRANCH");
   CMD_ALIAS("LIST_BRANCH", "LSBRANCH");
   CMD_ALIAS("LIST_BRANCH", "LS_BRANCH");
   CMD_ALIAS("LIST_BRANCH", "LS-BRANCH");
   CMD_ALIAS("LIST_BRANCH", "LSB");
-  CMD_HANDLER("HEAD", ExecHead);
-  CMD_HANDLER("LATEST", ExecLatest);
-  CMD_HANDLER("EXISTS", ExecExists);
+  CMD_HANDLER("HEAD", ExecHead());
+  CMD_HANDLER("LATEST", ExecLatest());
+  CMD_HANDLER("LATEST_ALL", ExecLatestAll());
+  CMD_ALIAS("LATEST_ALL", "LATEST-ALL");
+  CMD_HANDLER("EXISTS", ExecExists());
   CMD_ALIAS("EXISTS", "EXIST");
-  CMD_HANDLER("IS_HEAD", ExecIsHead);
+  CMD_HANDLER("IS_HEAD", ExecIsHead());
   CMD_ALIAS("IS_HEAD", "ISHEAD");
   CMD_ALIAS("IS_HEAD", "ISH");
-  CMD_HANDLER("IS_LATEST", ExecIsLatest);
+  CMD_HANDLER("IS_LATEST", ExecIsLatest());
   CMD_ALIAS("IS_LATEST", "ISLATEST");
   CMD_ALIAS("IS_LATEST", "ISL");
   // relational commands
-  CMD_HANDLER("CREATE_TABLE", ExecCreateTable);
+  CMD_HANDLER("CREATE_TABLE", ExecCreateTable());
   CMD_ALIAS("CREATE_TABLE", "CREATE-TABLE");
   CMD_ALIAS("CREATE_TABLE", "CREATETABLE");
   CMD_ALIAS("CREATE_TABLE", "CREATE");
-  CMD_HANDLER("GET_TABLE", ExecGetTable);
+  CMD_HANDLER("GET_TABLE", ExecGetTable());
   CMD_ALIAS("GET_TABLE", "GET-TABLE");
   CMD_ALIAS("GET_TABLE", "GETTABLE");
   CMD_ALIAS("GET_TABLE", "GET_TAB");
   CMD_ALIAS("GET_TABLE", "GET-TAB");
   CMD_ALIAS("GET_TABLE", "GETTAB");
-  CMD_HANDLER("BRANCH_TABLE", ExecBranchTable);
+  CMD_HANDLER("BRANCH_TABLE", ExecBranchTable());
   CMD_ALIAS("BRANCH_TABLE", "BRANCH-TABLE");
   CMD_ALIAS("BRANCH_TABLE", "BRANCHTABLE");
   CMD_ALIAS("BRANCH_TABLE", "BRANCH_TAB");
   CMD_ALIAS("BRANCH_TABLE", "BRANCH-TAB");
   CMD_ALIAS("BRANCH_TABLE", "BRANCHTAB");
-  CMD_HANDLER("LIST_TABLE_BRANCH", ExecListTableBranch);
+  CMD_HANDLER("LIST_TABLE_BRANCH", ExecListTableBranch());
   CMD_ALIAS("LIST_TABLE_BRANCH", "LIST-TABLE-BRANCH");
   CMD_ALIAS("LIST_TABLE_BRANCH", "LIST_TAB_BRANCH");
   CMD_ALIAS("LIST_TABLE_BRANCH", "LIST-TAB-BRANCH");
   CMD_ALIAS("LIST_TABLE_BRANCH", "LS_TAB_BRANCH");
   CMD_ALIAS("LIST_TABLE_BRANCH", "LS-TAB-BRANCH");
-  CMD_HANDLER("DELETE_TABLE", ExecDeleteTable);
+  CMD_HANDLER("DELETE_TABLE", ExecDeleteTable());
   CMD_ALIAS("DELETE_TABLE", "DELETE-TABLE");
   CMD_ALIAS("DELETE_TABLE", "DELETETABLE");
   CMD_ALIAS("DELETE_TABLE", "DELETE_TAB");
@@ -83,19 +99,19 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("DELETE_TABLE", "DROP-TAB");
   CMD_ALIAS("DELETE_TABLE", "DROPTAB");
   CMD_ALIAS("DELETE_TABLE", "DROP");
-  CMD_HANDLER("GET_COLUMN", ExecGetColumn);
+  CMD_HANDLER("GET_COLUMN", ExecGetColumn());
   CMD_ALIAS("GET_COLUMN", "GET-COLUMN");
   CMD_ALIAS("GET_COLUMN", "GET_COL");
   CMD_ALIAS("GET_COLUMN", "GET-COL");
   CMD_ALIAS("GET_COLUMN", "GETCOLUMN");
   CMD_ALIAS("GET_COLUMN", "GETCOL");
-  CMD_HANDLER("LIST_COLUMN_BRANCH", ExecListColumnBranch);
+  CMD_HANDLER("LIST_COLUMN_BRANCH", ExecListColumnBranch());
   CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST-COLUMN-BRANCH");
   CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST_COL_BRANCH");
   CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST-COL-BRANCH");
   CMD_ALIAS("LIST_COLUMN_BRANCH", "LS_COL_BRANCH");
   CMD_ALIAS("LIST_COLUMN_BRANCH", "LS-COL-BRANCH");
-  CMD_HANDLER("DELETE_COLUMN", ExecDeleteColumn);
+  CMD_HANDLER("DELETE_COLUMN", ExecDeleteColumn());
   CMD_ALIAS("DELETE_COLUMN", "DELETE-COLUMN");
   CMD_ALIAS("DELETE_COLUMN", "DELETECOLUMN");
   CMD_ALIAS("DELETE_COLUMN", "DELETE_COL");
@@ -107,20 +123,20 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("DELETE_COLUMN", "DEL_COL");
   CMD_ALIAS("DELETE_COLUMN", "DEL-COL");
   CMD_ALIAS("DELETE_COLUMN", "DELCOL");
-  CMD_HANDLER("DIFF", ExecDiff);
-  CMD_HANDLER("DIFF_TABLE", ExecDiffTable);
+  CMD_HANDLER("DIFF", ExecDiff());
+  CMD_HANDLER("DIFF_TABLE", ExecDiffTable());
   CMD_ALIAS("DIFF_TABLE", "DIFF-TABLE");
   CMD_ALIAS("DIFF_TABLE", "DIFFTABLE");
   CMD_ALIAS("DIFF_TABLE", "DIFF_TAB");
   CMD_ALIAS("DIFF_TABLE", "DIFF-TAB");
   CMD_ALIAS("DIFF_TABLE", "DIFFTAB");
-  CMD_HANDLER("DIFF_COLUMN", ExecDiffColumn);
+  CMD_HANDLER("DIFF_COLUMN", ExecDiffColumn());
   CMD_ALIAS("DIFF_COLUMN", "DIFF-COLUMN");
   CMD_ALIAS("DIFF_COLUMN", "DIFFCOLUMN");
   CMD_ALIAS("DIFF_COLUMN", "DIFF_COL");
   CMD_ALIAS("DIFF_COLUMN", "DIFF-COL");
   CMD_ALIAS("DIFF_COLUMN", "DIFFCOL");
-  CMD_HANDLER("EXISTS_TABLE", ExecExistsTable);
+  CMD_HANDLER("EXISTS_TABLE", ExecExistsTable());
   CMD_ALIAS("EXISTS_TABLE", "EXISTS-TABLE");
   CMD_ALIAS("EXISTS_TABLE", "EXISTSTABLE");
   CMD_ALIAS("EXISTS_TABLE", "EXISTS_TAB");
@@ -132,7 +148,7 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("EXISTS_TABLE", "EXIST_TAB");
   CMD_ALIAS("EXISTS_TABLE", "EXIST-TAB");
   CMD_ALIAS("EXISTS_TABLE", "EXISTTAB");
-  CMD_HANDLER("EXISTS_COLUMN", ExecExistsTable);
+  CMD_HANDLER("EXISTS_COLUMN", ExecExistsTable());
   CMD_ALIAS("EXISTS_COLUMN", "EXISTS-COLUMN");
   CMD_ALIAS("EXISTS_COLUMN", "EXISTSCOLUMN");
   CMD_ALIAS("EXISTS_COLUMN", "EXISTS_COL");
@@ -144,26 +160,26 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("EXISTS_COLUMN", "EXIST_COL");
   CMD_ALIAS("EXISTS_COLUMN", "EXIST-COL");
   CMD_ALIAS("EXISTS_COLUMN", "EXISTCOL");
-  CMD_HANDLER("GET_ROW", ExecGetRow);
+  CMD_HANDLER("GET_ROW", ExecGetRow());
   CMD_ALIAS("GET_ROW", "GET-ROW");
   CMD_ALIAS("GET_ROW", "GETROW");
-  CMD_HANDLER("LOAD_CSV", ExecLoadCSV);
+  CMD_HANDLER("LOAD_CSV", ExecLoadCSV());
   CMD_ALIAS("LOAD_CSV", "LOAD-CSV");
   CMD_ALIAS("LOAD_CSV", "LOADCSV");
   CMD_ALIAS("LOAD_CSV", "LOAD");
-  CMD_HANDLER("DUMP_CSV", ExecDumpCSV);
+  CMD_HANDLER("DUMP_CSV", ExecDumpCSV());
   CMD_ALIAS("DUMP_CSV", "DUMP-CSV");
   CMD_ALIAS("DUMP_CSV", "DUMPCSV");
   CMD_ALIAS("DUMP_CSV", "DUMP");
   // utility commands
-  CMD_HANDLER("HELP", ExecHelp);
-  CMD_HANDLER("INFO", ExecInfo);
+  CMD_HANDLER("HELP", ExecHelp());
+  CMD_HANDLER("INFO", ExecInfo());
   CMD_ALIAS("INFO", "STATE");
   CMD_ALIAS("INFO", "STATUS");
   CMD_ALIAS("INFO", "STAT");
 }
 
-const int kPrintBasicCmdWidth = 12;
+const int kPrintBasicCmdWidth = 15;
 const int kPrintRelationalCmdWidth = 19;
 const int kPrintUtilCmdWidth = 12;
 
@@ -174,7 +190,7 @@ const int kPrintUtilCmdWidth = 12;
 void Command::PrintCommandHelp(std::ostream& os) {
   os << BLUE("UStore Basic Commands") << ":"
      << std::endl
-     << FORMAT_BASIC_CMD("GET")
+     << FORMAT_BASIC_CMD("GET{_ALL}")
      << "-k <key> [-b <branch> | "
      << std::endl << std::setw(kPrintBasicCmdWidth + 13) << ""
      << "-v <version>]" << std::endl
@@ -201,7 +217,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-k <key> -b <branch>" << std::endl
      << FORMAT_BASIC_CMD("HEAD")
      << "-k <key> -b <branch>" << std::endl
-     << FORMAT_BASIC_CMD("LATEST")
+     << FORMAT_BASIC_CMD("LATEST_{_ALL}")
      << "-k <key>" << std::endl
      << FORMAT_BASIC_CMD("EXISTS")
      << "-k <key> {-b <branch>}" << std::endl
@@ -211,7 +227,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-k <key> -v <version>" << std::endl
      << FORMAT_BASIC_CMD("LIST_BRANCH")
      << "-k <key>" << std::endl
-     << FORMAT_BASIC_CMD("LIST_KEY") << std::endl
+     << FORMAT_BASIC_CMD("LIST_KEY{_ALL}") << std::endl
      << std::endl
      << BLUE("UStore Relational (Columnar) Commands") << ":"
      << std::endl
@@ -388,7 +404,7 @@ ErrorCode Command::ExecGet() {
         std::cout << "\"" << meta << "\"";
         break;
       case UType::kList:
-        Utils::Print(meta.List(), "[", "]", ", ", true);
+        Utils::Print(meta.List(), "[", "]", ", ", true, limit_print_elems);
         break;
       case UType::kMap:
         Utils::Print(meta.Map(), "[", "]", ", ", "(", ")", "->", true);
@@ -715,8 +731,9 @@ ErrorCode Command::ExecDelete() {
 ErrorCode Command::ExecListKey() {
   // screen printing
   const auto f_rpt_success = [](const std::vector<std::string>& keys) {
-    std::cout << BOLD_GREEN("[SUCCESS: LIST_KEY] ")
-              << "Keys: " << Utils::ToStringWithQuote(keys) << std::endl;
+    std::cout << BOLD_GREEN("[SUCCESS: LIST_KEY] ") << "Keys: ";
+    Utils::Print(keys, "[", "]", ", ", true, limit_print_elems);
+    std::cout << std::endl;
   };
   const auto f_rpt_fail = [](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LIST_KEY] ")
@@ -807,8 +824,9 @@ ErrorCode Command::ExecLatest() {
               << std::endl;
   };
   const auto f_rpt_success = [](const std::vector<Hash>& vers) {
-    std::cout << BOLD_GREEN("[SUCCESS: LATEST] Versions: ")
-              << Utils::ToStringWithQuote(vers) << std::endl;
+    std::cout << BOLD_GREEN("[SUCCESS: LATEST] ") << "Versions: ";
+    Utils::Print(vers, "[", "]", ", ", true, limit_print_elems);
+    std::cout << std::endl;
   };
   const auto f_rpt_fail = [&key](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LATEST] ")
@@ -1117,7 +1135,7 @@ ErrorCode Command::ExecGetColumn() {
   const auto f_rpt_success = [&](const Column & col) {
     std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Column \""
               << col_name << "\": ";
-    Utils::Print(col, "[", "]", ", ", true);
+    Utils::Print(col, "[", "]", ", ", true, limit_print_elems);
     std::cout << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
@@ -1551,6 +1569,21 @@ ErrorCode Command::ExecInfo() {
   ec == ErrorCode::kOK ? f_rpt_success(info) : f_rpt_fail(ec);
   return ec;
 }
+
+#define PRINT_ALL(handler) do { \
+  limit_print_elems = Utils::max_size_t; \
+  auto ec = handler; \
+  limit_print_elems = kDefaultLimitPrintElems; \
+  return ec; \
+} while (0)
+
+ErrorCode Command::ExecGetAll() { PRINT_ALL(ExecGet()); }
+
+ErrorCode Command::ExecListKeyAll() { PRINT_ALL(ExecListKey()); }
+
+ErrorCode Command::ExecLatestAll() { PRINT_ALL(ExecLatest()); }
+
+ErrorCode Command::ExecGetColumnAll() { PRINT_ALL(ExecGetColumnAll()); }
 
 }  // namespace cli
 }  // namespace ustore

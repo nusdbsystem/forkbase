@@ -15,8 +15,8 @@ Console::Console(DB* db) noexcept : Command(db) {
   console_commands_.insert("STATUS");
   console_commands_.insert("STAT");
   // console-specific commands
-  CONSOLE_CMD_HANDLER("HISTORY", ExecHistory);
-  CONSOLE_CMD_HANDLER("DUMP_HISTORY", ExecDumpHistory);
+  CONSOLE_CMD_HANDLER("HISTORY", ExecHistory());
+  CONSOLE_CMD_HANDLER("DUMP_HISTORY", ExecDumpHistory());
   CONSOLE_CMD_ALIAS("DUMP_HISTORY", "DUMP-HISTORY");
 }
 

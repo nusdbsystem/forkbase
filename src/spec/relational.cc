@@ -50,9 +50,11 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
   USTORE_GUARD(ec);
   std::string line;
   std::vector<std::string> col_names;
+  char delim(',');
   if (std::getline(ifs, line)) {
     // parse table schema
     col_names = Utils::Tokenize(line, " \t,|");
+    delim = line.at(col_names.front().size());
     // initialization
     for (auto& name : col_names) {
       auto key = GlobalKey(table_name, name);
@@ -62,7 +64,7 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
     }
   }
   if (ec == ErrorCode::kOK) {
-    ec = LoadCSV(ifs, table_name, branch_name, col_names, batch_size,
+    ec = LoadCSV(ifs, table_name, branch_name, col_names, delim, batch_size,
                  print_progress);
   }
   ifs.close();
@@ -73,7 +75,8 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
                                const std::string& table_name,
                                const std::string& branch_name,
                                const std::vector<std::string>& col_names,
-                               size_t batch_size, bool print_progress) {
+                               char delim, size_t batch_size,
+                               bool print_progress) {
   BlockingQueue<std::vector<std::vector<std::string>>> batch_queue(2);
   auto stat_flush = ErrorCode::kOK;
   // launch another thread for data flushing
@@ -82,7 +85,7 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
              print_progress);
   });
   // this thread shards the input data
-  ShardCSV(ifs, batch_size, col_names.size(), batch_queue, stat_flush);
+  ShardCSV(ifs, batch_size, col_names.size(), delim, batch_queue, stat_flush);
   thread_flush.wait();
   // update table once loading columns completes with success
   auto ec = stat_flush;
@@ -104,7 +107,7 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
 }
 
 void ColumnStore::ShardCSV(
-  std::ifstream& ifs, size_t batch_size, size_t n_cols,
+  std::ifstream& ifs, size_t batch_size, size_t n_cols, char delim,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
   const ErrorCode& stat_flush) {
   auto f_get_empty_batch = [&n_cols, &batch_size] {
@@ -123,7 +126,7 @@ void ColumnStore::ShardCSV(
     boost::trim(line);
     if (line.empty()) continue;
 #if defined(__FAST_STRING_TOKENIZE__)
-    auto row = Utils::Split(line, '|', n_cols);
+    auto row = Utils::Split(line, delim, n_cols);
 #else
     auto row = Utils::Tokenize(line, " \t,|", n_cols);
 #endif

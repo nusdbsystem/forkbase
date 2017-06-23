@@ -1,9 +1,12 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include <boost/tokenizer.hpp>
+#include <limits>
 #include "utils/utils.h"
 
 namespace ustore {
+
+const size_t Utils::max_size_t(std::numeric_limits<size_t>::max());
 
 static std::unordered_map<std::string, UType> str2type = {
   {"bool", UType::kBool},
@@ -153,14 +156,19 @@ ErrorCode Utils::CheckIndex(size_t idx, const SList& list) {
 
 void Utils::Print(const UList& list, const std::string& lsymbol,
                   const std::string& rsymbol, const std::string& sep,
-                  bool elem_in_quote, std::ostream& os) {
+                  bool elem_in_quote, size_t limit, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = list.Scan();
   os << lsymbol;
   if (!it.end()) {
     os << quote << it.value() << quote;
-    for (it.next(); !it.end(); it.next()) {
+    size_t cnt(1);
+    for (it.next(); !it.end() && cnt++ < limit; it.next()) {
       os << sep << quote << it.value() << quote;
+    }
+    size_t list_size = list.numElements();
+    if (list_size > limit) {
+      os << sep << "...(and " << (list_size - limit) << " more)";
     }
   }
   os << rsymbol;

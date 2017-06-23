@@ -81,9 +81,7 @@ std::vector<Hash> HeadVersion::GetLatest(const Slice& key) const {
   } else {
     const auto& lv_key = latest_ver_.at(key);
     std::vector<Hash> latest;
-    for (const auto& v : lv_key) {
-      latest.push_back(v);
-    }
+    for (const auto& v : lv_key) latest.push_back(v);
     DCHECK_EQ(lv_key.size(), latest.size());
     return latest;
   }

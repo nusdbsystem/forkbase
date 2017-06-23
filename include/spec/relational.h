@@ -135,10 +135,10 @@ class ColumnStore {
   ErrorCode LoadCSV(
     std::ifstream& ifs, const std::string& table_name,
     const std::string& branch_name, const std::vector<std::string>& col_names,
-    size_t batch_size, bool print_progress);
+    char delim, size_t batch_size, bool print_progress);
 
   void ShardCSV(
-    std::ifstream& ifs, size_t batch_size, size_t n_cols,
+    std::ifstream& ifs, size_t batch_size, size_t n_cols, char delim,
     BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
     const ErrorCode& stat_flush);
 
