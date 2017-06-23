@@ -166,6 +166,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
 
 TEST(TestMessage, TestClient1Thread) {
   // launch workers
+  Env::Instance()->m_config().set_worker_file("conf/worker_test");
   ifstream fin(Env::Instance()->config().worker_file());
   string worker_addr;
   vector<WorkerService*> workers;

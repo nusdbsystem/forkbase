@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
               << "Found invalid command-line option" << std::endl;
     return -1;
   }
-  Env::Instance()->m_config().set_worker_file("conf/workers_micro_bench");
+  Env::Instance()->m_config().set_worker_file("conf/worker_test");
   // set num_segments large enough for all test cases
   if (BenchmarkConfig::command == "ALL") {
     constexpr int seg = 180;

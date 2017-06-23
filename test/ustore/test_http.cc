@@ -240,6 +240,7 @@ string Delete(const string& key, const string& branch, ClientSocket& cs) {
 TEST(HttpTest, BasicOps) {
   int port = Env::Instance()->config().http_port();
   // launch workers
+  Env::Instance()->m_config().set_worker_file("conf/worker_test");
   std::ifstream fin(Env::Instance()->config().worker_file());
   string worker_addr;
   std::vector<ustore::WorkerService*> workers;
