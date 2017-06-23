@@ -506,8 +506,10 @@ node_id_t WorkerList::GetWorker(const Slice& key) {
 //       return ri.address();
 //     }
 //   return workers_[0].address();
-  size_t idx = MurmurHash(key.data(), key.len()) % workers_.size();
-  return workers_[idx].address();
+  Hash h = Hash::ComputeFrom(key.data(), key.len());
+  uint64_t idx = *reinterpret_cast<const int64_t*>(h.value());
+  // size_t idx = MurmurHash(key.data(), key.len()) % workers_.size();
+  return workers_[idx%workers_.size()].address();
 }
 
 vector<node_id_t> WorkerList::GetWorkerIds() {
