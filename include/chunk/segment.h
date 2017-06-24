@@ -94,7 +94,7 @@ class FixedSegment : public Segment {
 };
 
 class VarSegment : public Segment {
-  // Entries in FixedSegment are of variable number of bytes
+  // Entries in VarSegment are of variable number of bytes
  public:
   VarSegment(std::unique_ptr<const byte_t[]> data, size_t num_bytes,
              std::vector<size_t>&& entry_offsets)

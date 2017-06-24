@@ -9,13 +9,17 @@
 
 namespace ustore {
 
-UCell UCell::Create(UType data_type, const Slice& key,
-                    const Hash& data_root_hash, const Hash& preHash1,
-                    const Hash& preHash2) {
-  Chunk chunk = CellNode::NewChunk(data_type, key, data_root_hash, preHash1,
-                                   preHash2);
+UCell UCell::Create(UType type, const Slice& key, const Slice& data,
+                    const Hash& preHash1, const Hash& preHash2) {
+  Chunk chunk = CellNode::NewChunk(type, key, data, preHash1, preHash2);
   store::GetChunkStore()->Put(chunk.hash(), chunk);
   return UCell(std::move(chunk));
+}
+
+UCell UCell::Create(UType type, const Slice& key, const Hash& data,
+                    const Hash& preHash1, const Hash& preHash2) {
+  return Create(type, key, Slice(data.value(), Hash::kByteLength), preHash1,
+                preHash2);
 }
 
 UCell UCell::Load(const Hash& hash) {

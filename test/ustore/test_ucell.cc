@@ -10,11 +10,12 @@
 
 TEST(UCell, Load) {
   auto h1 = ustore::Hash::FromBase32("26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
+  auto h1_slice = ustore::Slice(h1.value(), ustore::Hash::kByteLength);
   std::string cell_key("cell_key");
   ustore::Slice key(cell_key);
   ustore::UType type = ustore::UType::kBlob;
-  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, h1,
-                                                   ustore::Hash::kNull);
+  auto chunk = ustore::CellNode::NewChunk(type, key, h1_slice,
+      ustore::Hash::kNull, ustore::Hash());
 
   ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
