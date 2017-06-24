@@ -32,13 +32,13 @@ bool CursorIterator::next() {
     curr_idx_in_range_ = 0;
     ++curr_range_idx_;
     auto pre_range = ranges_[curr_range_idx_ - 1];
-    if (curr_range_idx_ < ranges_.size()) {
+    if (curr_range_idx_ < int32_t(ranges_.size())) {
       uint64_t pre_range_end_idx =
           pre_range.start_idx + pre_range.num_subsequent - 1;
       uint64_t steps = ranges_[curr_range_idx_].start_idx
                        - pre_range_end_idx;
       cursor_.AdvanceSteps(steps);
-    } else if (curr_range_idx_ == ranges_.size()) {
+    } else if (curr_range_idx_ == int32_t(ranges_.size())) {
       // Already at the very end of all index ranges
       // Move cursor one more step
       cursor_.Advance(false);  // either true or false for parameter is fine
@@ -70,7 +70,6 @@ bool CursorIterator::previous() {
     return true;
   }
 
-  uint64_t curr_range_len = ranges_[curr_range_idx_].num_subsequent;
   if (curr_idx_in_range_ > 0) {
     --curr_idx_in_range_;
     cursor_.Retreat(true);

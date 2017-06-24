@@ -90,7 +90,7 @@ int HttpRequest::ParseOneLine(char* buf, int start, int end) {
   if (unlikely(ie > end)) {
     if (headers_.count("content-length")) {
       int cl = atoi(headers_["content-length"].c_str());
-      while (key.length() > cl) {
+      while (int(key.length()) > cl) {
         LOG(WARNING) << "Content larger than the specified content-length";
         key.pop_back();
       }
@@ -116,7 +116,7 @@ int HttpRequest::ParseLastLine(char* buf, int start, int end) {
     string key = string(buf, start, end-start+1);
     if (headers_.count("content-length")) {
       int cl = atoi(headers_["content-length"].c_str());
-      while (key.length() > cl) {
+      while (int(key.length()) > cl) {
         LOG(WARNING) << "Content larger than the specified content-length:" << key.length() << ":" << cl;
         key.pop_back();
       }
@@ -131,7 +131,7 @@ int HttpRequest::ParseLastLine(char* buf, int start, int end) {
     if (unlikely(ie > end)) {
       if (headers_.count("content-length")) {
         int cl = atoi(headers_["content-length"].c_str());
-        while (key.length() > cl) {
+        while (int(key.length()) > cl) {
           LOG(WARNING) << "Content larger than the specified content-length";
           key.pop_back();
         }
@@ -221,7 +221,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
 
 int HttpRequest::Respond(ClientSocket* socket, const string response) {
   if (!(method_ == "post" || method_ == "get")) {
-    if (unlikely(kBadRequest.length() !=
+    if (unlikely(int(kBadRequest.length()) !=
         socket->Send(kBadRequest.c_str(), kBadRequest.length()))) {
       return ST_ERROR;
     }

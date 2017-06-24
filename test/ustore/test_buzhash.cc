@@ -65,7 +65,7 @@ TEST(BuzHash, ShortStrWindow16) {
   for (size_t i = 0; i < strlen(abcd_str); ++i) {
     bz.HashByte(uint8_t(abcd_str[i]));
   }
-  EXPECT_EQ(bz.Sum32(), 928730161);
+  EXPECT_EQ(bz.Sum32(), uint32_t(928730161));
 }
 
 TEST(BuzHash, ShortStrWindow64) {
@@ -73,7 +73,7 @@ TEST(BuzHash, ShortStrWindow64) {
   for (size_t i = 0; i < strlen(abcd_str); ++i) {
     bz.HashByte(uint8_t(abcd_str[i]));
   }
-  EXPECT_EQ(bz.Sum32(), 928730161);
+  EXPECT_EQ(bz.Sum32(), uint32_t(928730161));
 }
 
 
@@ -82,7 +82,7 @@ TEST(BuzHash, LongStrWindow16) {
   for (size_t i = 0; i < strlen(julius_caeser_str); ++i) {
     bz.HashByte(uint8_t(julius_caeser_str[i]));
   }
-  EXPECT_EQ(bz.Sum32(), 1690582417);
+  EXPECT_EQ(bz.Sum32(), uint32_t(1690582417));
 }
 
 TEST(BuzHash, LongStrWindow64) {
@@ -90,5 +90,5 @@ TEST(BuzHash, LongStrWindow64) {
   for (size_t i = 0; i < strlen(julius_caeser_str); ++i) {
     bz.HashByte(uint8_t(julius_caeser_str[i]));
   }
-  EXPECT_EQ(bz.Sum32(), 209851385);
+  EXPECT_EQ(bz.Sum32(), uint32_t(209851385));
 }

@@ -32,32 +32,32 @@ TEST(CursorIterator, Basic) {
 
 // Test on next()
   ustore::CursorIterator it(hash, {range1, range2, range3}, &loader);
-  ASSERT_EQ(0, it.index());
+  ASSERT_EQ(size_t(0), it.index());
 
   ustore::Slice actual_c0 = it.value();
   ASSERT_EQ(c[0], *actual_c0.data());
-  ASSERT_EQ(1, actual_c0.len());
+  ASSERT_EQ(size_t(1), actual_c0.len());
 
   ASSERT_TRUE(it.next());
-  ASSERT_EQ(1, it.index());
+  ASSERT_EQ(size_t(1), it.index());
 
   ustore::Slice actual_c1 = it.value();
   ASSERT_EQ(c[1], *actual_c1.data());
-  ASSERT_EQ(1, actual_c1.len());
+  ASSERT_EQ(size_t(1), actual_c1.len());
 
   ASSERT_TRUE(it.next());
-  ASSERT_EQ(3, it.index());
+  ASSERT_EQ(size_t(3), it.index());
 
   ustore::Slice actual_c3 = it.value();
   ASSERT_EQ(c[3], *actual_c3.data());
-  ASSERT_EQ(1, actual_c3.len());
+  ASSERT_EQ(size_t(1), actual_c3.len());
 
   ASSERT_TRUE(it.next());
-  ASSERT_EQ(5, it.index());
+  ASSERT_EQ(size_t(5), it.index());
 
   ustore::Slice actual_c5 = it.value();
   ASSERT_EQ(c[5], *actual_c5.data());
-  ASSERT_EQ(1, actual_c5.len());
+  ASSERT_EQ(size_t(1), actual_c5.len());
 
   ASSERT_FALSE(it.next());
   ASSERT_TRUE(it.end());
@@ -68,28 +68,28 @@ TEST(CursorIterator, Basic) {
 
 // test on previous()
   ASSERT_TRUE(it.previous());
-  ASSERT_EQ(5, it.index());
+  ASSERT_EQ(size_t(5), it.index());
 
   actual_c5 = it.value();
   ASSERT_EQ(c[5], *actual_c5.data());
 
 
   ASSERT_TRUE(it.previous());
-  ASSERT_EQ(3, it.index());
+  ASSERT_EQ(size_t(3), it.index());
 
   actual_c3 = it.value();
   ASSERT_EQ(c[3], *actual_c3.data());
 
 
   ASSERT_TRUE(it.previous());
-  ASSERT_EQ(1, it.index());
+  ASSERT_EQ(size_t(1), it.index());
 
   actual_c1 = it.value();
   ASSERT_EQ(c[1], *actual_c1.data());
 
 
   ASSERT_TRUE(it.previous());
-  ASSERT_EQ(0, it.index());
+  ASSERT_EQ(size_t(0), it.index());
 
   actual_c0 = it.value();
   ASSERT_EQ(c[0], *actual_c0.data());
@@ -124,17 +124,17 @@ TEST(CursorIterator, Basic) {
   ustore::CursorIterator it1(hash, {range1, range2, range3}, &loader);
   ustore::CursorIterator it2 = std::move(it1);
 
-  ASSERT_EQ(0, it2.index());
+  ASSERT_EQ(size_t(0), it2.index());
 
   actual_c0 = it2.value();
   ASSERT_EQ(c[0], *actual_c0.data());
-  ASSERT_EQ(1, actual_c0.len());
+  ASSERT_EQ(size_t(1), actual_c0.len());
 
   ustore::CursorIterator it3(std::move(it2));
 
-  ASSERT_EQ(0, it3.index());
+  ASSERT_EQ(size_t(0), it3.index());
 
   actual_c0 = it3.value();
   ASSERT_EQ(c[0], *actual_c0.data());
-  ASSERT_EQ(1, actual_c0.len());
+  ASSERT_EQ(size_t(1), actual_c0.len());
 }

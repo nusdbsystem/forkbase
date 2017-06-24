@@ -57,7 +57,7 @@ TEST(VBlob, CreateFromEmpty) {
   EXPECT_TRUE(ErrorCode::kOK == get.stat);
   v = get.value.Blob();
   // check data
-  EXPECT_EQ(0, v.size());
+  EXPECT_EQ(size_t(0), v.size());
 }
 
 TEST(VBlob, CreateNewVBlob) {

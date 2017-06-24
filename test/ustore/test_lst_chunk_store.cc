@@ -81,7 +81,6 @@ TEST(LSTStore, Get) {
               + ustore::Hash::kByteLength, hash[i]);
   }
 
-  auto tp = std::chrono::steady_clock::now();
   LSTStore* lstStore = LSTStore::Instance();
   for (int i = 0; i < NUMBER; ++i) {
     // load from stroage
@@ -89,7 +88,7 @@ TEST(LSTStore, Get) {
       lstStore->Get(ustore::Hash(hash[i]));
       EXPECT_EQ(c.type(), ustore::ChunkType::kBlob);
       EXPECT_EQ(c.numBytes(), LEN + ::ustore::Chunk::kMetaLength);
-      EXPECT_EQ(c.capacity(), LEN);
+      EXPECT_EQ(c.capacity(), size_t(LEN));
   }
 }
 

@@ -121,7 +121,7 @@ bool Console::ReplaceWithHistory(std::string& cmd_line) {
   if (std::regex_match(origin, match, rgx)) {
     int num = std::stoi(match[1]);
     auto residue = match[2].str();
-    auto history_size = history_.size();
+    int history_size = history_.size();
     if (0 < num && num <= history_size) {
       f_set_cmd_line(history_[num - 1] + residue);
       return true;

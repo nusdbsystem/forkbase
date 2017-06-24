@@ -49,7 +49,7 @@ TEST(VMap, CreateFromEmpty) {
 
   ustore::Slice actual_val = v.Get(Slice(delta_key));
   ASSERT_TRUE(delta_val == actual_val);
-  ASSERT_EQ(1, v.numElements());
+  ASSERT_EQ(size_t(1), v.numElements());
 
   // remove the only key
   v.Remove(Slice(delta_key));
@@ -59,7 +59,7 @@ TEST(VMap, CreateFromEmpty) {
   auto get1 = db.Get(Slice(key_vmap), Slice(branch_vmap));
   EXPECT_TRUE(ErrorCode::kOK == get1.stat);
   v = get1.value.Map();
-  ASSERT_EQ(0, v.numElements());
+  ASSERT_EQ(size_t(0), v.numElements());
 }
 
 TEST(VMap, CreateNewVMap) {
@@ -79,7 +79,7 @@ TEST(VMap, CreateNewVMap) {
   auto v = get.value.Map();
   // check data
   auto it = v.Scan();
-  for (int i = 0; i < slice_key.size(); ++i) {
+  for (size_t i = 0; i < slice_key.size(); ++i) {
     EXPECT_EQ(slice_key[i], it.key());
     EXPECT_EQ(slice_val[i], it.value());
     it.next();
@@ -112,7 +112,7 @@ TEST(VMap, AddToExistingVMap) {
   v = get.value.Map();
   // check data
   auto it = v.Scan();
-  for (int i = 0; i < slice_key.size(); ++i) {
+  for (size_t i = 0; i < slice_key.size(); ++i) {
     EXPECT_EQ(slice_key[i], it.key());
     EXPECT_EQ(slice_val[i], it.value());
     it.next();
@@ -141,7 +141,7 @@ TEST(VMap, RemoveFromExistingVMap) {
   v = get.value.Map();
   // check data
   auto it = v.Scan();
-  for (int i = 0; i < slice_key.size() - 1; ++i) {
+  for (size_t i = 0; i < slice_key.size() - 1; ++i) {
     EXPECT_EQ(slice_key[i], it.key());
     EXPECT_EQ(slice_val[i], it.value());
     it.next();
@@ -172,7 +172,7 @@ TEST(VMap, UpdateExistingVMap) {
   v = get.value.Map();
   // check data
   auto it = v.Scan();
-  for (int i = 0; i < slice_key.size(); ++i) {
+  for (size_t i = 0; i < slice_key.size(); ++i) {
     EXPECT_EQ(slice_key[i], it.key());
     EXPECT_EQ(slice_val[i], it.value());
     it.next();

@@ -19,7 +19,6 @@ TEST(Relational, Basic) {
   ustore::Worker worker(2017, false);
   ColumnStore cs(&worker);
 
-  ustore::ErrorCode code;
   const std::string table_name("Test");
   ASSERT_SUCCEEDED(cs.CreateTable(table_name, "master"));
 
@@ -33,7 +32,7 @@ TEST(Relational, Basic) {
   ASSERT_SUCCEEDED(
     cs.GetColumn(table_name, "master", col1_name, &actual_col1));
 
-  ASSERT_EQ(2, actual_col1.numElements());
+  ASSERT_EQ(size_t(2), actual_col1.numElements());
 
   ASSERT_SUCCEEDED(
     cs.DeleteColumn(table_name, "master", col1_name));
@@ -55,7 +54,7 @@ TEST(Relational, Basic) {
   ASSERT_SUCCEEDED(
     cs.GetColumn(table_name, new_branch, col2_name, &actual_col2));
 
-  ASSERT_EQ(3, actual_col2.numElements());
+  ASSERT_EQ(size_t(3), actual_col2.numElements());
 
   const std::string col3_name("col3");
   const std::vector<std::string> expected_col3{"col3_v1"};
@@ -67,5 +66,5 @@ TEST(Relational, Basic) {
   ASSERT_SUCCEEDED(
     cs.GetColumn(table_name, new_branch, col3_name, &actual_col3));
 
-  ASSERT_EQ(1, actual_col3.numElements());
+  ASSERT_EQ(size_t(1), actual_col3.numElements());
 }

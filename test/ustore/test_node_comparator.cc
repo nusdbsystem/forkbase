@@ -54,25 +54,25 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
   // lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
 
-  ASSERT_EQ(2, df_ranges.size());
+  ASSERT_EQ(size_t(2), df_ranges.size());
 
-  EXPECT_EQ(10, df_ranges[0].start_idx);
-  EXPECT_EQ(3, df_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(10), df_ranges[0].start_idx);
+  EXPECT_EQ(size_t(3), df_ranges[0].num_subsequent);
 
-  EXPECT_EQ(18, df_ranges[1].start_idx);
-  EXPECT_EQ(1, df_ranges[1].num_subsequent);
+  EXPECT_EQ(size_t(18), df_ranges[1].start_idx);
+  EXPECT_EQ(size_t(1), df_ranges[1].num_subsequent);
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
       = rhs_cmptor_->Intersect(lhs);
 
-  ASSERT_EQ(2, intersect_ranges.size());
+  ASSERT_EQ(size_t(2), intersect_ranges.size());
 
-  EXPECT_EQ(0, intersect_ranges[0].start_idx);
-  EXPECT_EQ(10, intersect_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(0), intersect_ranges[0].start_idx);
+  EXPECT_EQ(size_t(10), intersect_ranges[0].num_subsequent);
 
-  EXPECT_EQ(13, intersect_ranges[1].start_idx);
-  EXPECT_EQ(5, intersect_ranges[1].num_subsequent);
+  EXPECT_EQ(size_t(13), intersect_ranges[1].start_idx);
+  EXPECT_EQ(size_t(5), intersect_ranges[1].num_subsequent);
 }
 
 TEST_F(IndexComparatorSmallEnv, Insertion) {
@@ -88,19 +88,19 @@ TEST_F(IndexComparatorSmallEnv, Insertion) {
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
 
-  ASSERT_EQ(1, df_ranges.size());
+  ASSERT_EQ(size_t(1), df_ranges.size());
 
-  EXPECT_EQ(10, df_ranges[0].start_idx);
-  EXPECT_EQ(13, df_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(10), df_ranges[0].start_idx);
+  EXPECT_EQ(size_t(13), df_ranges[0].num_subsequent);
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
       = rhs_cmptor_->Intersect(lhs);
 
-  ASSERT_EQ(1, intersect_ranges.size());
+  ASSERT_EQ(size_t(1), intersect_ranges.size());
 
-  EXPECT_EQ(0, intersect_ranges[0].start_idx);
-  EXPECT_EQ(10, intersect_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(0), intersect_ranges[0].start_idx);
+  EXPECT_EQ(size_t(10), intersect_ranges[0].num_subsequent);
 }
 
 TEST_F(IndexComparatorSmallEnv, Deletion) {
@@ -118,19 +118,19 @@ TEST_F(IndexComparatorSmallEnv, Deletion) {
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
 
-  ASSERT_EQ(1, df_ranges.size());
+  ASSERT_EQ(size_t(1), df_ranges.size());
 
-  EXPECT_EQ(10, df_ranges[0].start_idx);
-  EXPECT_EQ(7, df_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(10), df_ranges[0].start_idx);
+  EXPECT_EQ(size_t(7), df_ranges[0].num_subsequent);
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
       = rhs_cmptor_->Intersect(lhs);
 
-  ASSERT_EQ(1, intersect_ranges.size());
+  ASSERT_EQ(size_t(1), intersect_ranges.size());
 
-  EXPECT_EQ(0, intersect_ranges[0].start_idx);
-  EXPECT_EQ(10, intersect_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(0), intersect_ranges[0].start_idx);
+  EXPECT_EQ(size_t(10), intersect_ranges[0].num_subsequent);
 }
 
 class IndexComparatorBigEnv : public ::testing::Test {
@@ -218,24 +218,24 @@ TEST_F(IndexComparatorBigEnv, Basic) {
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
 
-  ASSERT_EQ(2, df_ranges.size());
+  ASSERT_EQ(size_t(2), df_ranges.size());
 
-  EXPECT_EQ(60, df_ranges[0].start_idx);
-  EXPECT_EQ(10, df_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(60), df_ranges[0].start_idx);
+  EXPECT_EQ(size_t(10), df_ranges[0].num_subsequent);
 
   EXPECT_EQ(rhs_len_ - 5, df_ranges[1].start_idx);
-  EXPECT_EQ(10, df_ranges[1].num_subsequent);
+  EXPECT_EQ(size_t(10), df_ranges[1].num_subsequent);
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
       = rhs_cmptor_->Intersect(lhs);
 
-  ASSERT_EQ(2, intersect_ranges.size());
+  ASSERT_EQ(size_t(2), intersect_ranges.size());
 
-  EXPECT_EQ(0, intersect_ranges[0].start_idx);
-  EXPECT_EQ(60, intersect_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(0), intersect_ranges[0].start_idx);
+  EXPECT_EQ(size_t(60), intersect_ranges[0].num_subsequent);
 
-  EXPECT_EQ(70, intersect_ranges[1].start_idx);
+  EXPECT_EQ(size_t(70), intersect_ranges[1].start_idx);
   EXPECT_EQ(rhs_len_ - 70 - 5, intersect_ranges[1].num_subsequent);
 }
 
@@ -307,7 +307,6 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   constexpr const ustore::byte_t k5[] = "k55";
 
   constexpr const ustore::byte_t new_k5[] = "k5";
-  constexpr const ustore::byte_t new_v5[] = "v5";
 
   constexpr const ustore::byte_t k7[] = "k7";
 
@@ -340,7 +339,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   nb1.SpliceElements(2, seg1.get());
   ustore::Hash lhs_t1 = nb1.Commit();
 
-  ASSERT_EQ(6, numElements(lhs_t1));
+  ASSERT_EQ(size_t(6), numElements(lhs_t1));
 
 // replace kv5 with new_kv5
   ustore::NodeBuilder nb2(
@@ -352,7 +351,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 
   nb2.SpliceElements(1, seg2.get());
   ustore::Hash lhs_t2 = nb2.Commit();
-  ASSERT_EQ(6, numElements(lhs_t2));
+  ASSERT_EQ(size_t(6), numElements(lhs_t2));
 
 
 // remove k6 and append kv7 and kv8
@@ -367,36 +366,36 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   nb3.SpliceElements(1, seg3.get());
   ustore::Hash lhs = nb3.Commit();
 
-  ASSERT_EQ(7, numElements(lhs));
+  ASSERT_EQ(size_t(7), numElements(lhs));
 
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
 
-  ASSERT_EQ(3, df_ranges.size());
+  ASSERT_EQ(size_t(3), df_ranges.size());
 
-  EXPECT_EQ(1, df_ranges[0].start_idx);  // for key2
-  EXPECT_EQ(1, df_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(1), df_ranges[0].start_idx);  // for key2
+  EXPECT_EQ(size_t(1), df_ranges[0].num_subsequent);
 
-  EXPECT_EQ(3, df_ranges[1].start_idx);  // for key5
-  EXPECT_EQ(1, df_ranges[1].num_subsequent);
+  EXPECT_EQ(size_t(3), df_ranges[1].start_idx);  // for key5
+  EXPECT_EQ(size_t(1), df_ranges[1].num_subsequent);
 
-  EXPECT_EQ(5, df_ranges[2].start_idx);  // for key7 and key8
-  EXPECT_EQ(2, df_ranges[2].num_subsequent);
+  EXPECT_EQ(size_t(5), df_ranges[2].start_idx);  // for key7 and key8
+  EXPECT_EQ(size_t(2), df_ranges[2].num_subsequent);
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
       = rhs_cmptor_->Intersect(lhs);
 
-  ASSERT_EQ(3, intersect_ranges.size());
+  ASSERT_EQ(size_t(3), intersect_ranges.size());
 
-  EXPECT_EQ(0, intersect_ranges[0].start_idx);
-  EXPECT_EQ(1, intersect_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(0), intersect_ranges[0].start_idx);
+  EXPECT_EQ(size_t(1), intersect_ranges[0].num_subsequent);
 
-  EXPECT_EQ(2, intersect_ranges[1].start_idx);
-  EXPECT_EQ(1, intersect_ranges[1].num_subsequent);
+  EXPECT_EQ(size_t(2), intersect_ranges[1].start_idx);
+  EXPECT_EQ(size_t(1), intersect_ranges[1].num_subsequent);
 
-  EXPECT_EQ(4, intersect_ranges[2].start_idx);
-  EXPECT_EQ(1, intersect_ranges[2].num_subsequent);
+  EXPECT_EQ(size_t(4), intersect_ranges[2].start_idx);
+  EXPECT_EQ(size_t(1), intersect_ranges[2].num_subsequent);
 }
 
 
@@ -506,21 +505,21 @@ TEST_F(KeyComparatorBigEnv, Basic) {
   //  lhs DIFF rhs
   std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
 
-  ASSERT_EQ(1, df_ranges.size());
+  ASSERT_EQ(size_t(1), df_ranges.size());
 
-  EXPECT_EQ(200, df_ranges[0].start_idx);
-  EXPECT_EQ(100, df_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(200), df_ranges[0].start_idx);
+  EXPECT_EQ(size_t(100), df_ranges[0].num_subsequent);
 
 
   // // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
       = rhs_cmptor_->Intersect(lhs);
 
-  ASSERT_EQ(2, intersect_ranges.size());
+  ASSERT_EQ(size_t(2), intersect_ranges.size());
 
-  EXPECT_EQ(0, intersect_ranges[0].start_idx);
-  EXPECT_EQ(200, intersect_ranges[0].num_subsequent);
+  EXPECT_EQ(size_t(0), intersect_ranges[0].start_idx);
+  EXPECT_EQ(size_t(200), intersect_ranges[0].num_subsequent);
 
-  EXPECT_EQ(300, intersect_ranges[1].start_idx);
+  EXPECT_EQ(size_t(300), intersect_ranges[1].start_idx);
   EXPECT_EQ(num_items_ - 200 - 300, intersect_ranges[1].num_subsequent);
 }

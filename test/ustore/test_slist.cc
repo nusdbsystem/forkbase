@@ -29,20 +29,20 @@ TEST(SList, Empty) {
   std::vector<ustore::Slice> e;
   ustore::SList slist(e);
 
-  ASSERT_EQ(0, slist.numElements());
+  ASSERT_EQ(size_t(0), slist.numElements());
   ASSERT_TRUE(slist.Get(0).empty());
 
   const ustore::Slice expected_e1("e1", 2);
 
   // Insert a new element
   ustore::SList new_slist1(slist.Splice(0 , 0, {expected_e1}));
-  ASSERT_EQ(1, new_slist1.numElements());
+  ASSERT_EQ(size_t(1), new_slist1.numElements());
   ustore::Slice actual_e1 = new_slist1.Get(0);
   EXPECT_TRUE(expected_e1 == actual_e1);
 
   // Remove the only element
   ustore::SList new_slist2(new_slist1.Delete(0 , 1));
-  ASSERT_EQ(0, new_slist2.numElements());
+  ASSERT_EQ(size_t(0), new_slist2.numElements());
 
 
   auto it = new_slist2.Scan();
@@ -54,14 +54,14 @@ TEST(SList, Empty) {
 
   // non-empty list DIFF empty list
   auto diff_it2 = new_slist1.Diff(new_slist2);
-  ASSERT_EQ(0, diff_it2.index());
+  ASSERT_EQ(size_t(0), diff_it2.index());
   ASSERT_TRUE(diff_it2.value() == expected_e1);
 
   ASSERT_FALSE(diff_it2.next());
   ASSERT_TRUE(diff_it2.end());
 
   ASSERT_TRUE(diff_it2.previous());
-  ASSERT_EQ(0, diff_it2.index());
+  ASSERT_EQ(size_t(0), diff_it2.index());
   ASSERT_TRUE(diff_it2.value() == expected_e1);
 
   ASSERT_FALSE(diff_it2.previous());
@@ -73,7 +73,7 @@ TEST(SList, Empty) {
 
   // non-empty list DUALLYDIFF empty list
   auto ddiff_it = ustore::UList::DuallyDiff(new_slist1, new_slist2);
-  ASSERT_EQ(0, ddiff_it.index());
+  ASSERT_EQ(size_t(0), ddiff_it.index());
   ASSERT_TRUE(ddiff_it.lhs_value() == expected_e1);
   ASSERT_TRUE(ddiff_it.rhs_value().empty());
 
@@ -81,7 +81,7 @@ TEST(SList, Empty) {
   ASSERT_TRUE(ddiff_it.end());
 
   ASSERT_TRUE(ddiff_it.previous());
-  ASSERT_EQ(0, ddiff_it.index());
+  ASSERT_EQ(size_t(0), ddiff_it.index());
   ASSERT_TRUE(ddiff_it.lhs_value() == expected_e1);
   ASSERT_TRUE(ddiff_it.rhs_value().empty());
 
@@ -99,8 +99,6 @@ TEST(SList, Small) {
 
   // e3 and e4 to be spliced later
   ustore::SList slist({e1, e2, e5});
-
-  size_t val_num_bytes = 0;
 
   // Get Value by Index
   const ustore::Slice actual_e2 = slist.Get(1);
@@ -130,19 +128,19 @@ TEST(SList, Small) {
 
   auto diff_it = ustore::UList::DuallyDiff(slist, new_slist2);
 
-  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(size_t(1), diff_it.index());
   ASSERT_EQ(e2, diff_it.lhs_value());
   ASSERT_EQ(e3, diff_it.rhs_value());
 
   ASSERT_TRUE(diff_it.next());
 
-  ASSERT_EQ(2, diff_it.index());
+  ASSERT_EQ(size_t(2), diff_it.index());
   ASSERT_EQ(e5, diff_it.lhs_value());
   ASSERT_EQ(e4, diff_it.rhs_value());
 
   ASSERT_TRUE(diff_it.next());
 
-  ASSERT_EQ(3, diff_it.index());
+  ASSERT_EQ(size_t(3), diff_it.index());
   ASSERT_TRUE(diff_it.lhs_value().empty());
   ASSERT_EQ(e2, diff_it.rhs_value());
 
@@ -156,19 +154,19 @@ TEST(SList, Small) {
   // start to retreat
   ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(3, diff_it.index());
+  ASSERT_EQ(size_t(3), diff_it.index());
   ASSERT_TRUE(diff_it.lhs_value().empty());
   ASSERT_EQ(e2, diff_it.rhs_value());
 
   ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(2, diff_it.index());
+  ASSERT_EQ(size_t(2), diff_it.index());
   ASSERT_EQ(e5, diff_it.lhs_value());
   ASSERT_EQ(e4, diff_it.rhs_value());
 
   ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(size_t(1), diff_it.index());
   ASSERT_EQ(e2, diff_it.lhs_value());
   ASSERT_EQ(e3, diff_it.rhs_value());
 
@@ -181,7 +179,7 @@ TEST(SList, Small) {
 
   ASSERT_TRUE(diff_it.next());
 
-  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(size_t(1), diff_it.index());
   ASSERT_EQ(e2, diff_it.lhs_value());
   ASSERT_EQ(e3, diff_it.rhs_value());
 
@@ -189,7 +187,7 @@ TEST(SList, Small) {
   ASSERT_TRUE(diff_it.next());
   ASSERT_TRUE(diff_it.previous());
 
-  ASSERT_EQ(1, diff_it.index());
+  ASSERT_EQ(size_t(1), diff_it.index());
   ASSERT_EQ(e2, diff_it.lhs_value());
   ASSERT_EQ(e3, diff_it.rhs_value());
 

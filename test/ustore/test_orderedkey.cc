@@ -45,7 +45,7 @@ TEST(OrderedKey, Encode) {
 
   EXPECT_EQ(len, sizeof(uint64_t));
   uint64_t key = *(reinterpret_cast<uint64_t*>(buffer));
-  EXPECT_EQ(10, key);
+  EXPECT_EQ(size_t(10), key);
 
   delete[] buffer;
 
@@ -54,7 +54,7 @@ TEST(OrderedKey, Encode) {
   ustore::OrderedKey k2(false, d, 3);
   len = k2.Encode(buffer);
 
-  EXPECT_EQ(3, len);
+  EXPECT_EQ(size_t(3), len);
   EXPECT_EQ(0, std::memcmp(buffer, d, 3));
 
   ustore::OrderedKey kk2(false, buffer, 3);

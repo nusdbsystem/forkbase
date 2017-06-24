@@ -6,15 +6,15 @@
 using namespace ustore;
 using Vec = std::vector<std::string>;
 
-int test_size = 10;
-int str_length = 32;
-int blob_size = 4096;
+size_t test_size = 10;
+size_t str_length = 32;
+size_t blob_size = 4096;
 
 TEST(RandomGenerator, RG_SequentialNumString) {
   RandomGenerator rg;
   Vec keys = rg.SequentialNumString("", test_size);
   EXPECT_EQ(test_size, keys.capacity());
-  EXPECT_EQ(1, keys[1].length());
+  EXPECT_EQ(size_t(1), keys[1].length());
 }
 
 TEST(RandomGenerator, RG_NFixedString) {

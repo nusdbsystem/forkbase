@@ -46,7 +46,7 @@ TEST(VList, CreateFromEmpty) {
 
   ustore::Slice actual_val = v.Get(0);
   ASSERT_TRUE(delta == actual_val);
-  ASSERT_EQ(1, v.numElements());
+  ASSERT_EQ(size_t(1), v.numElements());
 
   // remove the only element
   v.Delete(0, 1);
@@ -56,7 +56,7 @@ TEST(VList, CreateFromEmpty) {
   auto get1 = db.Get(Slice(key_vlist), Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == get1.stat);
   v = get1.value.List();
-  ASSERT_EQ(0, v.numElements());
+  ASSERT_EQ(size_t(0), v.numElements());
 }
 
 

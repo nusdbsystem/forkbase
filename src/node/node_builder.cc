@@ -232,7 +232,6 @@ Hash NodeBuilder::Commit() {
   while (true) {
     CHECK(cur_seg != nullptr);
     bool hasBoundary = false;
-    size_t num_entries = cur_seg->numEntries();
 
     size_t boundary_pos =
         rhasher_->TryHashBytes(cur_seg->data(), cur_seg->numBytes());

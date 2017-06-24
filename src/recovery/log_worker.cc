@@ -77,7 +77,7 @@ bool LogWorker::WriteLog(const char* data, uint64_t data_length) {
     }
     fsync(fd_);
   } else {  // weak consistency
-    if (data_length + buffer_indice_ > buffer_size_) {  // log buffer is full
+    if (int64_t(data_length) + buffer_indice_ > buffer_size_) {  // log buffer is full
       ret = Flush();
       if (ret == -1) {
         LOG(WARNING)

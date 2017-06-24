@@ -65,7 +65,6 @@ TEST(TestMessage, TestPutRequest) {
   populateHeader(&msg, UMessage::PUT_REQUEST);
 
   // add payload
-  auto request = msg.mutable_request_payload();
   auto val = msg.mutable_value_payload();
   val->set_type(static_cast<int>(UType::kList));
   byte_t base[Hash::kByteLength];
@@ -73,7 +72,7 @@ TEST(TestMessage, TestPutRequest) {
   val->set_base(base, Hash::kByteLength);
   val->set_pos(0);
   val->set_dels(0);
-  for (int i=0; i<VALUE2_NVALS; i++) {
+  for (size_t i=0; i<VALUE2_NVALS; i++) {
     byte_t value[TEST_VALUE_SIZE];
     randomVals(value, TEST_VALUE_SIZE);
     val->add_values(value, TEST_VALUE_SIZE);
@@ -97,8 +96,8 @@ TEST(TestMessage, TestPutRequest) {
   EXPECT_EQ(recovered_msg.value_payload().type(),
             static_cast<int>(UType::kList));
   // check that there are VALUE2_NVALS items in vals and keys
-  EXPECT_EQ(recovered_msg.value_payload().values_size(), VALUE2_NVALS);
-  EXPECT_EQ(recovered_msg.value_payload().keys_size(), VALUE2_NVALS);
+  EXPECT_EQ(size_t(recovered_msg.value_payload().values_size()), VALUE2_NVALS);
+  EXPECT_EQ(size_t(recovered_msg.value_payload().keys_size()), VALUE2_NVALS);
   EXPECT_EQ(checkPayload(base, Hash::kByteLength,
         (const byte_t*)recovered_msg.value_payload().base().data(),
         recovered_msg.value_payload().base().length()), true);
@@ -205,7 +204,7 @@ TEST(TestMessage, TestMergeRequest) {
   val->set_base(base, Hash::kByteLength);
   val->set_pos(0);
   val->set_dels(0);
-  for (int i=0; i<VALUE2_NVALS; i++) {
+  for (size_t i=0; i<VALUE2_NVALS; i++) {
     byte_t value[TEST_VALUE_SIZE];
     randomVals(value, TEST_VALUE_SIZE);
     val->add_values(value, TEST_VALUE_SIZE);
@@ -229,8 +228,8 @@ TEST(TestMessage, TestMergeRequest) {
     (const byte_t*)recovered_msg.request_payload().ref_branch().data(),
     recovered_msg.request_payload().ref_branch().length()), true);
   EXPECT_EQ(recovered_msg.has_value_payload(), true);
-  EXPECT_EQ(recovered_msg.value_payload().values_size(), VALUE2_NVALS);
-  EXPECT_EQ(recovered_msg.value_payload().keys_size(), VALUE2_NVALS);
+  EXPECT_EQ(size_t(recovered_msg.value_payload().values_size()), VALUE2_NVALS);
+  EXPECT_EQ(size_t(recovered_msg.value_payload().keys_size()), VALUE2_NVALS);
   EXPECT_EQ(checkPayload(base, Hash::kByteLength,
         (const byte_t*)recovered_msg.value_payload().base().data(),
         recovered_msg.value_payload().base().length()), true);

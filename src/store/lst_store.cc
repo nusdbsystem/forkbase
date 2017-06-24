@@ -47,7 +47,7 @@ static void DestroySegmentList(LSTSegment* head) {
  */
 static void FdWriteThenSync(int fd, const void* buf, size_t length) {
   ssize_t bytes = 0;
-  while (bytes < length) {
+  while (bytes < ssize_t(length)) {
     int nb = ::write(fd, reinterpret_cast<const char*>(buf) + bytes,
                      length - bytes);
     CHECK_GE(nb, 0);
@@ -158,7 +158,7 @@ void* LSTStore::MmapUstoreLogFile(const std::string& dir,
     FdWriteThenSync(fd, meta, kMetaLogSize);
 
     LOG(INFO) << "init data segments...";
-    for (int i = 0; i < num_segments_; ++i) {
+    for (size_t i = 0; i < num_segments_; ++i) {
       DLOG(INFO) << "init the " << i << "-th segment";
       size_t prev_segment_offset = 0, next_segment_offset = 0;
       if (i > 0)
@@ -283,8 +283,8 @@ size_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
     Chunk chunk(offset + Hash::kByteLength);
     if (!IsChunkValid(chunk.type()) || Hash(offset) != chunk.hash()) {
       // check failed; exit
-      std::memset(offset, kSegmentSize + (uintptr_t)(segment->segment_)
-                  - (uintptr_t)offset, 0);
+      std::memset(offset, 0, kSegmentSize + (uintptr_t)(segment->segment_)
+                  - (uintptr_t)offset);
       need_sync = true;
       break;
     }

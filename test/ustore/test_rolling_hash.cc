@@ -65,7 +65,7 @@ TEST(RollingHasher, RollingHasherTest) {
   EXPECT_TRUE(rh.CrossedBoundary());
   rh.ClearLastBoundary();
   EXPECT_FALSE(rh.CrossedBoundary());
-  EXPECT_EQ(0, rh.byte_hashed());
+  EXPECT_EQ(size_t(0), rh.byte_hashed());
 
   ustore::RollingHasher rh2{uint32_t((1 << 8) - 1), 64, 1 << 4};
   for (size_t i = 0; i < strlen(julius_caeser_str); ++i) {

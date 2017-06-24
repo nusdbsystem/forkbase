@@ -147,7 +147,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
 }
 
 bool Config::ParseCmdArgs(const std::vector<std::string>& args) {
-  int argc = args.size() + 1;
+  size_t argc = args.size() + 1;
   static char dummy_cmd[] = "ustore_cli";
   char* argv[argc];
   argv[0] = dummy_cmd;

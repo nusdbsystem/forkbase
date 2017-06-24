@@ -102,7 +102,7 @@ std::vector<std::function<int()>> task = {
 } while (0)
 
 int RunTask(const int task_id) {
-  if (task_id < 0 || task_id > task.size()) {
+  if (task_id < 0 || task_id > int(task.size())) {
     std::cerr << BOLD_RED("[FAILURE] ")
               << "Unrecognized task ID: " << task_id << std::endl;
     return -2;

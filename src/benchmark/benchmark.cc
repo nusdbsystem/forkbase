@@ -15,7 +15,7 @@
 namespace ustore {
 
 Benchmark::Benchmark(const std::vector<ObjectDB*>& dbs)
-  : dbs_(dbs), num_threads_(dbs.size()), profiler_(num_threads_) {
+    : dbs_(dbs), num_threads_(dbs.size()), profiler_(num_threads_) {
   LoadParameters();
   BENCHMARK_HANDLER("ALL", RunAll());
   BENCHMARK_HANDLER("PUT", Put(Utils::ToUType(BenchmarkConfig::type)));
@@ -28,8 +28,8 @@ void Benchmark::Run() {
   auto& cmd = BenchmarkConfig::command;
   auto it_cmd_exec = cmd_exec_.find(cmd);
   if (it_cmd_exec == cmd_exec_.end()) {
-    std::cerr << BOLD_RED("[ERROR] ")
-              << "Unknown command: " << cmd << std::endl;
+    std::cerr << BOLD_RED("[ERROR] ") << "Unknown command: " << cmd
+              << std::endl;
   } else {
     it_cmd_exec->second();
   }
@@ -52,7 +52,7 @@ inline std::vector<std::vector<Slice>> ToSlice(
 
 template <typename T>
 inline std::vector<std::vector<T>> vec_split(const std::vector<T>& vec,
-size_t n) {
+                                             size_t n) {
   size_t s_subvec = vec.size() / n;
   std::vector<std::vector<T>> ret;
   for (size_t i = 0; i < n - 1; ++i) {
@@ -64,7 +64,8 @@ size_t n) {
 }
 
 void Benchmark::HeaderInfo(const std::string& cmd, UType type, size_t ops,
-    size_t length, size_t elements, const std::string& key) {
+                           size_t length, size_t elements,
+                           const std::string& key) {
   std::cout << BOLD_RED("[" << cmd << "]");
   if (type != UType::kUnknown) std::cout << " type=" << BOLD_RED(type);
   std::cout << " ops=" << ops;
@@ -79,8 +80,7 @@ void Benchmark::FooterInfo(const std::string& cmd, UType type,
   std::cout << BOLD_GREEN("[" << cmd);
   if (type != UType::kUnknown) std::cout << BOLD_GREEN(" " << type);
   std::cout << BOLD_GREEN("]")
-            << " Elapsed Time: " << BOLD_GREEN(total_time << " ms")
-            << std::endl
+            << " Elapsed Time: " << BOLD_GREEN(total_time << " ms") << std::endl
             << "\tPeak Throughput: " << BOLD_BLUE(pk_tp << " ops/s")
             << std::endl
             << "\tAverage Throughput: " << BOLD_BLUE(avg_tp << " ops/s")
@@ -161,11 +161,10 @@ void Benchmark::Put(UType type, bool validate) {
   auto key = params_[type].key;
   if (validate) ops = kValidateOps;
   if (validate && !ops) return;
-  HeaderInfo(validate ? "Validate" : "Put", type, ops, length, elements,
-             key);
+  HeaderInfo(validate ? "Validate" : "Put", type, ops, length, elements, key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-              : std::vector<std::string>(ops, key);
+                      : std::vector<std::string>(ops, key);
   auto branch = validate ? "validate" : kDefaultBranch;
   StrVecVec values(ops);
   // generate value
@@ -180,7 +179,7 @@ void Benchmark::Get(UType type) {
   HeaderInfo("Get", type, ops, 0, 0, key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-              : std::vector<std::string>(ops, key);
+                      : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   ExecGet(type, keys, branch, false);
   ExecGet(type, keys, branch, true);
@@ -192,7 +191,7 @@ void Benchmark::Branch() {
   HeaderInfo("Branch", UType::kUnknown, ops, 0, 0, key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-              : std::vector<std::string>(ops, key);
+                      : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);
@@ -205,7 +204,7 @@ void Benchmark::Merge() {
   HeaderInfo("Merge", UType::kUnknown, ops, 0, 0, key);
   // generate key
   auto keys = kSuffix ? rg_.PrefixSeqString(key, ops, kSuffixRange)
-              : std::vector<std::string>(ops, key);
+                      : std::vector<std::string>(ops, key);
   auto branch = kDefaultBranch;
   // generate branches
   auto branches = rg_.PrefixSeqString(branch, ops, 100000000);
@@ -408,7 +407,7 @@ void Benchmark::ThreadBranch(ObjectDB* db, const SliceVec& keys,
                              const Slice& ref_branch, const SliceVec& branches,
                              size_t tid) {
   for (size_t i = 0; i < keys.size(); ++i) {
-    auto res = db->Branch(keys[i], ref_branch, branches[i]);
+    db->Branch(keys[i], ref_branch, branches[i]);
     profiler_.IncCounter(tid);
   }
 }

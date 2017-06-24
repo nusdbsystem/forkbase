@@ -134,7 +134,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
     // Get latest versions
     vector<Hash> versions;
     client->GetLatestVersions(Slice(keys[idx]), &versions);
-    EXPECT_EQ(versions.size(), 3);
+    EXPECT_EQ(versions.size(), size_t(3));
     bool is_latest;
     client->IsLatestVersion(Slice(keys[idx]), versions[0], &is_latest);
     EXPECT_TRUE(is_latest);
@@ -144,12 +144,12 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   // list keys
   vector<string> q_keys;
   client->ListKeys(&q_keys);
-  EXPECT_EQ(q_keys.size(), len);
+  EXPECT_EQ(q_keys.size(), size_t(len));
 
   // list branches
   vector<string> branches;
   client->ListBranches(Slice(keys[idx]), &branches);
-  EXPECT_EQ(branches.size(), 0);  // branch was deleted
+  EXPECT_EQ(branches.size(), size_t(0));  // branch was deleted
 
   // check exist
   bool exists;
@@ -174,10 +174,10 @@ TEST(TestMessage, TestClient1Thread) {
     workers.push_back(new WorkerService(worker_addr, "", false));
 
   vector<thread> worker_threads;
-  for (int i = 0; i < workers.size(); i++)
+  for (size_t i = 0; i < workers.size(); i++)
     workers[i]->Init();
 
-  for (int i = 0; i < workers.size(); i++)
+  for (size_t i = 0; i < workers.size(); i++)
     worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
 
   // launch clients
@@ -198,7 +198,7 @@ TEST(TestMessage, TestClient1Thread) {
   usleep(kSleepTime);
 
   // stop workers
-  for (int i = 0; i < worker_threads.size(); i++) {
+  for (size_t i = 0; i < worker_threads.size(); i++) {
     workers[i]->Stop();
     worker_threads[i].join();
     delete workers[i];

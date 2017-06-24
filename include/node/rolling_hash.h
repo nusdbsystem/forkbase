@@ -54,10 +54,10 @@ class RollingHasher : private Noncopyable {
   inline size_t byte_hashed() { return byte_hashed_; }
 
  private:
-  buzhash::BuzHash buz_;
   uint32_t chunk_pattern_;
   size_t window_size_, max_size_, byte_hashed_ = 0;
   bool crossed_boundary_ = false;
+  buzhash::BuzHash buz_;
 };
 }  // namespace ustore
 

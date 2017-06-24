@@ -84,7 +84,7 @@ LIST(APPEND BOOST_COMPONENT "program_options")
 include(cmake/Dependencies.cmake)
 
 enable_testing()
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wreturn-type")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wall -Wno-unused-function")
 
 if(ENABLE_DEBUG)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")

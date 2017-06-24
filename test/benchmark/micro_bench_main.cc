@@ -37,8 +37,8 @@ void BenchmarkClient() {
   while (fin_worker >> worker_addr)
     workers.push_back(new WorkerService(worker_addr, "", false));
   std::vector<std::thread> worker_threads;
-  for (int i = 0; i < workers.size(); ++i) workers[i]->Init();
-  for (int i = 0; i < workers.size(); ++i)
+  for (size_t i = 0; i < workers.size(); ++i) workers[i]->Init();
+  for (size_t i = 0; i < workers.size(); ++i)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
 // create client service
   RemoteClientService service("");
@@ -65,7 +65,7 @@ void BenchmarkClient() {
   for (auto& p : dbs) delete p;
   usleep(kSleepTime);
 
-  for (int i = 0; i < worker_threads.size(); ++i) {
+  for (size_t i = 0; i < worker_threads.size(); ++i) {
     workers[i]->Stop();
     worker_threads[i].join();
     delete workers[i];

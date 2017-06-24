@@ -145,8 +145,8 @@ bool NodeCursor::Advance(bool cross_boundary) {
   // when idx == -1, idx_ < seq_node->numEntries is false.
   //  This is because lhs is signed and rhs is not signed.
   //  Hence, add extra test on idx_ == -1
-  if (idx_ == -1 || idx_ < seq_node_->numEntries()) ++idx_;
-  if (idx_ < seq_node_->numEntries()) return true;
+  if (idx_ == -1 || idx_ < int32_t(seq_node_->numEntries())) ++idx_;
+  if (idx_ < int32_t(seq_node_->numEntries())) return true;
   DCHECK_EQ(idx_, seq_node_->numEntries());
   // not allow to cross boundary,
   //   remain idx = numEntries()
@@ -414,7 +414,7 @@ const byte_t* NodeCursor::current() const {
     LOG(WARNING) << "Cursor points to Seq Head. Return nullptr.";
     return nullptr;
   }
-  if (idx_ == seq_node_->numEntries()) {
+  if (idx_ == int32_t(seq_node_->numEntries())) {
     DLOG(WARNING) << "Cursor points to Seq End. Return pointer points to byte "
                      "after the last entry.";
     return seq_node_->data(idx_ - 1) + seq_node_->len(idx_ - 1);
@@ -427,7 +427,7 @@ size_t NodeCursor::numCurrentBytes() const {
     LOG(WARNING) << "Cursor points to Seq Head. Return 0.";
     return 0;
   }
-  if (idx_ == seq_node_->numEntries()) {
+  if (idx_ == int32_t(seq_node_->numEntries())) {
     LOG(WARNING) << "Cursor points to Seq End. Return 0.";
     return 0;
   }

@@ -72,7 +72,7 @@ std::vector<std::string> RandomGenerator::SequentialNumString(
 std::vector<std::string> RandomGenerator::PrefixSeqString(
     const std::string& prefix, int size, int mod) {
   std::vector<std::string> res(size);
-  for (size_t i = 0; i < size; ++i)
+  for (int i = 0; i < size; ++i)
     res[i] = prefix + std::to_string((i)%mod);
   return res;
 }
@@ -80,7 +80,7 @@ std::vector<std::string> RandomGenerator::PrefixSeqString(
 std::vector<std::string> RandomGenerator::PrefixRandString(
     const std::string& prefix, int size, int mod) {
   std::vector<std::string> res(size);
-  for (size_t i = 0; i < size; ++i)
+  for (int i = 0; i < size; ++i)
     res[i] = prefix + std::to_string(alph_dist_(engine_)%mod);
   return res;
 }

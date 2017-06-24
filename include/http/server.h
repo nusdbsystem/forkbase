@@ -80,12 +80,12 @@ class HttpServer {
   int DispatchClientSocket(ClientSocket* cs);
 
  private:
+  ObjectDB odb_;
   ServerSocket ss_;
   int threads_num_ = 1;
   int el_size_ = 10000;
   std::thread** ethreads_ = nullptr;
   EventLoop** el_ = nullptr;
-  ObjectDB odb_;
   std::unordered_map<int, ClientSocket*> clients_;
 };
 }  // namespace ustore

@@ -37,7 +37,7 @@ inline void CheckIdenticalItems(
 
 TEST(SMap, Empty) {
   ustore::SMap smap({}, {});
-  ASSERT_EQ(0, smap.numElements());
+  ASSERT_EQ(size_t(0), smap.numElements());
 
   const ustore::Slice k1("k1", 2);
   const ustore::Slice expected_v1("v1", 2);
@@ -47,7 +47,7 @@ TEST(SMap, Empty) {
 
   // Set a kv pair
   ustore::SMap new_smap1(smap.Set(k1, expected_v1));
-  ASSERT_EQ(1, new_smap1.numElements());
+  ASSERT_EQ(size_t(1), new_smap1.numElements());
 
   ustore::Slice actual_v1 = new_smap1.Get(k1);
   ASSERT_TRUE(expected_v1 == actual_v1);
@@ -55,7 +55,7 @@ TEST(SMap, Empty) {
   // remove a kv pair to result an empty map
   ustore::SMap new_smap2(new_smap1.Remove(k1));
   ASSERT_TRUE(new_smap2.Get(k1).empty());
-  ASSERT_EQ(0, new_smap2.numElements());
+  ASSERT_EQ(size_t(0), new_smap2.numElements());
 
   auto it = new_smap2.Scan();
   ASSERT_TRUE(it.end());
@@ -116,12 +116,10 @@ TEST(SMap, Small) {
   // Internally, key slices will be sorted in ascending order
   ustore::SMap smap({k1, k3, k2}, {v1, v3, v2});
 
-  size_t val_num_bytes = 0;
-
   // Get Value by Key
   const ustore::Slice actual_v1 = smap.Get(k1);
 
-  EXPECT_EQ(2, v1.len());
+  EXPECT_EQ(size_t(2), v1.len());
   EXPECT_EQ(0, memcmp(v1.data(), actual_v1.data(), 2));
 
   // Get Value by Non-existent Key

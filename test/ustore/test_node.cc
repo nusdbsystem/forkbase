@@ -109,9 +109,9 @@ TEST(MetaNode, Basic) {
 
   EXPECT_FALSE(mnode.isLeaf());
   EXPECT_EQ(num_leaves1 + num_leaves2 + num_leaves3, mnode.numLeaves());
-  EXPECT_EQ(3, mnode.numEntries());
-  EXPECT_EQ(55, mnode.numElements());
-  EXPECT_EQ(30, mnode.numElementsUntilEntry(2));
+  EXPECT_EQ(size_t(3), mnode.numEntries());
+  EXPECT_EQ(size_t(55), mnode.numElements());
+  EXPECT_EQ(size_t(30), mnode.numElementsUntilEntry(2));
 
   EXPECT_EQ(encode_len1, mnode.len(0));
   EXPECT_EQ(0, std::memcmp(mnode.data(0), me_bytes1, encode_len1));
@@ -124,24 +124,24 @@ TEST(MetaNode, Basic) {
   size_t idx;
 
   EXPECT_EQ(data_hash1, mnode.GetChildHashByIndex(9, &idx));
-  ASSERT_EQ(0, idx);
+  ASSERT_EQ(size_t(0), idx);
 
   EXPECT_EQ(data_hash2, mnode.GetChildHashByIndex(10, &idx));
-  ASSERT_EQ(1, idx);
+  ASSERT_EQ(size_t(1), idx);
 
   EXPECT_EQ(data_hash3, mnode.GetChildHashByEntry(2));
 
   ustore::OrderedKey ckey1(9);
   EXPECT_EQ(data_hash2, mnode.GetChildHashByKey(ckey1, &idx));
-  ASSERT_EQ(1, idx);
+  ASSERT_EQ(size_t(1), idx);
 
   ustore::OrderedKey ckey2(20);
   EXPECT_TRUE(mnode.GetChildHashByKey(ckey2, &idx).empty());
-  ASSERT_EQ(3, idx);
+  ASSERT_EQ(size_t(3), idx);
 
   // Test on the created metaentry
   auto meta_seg = std::move(chunk_info.meta_seg);
-  ASSERT_EQ(1, meta_seg->numEntries());
+  ASSERT_EQ(size_t(1), meta_seg->numEntries());
 
   const ustore::byte_t* me_data = meta_seg->entry(0);
   size_t me_num_bytes = meta_seg->entryNumBytes(0);

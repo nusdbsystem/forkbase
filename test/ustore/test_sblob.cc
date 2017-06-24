@@ -331,7 +331,7 @@ TEST_F(SBlobEnv, Read) {
   // Leave only 700 remaining elements to read
   pos = data_bytes_ - 300;
   size_t real_len = sblob.Read(pos, len, buffer);
-  EXPECT_EQ(300, real_len);
+  EXPECT_EQ(size_t(300), real_len);
 
   EXPECT_EQ(ustore::byte2str(data_ + pos, real_len),
             ustore::byte2str(buffer, real_len));
@@ -400,16 +400,16 @@ TEST(SBlob, Empty) {
   ustore::Slice empty;
   ustore::SBlob sblob(empty);
 
-  ASSERT_EQ(0, sblob.numElements());
+  ASSERT_EQ(size_t(0), sblob.numElements());
 
   // Append 3 elements
   ustore::byte_t d[] = "abc";
   ustore::SBlob s1(sblob.Append(d, 3));
-  ASSERT_EQ(3, s1.numElements());
+  ASSERT_EQ(size_t(3), s1.numElements());
 
   // Remove the only 3 elements
   ustore::SBlob s2(s1.Delete(0, 3));
-  ASSERT_EQ(0, s2.numElements());
+  ASSERT_EQ(size_t(0), s2.numElements());
 
   // Test on normal iterator
   auto it = s2.Scan();

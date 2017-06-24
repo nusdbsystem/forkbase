@@ -84,7 +84,7 @@ EventLoop::EventLoop(int setsize) {
   setsize += 10;  // in case some initial fd are in use
   this->events_.resize(setsize);
   this->fired_.resize(setsize);
-  if (this->events_.size() != setsize || this->fired_.size() != setsize)
+  if (int(this->events_.size()) != setsize || int(this->fired_.size()) != setsize)
     return;
   this->setsize_ = setsize;
   this->stop_ = 0;

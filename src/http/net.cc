@@ -99,7 +99,7 @@ ClientSocket* ServerSocket::Accept() {
 int ClientSocket::Connect() {
   int rv;
   char portstr[6];  // strlen("65535") + 1;
-  addrinfo hints, *servinfo, *bservinfo, *p, *b;
+  addrinfo hints, *servinfo, *p;
 
   snprintf(portstr, sizeof(portstr), "%d", port_);
   memset(&hints, 0, sizeof(hints));
@@ -149,7 +149,6 @@ int ClientSocket::Connect() {
 int ClientSocket::Send(const void* buf, int size) {
   int nwritten, totlen = 0;
   const char* p = static_cast<const char*>(buf);
-  const char* copy = static_cast<const char*>(buf);
   while (totlen != size) {
     nwritten = write(fd_, p, size - totlen);
     if (nwritten == 0)

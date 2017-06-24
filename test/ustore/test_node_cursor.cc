@@ -37,12 +37,12 @@ TEST(NodeCursor, EmptyNode) {
   ASSERT_FALSE(cr2empty.isEnd());
   ASSERT_TRUE(cr2empty.isBegin());
 
-  ASSERT_EQ(0, cr2empty.RetreatSteps(2));
+  ASSERT_EQ(size_t(0), cr2empty.RetreatSteps(2));
 
   ASSERT_FALSE(cr2empty.isEnd());
   ASSERT_TRUE(cr2empty.isBegin());
 
-  ASSERT_EQ(1, cr2empty.AdvanceSteps(2));
+  ASSERT_EQ(size_t(1), cr2empty.AdvanceSteps(2));
 
   ASSERT_TRUE(cr2empty.isEnd());
   ASSERT_FALSE(cr2empty.isBegin());
@@ -70,7 +70,7 @@ TEST(NodeCursor, SingleNode) {
   ASSERT_FALSE(cr.empty());
 
   ASSERT_EQ('b', *(cr.current()));
-  EXPECT_EQ(1, cr.numCurrentBytes());
+  EXPECT_EQ(size_t(1), cr.numCurrentBytes());
 
   EXPECT_TRUE(cr.Retreat(false));  // point the 0th element
 
@@ -79,7 +79,7 @@ TEST(NodeCursor, SingleNode) {
   EXPECT_FALSE(cr.Retreat(true));   // still point to seq head
 
   EXPECT_EQ(nullptr, cr.current());
-  EXPECT_EQ(0, cr.numCurrentBytes());
+  EXPECT_EQ(size_t(0), cr.numCurrentBytes());
   EXPECT_TRUE(cr.isBegin());
 
   EXPECT_TRUE(cr.Advance(false));  // point the 0th element
@@ -103,11 +103,11 @@ TEST(NodeCursor, SingleNode) {
   // Check for multi-step advancing
   ustore::NodeCursor multi_cr(ca.hash(), 0, &loader);
 
-  EXPECT_EQ(2, multi_cr.AdvanceSteps(2));
+  EXPECT_EQ(size_t(2), multi_cr.AdvanceSteps(2));
   ASSERT_EQ('c', *(multi_cr.current()));
 
   // Advance to seq end
-  EXPECT_EQ(1, multi_cr.AdvanceSteps(2));
+  EXPECT_EQ(size_t(1), multi_cr.AdvanceSteps(2));
   ASSERT_TRUE(multi_cr.isEnd());
 
   // Check Advance from Seq Start
@@ -117,17 +117,17 @@ TEST(NodeCursor, SingleNode) {
   ASSERT_TRUE(multi_cr1.isBegin());
 
   // Advance to seq end
-  EXPECT_EQ(4, multi_cr1.AdvanceSteps(5));
+  EXPECT_EQ(size_t(4), multi_cr1.AdvanceSteps(5));
   ASSERT_TRUE(multi_cr1.isEnd());
 
   // Check for multi-step retreating
   ustore::NodeCursor multi_cr2(ca.hash(), 2, &loader);
 
-  EXPECT_EQ(2, multi_cr2.RetreatSteps(2));
+  EXPECT_EQ(size_t(2), multi_cr2.RetreatSteps(2));
   ASSERT_EQ('a', *(multi_cr2.current()));
 
   // Retreat to seq end
-  EXPECT_EQ(1, multi_cr2.RetreatSteps(2));
+  EXPECT_EQ(size_t(1), multi_cr2.RetreatSteps(2));
   ASSERT_TRUE(multi_cr2.isBegin());
 
   // Check Advance from Seq End
@@ -137,7 +137,7 @@ TEST(NodeCursor, SingleNode) {
   ASSERT_TRUE(multi_cr3.isEnd());
 
   // Advance to seq end
-  EXPECT_EQ(4, multi_cr3.RetreatSteps(5));
+  EXPECT_EQ(size_t(4), multi_cr3.RetreatSteps(5));
   ASSERT_TRUE(multi_cr3.isBegin());
 }
 
@@ -188,7 +188,7 @@ TEST(NodeCursor, Tree) {
   ustore::NodeCursor leaf_cursor(cm.hash(), 1, &loader);
 
   ASSERT_FALSE(leaf_cursor.empty());
-  EXPECT_EQ(1, leaf_cursor.numCurrentBytes());
+  EXPECT_EQ(size_t(1), leaf_cursor.numCurrentBytes());
   EXPECT_EQ('b', *leaf_cursor.current());
 
   ustore::NodeCursor cr_copy(leaf_cursor);
@@ -221,7 +221,7 @@ TEST(NodeCursor, Tree) {
   // cursor points to Node end after advancing
   EXPECT_FALSE(cr_copy.Advance(true));
   EXPECT_EQ(last_entry + 1, cr_copy.current());
-  EXPECT_EQ(0, cr_copy.numCurrentBytes());
+  EXPECT_EQ(size_t(0), cr_copy.numCurrentBytes());
   // cursor points to Node end before advancing
   EXPECT_FALSE(cr_copy.Advance(true));
 
@@ -296,7 +296,6 @@ TEST(NodeCursor, SingleNodeByKey) {
   EXPECT_TRUE(chunk_store->Put(chunk.hash(), chunk));
 
   // Find the smallest key
-  bool found = true;
   constexpr ustore::byte_t k0[] = "k0";
   const ustore::OrderedKey key0(false, k0, 2);
   ustore::NodeCursor cursor(chunk.hash(), key0, &loader);
@@ -472,7 +471,7 @@ TEST(NodeCursor, MultiStep) {
   ustore::NodeCursor cr1(root, 0, &loader);
 
   // Advance to the third leaf chunk first element
-  ASSERT_EQ(67 + 38, cr1.AdvanceSteps(67 + 38));
+  ASSERT_EQ(size_t(67 + 38), cr1.AdvanceSteps(67 + 38));
   ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38, cr1.current(), 193));
 
   ustore::NodeCursor cr2(root, 0, &loader);
@@ -486,7 +485,7 @@ TEST(NodeCursor, MultiStep) {
   ustore::NodeCursor cr3(root, 67 + 37, &loader);
 
   // Advance to the third leaf chunk first element
-  ASSERT_EQ(1, cr3.AdvanceSteps(1));
+  ASSERT_EQ(size_t(1), cr3.AdvanceSteps(1));
   ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38, cr3.current(), 193));
 
   // Advance from first to the last element
@@ -514,14 +513,14 @@ TEST(NodeCursor, MultiStep) {
   ustore::NodeCursor cr7(root, 67 + 38, &loader);
 
   // Retreat 1 step to last element of the second chunk
-  ASSERT_EQ(1, cr7.RetreatSteps(1));
+  ASSERT_EQ(size_t(1), cr7.RetreatSteps(1));
   ASSERT_EQ(raw_data[67 + 37], *cr7.current());
 
   // Place cursor at first element of third leaf chunk
   ustore::NodeCursor cr8(root, 67 + 38, &loader);
 
   // Retreat 38 step to first element of the second chunk
-  ASSERT_EQ(38, cr8.RetreatSteps(38));
+  ASSERT_EQ(size_t(38), cr8.RetreatSteps(38));
   ASSERT_EQ(0, std::memcmp(raw_data + 67, cr8.current(), 38));
 
   // Place cursor at seq end

@@ -185,7 +185,7 @@ void ClientZmqNet::Start() {
     zsock_destroy((zsock_t **)&s.second);
 
   zpoller_destroy(&zpoller);
-  for (int i=0; i < backend_threads_.size(); i++)
+  for (size_t i=0; i < backend_threads_.size(); i++)
     backend_threads_[i].join();
 }
 
@@ -311,7 +311,7 @@ void ServerZmqNet::Start() {
   zsock_destroy((zsock_t **)&result_sock_);
   zpoller_destroy(&zpoller);
 
-  for (int i=0; i < backend_threads_.size(); i++)
+  for (size_t i=0; i < backend_threads_.size(); i++)
     backend_threads_[i].join();
 }
 

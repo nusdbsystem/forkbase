@@ -50,6 +50,6 @@ TEST(VString, CreateFromEmpty) {
   auto v = get.value.String();
 
   // check data
-  EXPECT_EQ(0, v.len());
+  EXPECT_EQ(size_t(0), v.len());
   EXPECT_EQ(nullptr, v.data());
 }

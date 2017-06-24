@@ -92,7 +92,7 @@ TEST(MapNode, Basic) {
   ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->Make(segs);
 
   // First 4 bytes of chunk encode number of items
-  EXPECT_EQ(3, *reinterpret_cast<const uint32_t*>(chunk_info.chunk.data()));
+  EXPECT_EQ(uint32_t(3), *reinterpret_cast<const uint32_t*>(chunk_info.chunk.data()));
   // Subsquent chunk data shall concat 2 kv items
   EXPECT_EQ(0,
             memcmp(chunk_info.chunk.data() + sizeof(uint32_t),
@@ -105,7 +105,7 @@ TEST(MapNode, Basic) {
                    seg3->numBytes()));
 
   // Test on the created metaentry
-  ASSERT_EQ(1, chunk_info.meta_seg->numEntries());
+  ASSERT_EQ(uint32_t(1), chunk_info.meta_seg->numEntries());
   const ustore::byte_t* me_data = chunk_info.meta_seg->entry(0);
   ustore::MetaEntry me(me_data);
 
@@ -116,12 +116,12 @@ TEST(MapNode, Basic) {
   ustore::OrderedKey key3(false, k3, 4);
   EXPECT_EQ(key3, me_key);
 
-  EXPECT_EQ(3, me.numElements());
-  EXPECT_EQ(1, me.numLeaves());
+  EXPECT_EQ(size_t(3), me.numElements());
+  EXPECT_EQ(size_t(1), me.numLeaves());
 
   // Test on MetaNode
   ustore::MapNode mnode(&chunk_info.chunk);
-  ASSERT_EQ(3, mnode.numEntries());
+  ASSERT_EQ(size_t(3), mnode.numEntries());
   EXPECT_EQ(ustore::MapNode::EncodeNumBytes(kv1), mnode.len(0));
   EXPECT_EQ(ustore::MapNode::EncodeNumBytes(kv3), mnode.len(2));
 
@@ -129,22 +129,22 @@ TEST(MapNode, Basic) {
   size_t item2_num_bytes;
   const ustore::KVItem item2 = ustore::MapNode::kvitem(kv2_data,
                                                        &item2_num_bytes);
-  EXPECT_EQ(3, item2.key.len());
-  EXPECT_EQ(3, item2.val.len());
+  EXPECT_EQ(size_t(3), item2.key.len());
+  EXPECT_EQ(size_t(3), item2.val.len());
   EXPECT_EQ(0, memcmp(item2.key.data(), k2, 3));
   EXPECT_EQ(0, memcmp(item2.val.data(), v2, 3));
 
   // Find the exact key
   ustore::OrderedKey key1(false, k1, 2);
-  EXPECT_EQ(0, mnode.GetIdxForKey(key1));
+  EXPECT_EQ(size_t(0), mnode.GetIdxForKey(key1));
 
   // Find not the exact key
   constexpr ustore::byte_t k12[] = "k12";
   ustore::OrderedKey key2(false, k12, 3);
-  EXPECT_EQ(1, mnode.GetIdxForKey(key2));
+  EXPECT_EQ(size_t(1), mnode.GetIdxForKey(key2));
 
   // Search to the end
   constexpr ustore::byte_t k4[] = "k4";
   ustore::OrderedKey key4(false, k4, 2);
-  EXPECT_EQ(3, mnode.GetIdxForKey(key4));
+  EXPECT_EQ(size_t(3), mnode.GetIdxForKey(key4));
 }

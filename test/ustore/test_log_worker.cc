@@ -42,22 +42,22 @@ TEST(Recovery, LogWorkerRead) {
   read_flag = worker.ReadOneLogRecord(&record);
   EXPECT_EQ(read_flag, true);
   EXPECT_TRUE(record.logcmd == ustore::recovery::LogCommand::kUpdate);
-  EXPECT_EQ(record.key_length, strlen(name_data));
+  EXPECT_EQ(record.key_length, int64_t(strlen(name_data)));
   size_t hash_len = ustore::Hash::kByteLength;
-  EXPECT_EQ(record.value_length, hash_len);
+  EXPECT_EQ(size_t(record.value_length), hash_len);
   EXPECT_EQ(0, std::memcmp(record.key, name_data, record.key_length));
   // Rename Command
   read_flag = worker.ReadOneLogRecord(&record);
   EXPECT_EQ(read_flag, true);
-  EXPECT_EQ(record.key_length, strlen(name_data));
-  EXPECT_EQ(record.value_length, strlen(new_name));
+  EXPECT_EQ(record.key_length, int64_t(strlen(name_data)));
+  EXPECT_EQ(record.value_length, int64_t(strlen(new_name)));
   EXPECT_TRUE(record.logcmd == ustore::recovery::LogCommand::kRename);
   EXPECT_EQ(0, std::memcmp(record.key, name_data, record.key_length));
   EXPECT_EQ(0, std::memcmp(record.value, new_name, record.value_length));
   // Remove Command
   read_flag = worker.ReadOneLogRecord(&record);
   EXPECT_EQ(read_flag, true);
-  EXPECT_EQ(record.key_length, strlen(new_name));
+  EXPECT_EQ(record.key_length, int64_t(strlen(new_name)));
   EXPECT_EQ(record.value_length, 0);
   EXPECT_TRUE(record.logcmd == ustore::recovery::LogCommand::kRemove);
   EXPECT_EQ(0, std::memcmp(record.key, new_name, record.key_length));
