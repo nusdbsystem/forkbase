@@ -397,7 +397,7 @@ Chunk LSTStore::Get(const Hash& key) {
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   if (Exists(key)) return true;
-  static Timer& timer = TimerPool::GetTimer("Put Chunk");
+  static Timer& timer = TimerPool::GetTimer("Write Chunk");
   timer.Start();
 
   static size_t to_sync_chunks = 0;
