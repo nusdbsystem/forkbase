@@ -17,7 +17,7 @@ static const char alphabet[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz";
 
-static std::wstring zh_dict = L"中华人民共和国与世界大团结万岁";
+static std::wstring zh_dict = L"鼠牛虎兔龙蛇马羊猴鸡狗猪";
 
 std::string ws2s(const std::wstring& w_str) {
   if (w_str.empty()) {
