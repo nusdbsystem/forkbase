@@ -9,7 +9,7 @@
 namespace ustore {
 namespace cli {
 
-const size_t Command::kDefaultLimitPrintElems(5);
+const size_t Command::kDefaultLimitPrintElems(50);
 size_t Command::limit_print_elems(kDefaultLimitPrintElems);
 
 Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
