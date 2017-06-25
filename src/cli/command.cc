@@ -105,6 +105,14 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("GET_COLUMN", "GET-COL");
   CMD_ALIAS("GET_COLUMN", "GETCOLUMN");
   CMD_ALIAS("GET_COLUMN", "GETCOL");
+  CMD_HANDLER("GET_COLUMN_ALL", ExecGetColumnAll());
+  CMD_ALIAS("GET_COLUMN_ALL", "GET-COLUMN-ALL");
+  CMD_ALIAS("GET_COLUMN_ALL", "GET_COL_ALL");
+  CMD_ALIAS("GET_COLUMN_ALL", "GET-COL-ALL");
+  CMD_ALIAS("GET_COLUMN_ALL", "GETCOLUMN_ALL");
+  CMD_ALIAS("GET_COLUMN_ALL", "GETCOLUMN-ALL");
+  CMD_ALIAS("GET_COLUMN_ALL", "GETCOL_ALL");
+  CMD_ALIAS("GET_COLUMN_ALL", "GETCOL-ALL");
   CMD_HANDLER("LIST_COLUMN_BRANCH", ExecListColumnBranch());
   CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST-COLUMN-BRANCH");
   CMD_ALIAS("LIST_COLUMN_BRANCH", "LIST_COL_BRANCH");
@@ -248,7 +256,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << std::endl
      << FORMAT_RELATIONAL_CMD("EXISTS_COLUMN")
      << "-t <table> -m <column> {-b <branch>}" << std::endl
-     << FORMAT_RELATIONAL_CMD("GET_COLUMN")
+     << FORMAT_RELATIONAL_CMD("GET_COLUMN{_ALL}")
      << "-t <table> -b <branch> -m <column>" << std::endl
      << FORMAT_RELATIONAL_CMD("LIST_COLUMN_BRANCH")
      << "-t <table> -m <column>" << std::endl
@@ -407,7 +415,8 @@ ErrorCode Command::ExecGet() {
         Utils::Print(meta.List(), "[", "]", ", ", true, limit_print_elems);
         break;
       case UType::kMap:
-        Utils::Print(meta.Map(), "[", "]", ", ", "(", ")", "->", true);
+        Utils::Print(
+          meta.Map(), "[", "]", ", ", "", "", "->", true, limit_print_elems);
         break;
       default:
         std::cout << meta;
@@ -1583,7 +1592,7 @@ ErrorCode Command::ExecListKeyAll() { PRINT_ALL(ExecListKey()); }
 
 ErrorCode Command::ExecLatestAll() { PRINT_ALL(ExecLatest()); }
 
-ErrorCode Command::ExecGetColumnAll() { PRINT_ALL(ExecGetColumnAll()); }
+ErrorCode Command::ExecGetColumnAll() { PRINT_ALL(ExecGetColumn()); }
 
 }  // namespace cli
 }  // namespace ustore

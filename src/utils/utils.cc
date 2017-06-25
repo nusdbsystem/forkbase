@@ -178,7 +178,7 @@ void Utils::Print(const UMap& map, const std::string& lsymbol,
                   const std::string& rsymbol, const std::string& sep,
                   const std::string& lentry, const std::string& rentry,
                   const std::string& entry_sep, bool elem_in_quote,
-                  std::ostream& os) {
+                  size_t limit, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = map.Scan();
   auto f_print_it = [&]() {
@@ -188,9 +188,14 @@ void Utils::Print(const UMap& map, const std::string& lsymbol,
   os << lsymbol;
   if (!it.end()) {
     f_print_it();
-    for (it.next(); !it.end(); it.next()) {
+    size_t cnt(1);
+    for (it.next(); !it.end() && cnt++ < limit; it.next()) {
       os << sep;
       f_print_it();
+    }
+    size_t map_size = map.numElements();
+    if (map_size > limit) {
+      os << sep << "...(and " << (map_size - limit) << " more)";
     }
   }
   os << rsymbol;

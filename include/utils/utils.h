@@ -207,7 +207,8 @@ class Utils {
                     const std::string& lentry = "(",
                     const std::string& rentry = ")",
                     const std::string& entry_sep = "->",
-                    bool elem_in_quote = false, std::ostream& os = std::cout);
+                    bool elem_in_quote = false, size_t limit = max_size_t,
+                    std::ostream& os = std::cout);
 
   template<typename T>
   static void Print(
@@ -409,7 +410,8 @@ inline std::ostream& operator<<(std::ostream& os, const UList& obj) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const UMap& obj) {
-  Utils::Print(obj, "[", "]", ", ", "(", ")", "->", false, os);
+  Utils::Print(
+    obj, "[", "]", ", ", "(", ")", "->", false, Utils::max_size_t, os);
   return os;
 }
 
