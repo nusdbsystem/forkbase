@@ -16,8 +16,7 @@ VBlob VMeta::Blob() const {
 
 VString VMeta::String() const {
   if (!cell_.empty() && cell_.type() == UType::kString) {
-    return VString(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
-                   cell_.dataHash());
+    return VString(cell_);
   }
   LOG(WARNING) << "Get empty VString, actual type: " << cell_.type();
   return VString();

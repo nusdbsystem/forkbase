@@ -5,36 +5,17 @@
 
 #include <memory>
 
-#include "node/string_node.h"
 #include "types/base.h"
+#include "types/ucell.h"
 
 namespace ustore {
 
 class UString : public BaseType {
  public:
-  inline bool empty() const override { return this->node_.get() == nullptr; }
-  inline const Hash hash() const override {
-    CHECK(!empty());
-    return node_->hash();
-  }
-  inline size_t len() const { return node_->len(); }
-  // copy string contents to buffer
-  //   return string length
-  inline const size_t data(byte_t* buffer) const { return node_->Copy(buffer); }
-  // pointer to orignal data
-  inline const byte_t* data() const { return node_->Read(); }
-  inline Slice slice() const { return Slice(node_->Read(), len()); }
-
- protected:
-  UString() = default;
-  UString(UString&& rhs) = default;
-  explicit UString(std::shared_ptr<ChunkLoader> loader) noexcept :
-    BaseType(loader) {}
-  ~UString() = default;
-
-  UString& operator=(UString&& rhs) = default;
-
-  bool SetNodeForHash(const Hash& hash) override;
+  inline bool empty() const override { return node_.get() == nullptr; }
+  inline size_t len() const { return node_->dataLength(); }
+  inline const byte_t* data() const { return node_->data(); }
+  inline Slice slice() const { return Slice(data(), len()); }
 
   friend inline std::ostream& operator<<(std::ostream& os, const UString& obj) {
     os << obj.slice();
@@ -42,8 +23,16 @@ class UString : public BaseType {
   }
 
  protected:
+  UString() = default;
+  explicit UString(const UCell& cell) noexcept : node_(cell.node()) {}
+  UString(UString&& rhs) = default;
+  ~UString() = default;
+
+  UString& operator=(UString&& rhs) = default;
+
+ protected:
   // Responsible to remove during destructing
-  std::unique_ptr<const StringNode> node_;
+  std::shared_ptr<const CellNode> node_;
 };
 
 }  // namespace ustore

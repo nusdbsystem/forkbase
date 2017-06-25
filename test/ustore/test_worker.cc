@@ -103,15 +103,15 @@ TEST(Worker, NamedBranch_GetPutString) {
 
   ec = worker().Get(key[0], ver[0], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(vals[0], SString(value.dataHash()).slice());
+  EXPECT_EQ(vals[0], SString(value).slice());
 
   ec = worker().Get(key[0], branch[0], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(vals[1], SString(value.dataHash()).slice());
+  EXPECT_EQ(vals[1], SString(value).slice());
 
   ec = worker().Get(key[0], branch[1], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(vals[2], SString(value.dataHash()).slice());
+  EXPECT_EQ(vals[2], SString(value).slice());
   worker().GetBranchHead(key[0], branch[1], &head);
   EXPECT_EQ(ver[2], head);
 }
@@ -170,11 +170,11 @@ TEST(Worker, NamedBranch_Merge) {
 
   ec = worker().Get(key[0], branch[3], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(vals[3], SString(value.dataHash()).slice());
+  EXPECT_EQ(vals[3], SString(value).slice());
 
   ec = worker().Get(key[0], branch[1], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(vals[4], SString(value.dataHash()).slice());
+  EXPECT_EQ(vals[4], SString(value).slice());
 }
 
 TEST(Worker, UnnamedBranch_GetPutBlob) {

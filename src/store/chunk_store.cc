@@ -24,7 +24,6 @@ std::unordered_map<ChunkType, std::string> chunkTypeNames = {
   {ChunkType::kCell, "Cell"},
   {ChunkType::kMeta, "Meta"},
   {ChunkType::kBlob, "Blob"},
-  {ChunkType::kString, "String"},
   {ChunkType::kMap, "Map"},
   {ChunkType::kList, "List"}
 };

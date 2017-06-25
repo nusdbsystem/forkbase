@@ -13,31 +13,17 @@
 
 namespace ustore {
 
+// A genric type for all utypes
 class BaseType : private Noncopyable {
-  // A genric type for parent class
-  // all other types shall inherit from this
  public:
   virtual bool empty() const = 0;
-  virtual const Hash hash() const = 0;
 
  protected:
   BaseType() = default;
-  BaseType(BaseType&& rhs) noexcept :
-    chunk_loader_(std::move(rhs.chunk_loader_)) {}
-  explicit BaseType(std::shared_ptr<ChunkLoader> loader) noexcept :
-      chunk_loader_(std::move(loader)) {}
+  BaseType(BaseType&& rhs) noexcept {}
   virtual ~BaseType() = default;
-
   // move assignment
-  BaseType& operator=(BaseType&& rhs) noexcept {
-    chunk_loader_ = std::move(rhs.chunk_loader_);
-    return *this;
-  }
-
-  // Must be called at the last step of construction
-  virtual bool SetNodeForHash(const Hash& hash) = 0;
-
-  std::shared_ptr<ChunkLoader> chunk_loader_;
+  BaseType& operator=(BaseType&& rhs) noexcept { return *this; }
 };
 
 class ChunkableType : public BaseType {
@@ -45,9 +31,8 @@ class ChunkableType : public BaseType {
   // all other types shall inherit from this
  public:
   inline bool empty() const override { return root_node_.get() == nullptr; }
-  inline const Hash hash() const override {
-    CHECK(!empty());
-    return root_node_->hash();
+  inline const Hash hash() const {
+    return empty() ? Hash() : root_node_->hash();
   }
   inline uint64_t numElements() const {
     CHECK(!empty());
@@ -58,12 +43,15 @@ class ChunkableType : public BaseType {
   ChunkableType() = default;
   ChunkableType(ChunkableType&& rhs) = default;
   explicit ChunkableType(std::shared_ptr<ChunkLoader> loader) noexcept :
-      BaseType(loader) {}
+      chunk_loader_(std::move(loader)) {}
   virtual ~ChunkableType() = default;
-
   // move assignment
   ChunkableType& operator=(ChunkableType&& rhs) = default;
 
+  // Must be called at the last step of construction
+  virtual bool SetNodeForHash(const Hash& hash) = 0;
+
+  std::shared_ptr<ChunkLoader> chunk_loader_;
   std::unique_ptr<const SeqNode> root_node_;
 };
 

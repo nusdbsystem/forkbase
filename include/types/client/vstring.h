@@ -23,7 +23,7 @@ class VString : public UString, public VObject {
 
  protected:
   // Load existing VString
-  VString(std::shared_ptr<ChunkLoader>, const Hash& hash) noexcept;
+  explicit VString(const UCell& cell) noexcept;
 };
 
 }  // namespace ustore

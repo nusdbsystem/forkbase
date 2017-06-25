@@ -188,16 +188,11 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
   DCHECK(val.type == UType::kString);
   if (val.base.empty()) {  // new insertion
     if (val.vals.size() != 1) return ErrorCode::kInvalidValue;
-    SString sstr(val.vals.front());
-    if (sstr.empty()) {
-      LOG(ERROR) << "Failed to create SString for Key \"" << key << "\"";
-      return ErrorCode::kFailedCreateSString;
-    }
-    return CreateUCell(key, UType::kString, sstr.hash(), prev_ver1, prev_ver2,
-                       ver);
+    return CreateUCell(key, UType::kString, val.vals.front(), prev_ver1,
+                       prev_ver2, ver);
   } else if (!val.dels && val.vals.empty()) {  // origin
-    return CreateUCell(key, UType::kString, val.base, prev_ver1, prev_ver2,
-                       ver);
+    LOG(WARNING) << "String type does not support loading original value";
+    return ErrorCode::kInvalidValue;
   } else {  // update
     LOG(WARNING) << val.dels << " " << val.vals.size();
     return ErrorCode::kInvalidValue;
@@ -259,11 +254,24 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
 }
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
+                              const Slice& utype_data, const Hash& prev_ver1,
+                              const Hash& prev_ver2, Hash* ver) {
+  UCell ucell(UCell::Create(utype, key, utype_data, prev_ver1, prev_ver2));
+  if (ucell.empty()) {
+    LOG(ERROR) << "Failed to create UCell(Primitive) for Key \"" << key << "\"";
+    return ErrorCode::kFailedCreateUCell;
+  }
+  *ver = ucell.hash().Clone();
+  UpdateLatestVersion(ucell);
+  return ErrorCode::kOK;
+}
+
+ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                               const Hash& utype_hash, const Hash& prev_ver1,
                               const Hash& prev_ver2, Hash* ver) {
   UCell ucell(UCell::Create(utype, key, utype_hash, prev_ver1, prev_ver2));
   if (ucell.empty()) {
-    LOG(ERROR) << "Failed to create UCell for Key \"" << key << "\"";
+    LOG(ERROR) << "Failed to create UCell(Chunkable) for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
   }
   *ver = ucell.hash().Clone();

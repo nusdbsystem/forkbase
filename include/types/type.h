@@ -45,9 +45,8 @@ enum class ChunkType : byte_t {
   kMeta = 2,
   // Instances of Leaf SeqNode Chunk
   kBlob = 3,
-  kString = 4,
-  kMap = 5,
-  kList = 6,
+  kMap = 4,
+  kList = 5,
 
   First = kCell,
   Last = kList,
@@ -61,7 +60,6 @@ static inline bool IsChunkValid(ChunkType type) noexcept {
          || type == ChunkType::kCell
          || type == ChunkType::kMeta
          || type == ChunkType::kBlob
-         || type == ChunkType::kString
          || type == ChunkType::kMap
          || type == ChunkType::kList
          || type == ChunkType::kInvalid;

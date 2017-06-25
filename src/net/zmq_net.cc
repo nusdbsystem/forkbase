@@ -107,7 +107,7 @@ ClientZmqNet::ClientZmqNet(int nthreads) : ZmqNet("", nthreads) {
 
   // request_sock_
   port = rand() % 0xffffff;
-  request_ep_= "inproc://"  + std::to_string(port);
+  request_ep_ = "inproc://"  + std::to_string(port);
 
   // make sure that the ipc socket binds successfully
   request_sock_ = zsock_new(ZMQ_ROUTER);
@@ -158,7 +158,7 @@ void ClientZmqNet::Start() {
     if (!sock && !zpoller_expired(zpoller)) break;
     if (zpoller_expired(zpoller) && is_running_ && !(timeout_counter_--)
         && request_counter_)
-       LOG(FATAL) << "Connection timed out. Server may have crashed!";
+       LOG(FATAL) << "Connection timed out. Server may not be ready yet!";
     if (sock) {
       zmsg_t *msg = zmsg_recv(sock);
       if (!msg) break;

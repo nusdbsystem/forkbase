@@ -9,16 +9,9 @@ namespace ustore {
 
 class SString : public UString {
  public:
-  SString() = default;
-  SString(SString&& rhs) = default;
-  // Load an existing sstring
-  explicit SString(const Hash& hash) noexcept;
-  // Creata a new sstring
-  explicit SString(const Slice& data) noexcept;
-  ~SString() = default;
-
-  SString& operator=(SString&& rhs) = default;
-};
+  // Load existing VString
+  explicit SString(const UCell& cell) noexcept : UString(cell) {}
+};  // namespace ustore
 
 }  // namespace ustore
 

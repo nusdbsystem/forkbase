@@ -300,6 +300,9 @@ class Worker : public DB, private Noncopyable {
 
  private:
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
+                        const Slice& utype_data, const Hash& prev_ver1,
+                        const Hash& prev_ver2, Hash* ver);
+  ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Hash& utype_hash, const Hash& prev_ver1,
                         const Hash& prev_ver2, Hash* ver);
   ErrorCode Write(const Slice& key, const Value& val, const Hash& prev_ver1,

@@ -3,8 +3,8 @@
 #ifndef USTORE_NODE_CELL_NODE_H_
 #define USTORE_NODE_CELL_NODE_H_
 
-#include <cstddef>
 #include <memory>
+#include <utility>
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "spec/slice.h"
@@ -53,11 +53,11 @@ class CellNode {
     if (idx >= numPreHash()) return Hash();
     return Hash(chunk_.data() + kPreHashPos + Hash::kByteLength*idx);
   }
-  inline Slice key() const {
-    return Slice(chunk_.data() + keyOffset(), keyLength());
+  inline const byte_t* key() const {
+    return keyLength() ? chunk_.data() + keyOffset() : nullptr;
   }
-  inline Slice data() const {
-    return Slice(chunk_.data() + dataOffset(), dataLength());
+  inline const byte_t* data() const {
+    return dataLength() ? chunk_.data() + dataOffset() : nullptr;
   }
   // hash of this node
   inline Hash hash() const { return chunk_.hash(); }

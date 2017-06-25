@@ -42,21 +42,24 @@ class UCell : private Noncopyable {
   inline Hash preHash(bool second = false) const {
     return second ? node_->preHash(1) : node_->preHash(0);
   }
-  inline Slice key() const { return node_->key(); }
-  inline Slice data() const { return node_->data(); }
+  inline Slice key() const { return Slice(node_->key(), node_->keyLength()); }
+  inline Slice data() const {
+    return Slice(node_->data(), node_->dataLength());
+  }
   inline Hash dataHash() const {
     if (type() == UType::kBlob || type() == UType::kList
         || type() == UType::kMap)
-      LOG(WARNING) << "The Ucell does not have data hash";
-    return Hash(node_->data().data());
-    // return Hash();
+      return Hash(node_->data());
+    LOG(WARNING) << "The Ucell does not have data hash";
+    return Hash();
   }
   // hash of this ucell
   inline Hash hash() const { return node_->hash(); }
   inline const Chunk& chunk() const { return node_->chunk(); }
+  inline const std::shared_ptr<const CellNode>& node() const { return node_; }
 
  private:
-  std::unique_ptr<const CellNode> node_;
+  std::shared_ptr<const CellNode> node_;
 };
 
 }  // namespace ustore

@@ -18,11 +18,11 @@ TEST(CellNode, NewCellNode) {
 
   EXPECT_EQ(type, cnode.type());
   EXPECT_EQ(cnode.numPreHash(), 1);
-  EXPECT_EQ(data, cnode.data());
+  EXPECT_EQ(data, ustore::Slice(cnode.data(), cnode.dataLength()));
   EXPECT_EQ(ustore::Hash::kNull, cnode.preHash(0));
   EXPECT_TRUE(cnode.preHash(1).empty());
   EXPECT_EQ(key.len(), cnode.keyLength());
-  EXPECT_EQ(key, cnode.key());
+  EXPECT_EQ(key, ustore::Slice(cnode.key(), cnode.keyLength()));
 }
 
 TEST(CellNode, SinglePreHash) {
@@ -38,11 +38,11 @@ TEST(CellNode, SinglePreHash) {
 
   EXPECT_EQ(type, cnode.type());
   EXPECT_EQ(1, cnode.numPreHash());
-  EXPECT_EQ(data, cnode.data());
+  EXPECT_EQ(data, ustore::Slice(cnode.data(), cnode.dataLength()));
   EXPECT_EQ(h2, cnode.preHash(0));
   EXPECT_TRUE(cnode.preHash(1).empty());
   EXPECT_EQ(key.len(), cnode.keyLength());
-  EXPECT_EQ(key, cnode.key());
+  EXPECT_EQ(key, ustore::Slice(cnode.key(), cnode.keyLength()));
 }
 
 TEST(CellNode, DoublePreHash) {
@@ -58,9 +58,9 @@ TEST(CellNode, DoublePreHash) {
 
   EXPECT_EQ(type, cnode.type());
   EXPECT_EQ(2, cnode.numPreHash());
-  EXPECT_EQ(data, cnode.data());
+  EXPECT_EQ(data, ustore::Slice(cnode.data(), cnode.dataLength()));
   EXPECT_EQ(h2, cnode.preHash(0));
   EXPECT_EQ(h3, cnode.preHash(1));
   EXPECT_EQ(key.len(), cnode.keyLength());
-  EXPECT_EQ(key, cnode.key());
+  EXPECT_EQ(key, ustore::Slice(cnode.key(), cnode.keyLength()));
 }

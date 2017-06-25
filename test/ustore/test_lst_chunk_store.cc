@@ -142,11 +142,11 @@ TEST(LSTStore, TypeIterator) {
   MAKE_TYPE_ITERATOR(Cell);
   MAKE_TYPE_ITERATOR(Meta);
   MAKE_TYPE_ITERATOR(Blob);
-  MAKE_TYPE_ITERATOR(String);
+  MAKE_TYPE_ITERATOR(List);
 
   EXPECT_EQ(std::distance(begin<MetaIterator>(), end<MetaIterator>()), 0);
   EXPECT_EQ(std::distance(begin<CellIterator>(), end<CellIterator>()), 0);
-  EXPECT_EQ(std::distance(begin<StringIterator>(), end<StringIterator>()), 0);
+  EXPECT_EQ(std::distance(begin<ListIterator>(), end<ListIterator>()), 0);
   EXPECT_EQ(std::distance(begin<BlobIterator>(), end<BlobIterator>()), NUMBER);
 
   std::memset(raw_data, 0, LEN);
@@ -171,11 +171,11 @@ TEST(LSTStore, UnsafeTypeIterator) {
   MAKE_UNSAFE_TYPE_ITERATOR(Cell);
   MAKE_UNSAFE_TYPE_ITERATOR(Meta);
   MAKE_UNSAFE_TYPE_ITERATOR(Blob);
-  MAKE_UNSAFE_TYPE_ITERATOR(String);
+  MAKE_UNSAFE_TYPE_ITERATOR(List);
 
   EXPECT_EQ(std::distance(begin<MetaIterator>(), end<MetaIterator>()), 0);
   EXPECT_EQ(std::distance(begin<CellIterator>(), end<CellIterator>()), 0);
-  EXPECT_EQ(std::distance(begin<StringIterator>(), end<StringIterator>()), 0);
+  EXPECT_EQ(std::distance(begin<ListIterator>(), end<ListIterator>()), 0);
   EXPECT_EQ(std::distance(begin<BlobIterator>(), end<BlobIterator>()), NUMBER);
 
   std::memset(raw_data, 0, LEN);
