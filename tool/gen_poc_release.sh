@@ -13,6 +13,12 @@ echo "mkdir -p $build_dir/poc_release/lib"
 mkdir -p $build_dir/poc_release/lib-suse
 echo "./tool/update_libs.sh $build_dir/bin/test_ustore $build_dir/poc_release/lib"
 ./tool/update_libs.sh $build_dir/bin/test_ustore $build_dir/poc_release/lib
+rm $build_dir/poc_release/lib/libc.so.*
+rm $build_dir/poc_release/lib/libm.so.*
+rm $build_dir/poc_release/lib/librt.so.*
+rm $build_dir/poc_release/lib/libz.so.*
+rm $build_dir/poc_release/lib/libstdc++.so.*
+rm $build_dir/poc_release/lib/libpthread.so.*
 echo "cp $build_dir/poc_release/lib/* $build_dir/poc_release/lib-suse"
 cp $build_dir/poc_release/lib/* $build_dir/poc_release/lib-suse
 echo "tar zxf $lib_archive -C $build_dir/poc_release"
