@@ -111,7 +111,7 @@ size_t MapNode::EncodeNumBytes(const KVItem& kv_item) {
 
 std::unique_ptr<const Segment> MapNode::Encode(
     const std::vector<KVItem>& items) {
-  CHECK_GT(items.size(), 0);
+  CHECK_GT(items.size(), size_t(0));
   // Calcuate into number of bytes required
   // Meanwhile check key is in strict increasing order
   OrderedKey preKey(false, items[0].key.data(), items[0].key.len());

@@ -81,7 +81,7 @@ class NodeCursor {
   size_t numCurrentBytes() const;
 
   // cursor places at seq end
-  inline bool isEnd() const { return idx_ == seq_node_->numEntries(); }
+  inline bool isEnd() const { return idx_ == int32_t(seq_node_->numEntries()); }
   // cursor places at seq start
   inline bool isBegin() const { return idx_ == -1; }
 
@@ -93,7 +93,7 @@ class NodeCursor {
   // move the pointer to point to idx entry
   inline void seek(int32_t idx) {
     CHECK_LE(0, idx);
-    CHECK_GE(seq_node_->numEntries(), idx);
+    CHECK_GE(int32_t(seq_node_->numEntries()), idx);
     idx_ = idx;
   }
 

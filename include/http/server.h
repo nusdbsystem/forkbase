@@ -41,7 +41,7 @@ class HttpServer {
   // accept and put into the map
   inline ClientSocket* Accept() {
     ClientSocket* cs = ss_.Accept();
-    CHECK_EQ(clients_.count(cs->GetFD()), 0);
+    CHECK_EQ(clients_.count(cs->GetFD()), size_t(0));
     clients_[cs->GetFD()] = cs;
     return cs;
   }

@@ -93,7 +93,7 @@ uint32_t MetaNode::numLeaves() const {
 }
 
 uint64_t MetaNode::numElementsUntilEntry(size_t entry_idx) const {
-  CHECK_GE(entry_idx, 0);
+  CHECK_GE(entry_idx, size_t(0));
   CHECK_LE(entry_idx, numEntries());
   // iterate all MetaEntries in MetaNode and sum up their elements
   // Skip num_entries field (4 bytes) at MetaNode head
@@ -120,7 +120,7 @@ OrderedKey MetaNode::key(size_t idx) const {
 }
 
 size_t MetaNode::len(size_t idx) const {
-  CHECK_GE(idx, 0);
+  CHECK_GE(idx, size_t(0));
   CHECK_LT(idx, numEntries());
   // iterate all MetaEntries in MetaNode and accumulate offset
   // Skip num_entries field (4 bytes) at MetaNode head
@@ -131,7 +131,7 @@ size_t MetaNode::len(size_t idx) const {
 
 uint64_t MetaNode::entryOffset(size_t idx) const {
   // make sure 0 <= idx < numElements()
-  CHECK_GE(idx, 0);
+  CHECK_GE(idx, size_t(0));
   CHECK_LT(idx, numEntries());
 
   return offsets_[idx];
@@ -151,7 +151,7 @@ void MetaNode::PrecomputeOffset() {
 
 Hash MetaNode::GetChildHashByIndex(size_t element_idx,
                                          size_t* entry_idx) const {
-  CHECK_GT(numEntries(), 0);
+  CHECK_GT(numEntries(), size_t(0));
   // Skip num_entries field (4 bytes) at MetaNode head
   size_t byte_offset = sizeof(uint32_t);
   uint64_t total_num_elements = 0;
@@ -170,7 +170,7 @@ Hash MetaNode::GetChildHashByIndex(size_t element_idx,
 }
 
 Hash MetaNode::GetChildHashByEntry(size_t entry_idx) const {
-  CHECK_GE(entry_idx, 0);
+  CHECK_GE(entry_idx, size_t(0));
   CHECK_LT(entry_idx, numEntries());
   MetaEntry me(chunk_->data() + entryOffset(entry_idx));
   return me.targetHash();
@@ -178,7 +178,7 @@ Hash MetaNode::GetChildHashByEntry(size_t entry_idx) const {
 
 Hash MetaNode::GetChildHashByKey(const OrderedKey& key,
                                  size_t* entry_idx) const {
-  CHECK_GT(numEntries(), 0);
+  CHECK_GT(numEntries(), size_t(0));
   // Skip num_entries field (4 bytes) at MetaNode head
   size_t byte_offset = sizeof(uint32_t);
   for (size_t i = 0; i < numEntries(); i++) {

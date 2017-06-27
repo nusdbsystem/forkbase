@@ -15,7 +15,7 @@ template<typename Type1, typename ... Types,
     typename = typename ::ustore::is_integral_t<Type1> >
 static size_t AppendInteger(char* buf, Type1 value, Types ... values) {
   // make sure alignment
-  CHECK_EQ((uintptr_t)buf % sizeof(Type1), 0);
+  CHECK_EQ((uintptr_t)buf % sizeof(Type1), Type1(0));
   *(reinterpret_cast<Type1*>(buf)) = value;
   return sizeof(Type1) + AppendInteger(buf + sizeof(Type1), values...);
 }
@@ -24,7 +24,7 @@ template<typename Type1, typename ... Types,
     typename = typename ::ustore::is_integral_t<Type1> >
 static size_t ReadInteger(const char* buf, Type1& value, Types&... values) {
   // make sure alignment
-  CHECK_EQ((uintptr_t)buf % sizeof(Type1), 0);
+  CHECK_EQ((uintptr_t)buf % sizeof(Type1), Type1(0));
   value = *reinterpret_cast<Type1*>(const_cast<char*>(buf));
   return sizeof(Type1)
          + ReadInteger(const_cast<char*>(buf) + sizeof(Type1), values...);

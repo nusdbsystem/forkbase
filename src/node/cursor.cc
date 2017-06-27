@@ -19,7 +19,7 @@ std::vector<IndexRange> IndexRange::Compact(
   uint64_t pre_upper = curr_cr.start_idx + curr_cr.num_subsequent;
 
   for (size_t i = 1; i < ranges.size(); ++i) {
-    CHECK_NE(ranges[i].num_subsequent, 0);
+    CHECK_NE(ranges[i].num_subsequent, size_t(0));
     if (pre_upper < ranges[i].start_idx) {
       result.push_back(curr_cr);
       curr_cr = ranges[i];

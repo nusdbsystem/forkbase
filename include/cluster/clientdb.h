@@ -149,12 +149,12 @@ class ClientDb : public DB {
     return Hash(reinterpret_cast<const byte_t*>(request.data()));
   }
 
-  int id_ = 0;  // thread identity, in order to identify the waiting thread
   node_id_t master_;  // address of the master node
+  int id_ = 0;  // thread identity, in order to identify the waiting thread
   Net* net_ = nullptr;  // for network communication
-  WorkerList* workers_ = nullptr;  // lists of workers to which requests are
-  // dispatched
   ResponseBlob* res_blob_ = nullptr;  // response blob
+  WorkerList* workers_ = nullptr;  // lists of workers to which requests are
+                                   // dispatched
 };
 
 /**

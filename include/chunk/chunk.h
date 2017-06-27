@@ -39,8 +39,8 @@ class Chunk : private Noncopyable {
   Chunk(const byte_t* head, const byte_t* hash) noexcept
     : head_(head), hash_(hash) {}
   // movable
-  Chunk(Chunk&& other) noexcept : own_(std::move(other.own_)),
-    hash_(std::move(other.hash_)), head_(other.head_) {
+  Chunk(Chunk&& other) noexcept : own_(std::move(other.own_)), head_(other.head_),
+    hash_(std::move(other.hash_)) {
     other.head_ = nullptr;
   }
 
@@ -49,8 +49,8 @@ class Chunk : private Noncopyable {
   // movable
   inline Chunk& operator=(Chunk&& other) {
     own_.swap(other.own_);
-    std::swap(hash_, other.hash_);
     std::swap(head_, other.head_);
+    std::swap(hash_, other.hash_);
     return *this;
   }
 

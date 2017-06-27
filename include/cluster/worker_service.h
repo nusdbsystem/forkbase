@@ -73,8 +73,8 @@ class WorkerService {
     void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* response);
     void HandleGetInfoRequest(const UMessage& umsg, UMessage* response);
 
-    node_id_t master_;  // master node
     node_id_t node_addr_;  // this node's address
+    node_id_t master_;  // master node
     std::vector<RangeInfo> ranges_;  // global knowledge about key ranges
     std::vector<node_id_t> addresses_;  // worker addresses
     std::unique_ptr<Worker> worker_;  // where the logic happens

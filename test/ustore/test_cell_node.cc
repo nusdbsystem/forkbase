@@ -17,7 +17,7 @@ TEST(CellNode, NewCellNode) {
   ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
-  EXPECT_EQ(cnode.numPreHash(), 1);
+  EXPECT_EQ(size_t(1), cnode.numPreHash());
   EXPECT_EQ(data, ustore::Slice(cnode.data(), cnode.dataLength()));
   EXPECT_EQ(ustore::Hash::kNull, cnode.preHash(0));
   EXPECT_TRUE(cnode.preHash(1).empty());
@@ -37,7 +37,7 @@ TEST(CellNode, SinglePreHash) {
   ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
-  EXPECT_EQ(1, cnode.numPreHash());
+  EXPECT_EQ(size_t(1), cnode.numPreHash());
   EXPECT_EQ(data, ustore::Slice(cnode.data(), cnode.dataLength()));
   EXPECT_EQ(h2, cnode.preHash(0));
   EXPECT_TRUE(cnode.preHash(1).empty());
@@ -57,7 +57,7 @@ TEST(CellNode, DoublePreHash) {
   ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
-  EXPECT_EQ(2, cnode.numPreHash());
+  EXPECT_EQ(size_t(2), cnode.numPreHash());
   EXPECT_EQ(data, ustore::Slice(cnode.data(), cnode.dataLength()));
   EXPECT_EQ(h2, cnode.preHash(0));
   EXPECT_EQ(h3, cnode.preHash(1));

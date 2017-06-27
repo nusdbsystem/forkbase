@@ -35,9 +35,9 @@ class Socket {
   inline int GetFD() const noexcept { return fd_; }
 
  protected:
-  int fd_ = -1;
   std::string ip_;
   int port_ = 0;
+  int fd_ = -1;
 };
 
 class ClientSocket : public Socket {

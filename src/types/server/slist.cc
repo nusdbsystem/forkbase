@@ -14,7 +14,7 @@ SList::SList(const Hash& root_hash) noexcept :
 
 SList::SList(const std::vector<Slice>& elements) noexcept:
     UList(std::make_shared<ServerChunkLoader>()) {
-  CHECK_GE(elements.size(), 0);
+  CHECK_GE(elements.size(), size_t(0));
   if (elements.size() == 0) {
     ChunkInfo chunk_info = ListChunker::Instance()->Make({});
     store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);

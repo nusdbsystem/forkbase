@@ -157,8 +157,8 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
 
  protected:
   const MapType& map_;
-  const byte_t* ptr_;
   const LSTSegment* segment_;
+  const byte_t* ptr_;
 };
 
 template <typename MapType, typename ChunkType, ChunkType T,

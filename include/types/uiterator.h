@@ -93,7 +93,7 @@ The valid elements are specified by a vector of IndexRange.
 
   inline bool head() const override {return curr_range_idx_ == -1; }
 
-  inline bool end() const override {return curr_range_idx_ == ranges_.size(); }
+  inline bool end() const override {return curr_range_idx_ == int32_t(ranges_.size()); }
 
   // return the idx of pointed element
   virtual inline uint64_t index() const {

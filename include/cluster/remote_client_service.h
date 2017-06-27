@@ -59,10 +59,10 @@ class RemoteClientService {
   static int range_cmp(const RangeInfo& a, const RangeInfo& b);
 
  private:
-  int nclients_;  // how many RequestHandler thread it uses
-  volatile bool is_running_;  // volatile to avoid caching old value
-  node_id_t master_;  // master node
   node_id_t node_addr_;  // the node's address
+  node_id_t master_;  // master node
+  volatile bool is_running_;  // volatile to avoid caching old value
+  int nclients_;  // how many RequestHandler thread it uses
   WorkerList workers_;  // worker list
   std::vector<std::unique_ptr<ResponseBlob>> responses_;  // the response queue
   std::vector<node_id_t> addresses_;  // worker addresses

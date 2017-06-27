@@ -155,14 +155,14 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
      while ((cur = para.find('&', cur)) != std::string::npos) {
        // LOG(WARNING) << para.substr(prev, cur-prev);
        int ep = para.find('=', prev);
-       CHECK_LT(ep, cur);
+       CHECK_LT(ep, int32_t(cur));
        kv[para.substr(prev, ep-prev)] = para.substr(ep+1, cur-ep-1);
        cur++;
        prev = cur;
      }
 
      int ep = para.find('=', prev);
-     CHECK_NE(ep, cur);
+     CHECK_NE(ep, int32_t(cur));
      kv[para.substr(prev, ep-prev)] = para.substr(ep+1);
   }
   return kv;

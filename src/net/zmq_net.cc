@@ -280,7 +280,7 @@ ServerZmqNet::ServerZmqNet(const node_id_t& id, int nthreads)
 void ServerZmqNet::Start() {
   // start backend thread
   for (int i=0; i < nthreads_; i++) {
-    CHECK_EQ(netmap_.count(std::to_string(i)), 0);
+    CHECK_EQ(netmap_.count(std::to_string(i)), size_t(0));
     ServerZmqNetContext *nctx =
               new ServerZmqNetContext("", "", inproc_ep_, result_ep_,
                                     std::to_string(i));

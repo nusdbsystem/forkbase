@@ -313,7 +313,7 @@ void Utils::PrintSeq(const T& begin, const T& end,
   auto it = begin;
   if (it != end) {
     os << quote << *it++ << quote;
-    size_t cnt(1);
+    // size_t cnt(1);
     while (it != end) os << sep << quote << *it++ << quote;
   }
   os << rsymbol;

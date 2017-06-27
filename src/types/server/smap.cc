@@ -16,7 +16,7 @@ SMap::SMap(const Hash& root_hash) noexcept :
 SMap::SMap(const std::vector<Slice>& keys,
            const std::vector<Slice>& vals) noexcept :
     UMap(std::make_shared<ServerChunkLoader>()) {
-  CHECK_GE(keys.size(), 0);
+  CHECK_GE(keys.size(), size_t(0));
   CHECK_EQ(vals.size(), keys.size());
   if (keys.size() == 0) {
     ChunkInfo chunk_info = MapChunker::Instance()->Make({});

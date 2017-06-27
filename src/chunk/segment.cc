@@ -13,25 +13,25 @@ void Segment::AppendForChunk(byte_t* chunk_buffer) const {
 }
 
 const byte_t* FixedSegment::entry(size_t idx) const {
-  CHECK_LE(0, idx);
+  CHECK_LE(size_t(0), idx);
   CHECK_GT(numEntries(), idx);
   return data_ + idx * bytes_per_entry_;
 }
 
 size_t FixedSegment::prolong(size_t entry_num_bytes) {
-  CHECK_EQ(entry_num_bytes % bytes_per_entry_, 0);
+  CHECK_EQ(entry_num_bytes % bytes_per_entry_, size_t(0));
   num_bytes_ += entry_num_bytes;
   return numEntries();
 }
 
 size_t FixedSegment::entryNumBytes(size_t idx) const {
-  CHECK_LE(0, idx);
+  CHECK_LE(size_t(0), idx);
   CHECK_GT(numEntries(), idx);
   return bytes_per_entry_;
 }
 
 size_t FixedSegment::PosToIdx(size_t pos) const {
-  CHECK_LE(0, pos);
+  CHECK_LE(size_t(0), pos);
   CHECK_GE(numBytes(), pos);
   return pos / bytes_per_entry_;
 }
@@ -39,7 +39,7 @@ size_t FixedSegment::PosToIdx(size_t pos) const {
 std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment>>
 FixedSegment::Split(size_t idx) const {
   CHECK(!empty());
-  CHECK_LE(0, idx);
+  CHECK_LE(size_t(0), idx);
   CHECK_GE(numEntries(), idx);
   size_t preSegBytes = bytes_per_entry_ * idx;
   size_t postSegBytes = numBytes() - preSegBytes;
@@ -57,7 +57,7 @@ FixedSegment::Split(size_t idx) const {
 }
 
 const byte_t* VarSegment::entry(size_t idx) const {
-  CHECK_LE(0, idx);
+  CHECK_LE(size_t(0), idx);
   CHECK_GT(numEntries(), idx);
   return data_ + entry_offsets_[idx];
 }
@@ -69,14 +69,14 @@ size_t VarSegment::prolong(size_t entry_num_bytes) {
 }
 
 inline size_t VarSegment::entryNumBytes(size_t idx) const {
-  CHECK_LE(0, idx);
+  CHECK_LE(size_t(0), idx);
   CHECK_GT(numEntries(), idx);
   return (idx == numEntries() - 1 ? numBytes() : entry_offsets_[idx + 1]) -
          entry_offsets_[idx];
 }
 
 size_t VarSegment::PosToIdx(size_t pos) const {
-  CHECK_LE(0, pos);
+  CHECK_LE(size_t(0), pos);
   CHECK_GE(numBytes(), pos);
   return std::upper_bound(entry_offsets_.begin(), entry_offsets_.end(), pos) -
          entry_offsets_.begin() - 1;
@@ -85,7 +85,7 @@ size_t VarSegment::PosToIdx(size_t pos) const {
 std::pair<std::unique_ptr<const Segment>, std::unique_ptr<const Segment>>
 VarSegment::Split(size_t idx) const {
   CHECK(!empty());
-  CHECK_LE(0, idx);
+  CHECK_LE(size_t(0), idx);
   CHECK_GE(numEntries(), idx);
   size_t preSegBytes = 0;
   const byte_t* preData = entry(0);

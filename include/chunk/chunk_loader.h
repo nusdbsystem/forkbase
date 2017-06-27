@@ -52,8 +52,8 @@ class ClientChunkLoader : public ChunkLoader {
   Chunk GetChunk(const Hash& key) override;
 
  private:
-  std::string key_;
   DB* db_;
+  std::string key_;
 };
 
 }  // namespace ustore
