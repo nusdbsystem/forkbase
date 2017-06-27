@@ -77,6 +77,7 @@ void Benchmark::HeaderInfo(const std::string& cmd, UType type, size_t ops,
 
 void Benchmark::FooterInfo(const std::string& cmd, UType type,
                            size_t total_time, size_t pk_tp, size_t avg_tp) {
+  pk_tp = std::max(pk_tp, avg_tp);
   std::cout << BOLD_GREEN("[" << cmd);
   if (type != UType::kUnknown) std::cout << BOLD_GREEN(" " << type);
   std::cout << BOLD_GREEN("]")
