@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include <stdexcept>
+
 #include <algorithm>
 #include <array>
 #include <functional>
@@ -25,6 +27,14 @@
 
 namespace ustore {
 namespace lst_store {
+
+using offset_t = uint64_t;
+
+constexpr offset_t kMetaLogSize = 4096;
+constexpr offset_t kSegmentSize = (1<<22);
+constexpr offset_t kMaxPendingSyncChunks = 1024;
+constexpr offset_t kMetaSegmentSize = 2 * sizeof(offset_t);
+constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;
 
 struct LSTHash {
   const byte_t* hash_;
@@ -49,16 +59,10 @@ template<> struct hash<::ustore::lst_store::LSTHash> {
     return ret;
   }
 };
-
 }  // namespace std
 
 namespace ustore {
 namespace lst_store {
-
-constexpr size_t kMetaLogSize = 4096;
-constexpr size_t kSegmentSize = (1<<22); // 4M
-constexpr size_t kMaxPendingSyncChunks = 1024;
-constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;
 
 struct LSTChunk {
   const byte_t* chunk_;
@@ -73,7 +77,6 @@ struct LSTChunk {
 struct LSTSegment {
   static void* base_addr_;
   LSTSegment *prev_, *next_;
-  size_t nchunks_;
   void* segment_;
 
   inline explicit LSTSegment(void* segment) noexcept : segment_(segment) {}
@@ -85,21 +88,21 @@ static inline bool IsEndChunk(ChunkType type) {
 
 static inline size_t PtrToChunkLength(const byte_t* byte) {
   return *reinterpret_cast<const uint32_t*>(
-      byte + Hash::kByteLength + Chunk::kNumBytesOffset);
+      byte + Chunk::kNumBytesOffset);
 }
 
 static inline byte_t* GetPtrToNextChunk(const byte_t* byte) {
   return const_cast<byte_t*>(byte) + Hash::kByteLength + PtrToChunkLength(byte);
 }
 
-static inline byte_t* GetFirstHashPtr(const LSTSegment* segment) {
+static inline byte_t* GetFirstChunkPtr(const LSTSegment* segment) {
   return reinterpret_cast<byte_t*>(const_cast<void*>(segment->segment_))
-    + 2 * sizeof(size_t);
+    + kMetaSegmentSize;
 }
 
 static inline ChunkType PtrToChunkType(const byte_t* byte) {
   return *reinterpret_cast<const ChunkType*>(
-      byte + Hash::kByteLength + Chunk::kChunkTypeOffset);
+      byte + Chunk::kChunkTypeOffset);
 }
 
 template <typename MapType,
@@ -129,17 +132,17 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
   }
 
   LSTStoreIterator& operator++() {
-    if (IsEndChunk(PtrToChunkType(ptr_))) {
-      return *this;
+    if (ptr_ == nullptr || IsEndChunk(PtrToChunkType(ptr_))) {
+      throw std::out_of_range("LSTStoreIterator");
     }
 
     do {
       ptr_ = GetPtrToNextChunk(ptr_);
       if (IsEndChunk(PtrToChunkType(ptr_)) && segment_->next_ != nullptr) {
         segment_ = segment_->next_;
-        ptr_ = GetFirstHashPtr(segment_);
+        ptr_ = GetFirstChunkPtr(segment_);
       }
-    } while (!CheckPolicy<MapType>::check(map_, ptr_)
+    } while (!CheckPolicy<MapType>::check(map_, ptr_ + PtrToChunkLength(ptr_))
              && !IsEndChunk(PtrToChunkType(ptr_)));
 
     DCHECK(IsChunkValid(PtrToChunkType(ptr_)));
@@ -151,14 +154,14 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
   }
 
   reference operator*() const {
-    DCHECK(CheckPolicy<MapType>::check(map_, ptr_));
-    return Chunk(ptr_ + Hash::kByteLength, ptr_);
+    DCHECK(CheckPolicy<MapType>::check(map_, ptr_ + PtrToChunkLength(ptr_)));
+    return Chunk(ptr_, ptr_ + PtrToChunkLength(ptr_));
   }
 
  protected:
   const MapType& map_;
-  const LSTSegment* segment_;
   const byte_t* ptr_;
+  const LSTSegment* segment_;
 };
 
 template <typename MapType, typename ChunkType, ChunkType T,
@@ -247,10 +250,9 @@ class LSTStore
     return storeInfo;
   }
 
-
   template <typename Iterator = iterator>
   Iterator begin() {
-    const byte_t* ptr = major_list_ ? GetFirstHashPtr(major_list_) : nullptr;
+    const byte_t* ptr = major_list_ ? GetFirstChunkPtr(major_list_) : nullptr;
     return Iterator(chunk_map_, major_list_, ptr);
   }
 
@@ -282,21 +284,14 @@ class LSTStore
   }
   ~LSTStore() noexcept(false);
 
-  inline size_t GetFreeSpaceMajor() const noexcept {
-    // make sure ther is space to keep a kNull chunk type
-    return kSegmentSize - Hash::kByteLength - major_segment_offset_
-      - Hash::kByteLength - Chunk::kMetaLength;
-  }
-
-  inline size_t GetFreeSpaceMinor() const noexcept {
-    return kSegmentSize - Hash::kByteLength - minor_segment_offset_
-      - Hash::kByteLength - Chunk::kMetaLength;
+  inline offset_t GetFreeSpaceMajor() {
+    return kSegmentSize - major_segment_offset_ - Hash::kByteLength - Chunk::kMetaLength;
   }
 
   void GC() {}
   void Load(void*);
-  size_t LoadFromValidSegment(LSTSegment*);
-  size_t LoadFromLastSegment(LSTSegment*);
+  offset_t LoadFromValidSegment(LSTSegment*);
+  offset_t LoadFromLastSegment(LSTSegment*);
   void* MmapUstoreLogFile(const std::string& dir, const std::string& file,
                           bool persist);
   LSTSegment* Allocate(LSTSegment*);
@@ -307,8 +302,8 @@ class LSTStore
   LSTSegment *free_list_, *major_list_, *minor_list_;
   LSTSegment *current_major_segment_;
   LSTSegment *current_minor_segment_;
-  size_t major_segment_offset_;
-  size_t minor_segment_offset_;
+  offset_t major_segment_offset_;
+  offset_t minor_segment_offset_;
   const size_t num_segments_ = 64;
   const size_t log_file_size_ = kSegmentSize * num_segments_ + kMetaLogSize;
 
@@ -318,40 +313,4 @@ class LSTStore
 }  // namespace lst_store
 }  // namespace ustore
 
-// namespace std {
-// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//          typename = typename ustore::enable_if_t<
-//             std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                 typename ustore::lst_store::LSTStore::iterator>::value,
-//             Iterator> >
-// Iterator begin(const ustore::lst_store::LSTStore& store) {
-//   return store.begin<Iterator>();
-// }
-//
-// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//          typename = typename ustore::enable_if_t<
-//             std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                 typename ustore::lst_store::LSTStore::iterator>::value,
-//             Iterator> >
-// Iterator cbegin(const ustore::lst_store::LSTStore& store) {
-//   return begin<Iterator>(store);
-// }
-//
-// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//          typename = typename ustore::enable_if_t<
-//             std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                 typename ustore::lst_store::LSTStore::iterator>::value,
-//             Iterator> >
-// Iterator end(const ustore::lst_store::LSTStore& store) {
-//   return store.end<Iterator>();
-// }
-// }
-// template <typename Iterator = typename ustore::lst_store::LSTStore::iterator,
-//          typename = typename ustore::enable_if_t<
-//             std::is_convertible< ustore::remove_cv_t<Iterator>,
-//                 typename ustore::lst_store::LSTStore::iterator>::value,
-//             Iterator> >
-// Iterator cend(const ustore::lst_store::LSTStore& store) {
-//   return cend<Iterator>(store);
-// }
 #endif  // USTORE_STORE_LST_STORE_H_
