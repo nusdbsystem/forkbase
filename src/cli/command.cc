@@ -9,7 +9,7 @@
 namespace ustore {
 namespace cli {
 
-const size_t Command::kDefaultLimitPrintElems(50);
+const size_t Command::kDefaultLimitPrintElems(10);
 size_t Command::limit_print_elems(kDefaultLimitPrintElems);
 
 Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
@@ -289,7 +289,7 @@ void Command::PrintHelp() {
             << "ustore_cli --help" << std::endl
             << std::endl;
   Command::PrintCommandHelp();
-  std::cout << std::endl << Config::command_options_help << std::endl;
+  std::cout << Config::command_options_help << std::endl;
 }
 
 ErrorCode Command::ExecHelp() {
@@ -404,25 +404,41 @@ ErrorCode Command::ExecGet() {
   };
   const auto f_rpt_success = [](const VMeta & meta) {
     auto type = meta.type();
-    std::cout << BOLD_GREEN("[SUCCESS: GET] ") << "Value"
-              << "<" << Utils::ToString(type) << ">: ";
+    if (!Config::is_vert_list) {
+      std::cout << BOLD_GREEN("[SUCCESS: GET] ") << "Value"
+                << "<" << Utils::ToString(type) << ">: ";
+    }
     switch (type) {
       case UType::kString:
       case UType::kBlob:
         std::cout << "\"" << meta << "\"";
         break;
-      case UType::kList:
-        Utils::Print(meta.List(), "[", "]", ", ", true, limit_print_elems);
+      case UType::kList: {
+        auto list = meta.List();
+        if (Config::is_vert_list) {
+          for (auto it = list.Scan(); !it.end(); it.next())
+            std::cout << it.value() << std::endl;
+        } else {
+          Utils::Print(list, "[", "]", ", ", true, limit_print_elems);
+        }
         break;
-      case UType::kMap:
-        Utils::Print(
-          meta.Map(), "[", "]", ", ", "", "", "->", true, limit_print_elems);
+      }
+      case UType::kMap: {
+        auto map = meta.Map();
+        if (Config::is_vert_list) {
+          for (auto it = map.Scan(); !it.end(); it.next())
+            std::cout << it.key() << " -> " << it.value() << std::endl;
+        } else {
+          Utils::Print(
+            meta.Map(), "[", "]", ", ", "", "", "->", true, limit_print_elems);
+        }
         break;
+      }
       default:
         std::cout << meta;
         break;
     }
-    std::cout << std::endl;
+    if (!Config::is_vert_list) std::cout << std::endl;
   };
   const auto f_rpt_fail_by_branch = [&key, &branch](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET] ")
@@ -740,9 +756,13 @@ ErrorCode Command::ExecDelete() {
 ErrorCode Command::ExecListKey() {
   // screen printing
   const auto f_rpt_success = [](const std::vector<std::string>& keys) {
-    std::cout << BOLD_GREEN("[SUCCESS: LIST_KEY] ") << "Keys: ";
-    Utils::Print(keys, "[", "]", ", ", true, limit_print_elems);
-    std::cout << std::endl;
+    if (Config::is_vert_list) {
+      for (auto& k : keys) std::cout << k << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LIST_KEY] ") << "Keys: ";
+      Utils::Print(keys, "[", "]", ", ", true, limit_print_elems);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail = [](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LIST_KEY] ")
@@ -770,9 +790,13 @@ ErrorCode Command::ExecListBranch() {
               << "Key: \"" << key << "\"" << std::endl;
   };
   const auto f_rpt_success = [](const std::vector<std::string>& branches) {
-    std::cout << BOLD_GREEN("[SUCCESS: LIST_BRANCH] ")
-              << "Branches: " << Utils::ToStringWithQuote(branches)
-              << std::endl;
+    if (Config::is_vert_list) {
+      for (auto& b : branches) std::cout << b << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LIST_BRANCH] ") << "Branches: ";
+      Utils::Print(branches, "[", "]", ", ", true);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail = [&key](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LIST_BRANCH] ")
@@ -833,9 +857,13 @@ ErrorCode Command::ExecLatest() {
               << std::endl;
   };
   const auto f_rpt_success = [](const std::vector<Hash>& vers) {
-    std::cout << BOLD_GREEN("[SUCCESS: LATEST] ") << "Versions: ";
-    Utils::Print(vers, "[", "]", ", ", true, limit_print_elems);
-    std::cout << std::endl;
+    if (Config::is_vert_list) {
+      for (auto& v : vers) std::cout << v << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LATEST] ") << "Versions: ";
+      Utils::Print(vers, "[", "]", ", ", true, limit_print_elems);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail = [&key](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LATEST] ")
@@ -1013,9 +1041,14 @@ ErrorCode Command::ExecGetTable() {
               << "Branch: \"" << branch << "\"" << std::endl;
   };
   const auto f_rpt_success = [](const Table & tab) {
-    std::cout << BOLD_GREEN("[SUCCESS: GET_TABLE] ") << "Columns: ";
-    Utils::PrintKeys(tab, "[", "]", ", ", true);
-    std::cout << std::endl;
+    if (Config::is_vert_list) {
+      for (auto it = tab.Scan(); !it.end(); it.next())
+        std::cout << it.key() << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: GET_TABLE] ") << "Columns: ";
+      Utils::PrintKeys(tab, "[", "]", ", ", true);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
@@ -1078,9 +1111,13 @@ ErrorCode Command::ExecListTableBranch() {
               << "Table: \"" << tab << "\"" << std::endl;
   };
   const auto f_rpt_success = [](const std::vector<std::string>& branches) {
-    std::cout << BOLD_GREEN("[SUCCESS: LIST_TABLE_BRANCH] ")
-              << "Branches: " << Utils::ToStringWithQuote(branches)
-              << std::endl;
+    if (Config::is_vert_list) {
+      for (auto& b : branches) std::cout << b << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LIST_TABLE_BRANCH] ") << "Branches: ";
+      Utils::Print(branches, "[", "]", ", ", true);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LIST_TABLE_BRANCH] ")
@@ -1142,10 +1179,15 @@ ErrorCode Command::ExecGetColumn() {
               << "Column: \"" << col_name << "\"" << std::endl;
   };
   const auto f_rpt_success = [&](const Column & col) {
-    std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Column \""
-              << col_name << "\": ";
-    Utils::Print(col, "[", "]", ", ", true, limit_print_elems);
-    std::cout << std::endl;
+    if (Config::is_vert_list) {
+      for (auto it = col.Scan(); !it.end(); it.next())
+        std::cout << it.value() << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: GET_COLUMN] ") << "Column \""
+                << col_name << "\": ";
+      Utils::Print(col, "[", "]", ", ", true, limit_print_elems);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
@@ -1176,9 +1218,13 @@ ErrorCode Command::ExecListColumnBranch() {
               << "Column: \"" << col << "\"" << std::endl;
   };
   const auto f_rpt_success = [](const std::vector<std::string>& branches) {
-    std::cout << BOLD_GREEN("[SUCCESS: LIST_COLUMN_BRANCH] ")
-              << "Branches: " << Utils::ToStringWithQuote(branches)
-              << std::endl;
+    if (Config::is_vert_list) {
+      for (auto& b : branches) std::cout << b << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LIST_COLUMN_BRANCH] ") << "Branches: ";
+      Utils::Print(branches, "[", "]", ", ", true);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: LIST_COLUMN_BRANCH] ")
@@ -1252,10 +1298,15 @@ ErrorCode Command::ExecDiffTable() {
               << "Branch (2nd): \"" << rhs_branch << "\"" << std::endl;
   };
   const auto f_rpt_success = [](TableDiffIterator & it_diff) {
-    std::cout << BOLD_GREEN("[SUCCESS: DIFF_TABLE] ")
-              << "Different Columns: ";
-    Utils::PrintDiff(it_diff, false, true);
-    std::cout << std::endl;
+    if (Config::is_vert_list) {
+      for (; !it_diff.end(); it_diff.next())
+        std::cout << it_diff.key() << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: DIFF_TABLE] ")
+                << "Different Columns: ";
+      Utils::PrintDiff(it_diff, false, true);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
@@ -1312,12 +1363,18 @@ ErrorCode Command::ExecDiffColumn() {
               << "Column (2nd): \"" << rhs_col_name << "\"" << std::endl;
   };
   const auto f_rpt_success = [](ColumnDiffIterator & it_diff) {
-    std::cout << BOLD_GREEN("[SUCCESS: DIFF_COLUMN] ")
-              << "Different Values: ";
-    // TODO(ruanpc): replace PrintListDiff with PrintDiff
-    // Utils::PrintDiff(it_diff, true, true);
-    Utils::PrintListDiff(it_diff, true, true);
-    std::cout << std::endl;
+    if (Config::is_vert_list) {
+      for (; !it_diff.end(); it_diff.next())
+        std::cout << it_diff.index() << ": " << it_diff.lhs_value()
+                  << " <<>> " << it_diff.rhs_value() << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: DIFF_COLUMN] ")
+                << "Different Values: ";
+      // TODO(ruanpc): replace PrintListDiff with PrintDiff
+      // Utils::PrintDiff(it_diff, true, true);
+      Utils::PrintListDiff(it_diff, true, true);
+      std::cout << std::endl;
+    }
   };
   const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
@@ -1532,10 +1589,16 @@ ErrorCode Command::ExecGetRow() {
   const auto f_rpt_success = [&](const std::unordered_map<size_t, Row>& rows) {
     DCHECK(!rows.empty());
     for (auto& i_r : rows) {
-      std::cout << BOLD_GREEN("[SUCCESS: GET_ROW] ") << "Row "
-                << (i_r.first + 1) << ": ";
-      Utils::Print(i_r.second, "{", "}", "|", " ", " ", ":", true);
-      std::cout << std::endl;
+      if (Config::is_vert_list) {
+        std::cout << "--- Row " << (i_r.first + 1) << " ---" << std::endl;
+        for (auto& field : i_r.second)
+          std::cout << field.first << ": " << field.second << std::endl;
+      } else {
+        std::cout << BOLD_GREEN("[SUCCESS: GET_ROW] ") << "Row "
+                  << (i_r.first + 1) << ": ";
+        Utils::Print(i_r.second, "{", "}", "|", " ", " ", ":", true);
+        std::cout << std::endl;
+      }
     }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {

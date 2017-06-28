@@ -20,7 +20,7 @@ Console::Console(DB* db) noexcept : Command(db) {
   CONSOLE_CMD_ALIAS("DUMP_HISTORY", "DUMP-HISTORY");
 }
 
-const int kPrintConsoleCmdWidth = 20;
+const int kPrintConsoleCmdWidth = 13;
 
 #define FORMAT_CONSOLE_CMD(cmd) FORMAT_CMD(cmd, kPrintConsoleCmdWidth)
 
@@ -41,7 +41,7 @@ void Console::PrintHelp() {
   PrintCommandHelp();
   std::cout << std::endl;
   PrintConsoleCommandHelp();
-  std::cout << std::endl << Config::command_options_help;
+  std::cout << Config::command_options_help;
 }
 
 ErrorCode Console::Run() {

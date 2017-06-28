@@ -8,23 +8,24 @@
 namespace ustore {
 namespace cli {
 
-bool Config::is_help = false;
-std::string Config::command_options_help = "";
-std::string Config::command = "";
-std::string Config::script = "";
-std::string Config::file = "";
-std::string Config::key = "";
-std::string Config::value = "";
-std::string Config::ref_value = "";
-std::string Config::branch = "";
-std::string Config::ref_branch = "";
-std::string Config::version = "";
-std::string Config::ref_version = "";
-std::string Config::table = "";
-std::string Config::ref_table = "";
-std::string Config::column = "";
-std::string Config::ref_column = "";
-size_t Config::batch_size = 5000;
+bool Config::is_help;
+std::string Config::command_options_help;
+std::string Config::command;
+std::string Config::script;
+std::string Config::file;
+bool Config::is_vert_list;
+std::string Config::key;
+std::string Config::value;
+std::string Config::ref_value;
+std::string Config::branch;
+std::string Config::ref_branch;
+std::string Config::version;
+std::string Config::ref_version;
+std::string Config::table;
+std::string Config::ref_table;
+std::string Config::column;
+std::string Config::ref_column;
+size_t Config::batch_size;
 
 void Config::Reset() {
   is_help = false;
@@ -32,6 +33,7 @@ void Config::Reset() {
   command = "";
   script = "";
   file = "";
+  is_vert_list = false;
   key = "";
   value = "";
   ref_value = "";
@@ -56,6 +58,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     script = vm["script"].as<std::string>();
     file = vm["file"].as<std::string>();
+
+    is_vert_list = vm.count("vert-list") ? true : false;
 
     key = vm["key"].as<std::string>();
     value = vm["value"].as<std::string>();
@@ -90,15 +94,14 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
-  po::options_description desc(BLUE_STR("Options"), 120);
-  desc.add_options()
+  po::options_description utility(BLUE_STR("Utility Options"), 120);
+  utility.add_options()
   ("help,?", "print usage message")
-  ("command", po::value<std::string>()->default_value(""),
-   "UStore command")
   ("script", po::value<std::string>()->default_value(""),
-   "script of UStore commands")
-  ("file", po::value<std::string>()->default_value(""),
-   "path of input/output file")
+   "script of UStore commands");
+
+  po::options_description general(BLUE_STR("General Options"), 120);
+  general.add_options()
   ("key,k", po::value<std::string>()->default_value(""),
    "key of data")
   ("value,x", po::value<std::string>()->default_value(""),
@@ -124,18 +127,32 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("batch-size", po::value<int>()->default_value(5000),
    "batch size for data loading");
 
+  po::options_description backend("Hidden Options");
+  backend.add_options()
+  ("command", po::value<std::string>()->default_value(""),
+   "UStore command")
+  ("file", po::value<std::string>()->default_value(""),
+   "path of input/output file")
+  ("vert-list,1", "list one entry per line");
+
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);
   pos_opts.add("file", 1);
 
+  po::options_description all("Allowed Options");
+  all.add(utility).add(general).add(backend);
+
+  po::options_description visible;
+  visible.add(utility).add(general);
+
   try {
-    po::store(po::command_line_parser(argc, argv).options(desc)
+    po::store(po::command_line_parser(argc, argv).options(all)
               .style(po::command_line_style::unix_style)
               .positional(pos_opts).run(), *vm);
     if (vm->count("help")) {
       is_help = true;
       std::stringstream ss;
-      ss << desc;
+      ss << visible;
       command_options_help = ss.str();
     }
     po::notify(*vm);

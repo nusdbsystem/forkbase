@@ -22,6 +22,7 @@ class Config {
   static std::string command;
   static std::string script;
   static std::string file;
+  static bool is_vert_list;
   static std::string key;
   static std::string value;
   static std::string ref_value;
