@@ -29,7 +29,7 @@ class Timer : private Noncopyable {
   }
 
   inline Timer& Start() {
-    CHECK(!running_);
+    CHECK(!running_) << "Timer is already started";
     running_ = true;
     ++counter_;
     start_ = clock::now();
@@ -37,7 +37,7 @@ class Timer : private Noncopyable {
   }
 
   inline Timer& Stop() {
-    CHECK(running_);
+    CHECK(running_) << "Timer is already stopped";
     elapsed_ += clock::now() - start_;
     running_ = false;
     return *this;
