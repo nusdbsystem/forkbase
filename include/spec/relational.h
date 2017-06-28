@@ -6,6 +6,7 @@
 // #define __MOCK_FLUSH__  // for bottleneck test only
 #define __FAST_STRING_TOKENIZE__
 
+#include <atomic>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -135,7 +136,8 @@ class ColumnStore {
   ErrorCode LoadCSV(
     std::ifstream& ifs, const std::string& table_name,
     const std::string& branch_name, const std::vector<std::string>& col_names,
-    char delim, size_t batch_size, bool print_progress);
+    char delim, size_t batch_size, const std::atomic_size_t& total_rows,
+    bool print_progress);
 
   void ShardCSV(
     std::ifstream& ifs, size_t batch_size, size_t n_cols, char delim,
@@ -146,7 +148,8 @@ class ColumnStore {
     const std::string& table_name, const std::string& branch_name,
     const std::vector<std::string>& col_names,
     BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
-    ErrorCode& stat, bool print_progress);
+    const std::atomic_size_t& total_rows, ErrorCode& stat,
+    bool print_progress);
 
   ObjectDB odb_;
 };

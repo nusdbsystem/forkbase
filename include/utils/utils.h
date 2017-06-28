@@ -242,6 +242,15 @@ class Utils {
                     const std::string& rentry = ")",
                     const std::string& entry_sep = "->",
                     bool elem_in_quote = false, std::ostream& os = std::cout);
+
+  static void PrintPercentBar(double fraction, const std::string& front_symbol,
+                              size_t width = 40,
+                              const std::string& lsymbol = "[",
+                              const std::string& rsymbol = "]",
+                              char progress_symbol = '=',
+                              std::ostream& os = std::cout);
+
+  static std::string TimeString(double ms);
 };
 
 template<typename T>

@@ -1,6 +1,8 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include <boost/tokenizer.hpp>
+#include <cmath>
+#include <iomanip>
 #include <limits>
 #include "utils/utils.h"
 
@@ -245,6 +247,53 @@ void Utils::PrintListDiff(DuallyDiffIndexIterator& it_diff,
     }
   }
   os << "]";
+}
+
+void Utils::PrintPercentBar(double fraction, const std::string& front_symbol,
+                            size_t width, const std::string& lsymbol,
+                            const std::string& rsymbol, char progress_symbol,
+                            std::ostream& os) {
+  os << lsymbol;
+  size_t progress_width =
+    width - lsymbol.size() - rsymbol.size() - front_symbol.size();
+  size_t n_progress_symbols = std::lround(fraction * progress_width);
+  size_t i = 0;
+  for (; i < n_progress_symbols; ++i) os << progress_symbol;
+  os << front_symbol;
+  for (i += front_symbol.size() - 1; i < progress_width; ++i) os << ' ';
+  os << rsymbol;
+}
+
+std::string Utils::TimeString(double ms) {
+  std::stringstream ss;
+  if (ms < 60000.0) {
+    double seconds = ms / 1000.0;
+    ss << std::fixed << std::setprecision(3) << seconds << "s";
+  } else if (ms < 3600000.0) {
+    int minutes = ms / 60000.0;
+    int minutes_ms = minutes * 60000.0;
+    double seconds = (ms - minutes_ms) / 1000.0;
+    ss << minutes << 'm'
+       << std::fixed << std::setprecision(3) << seconds << "s";
+  } else if (ms < 86400000.0) {
+    int hours = ms / 3600000.0;
+    double hours_ms = hours * 3600000.0;
+    int minutes = (ms - hours_ms) / 60000.0;
+    int minutes_ms = minutes * 60000.0;
+    double seconds = (ms - hours_ms - minutes_ms) / 1000.0;
+    ss << hours << 'h' << minutes << 'm'
+       << std::fixed << std::setprecision(1) << seconds << "s";
+  } else {
+    int days = ms / 86400000.0;
+    double days_ms = days * 86400000.0;
+    int hours = (ms - days_ms) / 3600000.0;
+    double hours_ms = hours * 3600000.0;
+    int minutes = (ms - days_ms - hours_ms) / 60000.0;
+    int minutes_ms = minutes * 60000.0;
+    int seconds = (ms - days_ms - hours_ms - minutes_ms) / 1000.0;
+    ss << days << 'd' << hours << 'h' << minutes << 'm' << seconds << "s";
+  }
+  return ss.str();
 }
 
 }  // namespace ustore

@@ -64,8 +64,18 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
     }
   }
   if (ec == ErrorCode::kOK) {
+    std::atomic_size_t total_rows(0);
+    auto thread_count_rows = std::async(std::launch::async, [&]() {
+      std::ifstream ifs2(file_path);
+      std::string line;
+      size_t cnt(0);
+      for (; std::getline(ifs2, line); ++cnt);
+      if (cnt > 0) total_rows = cnt - 1;
+      ifs2.close();
+    });
     ec = LoadCSV(ifs, table_name, branch_name, col_names, delim, batch_size,
-                 print_progress);
+                 total_rows, print_progress);
+    thread_count_rows.wait();
   }
   ifs.close();
   return ec;
@@ -76,13 +86,15 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
                                const std::string& branch_name,
                                const std::vector<std::string>& col_names,
                                char delim, size_t batch_size,
+                               const std::atomic_size_t& total_rows,
                                bool print_progress) {
+  // blocking queue for pipeline synchronization
   BlockingQueue<std::vector<std::vector<std::string>>> batch_queue(2);
   auto stat_flush = ErrorCode::kOK;
   // launch another thread for data flushing
   auto thread_flush = std::async(std::launch::async, [&]() {
-    FlushCSV(table_name, branch_name, col_names, batch_queue, stat_flush,
-             print_progress);
+    FlushCSV(table_name, branch_name, col_names, batch_queue, total_rows,
+             stat_flush, print_progress);
   });
   // this thread shards the input data
   ShardCSV(ifs, batch_size, col_names.size(), delim, batch_queue, stat_flush);
@@ -110,7 +122,7 @@ void ColumnStore::ShardCSV(
   std::ifstream& ifs, size_t batch_size, size_t n_cols, char delim,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
   const ErrorCode& stat_flush) {
-  auto f_get_empty_batch = [&n_cols, &batch_size] {
+  auto f_get_empty_batch = [&n_cols, &batch_size]() {
     std::vector<std::vector<std::string>> cols;
     cols.reserve(n_cols);
     for (size_t i = 0; i < n_cols; ++i) {
@@ -202,7 +214,8 @@ void ColumnStore::FlushCSV(
   const std::string& table_name, const std::string& branch_name,
   const std::vector<std::string>& col_names,
   BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
-  ErrorCode& stat, bool print_progress) {
+  const std::atomic_size_t& total_rows, ErrorCode& stat,
+  bool print_progress) {
   auto n_cols = col_names.size();
 #ifndef __MOCK_FLUSH__
   // launch the sector-flushing threads
@@ -229,19 +242,36 @@ void ColumnStore::FlushCSV(
     return load_size;
   };
 #endif
-  // flush data batches iteratively
-  size_t cnt_loaded = 0;
-  if (print_progress) std::cout << GREEN("Loading...");
+  // screen printing
   Timer tm;
+  size_t cnt_loaded = 0;
+  double thrupt_kps;
+  auto f_refresh_progress =
+  [&total_rows, &cnt_loaded, &thrupt_kps, &tm, &stat]() {
+    double frac = static_cast<double>(cnt_loaded) / total_rows;
+    int percent = frac * 100;
+    std::cout << '\r'
+              << std::left << std::setw(4) << (std::to_string(percent) + '%');
+    Utils::PrintPercentBar(frac, (stat == ErrorCode::kOK ? ">" : "x"), 60);
+    std::cout << " Rows:" << std::left << std::setw(11) << cnt_loaded
+              << "  " << std::right << std::setw(6) << std::fixed
+              << std::setprecision(1) << thrupt_kps << "K/s  (Time: "
+              << std::left << std::setw(13)
+              << (Utils::TimeString(tm.ElapsedMilliseconds()) + ")");
+  };
+  if (print_progress) std::cout << GREEN("Loading...");
+  // flush data batches iteratively
   tm.Start();
   while (true) {
     auto cols = batch_queue.Take();
+    auto start_time = tm.ElapsedMilliseconds();
     // flush data batch into storage
 #if defined(__MOCK_FLUSH__)
     const int num_loaded = cols[0].size();
 #else
     const int num_loaded = f_concurrent_flush(cols);
 #endif
+    auto elapsed_ms = tm.ElapsedMilliseconds() - start_time;
     if (num_loaded == 0) break;
     if (num_loaded < 0) {
       stat = static_cast<ErrorCode>(-num_loaded);
@@ -255,19 +285,27 @@ void ColumnStore::FlushCSV(
     if (print_progress) {
       if (num_loaded > 0) {
         cnt_loaded += num_loaded;
-        std::cout << GREEN_STR(".");
+        thrupt_kps = num_loaded / elapsed_ms;
+        if (total_rows > 0) f_refresh_progress(); else std::cout << GREEN(".");
       } else {
-        std::cout << RED_STR("x");
+        if (total_rows > 0) f_refresh_progress(); else std::cout << RED("x");
       }
       std::cout << std::flush;
     }
   }
+  // print final progress
   if (print_progress) {
-    std::string final_stat =
-      stat == ErrorCode::kOK ? GREEN_STR("Done") : RED_STR("Failed");
-    std::cout << ' ' << final_stat << " (Rows: " << cnt_loaded
-              << ", Time: " << std::fixed << std::setprecision(3)
-              << tm.ElapsedSeconds() << " s)" << std::endl;
+    if (total_rows > 0) {
+      thrupt_kps = cnt_loaded / tm.ElapsedMilliseconds();
+      f_refresh_progress();
+      std::cout << std::endl;
+    } else {
+      std::string final_stat =
+        stat == ErrorCode::kOK ? GREEN_STR("Done") : RED_STR("Failed");
+      std::cout << ' ' << final_stat << " (Rows: " << cnt_loaded
+                << ", Time: " << Utils::TimeString(tm.ElapsedMilliseconds())
+                << ")" << std::endl;
+    }
   }
   // barrier: wait for the sector-flushing threads to complete
 #ifndef __MOCK_FLUSH__
