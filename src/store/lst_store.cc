@@ -9,6 +9,7 @@
 #include <boost/filesystem.hpp>
 
 #include <chrono>
+#include <future>
 #include <type_traits>
 
 #include "utils/chars.h"
@@ -70,10 +71,12 @@ static inline byte_t* GetValidateHashPtr(const LSTSegment* segment) {
     - Hash::kByteLength;
 }
 
-static void LinkSegmentList(LSTSegment* begin) {
-  LSTSegment *iter = begin;
+static size_t LinkSegmentList(LSTSegment** begin) {
+  LSTSegment *iter = *begin;
   LSTSegment *last = nullptr;
+  size_t number  = 0;
   while (iter != nullptr) {
+    ++number;
     iter->prev_ = last;
     offset_t v[2];
     ReadInteger(reinterpret_cast<char*>(iter->segment_), v);
@@ -82,6 +85,8 @@ static void LinkSegmentList(LSTSegment* begin) {
     last = iter;
     iter = next;
   }
+  *begin = last;
+  return number;
 }
 
 static void onNewChunk(StoreInfo* storeInfo, ChunkType type,
@@ -103,10 +108,10 @@ static void onRemoveChunk(StoreInfo* storeInfo, ChunkType type,
   storeInfo->bytesPerType[type] -= chunkLength;
 }
 
-static void initStoreInfo(StoreInfo* info, int segments) {
-  info->segments = segments;
+static void initStoreInfo(StoreInfo* info) {
+  info->segments = 0;
   info->usedSegments = 0;
-  info->freeSegments = segments;
+  info->freeSegments = 0;
   info->chunks = 0;
   info->chunkBytes = 0;
   info->validChunks = 0;
@@ -116,6 +121,84 @@ static void initStoreInfo(StoreInfo* info, int segments) {
     info->bytesPerType[type] = 0;
     info->chunksPerType[type] = 0;
   }
+}
+
+void LSTStore::updateStore() {
+  if (sync_block_.segments_ <= 0) goto out;
+
+  if (free_list_ == nullptr) {
+    free_list_ = sync_block_.head_;
+    // update the meta log
+    AppendInteger((char*)LSTSegment::base_addr_, SegmentPtrToOffset(free_list_));
+    SyncToDisk(LSTSegment::base_addr_, kMetaLogSize);
+  } else {
+    DCHECK_NE(last_free_segment_, nullptr);
+    char* last_segment = 
+      (char*)LSTSegment::base_addr_ + SegmentPtrToOffset(last_free_segment_);
+    last_free_segment_->next_ = sync_block_.head_;
+    AppendInteger(last_segment + sizeof(offset_t), SegmentPtrToOffset(sync_block_.head_));
+    SyncToDisk(last_segment, kMetaSegmentSize);
+  }
+
+  last_free_segment_ = sync_block_.last_;
+  storeInfo.freeSegments += sync_block_.segments_;
+  storeInfo.segments += sync_block_.segments_;
+  std::cout << GetInfo();
+out:
+  thread_status_.store(ThreadStatus::kUnscheduled);
+}
+
+void LSTStore::enlarge() {
+  // wait until the status is set kScheduled
+  while(thread_status_.load() != ThreadStatus::kScheduled);
+
+  int new_segments = this->segment_increment_;
+  if (storeInfo.segments + new_segments > this->num_segments_)
+    new_segments = num_segments_ - storeInfo.segments;
+
+  sync_block_.segments_ = new_segments;
+  if (new_segments <= 0) {
+    thread_status_.store(ThreadStatus::kCompleted);
+    return;
+  } // out of log memory
+
+  char* meta_segment = new char[kSegmentSize];
+
+  offset_t end_of_log = kMetaLogSize + storeInfo.segments * kSegmentSize;
+  offset_t offset = end_of_log;
+  ::lseek(fd_, offset, SEEK_SET);
+
+  char a = 1;
+  for (size_t i = 0; i < new_segments; offset += kSegmentSize, ++i) {
+    DLOG(INFO) << "init the " << i << "-th new segment";
+    offset_t prev_segment_offset = 0, next_segment_offset = 0;
+    int chunk_id = i + storeInfo.segments;
+    if (i > 0)
+      prev_segment_offset = (chunk_id - 1) * kSegmentSize + kMetaLogSize;
+    else
+      prev_segment_offset = SegmentPtrToOffset(last_free_segment_);
+      
+    if (i < new_segments - 1)
+      next_segment_offset = (chunk_id + 1) * kSegmentSize + kMetaLogSize;
+
+    AppendInteger(meta_segment, prev_segment_offset, next_segment_offset);
+    ::write(fd_, meta_segment, kSegmentSize);
+    //::lseek(fd_, offset + kSegmentSize - 1, SEEK_SET);
+    //::write(fd_, &a, 1);
+  }
+
+  SyncToDisk(end_of_log + reinterpret_cast<char*>(LSTSegment::base_addr_),
+      new_segments * kSegmentSize);
+  LOG(INFO) << "enlarge segments done";
+
+  if (new_segments > 0) {
+    sync_block_.head_ = OffsetToLstSegmentPtr(end_of_log);
+    sync_block_.last_ = sync_block_.head_;
+    int ns = LinkSegmentList(&sync_block_.last_);
+    CHECK_EQ(ns, new_segments);
+  }
+
+  thread_status_.store(ThreadStatus::kCompleted);
 }
 
 /**
@@ -133,61 +216,38 @@ void* LSTStore::MmapUstoreLogFile(const std::string& dir,
   path /= file + ".dat";
   if (!persist) fs::remove(path);
 
-  int fd;
   if (fs::exists(path) && (fs::file_size(path) - kMetaLogSize) % kSegmentSize == 0) {
-    fd = ::open(path.c_str(), O_RDWR, S_IRWXU);
+    fd_ = ::open(path.c_str(), O_RDWR, S_IRWXU);
   } else {
     // init the log
-    fd = ::open(path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-
+    fd_ = ::open(path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     char* meta_log = new char[kMetaLogSize];
-    char* meta_segment = new char[kMetaSegmentSize + Chunk::kMetaLength];
-
     std::memset(meta_log, 0, kMetaLogSize);
-
-    // only a free list
-    AppendInteger(meta_log, kMetaLogSize);
+    meta_log[kMetaLogSize - 1] = 'a';
     LOG(INFO) << "init meta segment";
-    ::write(fd, meta_log, kMetaLogSize);
-
-    meta_log[0] = 'a';
-
-    LOG(INFO) << "init data segments...";
-    for (size_t i = 0; i < num_segments_; ++i) {
-      DLOG(INFO) << "init the " << i << "-th segment";
-      offset_t prev_segment_offset = 0, next_segment_offset = 0;
-      if (i > 0)
-        prev_segment_offset = (i - 1) * kSegmentSize + kMetaLogSize;
-      if (i < num_segments_ - 1)
-        next_segment_offset = (i + 1) * kSegmentSize + kMetaLogSize;
-      offset_t nbytes = AppendInteger(meta_segment, prev_segment_offset, next_segment_offset);
-      std::memset(meta_segment + kMetaSegmentSize, 0, Chunk::kMetaLength);
-
-      DCHECK_EQ(nbytes, kMetaSegmentSize);
-      ::write(fd, meta_segment, kMetaSegmentSize + Chunk::kMetaLength);
-      // zero the last byte of the current segment to ensure the capacity
-      ::lseek(fd, 
-          kSegmentSize * (i + 1) + kMetaLogSize - 1, 
-          SEEK_SET);
-      ::write(fd, meta_log, 1);
-    }
+    ::write(fd_, meta_log, kMetaLogSize);
     delete[] meta_log;
-    delete[] meta_segment;
-    LOG_LST_STORE_FATAL_ERROR_IF(-1 == fsync(fd), "FSYNC ERROR");
+    LOG_LST_STORE_FATAL_ERROR_IF(-1 == fsync(fd_), "FSYNC ERROR");
     LOG(INFO) << "init segments done";
   }
 
-  CHECK_GE(fd, 0);
-  void* address = ::mmap(nullptr, log_file_size_, PROT_READ | PROT_WRITE,
-                         MAP_SHARED, fd, 0);
+  CHECK_GE(fd_, 0);
+  void* address = ::mmap(nullptr, max_log_size_, PROT_READ | PROT_WRITE,
+                         MAP_SHARED, fd_, 0);
   LOG_LST_STORE_FATAL_ERROR_IF(address == reinterpret_cast<void*>(-1),
                                "MMAP ERROR: ");
 
   // lock the mmap'ed memory to guarantee in-memory access
-  ::mlock(address, log_file_size_);
+  ::mlock(address, max_log_size_);
   LSTSegment::base_addr_ = address;
-  initStoreInfo(&storeInfo, num_segments_);
+  initStoreInfo(&storeInfo);
   this->Load(address);
+  if (storeInfo.freeSegments < segment_increment_) {
+    thread_status_.store(ThreadStatus::kScheduled);
+    enlarge();
+    updateStore();
+  }
+
   return address;
 }
 
@@ -198,40 +258,44 @@ LSTSegment* LSTStore::AllocateMajor() {
   current_major_segment_ = new_segment;
   if (major_list_ == nullptr)
     major_list_ = current_major_segment_;
-  // persist the log meta block
+  // persist the log meta block if necessary
   AppendInteger(static_cast<char*>(LSTSegment::base_addr_),
-                SegmentPtrToOffset(free_list_),
-                SegmentPtrToOffset(major_list_),
-                SegmentPtrToOffset(current_major_segment_),
-                SegmentPtrToOffset(minor_list_),
-                SegmentPtrToOffset(current_minor_segment_));
+      SegmentPtrToOffset(free_list_),
+      SegmentPtrToOffset(major_list_),
+      SegmentPtrToOffset(current_major_segment_));
   SyncToDisk(LSTSegment::base_addr_, kMetaLogSize);
   major_segment_offset_ = kMetaSegmentSize;
   return current_major_segment_;
 }
 
-LSTSegment* LSTStore::AllocateMinor() {
-  LSTSegment* new_segment = Allocate(current_minor_segment_);
-  if (current_minor_segment_ != nullptr)
-    current_minor_segment_->next_ = new_segment;
-  current_minor_segment_ = new_segment;
-  if (minor_list_ == nullptr)
-    minor_list_ = current_minor_segment_;
-  // persist the log meta block
-  AppendInteger(static_cast<char*>(LSTSegment::base_addr_),
-                SegmentPtrToOffset(free_list_),
-                SegmentPtrToOffset(major_list_),
-                SegmentPtrToOffset(current_major_segment_),
-                SegmentPtrToOffset(minor_list_),
-                SegmentPtrToOffset(current_minor_segment_));
-  SyncToDisk(LSTSegment::base_addr_, kMetaLogSize);
-  minor_segment_offset_ = kMetaSegmentSize; 
-  return current_minor_segment_;
-}
-
 LSTSegment* LSTStore::Allocate(LSTSegment* current) {
-  if (free_list_ == nullptr)
-    LOG(FATAL) << "Chunk store: out of log memory";
+
+  if (storeInfo.freeSegments < segment_increment_) {
+    ThreadStatus status = thread_status_.load();
+    if (status == ThreadStatus::kUnscheduled) {
+      LOG(INFO) << "Only " << segment_increment_ << " free segments; allocate more";
+      thread_status_.store(ThreadStatus::kScheduled);
+      async_future_ = std::async(std::launch::async, &LSTStore::enlarge, this);
+    } else if (status == ThreadStatus::kCompleted) {
+      updateStore();
+    }
+  }
+
+  if (free_list_ == nullptr) {
+    // if there is no free segment
+    // wait until the thread status is set to kCompleted or kUnscheduled
+    ThreadStatus ts = thread_status_.load();
+    if (ts == ThreadStatus::kScheduled) 
+      async_future_.get();
+    ts = thread_status_.load();
+    if (ts == ThreadStatus::kCompleted)
+      updateStore();
+
+    if (free_list_ == nullptr) {
+      LOG(FATAL) << "Chunk store: out of log memory";
+    }
+  }
+
   LSTSegment* next = free_list_;
 
   if (current != nullptr) {
@@ -241,8 +305,10 @@ LSTSegment* LSTStore::Allocate(LSTSegment* current) {
     byte_t* first_hash = first_chunk + PtrToChunkLength(first_chunk);
     std::copy(first_hash, first_hash + ::ustore::Hash::kByteLength,
         GetValidateHashPtr(current));
+    SyncToDisk(current->segment_, kSegmentSize);
     AppendInteger(reinterpret_cast<char*>(current->segment_) + sizeof(offset_t),
         SegmentPtrToOffset(next));
+    // need to sync the content before metasegment to ensure the correct load
     SyncToDisk(current->segment_, kSegmentSize);
   }
 
@@ -253,7 +319,8 @@ LSTSegment* LSTStore::Allocate(LSTSegment* current) {
   SyncToDisk(next->segment_, kMetaSegmentSize);
 
   // update the segment list; for free list, one-way link list suffices
-  free_list_ = next->next_;
+  free_list_ = free_list_->next_;
+
   next->prev_ = current;
   next->next_ = nullptr;
   current = next;
@@ -277,8 +344,8 @@ offset_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
     // it is safe to erase the respective offset
     AppendInteger(reinterpret_cast<char*>(segment->segment_) + sizeof(offset_t),
                   (offset_t)0);
-    CHECK_EQ((uintptr_t)free_list_->segment_,
-      next_segment_offset + (uintptr_t)LSTSegment::base_addr_);
+    //CHECK_EQ((uintptr_t)free_list_->segment_,
+    //  next_segment_offset + (uintptr_t)LSTSegment::base_addr_);
     need_sync = true;
   }
 
@@ -353,16 +420,18 @@ void LSTStore::Load(void* address) {
   ReadInteger(reinterpret_cast<char*>(address), v);
   free_list_ = OffsetToLstSegmentPtr(v[0]);
   major_list_ = OffsetToLstSegmentPtr(v[1]);
-  minor_list_ = OffsetToLstSegmentPtr(v[3]);
-  LinkSegmentList(free_list_);
-  LinkSegmentList(major_list_);
-  LinkSegmentList(minor_list_);
+
+  LSTSegment* segment = free_list_;
+  storeInfo.segments += LinkSegmentList(&segment);
+  last_free_segment_ = segment;
+  segment = major_list_;
+  storeInfo.segments += LinkSegmentList(&segment);
 
   int loaded = 0;
 
   // load from the major list first
   LSTSegment *iter = major_list_;
-  while (SegmentPtrToOffset(iter) != v[2]) {
+  while (iter != segment) {
     LoadFromValidSegment(iter);
     iter = iter->next_;
     ++loaded;
@@ -370,26 +439,15 @@ void LSTStore::Load(void* address) {
 
   if (iter != nullptr) {
     major_segment_offset_ = LoadFromLastSegment(iter);
-    current_major_segment_ = iter;
     ++loaded;
   }
+  current_major_segment_ = iter;
 
-  // and then from minor list
-  iter = minor_list_;
-  while (SegmentPtrToOffset(iter) != v[4]) {
-    LoadFromValidSegment(iter);
-    iter = iter->next_;
-    ++loaded;
-  }
+  storeInfo.usedSegments = loaded;
+  storeInfo.freeSegments = storeInfo.segments - loaded;
 
-  if (iter != nullptr) {
-    minor_segment_offset_ = LoadFromLastSegment(iter);
-    current_minor_segment_ = iter;
-    ++loaded;
-  }
-
-  storeInfo.usedSegments += loaded;
-  storeInfo.freeSegments -= loaded;
+  LOG(INFO) << "load completed";
+  std::cout << GetInfo();
 }
 
 Chunk LSTStore::Get(const Hash& key) {
@@ -442,8 +500,6 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
 void LSTStore::Sync() const {
   if (current_major_segment_ != nullptr)
     SyncToDisk(current_major_segment_->segment_, kSegmentSize);
-  if (current_minor_segment_ != nullptr)
-    SyncToDisk(current_minor_segment_->segment_, kSegmentSize);
 }
 
 LSTStore::~LSTStore() noexcept(false) {
@@ -451,7 +507,8 @@ LSTStore::~LSTStore() noexcept(false) {
   std::cout << GetInfo();
   DestroySegmentList(free_list_);
   DestroySegmentList(major_list_);
-  DestroySegmentList(minor_list_);
+  ::munmap(LSTSegment::base_addr_, max_log_size_);
+  ::close(fd_);
 }
 
 }  // namespace lst_store

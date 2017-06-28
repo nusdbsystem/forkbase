@@ -9,8 +9,10 @@
 #include <stdexcept>
 
 #include <algorithm>
+#include <atomic>
 #include <array>
 #include <functional>
+#include <future>
 #include <limits>
 #include <unordered_map>
 
@@ -276,10 +278,22 @@ class LSTStore
 
  private:
   // TODO(qingchao): add a remove-old-log flag to ease unit test
+  struct SyncBlock{
+    LSTSegment *head_, *last_;
+    int segments_;
+  };
+
+  enum class ThreadStatus: byte_t {
+    kUnscheduled,
+    kScheduled,
+    kCompleted
+  };
+
   LSTStore() : LSTStore(".", "ustore_default", false) {}
   LSTStore(const std::string& dir, const std::string& file, bool persist)
     : num_segments_(Env::Instance()->config().num_segments()),
-      log_file_size_(kSegmentSize * num_segments_ + kMetaLogSize) {
+      max_log_size_(kSegmentSize * num_segments_ + kMetaLogSize),
+      thread_status_(ThreadStatus::kUnscheduled) {
     MmapUstoreLogFile(dir, file, persist);
   }
   ~LSTStore() noexcept(false);
@@ -298,16 +312,29 @@ class LSTStore
   LSTSegment* AllocateMajor();
   LSTSegment* AllocateMinor();
 
+  /**
+   * @brief enlarge the log
+   */
+  void enlarge();
+
+  void updateStore();
+
   MapType chunk_map_;
-  LSTSegment *free_list_, *major_list_, *minor_list_;
+  LSTSegment *free_list_, *major_list_;
   LSTSegment *current_major_segment_;
-  LSTSegment *current_minor_segment_;
+  LSTSegment *last_free_segment_;
+
   offset_t major_segment_offset_;
-  offset_t minor_segment_offset_;
   const size_t num_segments_ = 64;
-  const size_t log_file_size_ = kSegmentSize * num_segments_ + kMetaLogSize;
+  const offset_t max_log_size_ = kSegmentSize * num_segments_ + kMetaLogSize;
+  const offset_t segment_increment_ = 32; // enlarge 16 segments each time
+
+  int fd_; //mmaped' file descriptor
 
   StoreInfo storeInfo;
+  SyncBlock sync_block_;
+  std::future<void> async_future_;
+  std::atomic<ThreadStatus> thread_status_;
 };
 
 }  // namespace lst_store

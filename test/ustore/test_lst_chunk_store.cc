@@ -18,14 +18,13 @@
         <ustore::ChunkType, ustore::ChunkType::k##type>;
 
 // const int NUMBER = 98342;
-const int NUMBER = 9834;
+const int NUMBER = 150000;
 const int LEN = 100;
 ustore::byte_t raw_data[LEN];
 ustore::byte_t hash[NUMBER][ustore::Hash::kByteLength];
 
 using LSTStore = ustore::lst_store::LSTStore;
 using Chunk = ustore::Chunk;
-
 
 template <typename Iterator>
 Iterator FindChunk(const Chunk& chunk) {
