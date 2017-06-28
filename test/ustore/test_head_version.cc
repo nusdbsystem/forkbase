@@ -18,14 +18,14 @@ const Slice branch[] = {
 };
 
 const Hash ver[] = {
-  Hash(reinterpret_cast<const byte_t*>("v0-fake-20-byte-hash")),
-  Hash(reinterpret_cast<const byte_t*>("v1-fake-20-byte-hash")),
-  Hash(reinterpret_cast<const byte_t*>("v2-fake-20-byte-hash")),
-  Hash(reinterpret_cast<const byte_t*>("v3-fake-20-byte-hash")),
-  Hash(reinterpret_cast<const byte_t*>("v4-fake-20-byte-hash")),
-  Hash(reinterpret_cast<const byte_t*>("v5-fake-20-byte-hash")),
-  Hash(reinterpret_cast<const byte_t*>("v6-fake-20-byte-hash")),
-  Hash(reinterpret_cast<const byte_t*>("v7-fake-20-byte-hash"))
+  Hash::ComputeFrom("v0"),
+  Hash::ComputeFrom("v1"),
+  Hash::ComputeFrom("v2"),
+  Hash::ComputeFrom("v3"),
+  Hash::ComputeFrom("v4"),
+  Hash::ComputeFrom("v5"),
+  Hash::ComputeFrom("v6"),
+  Hash::ComputeFrom("v7")
 };
 
 HeadVersion head_ver;

@@ -4,7 +4,7 @@ package ustore;
 
 message BranchVersion {
   required bytes branch = 1;
-  required bytes hash_base32 = 2;
+  required bytes version = 2;
 }
 
 message KeyVersion {

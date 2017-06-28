@@ -23,15 +23,12 @@ bool HeadVersion::LoadBranchVersion(const std::string& log_path) {
     branch_ver_.emplace(key, std::unordered_map<PSlice, Hash>());
     auto& branch_map = branch_ver_.find(key)->second;
 
-    DLOG(INFO) << "Getting Key: " << key.ToString();
     for (size_t branch_idx = 0; branch_idx < num_branches; ++branch_idx) {
       auto branch =
         PSlice::Persist(Slice(key_version.branches(branch_idx).branch()));
-      auto version_base32 = key_version.branches(branch_idx).hash_base32();
-      DLOG(INFO) << "\tGetting Branch: " << branch.ToString();
-      DLOG(INFO) << "\tGetting Version:  " << version_base32;
-      branch_map.emplace(branch, Hash());
-      branch_map.find(branch)->second = Hash::FromBase32(version_base32);
+      auto version = Hash(reinterpret_cast<const byte_t*>(
+            key_version.branches(branch_idx).version().data()));
+      branch_map.emplace(branch, version.Clone());
     }
   }
   LOG(INFO) << "Loaded head versions";
@@ -50,16 +47,14 @@ bool HeadVersion::DumpBranchVersion(const std::string& log_path) {
     DLOG(INFO) << "Dumping key: " << key_version->key();
     auto branch_version = k2branchversion.second;
 
-    for (const auto branch2version : branch_version) {
+    for (const auto& branch2version : branch_version) {
       PSlice branch = branch2version.first;
-      Hash hash = branch2version.second;
+      Hash version = branch2version.second;
       BranchVersion* b2v = key_version->add_branches();
       b2v->set_branch(branch.ToString());
-      b2v->set_hash_base32(hash.ToBase32());
-      DLOG(INFO) << "\t branch: " << branch.ToString();
-      DLOG(INFO) << "\t version: " << hash.ToBase32();
-    }  // end for branch2version
-  }  // end for k2branchversion
+      b2v->set_version(version.value(), Hash::kByteLength);
+    }
+  }
   bool succeeds = key_versions.SerializeToOstream(&ofs);
   ofs.close();
   LOG(INFO) << "Dumped head versions";
