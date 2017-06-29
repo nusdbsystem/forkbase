@@ -4,16 +4,16 @@
 #define USTORE_STORE_LST_STORE_H_
 
 #include <cstdint>
-#include <cstring>
 
-#include <stdexcept>
 
 #include <algorithm>
-#include <atomic>
 #include <array>
+#include <atomic>
 #include <functional>
 #include <future>
 #include <limits>
+#include <string>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "chunk/chunk.h"
@@ -299,7 +299,8 @@ class LSTStore
   ~LSTStore() noexcept(false);
 
   inline offset_t GetFreeSpaceMajor() {
-    return kSegmentSize - major_segment_offset_ - Hash::kByteLength - Chunk::kMetaLength;
+    return kSegmentSize - major_segment_offset_ -
+      Hash::kByteLength - Chunk::kMetaLength;
   }
 
   void GC() {}
@@ -327,9 +328,9 @@ class LSTStore
   offset_t major_segment_offset_;
   const size_t num_segments_ = 64;
   const offset_t max_log_size_ = kSegmentSize * num_segments_ + kMetaLogSize;
-  const offset_t segment_increment_ = 32; // enlarge 16 segments each time
+  const offset_t segment_increment_ = 32;  // # of segments to allocate
 
-  int fd_; //mmaped' file descriptor
+  int fd_;  // mmaped file descriptor
 
   StoreInfo storeInfo;
   SyncBlock sync_block_;

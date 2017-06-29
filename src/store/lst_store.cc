@@ -53,7 +53,9 @@ static void FdWriteThenSync(int fd, const void* buf, size_t length) {
 }
 
 static void SyncToDisk(void* addr, size_t len) {
-  LOG_LST_STORE_FATAL_ERROR_IF(-1 == msync(addr, len, MS_SYNC), "MSYNC ERROR");
+  // do nothing; rely on os to async persist
+  // LOG_LST_STORE_FATAL_ERROR_IF(-1 == msync(addr, len, MS_SYNC),
+  // "MSYNC ERROR");
 }
 
 static inline LSTSegment* OffsetToLstSegmentPtr(offset_t offset) {
@@ -129,14 +131,16 @@ void LSTStore::updateStore() {
   if (free_list_ == nullptr) {
     free_list_ = sync_block_.head_;
     // update the meta log
-    AppendInteger((char*)LSTSegment::base_addr_, SegmentPtrToOffset(free_list_));
+    AppendInteger(reinterpret_cast<char*>(LSTSegment::base_addr_),
+        SegmentPtrToOffset(free_list_));
     SyncToDisk(LSTSegment::base_addr_, kMetaLogSize);
   } else {
     DCHECK_NE(last_free_segment_, nullptr);
-    char* last_segment = 
-      (char*)LSTSegment::base_addr_ + SegmentPtrToOffset(last_free_segment_);
+    char* last_segment = reinterpret_cast<char*>(LSTSegment::base_addr_)
+      + SegmentPtrToOffset(last_free_segment_);
     last_free_segment_->next_ = sync_block_.head_;
-    AppendInteger(last_segment + sizeof(offset_t), SegmentPtrToOffset(sync_block_.head_));
+    AppendInteger(last_segment + sizeof(offset_t),
+        SegmentPtrToOffset(sync_block_.head_));
     SyncToDisk(last_segment, kMetaSegmentSize);
   }
 
@@ -150,9 +154,9 @@ out:
 
 void LSTStore::enlarge() {
   // wait until the status is set kScheduled
-  while(thread_status_.load() != ThreadStatus::kScheduled);
+  while (thread_status_.load() != ThreadStatus::kScheduled) {}
 
-  int new_segments = this->segment_increment_;
+  int new_segments = this->segment_increment_ * 2;
   if (storeInfo.segments + new_segments > this->num_segments_)
     new_segments = num_segments_ - storeInfo.segments;
 
@@ -160,15 +164,13 @@ void LSTStore::enlarge() {
   if (new_segments <= 0) {
     thread_status_.store(ThreadStatus::kCompleted);
     return;
-  } // out of log memory
+  }  // out of log memory
 
   char* meta_segment = new char[kSegmentSize];
 
   offset_t end_of_log = kMetaLogSize + storeInfo.segments * kSegmentSize;
   offset_t offset = end_of_log;
-  ::lseek(fd_, offset, SEEK_SET);
 
-  char a = 1;
   for (size_t i = 0; i < new_segments; offset += kSegmentSize, ++i) {
     DLOG(INFO) << "init the " << i << "-th new segment";
     offset_t prev_segment_offset = 0, next_segment_offset = 0;
@@ -177,26 +179,28 @@ void LSTStore::enlarge() {
       prev_segment_offset = (chunk_id - 1) * kSegmentSize + kMetaLogSize;
     else
       prev_segment_offset = SegmentPtrToOffset(last_free_segment_);
-      
+
     if (i < new_segments - 1)
       next_segment_offset = (chunk_id + 1) * kSegmentSize + kMetaLogSize;
 
     AppendInteger(meta_segment, prev_segment_offset, next_segment_offset);
-    ::write(fd_, meta_segment, kSegmentSize);
-    //::lseek(fd_, offset + kSegmentSize - 1, SEEK_SET);
-    //::write(fd_, &a, 1);
+    ::lseek(fd_, offset, SEEK_SET);
+    ::write(fd_, meta_segment, kMetaSegmentSize);
   }
+
+  meta_segment[0] = 1;
+  ::lseek(fd_, offset - 1, SEEK_SET);
+  ::write(fd_, meta_segment, 1);
+  delete[] meta_segment;
 
   SyncToDisk(end_of_log + reinterpret_cast<char*>(LSTSegment::base_addr_),
       new_segments * kSegmentSize);
   LOG(INFO) << "enlarge segments done";
 
-  if (new_segments > 0) {
-    sync_block_.head_ = OffsetToLstSegmentPtr(end_of_log);
-    sync_block_.last_ = sync_block_.head_;
-    int ns = LinkSegmentList(&sync_block_.last_);
-    CHECK_EQ(ns, new_segments);
-  }
+  sync_block_.head_ = OffsetToLstSegmentPtr(end_of_log);
+  sync_block_.last_ = sync_block_.head_;
+  int ns = LinkSegmentList(&sync_block_.last_);
+  CHECK_EQ(ns, new_segments);
 
   thread_status_.store(ThreadStatus::kCompleted);
 }
@@ -216,7 +220,8 @@ void* LSTStore::MmapUstoreLogFile(const std::string& dir,
   path /= file + ".dat";
   if (!persist) fs::remove(path);
 
-  if (fs::exists(path) && (fs::file_size(path) - kMetaLogSize) % kSegmentSize == 0) {
+  if (fs::exists(path) &&
+      (fs::file_size(path) - kMetaLogSize) % kSegmentSize == 0) {
     fd_ = ::open(path.c_str(), O_RDWR, S_IRWXU);
   } else {
     // init the log
@@ -269,11 +274,11 @@ LSTSegment* LSTStore::AllocateMajor() {
 }
 
 LSTSegment* LSTStore::Allocate(LSTSegment* current) {
-
   if (storeInfo.freeSegments < segment_increment_) {
     ThreadStatus status = thread_status_.load();
     if (status == ThreadStatus::kUnscheduled) {
-      LOG(INFO) << "Only " << segment_increment_ << " free segments; allocate more";
+      LOG(INFO) << "Only " << storeInfo.freeSegments
+        << " free segments; allocate more";
       thread_status_.store(ThreadStatus::kScheduled);
       async_future_ = std::async(std::launch::async, &LSTStore::enlarge, this);
     } else if (status == ThreadStatus::kCompleted) {
@@ -285,13 +290,16 @@ LSTSegment* LSTStore::Allocate(LSTSegment* current) {
     // if there is no free segment
     // wait until the thread status is set to kCompleted or kUnscheduled
     ThreadStatus ts = thread_status_.load();
-    if (ts == ThreadStatus::kScheduled) 
+    if (ts == ThreadStatus::kScheduled)
       async_future_.get();
     ts = thread_status_.load();
     if (ts == ThreadStatus::kCompleted)
       updateStore();
 
     if (free_list_ == nullptr) {
+      msync(LSTSegment::base_addr_,
+          storeInfo.segments * kSegmentSize + kMetaLogSize, MS_SYNC);
+      std::cout << GetInfo();
       LOG(FATAL) << "Chunk store: out of log memory";
     }
   }
@@ -344,7 +352,7 @@ offset_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
     // it is safe to erase the respective offset
     AppendInteger(reinterpret_cast<char*>(segment->segment_) + sizeof(offset_t),
                   (offset_t)0);
-    //CHECK_EQ((uintptr_t)free_list_->segment_,
+    //  CHECK_EQ((uintptr_t)free_list_->segment_,
     //  next_segment_offset + (uintptr_t)LSTSegment::base_addr_);
     need_sync = true;
   }
@@ -365,8 +373,8 @@ offset_t LSTStore::LoadFromLastSegment(LSTSegment* segment) {
 
     if (chunk.type() == ChunkType::kInvalid) {
       this->chunk_map_.erase(hash_offset);
-      onRemoveChunk(&storeInfo, chunk.type(),
-                    PtrToChunkLength(this->chunk_map_.at(LSTHash(hash_offset)).chunk_));
+      onRemoveChunk(&storeInfo, chunk.type(), PtrToChunkLength(
+            this->chunk_map_.at(LSTHash(hash_offset)).chunk_));
     } else {
       chunk_map_.emplace(hash_offset, chunk.head());
       onNewChunk(&storeInfo, chunk.type(), chunk.numBytes());
@@ -385,10 +393,10 @@ offset_t LSTStore::LoadFromValidSegment(LSTSegment* segment) {
   // TODO(qingchao): take alignment into consideration
   CHECK_NE(segment, nullptr);
   const byte_t* chunk_offset = GetFirstChunkPtr(segment);
-  CHECK(Hash(chunk_offset + PtrToChunkLength(chunk_offset)) == Hash(GetValidateHashPtr(segment)));
+  CHECK(Hash(chunk_offset + PtrToChunkLength(chunk_offset))
+      == Hash(GetValidateHashPtr(segment)));
 
   while (true) {
-
     ChunkType type = PtrToChunkType(chunk_offset);
 
     // check whether all chunks have been loaded or not
@@ -462,7 +470,7 @@ Chunk LSTStore::Get(const Hash& key) {
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   if (Exists(key)) return true;
   static Timer& timer = TimerPool::GetTimer("Write Chunk");
-	timer.Start(); 
+  timer.Start();
 
   static size_t to_sync_chunks = 0;
   static auto last_sync_time_point = std::chrono::steady_clock::now();
@@ -478,7 +486,8 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
                    + major_segment_offset_;
   // first write chunk and then write hash
   std::copy(chunk.head(), chunk.head() + chunk.numBytes(), offset);
-  std::copy(key.value(), key.value() + key.kByteLength, offset + chunk.numBytes());
+  std::copy(key.value(), key.value() + key.kByteLength,
+      offset + chunk.numBytes());
   this->chunk_map_.emplace(offset + chunk.numBytes(), offset);
   major_segment_offset_ += key.kByteLength + chunk.numBytes();
   to_sync_chunks++;
@@ -493,7 +502,7 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
     to_sync_chunks = 0;
     last_sync_time_point = std::chrono::steady_clock::now();
   }
-	timer.Stop();
+  timer.Stop();
   return true;
 }
 
