@@ -69,7 +69,7 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
       std::ifstream ifs2(file_path);
       std::string line;
       size_t cnt(0);
-      for (; std::getline(ifs2, line); ++cnt);
+      for (; std::getline(ifs2, line); ++cnt) {}
       if (cnt > 0) total_rows = cnt - 1;
       ifs2.close();
     });
@@ -235,7 +235,7 @@ void RefreshProgress(size_t total_rows, size_t cnt_loaded, double thrupt_kps,
   Utils::PrintPercentBar(frac, (stat == ErrorCode::kOK ? ">" : "x"), 20);
   std::cout << " Rows:" << std::left << std::setw(11) << cnt_loaded
             << "  " << std::right << std::setw(6) << std::fixed
-            << std::setprecision(1) << thrupt_kps << "k/s  (Time: "
+            << std::setprecision(1) << thrupt_kps << "k rows/s  (Time: "
             << std::left << std::setw(13)
             << (Utils::TimeString(elapsed_ms) + ")");
 }
@@ -293,9 +293,15 @@ void ColumnStore::FlushCSV(
       if (num_loaded > 0) {
         cnt_loaded += num_loaded;
         thrupt_kps = num_loaded / elapsed_ms;
-        if (total_rows > 0) f_refresh_progress(); else std::cout << GREEN(".");
+        if (total_rows > 0)
+          f_refresh_progress();
+        else
+          std::cout << GREEN(".");
       } else {
-        if (total_rows > 0) f_refresh_progress(); else std::cout << RED("x");
+        if (total_rows > 0)
+          f_refresh_progress();
+        else
+          std::cout << RED("x");
       }
       std::cout << std::flush;
     }
