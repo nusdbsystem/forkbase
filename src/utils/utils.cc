@@ -71,7 +71,8 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kRowNotExists, "row does not exist"},
   {ErrorCode::kFailedOpenFile, "failed to open file"},
   {ErrorCode::kInvalidCommandArgument, "invalid command-line argument"},
-  {ErrorCode::kUnknownCommand, "unrecognized command"}
+  {ErrorCode::kUnknownCommand, "unrecognized command"},
+  {ErrorCode::kInvalidSchema, "invalid schema"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {

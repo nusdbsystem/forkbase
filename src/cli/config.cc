@@ -170,7 +170,7 @@ bool Config::ParseCmdArgs(const std::vector<std::string>& args) {
   argv[0] = dummy_cmd;
   for (size_t i = 1, j = 0; i < argc; ++i, ++j) {
     auto& arg = args[j];
-    argv[i] = new char[arg.size()];
+    argv[i] = new char[arg.size() + 1];
     std::strcpy(argv[i], arg.c_str());
   }
   auto ec = ParseCmdArgs(argc, argv);

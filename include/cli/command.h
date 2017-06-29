@@ -73,6 +73,7 @@ class Command {
   ErrorCode ExecLoadCSV();
   ErrorCode ExecDumpCSV();
   ErrorCode ExecGetRow();
+  ErrorCode ExecPutRow();
   ErrorCode ExecInfo();
 
   ErrorCode ExecGetAll();

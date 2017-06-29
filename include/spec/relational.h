@@ -104,6 +104,12 @@ class ColumnStore {
                    const std::string& ref_val,
                    std::unordered_map<size_t, Row>* rows);
 
+  ErrorCode PutRow(const std::string& table_name,
+                   const std::string& branch_name,
+                   const std::string& ref_col_name,
+                   const std::string& ref_val, const Row& row,
+                   size_t* n_rows_affected = nullptr);
+
   inline ColumnDiffIterator DiffColumn(const Column& lhs, const Column& rhs) {
     return UList::DuallyDiff(lhs, rhs);
   }
@@ -150,6 +156,16 @@ class ColumnStore {
     BlockingQueue<std::vector<std::vector<std::string>>>& batch_queue,
     const std::atomic_size_t& total_rows, ErrorCode& stat,
     bool print_progress);
+
+  ErrorCode InsertRow(const std::string& table_name,
+                      const std::string& branch_name, const Row& row,
+                      size_t* n_rows_affected);
+
+  ErrorCode UpdateRow(const std::string& table_name,
+                      const std::string& branch_name,
+                      const std::string& ref_col_name,
+                      const std::string& ref_val, const Row& row,
+                      size_t* n_rows_affected);
 
   ObjectDB odb_;
 };

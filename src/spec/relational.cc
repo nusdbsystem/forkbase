@@ -555,4 +555,115 @@ ErrorCode ColumnStore::GetRow(const std::string& table_name,
   return ErrorCode::kOK;
 }
 
+ErrorCode ColumnStore::PutRow(const std::string& table_name,
+                              const std::string& branch_name,
+                              const std::string& ref_col_name,
+                              const std::string& ref_val, const Row& row,
+                              size_t* n_rows_affected) {
+  if (n_rows_affected != nullptr) *n_rows_affected = 0;
+  Table tab;
+  USTORE_GUARD(
+    GetTable(table_name, branch_name, &tab));
+  std::unordered_set<std::string> col_names;
+  for (auto it = tab.Scan(); !it.end(); it.next()) {
+    col_names.emplace(it.key().ToString());
+  }
+  std::unordered_set<std::string> check_col_names(col_names);
+  for (auto& field : row) {
+    if (check_col_names.find(field.first) == check_col_names.end()) {
+      LOG(ERROR) << "Unknown field: " << field.first;
+      return ErrorCode::kInvalidSchema;
+    } else {
+      check_col_names.erase(field.first);
+    }
+  }
+  if (ref_col_name.empty() || ref_val.empty()) {
+    if (check_col_names.empty()) {
+      return InsertRow(table_name, branch_name, row, n_rows_affected);
+    } else {
+      LOG(ERROR) << "Incomplete row for insertion";
+      return ErrorCode::kInvalidSchema;
+    }
+  } else {
+    return UpdateRow(table_name, branch_name, ref_col_name, ref_val, row,
+                     n_rows_affected);
+  }
+}
+
+ErrorCode ColumnStore::InsertRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 const Row& row, size_t* n_rows_affected) {
+  Slice table(table_name);
+  Slice branch(branch_name);
+  for (auto& field : row) {
+    // retrive column corresponding to the field
+    Column col;
+    USTORE_GUARD(
+      ReadColumn(table_name, branch_name, field.first, &col));
+    // append field value to the column
+    col.Append({Slice(field.second)});
+    // write the new column into storage
+    auto col_key = GlobalKey(table_name, field.first);
+    auto col_rst = odb_.Put(Slice(col_key), col, branch);
+    USTORE_GUARD(col_rst.stat);
+    Version col_ver = col_rst.value.ToBase32();
+    // update column entry in the table
+    Table tab;
+    USTORE_GUARD(
+      GetTable(table_name, branch_name, &tab));
+    tab.Set(Slice(field.first), Slice(col_ver));
+    USTORE_GUARD(
+      odb_.Put(table, tab, branch).stat);
+  }
+  if (n_rows_affected != nullptr) *n_rows_affected = 1;
+  return ErrorCode::kOK;
+}
+
+ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 const std::string& ref_col_name,
+                                 const std::string& ref_val, const Row& row,
+                                 size_t* n_rows_affected) {
+  Column ref_col;
+  USTORE_GUARD(
+    GetColumn(table_name, branch_name, ref_col_name, &ref_col));
+  // search for row indices
+  std::list<size_t> indices;
+  for (auto it = ref_col.Scan(); !it.end(); it.next()) {
+    if (it.value() == ref_val) indices.emplace_back(it.index());
+  }
+  if (indices.empty()) return ErrorCode::kRowNotExists;
+  // apply row updates
+  Slice table(table_name);
+  Slice branch(branch_name);
+  for (auto& field : row) {
+    auto col_key_str = GlobalKey(table_name, field.first);
+    Slice col_key(col_key_str);
+    // update column values
+    for (auto& i : indices) {
+      // retrive column corresponding to the field
+      Column col;
+      USTORE_GUARD(
+        ReadColumn(table_name, branch_name, field.first, &col));
+      // update field value of the column
+      col.Splice(i, 1, {Slice(field.second)});
+      // write the new column into storage
+      auto col_rst = odb_.Put(col_key, col, branch);
+      USTORE_GUARD(col_rst.stat);
+    }
+    auto head_rst = odb_.GetBranchHead(col_key, branch);
+    USTORE_GUARD(head_rst.stat);
+    Version col_ver = head_rst.value.ToBase32();
+    // update column entry in the table
+    Table tab;
+    USTORE_GUARD(
+      GetTable(table_name, branch_name, &tab));
+    tab.Set(Slice(field.first), Slice(col_ver));
+    USTORE_GUARD(
+      odb_.Put(table, tab, branch).stat);
+  }
+  if (n_rows_affected != nullptr) *n_rows_affected = indices.size();
+  return ErrorCode::kOK;
+}
+
 }  // namespace ustore
