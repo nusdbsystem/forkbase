@@ -208,7 +208,37 @@ class FlushTaskLine
   std::string branch_str_;
   Slice branch_;
 };
-#endif
+
+int ConcurrentFlush(FlushTaskLine task_lines[],
+                    const std::vector<std::vector<std::string>>& cols) {
+  auto n_cols = cols.size();
+  int load_size = cols[0].size();
+  // dispatch task to the task lines
+  for (size_t i = 0; i < n_cols; ++i) {
+    task_lines[i].Produce(std::move(cols[i]));
+  }
+  // barrier: wait for all talks lines to complete
+  for (size_t i = 0; i < n_cols; ++i) {
+    auto ec = task_lines[i].Sync();
+    if (ec != ErrorCode::kOK) return -static_cast<int>(ec);
+  }
+  return load_size;
+}
+#endif  // __MOCK_FLUSH__
+
+void RefreshProgress(size_t total_rows, size_t cnt_loaded, double thrupt_kps,
+                     double elapsed_ms, ErrorCode& stat) {
+  double frac = static_cast<double>(cnt_loaded) / total_rows;
+  int percent = frac * 100;
+  std::cout << '\r'
+            << std::left << std::setw(4) << (std::to_string(percent) + '%');
+  Utils::PrintPercentBar(frac, (stat == ErrorCode::kOK ? ">" : "x"), 60);
+  std::cout << " Rows:" << std::left << std::setw(11) << cnt_loaded
+            << "  " << std::right << std::setw(6) << std::fixed
+            << std::setprecision(1) << thrupt_kps << "K/s  (Time: "
+            << std::left << std::setw(13)
+            << (Utils::TimeString(elapsed_ms) + ")");
+}
 
 void ColumnStore::FlushCSV(
   const std::string& table_name, const std::string& branch_name,
@@ -226,21 +256,6 @@ void ColumnStore::FlushCSV(
     tl.SetColumn(table_name, branch_name, col_names[i]);
     threads[i] = tl.Launch();
   }
-  // load data into storage by batches in parallel
-  auto f_concurrent_flush = [&n_cols, &task_lines](
-  const std::vector<std::vector<std::string>>& cols) {
-    const int load_size = cols[0].size();
-    // dispatch task to the task lines
-    for (size_t i = 0; i < n_cols; ++i) {
-      task_lines[i].Produce(std::move(cols[i]));
-    }
-    // barrier: wait for all talks lines to complete
-    for (size_t i = 0; i < n_cols; ++i) {
-      auto ec = task_lines[i].Sync();
-      if (ec != ErrorCode::kOK) return -static_cast<int>(ec);
-    }
-    return load_size;
-  };
 #endif
   // screen printing
   Timer tm;
@@ -248,16 +263,8 @@ void ColumnStore::FlushCSV(
   double thrupt_kps;
   auto f_refresh_progress =
   [&total_rows, &cnt_loaded, &thrupt_kps, &tm, &stat]() {
-    double frac = static_cast<double>(cnt_loaded) / total_rows;
-    int percent = frac * 100;
-    std::cout << '\r'
-              << std::left << std::setw(4) << (std::to_string(percent) + '%');
-    Utils::PrintPercentBar(frac, (stat == ErrorCode::kOK ? ">" : "x"), 60);
-    std::cout << " Rows:" << std::left << std::setw(11) << cnt_loaded
-              << "  " << std::right << std::setw(6) << std::fixed
-              << std::setprecision(1) << thrupt_kps << "K/s  (Time: "
-              << std::left << std::setw(13)
-              << (Utils::TimeString(tm.ElapsedMilliseconds()) + ")");
+    RefreshProgress(
+      total_rows, cnt_loaded, thrupt_kps, tm.ElapsedMilliseconds(), stat);
   };
   if (print_progress) std::cout << GREEN("Loading...");
   // flush data batches iteratively
@@ -269,7 +276,7 @@ void ColumnStore::FlushCSV(
 #if defined(__MOCK_FLUSH__)
     const int num_loaded = cols[0].size();
 #else
-    const int num_loaded = f_concurrent_flush(cols);
+    const int num_loaded = ConcurrentFlush(task_lines, cols);
 #endif
     auto elapsed_ms = tm.ElapsedMilliseconds() - start_time;
     if (num_loaded == 0) break;
@@ -292,7 +299,7 @@ void ColumnStore::FlushCSV(
       }
       std::cout << std::flush;
     }
-  }
+  }  // while
   // print final progress
   if (print_progress) {
     if (total_rows > 0) {
