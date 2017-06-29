@@ -232,10 +232,10 @@ void RefreshProgress(size_t total_rows, size_t cnt_loaded, double thrupt_kps,
   int percent = frac * 100;
   std::cout << '\r'
             << std::left << std::setw(4) << (std::to_string(percent) + '%');
-  Utils::PrintPercentBar(frac, (stat == ErrorCode::kOK ? ">" : "x"), 60);
+  Utils::PrintPercentBar(frac, (stat == ErrorCode::kOK ? ">" : "x"), 20);
   std::cout << " Rows:" << std::left << std::setw(11) << cnt_loaded
             << "  " << std::right << std::setw(6) << std::fixed
-            << std::setprecision(1) << thrupt_kps << "K/s  (Time: "
+            << std::setprecision(1) << thrupt_kps << "k/s  (Time: "
             << std::left << std::setw(13)
             << (Utils::TimeString(elapsed_ms) + ")");
 }
