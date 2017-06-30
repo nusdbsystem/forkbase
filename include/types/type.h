@@ -99,7 +99,7 @@ enum class ErrorCode : byte_t {
   kRowNotExists = 27,
   kFailedOpenFile = 28,
   kInvalidCommandArgument = 29,
-  kUnknownCommand = 30, 
+  kUnknownCommand = 30,
   kInvalidSchema = 31
 };
 

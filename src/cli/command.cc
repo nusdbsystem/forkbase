@@ -1671,7 +1671,7 @@ ErrorCode Command::ExecPutRow() {
     return ErrorCode::kInvalidCommandArgument;
   }
   Row row;
-  // TODO: use regular expression to parse the input value
+  // TODO(linqian): use regular expression to parse the input value
   auto tokens = Utils::Tokenize(val, "{ :|,}");
   for (auto it = tokens.begin(); it != tokens.end();) {
     auto& k = *it++;
