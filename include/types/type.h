@@ -100,7 +100,8 @@ enum class ErrorCode : byte_t {
   kFailedOpenFile = 28,
   kInvalidCommandArgument = 29,
   kUnknownCommand = 30,
-  kInvalidSchema = 31
+  kInvalidSchema = 31,
+  kInconsistentType = 32
 };
 
 }  // namespace ustore

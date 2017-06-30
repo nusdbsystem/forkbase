@@ -96,9 +96,9 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
 
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Hash& prev_ver,
                       Hash* ver) {
-  return (prev_ver == Hash::kNull || Exists(prev_ver)) ?
-         Write(key, val, prev_ver, Hash::kNull, ver) :
-         ErrorCode::kReferringVersionNotExist;
+  return (prev_ver == Hash::kNull || Exists(prev_ver))
+         ? Write(key, val, prev_ver, Hash(), ver)
+         : ErrorCode::kReferringVersionNotExist;
 }
 
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
@@ -129,9 +129,9 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
 
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver) {
-  return (Exists(ref_ver1) && Exists(ref_ver2)) ?
-         Write(key, val, ref_ver1, ref_ver2, ver) :
-         ErrorCode::kReferringVersionNotExist;
+  return (Exists(ref_ver1) && Exists(ref_ver2))
+         ? Write(key, val, ref_ver1, ref_ver2, ver)
+         : ErrorCode::kReferringVersionNotExist;
 }
 
 ErrorCode Worker::Write(const Slice& key, const Value& val,

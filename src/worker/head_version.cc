@@ -27,7 +27,7 @@ bool HeadVersion::LoadBranchVersion(const std::string& log_path) {
       auto branch =
         PSlice::Persist(Slice(key_version.branches(branch_idx).branch()));
       auto version = Hash(reinterpret_cast<const byte_t*>(
-            key_version.branches(branch_idx).version().data()));
+                            key_version.branches(branch_idx).version().data()));
       branch_map.emplace(branch, version.Clone());
     }
   }
@@ -118,7 +118,7 @@ void HeadVersion::PutLatest(const Slice& key, const Hash& prev_ver1,
   }
   auto& lv_key = key_it->second;
   lv_key.erase(prev_ver1);
-  lv_key.erase(prev_ver2);
+  if (!prev_ver2.empty()) lv_key.erase(prev_ver2);
   lv_key.insert(ver.Clone());
 }
 

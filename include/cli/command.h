@@ -75,11 +75,16 @@ class Command {
   ErrorCode ExecGetRow();
   ErrorCode ExecPutRow();
   ErrorCode ExecInfo();
+  ErrorCode ExecMeta();
 
   ErrorCode ExecGetAll();
   ErrorCode ExecListKeyAll();
   ErrorCode ExecLatestAll();
   ErrorCode ExecGetColumnAll();
+
+  ErrorCode ExecMetaManip(
+    const std::string& cmd,
+    const std::function<ErrorCode(const VMeta&)>& f_output_meta);
 
   static const size_t kDefaultLimitPrintElems;
   static size_t limit_print_elems;

@@ -57,6 +57,9 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_HANDLER("IS_LATEST", ExecIsLatest());
   CMD_ALIAS("IS_LATEST", "ISLATEST");
   CMD_ALIAS("IS_LATEST", "ISL");
+  CMD_HANDLER("META", ExecMeta());
+  CMD_ALIAS("META", "GET_META");
+  CMD_ALIAS("META", "GET-META");
   // relational commands
   CMD_HANDLER("CREATE_TABLE", ExecCreateTable());
   CMD_ALIAS("CREATE_TABLE", "CREATE-TABLE");
@@ -239,6 +242,10 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BASIC_CMD("LIST_BRANCH")
      << "-k <key>" << std::endl
      << FORMAT_BASIC_CMD("LIST_KEY{_ALL}") << std::endl
+     << FORMAT_BASIC_CMD("META")
+     << "-k <key> [-b <branch> | "
+     << std::endl << std::setw(kPrintBasicCmdWidth + 13) << ""
+     << "-v <version>]" << std::endl
      << std::endl
      << BLUE("UStore Relational (Columnar) Commands") << ":"
      << std::endl
@@ -389,6 +396,50 @@ ErrorCode Command::ExecScript(const std::string& script) {
   return ec;
 }
 
+ErrorCode Command::ExecMetaManip(
+  const std::string& cmd,
+  const std::function<ErrorCode(const VMeta&)>& f_output_meta) {
+  const auto& key = Config::key;
+  const auto& branch = Config::branch;
+  const auto& ver = Config::version;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
+              << "Key: \"" << key << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Version: \"" << ver << "\"" << std::endl;
+  };
+  const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+              << "Key: \"" << key << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+              << "Key: \"" << key << "\", "
+              << "Version: \"" << ver << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (key.empty() || !(branch.empty() ^ ver.empty())) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto rst = !branch.empty() && ver.empty()
+             ? odb_.Get(Slice(key), Slice(branch))
+             : odb_.Get(Slice(key), Hash::FromBase32(ver));
+  auto& ec = rst.stat;
+  if (ec == ErrorCode::kOK) {
+    ec = f_output_meta(rst.value);
+  } else {
+    branch.empty() ? f_rpt_fail_by_ver(ec) : f_rpt_fail_by_branch(ec);
+  }
+  return ec;
+}
+
 ErrorCode Command::ExecGet() {
   // redirection
   if (!Config::table.empty() && Config::key.empty()) {
@@ -399,21 +450,11 @@ ErrorCode Command::ExecGet() {
     }
   }
 
-  const auto& key = Config::key;
-  const auto& branch = Config::branch;
-  const auto& ver = Config::version;
-  // screen printing
-  const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: GET] ")
-              << "Key: \"" << key << "\", "
-              << "Branch: \"" << branch << "\", "
-              << "Version: \"" << ver << "\"" << std::endl;
-  };
-  const auto f_rpt_success = [](const VMeta & meta) {
+  const auto f_output_meta = [](const VMeta & meta) {
     auto type = meta.type();
     if (!Config::is_vert_list) {
-      std::cout << BOLD_GREEN("[SUCCESS: GET] ") << "Value"
-                << "<" << Utils::ToString(type) << ">: ";
+      std::cout << BOLD_GREEN("[SUCCESS: GET] ")
+                << "Value" << "<" << type << ">: ";
     }
     switch (type) {
       case UType::kString:
@@ -446,43 +487,9 @@ ErrorCode Command::ExecGet() {
         break;
     }
     if (!Config::is_vert_list) std::cout << std::endl;
+    return ErrorCode::kOK;
   };
-  const auto f_rpt_fail_by_branch = [&key, &branch](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET] ")
-              << "Key: \"" << key << "\", "
-              << "Branch: \"" << branch << "\""
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  const auto f_rpt_fail_by_ver = [&key, &ver](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET] ")
-              << "Key: \"" << key << "\", "
-              << "Version: \"" << ver << "\""
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  // conditional execution
-  if (key.empty()) {
-    f_rpt_invalid_args();
-    return ErrorCode::kInvalidCommandArgument;
-  }
-  if (!branch.empty() && ver.empty()) {
-    auto rst = odb_.Get(Slice(key), Slice(branch));
-    auto& ec = rst.stat;
-    auto& meta = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(meta) : f_rpt_fail_by_branch(ec);
-    return ec;
-  }
-  if (branch.empty() && !ver.empty()) {
-    auto rst = odb_.Get(Slice(key), Hash::FromBase32(ver));
-    auto& ec = rst.stat;
-    auto& meta = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(meta) : f_rpt_fail_by_ver(ec);
-    return ec;
-  }
-  // illegal: branch and version are neither set or both set
-  f_rpt_invalid_args();
-  return ErrorCode::kInvalidCommandArgument;
+  return ExecMetaManip("GET", f_output_meta);
 }
 
 ErrorCode Command::ExecPut() {
@@ -714,7 +721,7 @@ ErrorCode Command::ExecRename() {
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: RENAME] ")
               << "Key: \"" << key << "\", "
-              << "Referring Branch: \"" << old_branch << "\", "
+              << "Ref. Branch: \"" << old_branch << "\", "
               << "Target Branch: \"" << new_branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
@@ -1703,6 +1710,56 @@ ErrorCode Command::ExecInfo() {
   auto& info = rst.value;
   ec == ErrorCode::kOK ? f_rpt_success(info) : f_rpt_fail(ec);
   return ec;
+}
+
+ErrorCode Command::ExecMeta() {
+  auto expected_type = UType::kUnknown;
+  // conversion
+  auto& tab = Config::table;
+  if (!tab.empty() && Config::key.empty()) {
+    auto& col = Config::column;
+    if (col.empty()) {
+      Config::key = tab;
+      expected_type = UType::kMap;
+    } else {
+      Config::key = ColumnStore::GlobalKey(tab, col);
+      expected_type = UType::kList;
+    }
+  }
+
+  const auto f_output_meta = [&expected_type](const VMeta & meta) {
+    auto& ucell = meta.cell();
+    // check for type consistency
+    auto type = ucell.type();
+    if (expected_type != UType::kUnknown && type != expected_type) {
+      std::cerr << BOLD_RED("[FAILED: META] ")
+                << "Inconsistent types: [Actual] \"" << type << "\", "
+                << "[Expected] \"" << expected_type << "\"" << std::endl;
+      return ErrorCode::kInconsistentType;
+    }
+    auto& is_vert_list = Config::is_vert_list;
+    std::vector<Hash> prev_vers({ucell.preHash()});
+    if (ucell.merged()) prev_vers.emplace_back(ucell.preHash(true));
+    auto& os = std::cout;
+    auto f_next_item = [&is_vert_list, &os]
+    (const std::string & prefix, const std::string & name) -> std::ostream& {
+      if (is_vert_list) {
+        os << (prefix.empty() ? "" : "\n") << std::left << std::setw(7);
+      } else {
+        os << prefix;
+      }
+      os << name << ": ";
+      return os;
+    };
+    os << (is_vert_list ? "" : BOLD_GREEN_STR("[SUCCESS: META] "));
+    f_next_item("", "Type") << "\"" << ucell.type() << "\"";
+    f_next_item(", ", "Version") << "\"" << ucell.hash() << "\"";
+    f_next_item(", ", "Parents");
+    Utils::Print(prev_vers, "[", "]", ", ", true);
+    os << std::endl;
+    return ErrorCode::kOK;
+  };
+  return ExecMetaManip("META", f_output_meta);
 }
 
 #define PRINT_ALL(handler) do { \
