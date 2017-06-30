@@ -30,6 +30,7 @@
           <span>merge</span>
           <span>branch</span>
           <span>rename</span>
+          <span>delete</span>
         </div>
       </ul>
     </div>
@@ -170,6 +171,25 @@
     </div>
   </form>
 
+<!-- delete -->
+  <form class="row form-group" name="delete" style="padding: 15px; display: none;">
+    <div style="padding: 15px">
+      <label class="form-label" for="key">key</label>
+      <input readonly name='key' type="text" class="form-content form-control "/>
+    </div>
+    <div style="padding: 15px">
+      <label class="form-label" name='opt' for='bransion'>branch</label>
+      <input readonly name='bransion' type="text" class="form-content form-control"/>
+    </div>
+    <div style="padding: 15px">
+      <button id='delete' type="submit" class="btn main-btn pull-right">DELETE</button>
+    </div>
+    <div style="padding: 15px; display: none">
+      <label class="form-label" for='result'>result</label>
+      <textarea readonly name='result' class="form-content form-control textarea" rows="3"></textarea>
+    </div>
+  </form>
+
 </div>
 
 <script>
@@ -180,5 +200,6 @@
     var list_url = "{% url 'list' %}"
     var rename_url = "{% url 'rename' %}"
     var latest_url = "{% url 'latest' %}"
+    var delete_url = "{% url 'delete' %}"
 </script>
 {% endblock %}

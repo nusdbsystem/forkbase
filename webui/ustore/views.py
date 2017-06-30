@@ -157,3 +157,15 @@ def ulatest(request):
 		return JsonResponse({'result': res.split('\r\n')})
 	else:
 		raise Exception('invalid request method for latest: ' + request.method)
+
+@csrf_exempt
+def udelete(request):
+	if server is None:
+		return render(request, 'ustore/login.html')
+
+	if request.method == 'POST':
+		queries = {'key': request.POST.get('key'), 'branch': request.POST.get('branch')}
+		res = server.run_on_server('delete', queries)
+		return JsonResponse({'result': res.split('\r\n')})
+	else:
+		raise Exception('invalid request method for delete: ' + request.method)
