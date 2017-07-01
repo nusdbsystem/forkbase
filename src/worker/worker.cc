@@ -96,8 +96,9 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Slice& branch,
 
 ErrorCode Worker::Put(const Slice& key, const Value& val, const Hash& prev_ver,
                       Hash* ver) {
+  static Hash empty_hash;
   return (prev_ver == Hash::kNull || Exists(prev_ver))
-         ? Write(key, val, prev_ver, Hash(), ver)
+         ? Write(key, val, prev_ver, empty_hash, ver)
          : ErrorCode::kReferringVersionNotExist;
 }
 

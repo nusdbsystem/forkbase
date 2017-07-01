@@ -53,14 +53,28 @@ class Timer : private Noncopyable {
   inline double ElapsedHours() const { return Elapsed<hours::period>(); }
   inline double ElapsedDays() const { return Elapsed<std::ratio<86400>>(); }
 
+  static inline double TimeMilliseconds(const std::function<void()>& f) {
+    return Time<std::milli>(f);
+  }
+
  private:
   using clock = high_resolution_clock;
 
   template<typename T>
+  static inline double Time(const std::function<void()>& func) {
+    clock::time_point start(clock::now());
+    func();
+    return ToUnit<T>(clock::now() - start);
+  }
+
+  template<typename T>
+  static inline double ToUnit(const clock::duration& time_span) {
+    return duration_cast<duration<double, T>>(time_span).count();
+  }
+
+  template<typename T>
   inline double Elapsed() const {
-    clock::duration elapsed =
-      running_ ? elapsed_ + (clock::now() - start_) : elapsed_;
-    return duration_cast<duration<double, T>>(elapsed).count();
+    return ToUnit<T>(running_ ? elapsed_ + (clock::now() - start_) : elapsed_);
   }
 
   clock::duration elapsed_;

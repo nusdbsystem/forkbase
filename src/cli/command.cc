@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <limits>
+#include "utils/timer.h"
 #include "cli/console.h"
 #include "cli/command.h"
 
@@ -1655,11 +1656,11 @@ ErrorCode Command::ExecPutRow() {
               << "Ref. Value: \"" << ref_val << "\", "
               << "Row/Update: \"" << val << "\"" << std::endl;
   };
-  const auto f_rpt_success = [&ref_col](size_t n_rows_affected) {
+  const auto f_rpt_success = [&ref_col](size_t n_rows_affected, double ms) {
     std::cout << BOLD_GREEN("[SUCCESS: PUT_ROW] ") << n_rows_affected
               << " row" << (n_rows_affected > 1 ? "s have" : " has")
               << " been " << (ref_col.empty() ? "inserted" : "updated")
-              << std::endl;
+              << " (in " << Utils::TimeString(ms) << ")" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: PUT_ROW] ")
@@ -1686,8 +1687,11 @@ ErrorCode Command::ExecPutRow() {
     row[k] = v;
   }
   size_t n_rows_affected;
-  auto ec = cs_.PutRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
-  ec == ErrorCode::kOK ? f_rpt_success(n_rows_affected) : f_rpt_fail(ec);
+  auto ec = ErrorCode::kUnknownOp;
+  double ms = Timer::TimeMilliseconds([&]() {
+    ec = cs_.PutRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
+  });
+  ec == ErrorCode::kOK ? f_rpt_success(n_rows_affected, ms) : f_rpt_fail(ec);
   return ec;
 }
 
