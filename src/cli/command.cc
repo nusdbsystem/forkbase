@@ -556,7 +556,7 @@ ErrorCode Command::ExecPut() {
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
     return ec;
   }
-  // illegal: branch and reffering version are neither set or both set
+  // illegal: branch and referring version are neither set or both set
   f_rpt_invalid_args();
   return ErrorCode::kInvalidCommandArgument;
 }
@@ -1610,12 +1610,12 @@ ErrorCode Command::ExecGetRow() {
     DCHECK(!rows.empty());
     for (auto& i_r : rows) {
       if (Config::is_vert_list) {
-        std::cout << "--- Row " << (i_r.first + 1) << " ---" << std::endl;
+        std::cout << "--- Row " << i_r.first << " ---" << std::endl;
         for (auto& field : i_r.second)
           std::cout << field.first << ": " << field.second << std::endl;
       } else {
-        std::cout << BOLD_GREEN("[SUCCESS: GET_ROW] ") << "Row "
-                  << (i_r.first + 1) << ": ";
+        std::cout << BOLD_GREEN("[SUCCESS: GET_ROW] ")
+                  << "Row " << i_r.first << ": ";
         Utils::Print(i_r.second, "{", "}", "|", " ", " ", ":", true);
         std::cout << std::endl;
       }
@@ -1646,6 +1646,7 @@ ErrorCode Command::ExecPutRow() {
   const auto& branch = Config::branch;
   const auto& ref_col = Config::ref_column;
   const auto& ref_val = Config::ref_value;
+  const auto& row_idx = Config::position;
   const auto& val = Config::value;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
@@ -1654,15 +1655,27 @@ ErrorCode Command::ExecPutRow() {
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
               << "Ref. Value: \"" << ref_val << "\", "
+              << "Row Index: " << row_idx << ", "
               << "Row/Update: \"" << val << "\"" << std::endl;
   };
-  const auto f_rpt_success = [&ref_col](size_t n_rows_affected, double ms) {
+  const auto f_rpt_success =
+  [&ref_col, &row_idx](size_t n_rows_affected, double ms) {
     std::cout << BOLD_GREEN("[SUCCESS: PUT_ROW] ") << n_rows_affected
               << " row" << (n_rows_affected > 1 ? "s have" : " has")
-              << " been " << (ref_col.empty() ? "inserted" : "updated")
+              << " been "
+              << (ref_col.empty() && row_idx < 0 ? "inserted" : "updated")
               << " (in " << Utils::TimeString(ms) << ")" << std::endl;
   };
-  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+  const auto f_rpt_fail_by_idx = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: PUT_ROW] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Row Index: " << row_idx << ", "
+              << "Row/Update: \"" << val << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  const auto f_rpt_fail_by_col = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: PUT_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
@@ -1674,24 +1687,35 @@ ErrorCode Command::ExecPutRow() {
   };
   // conditional execution
   if (tab.empty() || branch.empty() || val.empty() ||
-      (ref_col.empty() ^ ref_val.empty())) {
+      (ref_col.empty() ^ ref_val.empty()) ||
+      (!ref_col.empty() && row_idx >= 0)) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
   Row row;
   // TODO(linqian): use regular expression to parse the input value
-  auto tokens = Utils::Tokenize(val, "{ :|,}");
-  for (auto it = tokens.begin(); it != tokens.end();) {
-    auto& k = *it++;
-    auto& v = *it++;
-    row[k] = v;
+  {
+    auto tokens = Utils::Tokenize(val, "{ :|,}");
+    for (auto it = tokens.begin(); it != tokens.end();) {
+      auto& k = *it++;
+      auto& v = *it++;
+      row[k] = v;
+    }
   }
-  size_t n_rows_affected;
   auto ec = ErrorCode::kUnknownOp;
-  double ms = Timer::TimeMilliseconds([&]() {
-    ec = cs_.PutRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
-  });
-  ec == ErrorCode::kOK ? f_rpt_success(n_rows_affected, ms) : f_rpt_fail(ec);
+  if (row_idx >= 0) {
+    double ms = Timer::TimeMilliseconds([&]() {
+      ec = cs_.PutRow(tab, branch, row_idx, row);
+    });
+    ec == ErrorCode::kOK ? f_rpt_success(1, ms) : f_rpt_fail_by_idx(ec);
+  } else { // !ref_col.empty()
+    size_t n_rows_affected;
+    double ms = Timer::TimeMilliseconds([&]() {
+      ec = cs_.PutRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
+    });
+    ec == ErrorCode::kOK ?
+    f_rpt_success(n_rows_affected, ms) : f_rpt_fail_by_col(ec);
+  }
   return ec;
 }
 

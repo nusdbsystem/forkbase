@@ -106,6 +106,10 @@ class ColumnStore {
 
   ErrorCode PutRow(const std::string& table_name,
                    const std::string& branch_name,
+                   size_t row_idx, const Row& row);
+
+  ErrorCode PutRow(const std::string& table_name,
+                   const std::string& branch_name,
                    const std::string& ref_col_name,
                    const std::string& ref_val, const Row& row,
                    size_t* n_rows_affected = nullptr);
@@ -157,9 +161,17 @@ class ColumnStore {
     const std::atomic_size_t& total_rows, ErrorCode& stat,
     bool print_progress);
 
+  ErrorCode Validate(const Row& row, const std::string& table_name,
+                     const std::string& branch_name,
+                     size_t* n_fields_not_covered);
+
   ErrorCode InsertRow(const std::string& table_name,
                       const std::string& branch_name, const Row& row,
                       size_t* n_rows_affected);
+
+  ErrorCode UpdateRow(const std::string& table_name,
+                      const std::string& branch_name,
+                      size_t row_idx, const Row& row);
 
   ErrorCode UpdateRow(const std::string& table_name,
                       const std::string& branch_name,

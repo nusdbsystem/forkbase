@@ -25,6 +25,8 @@ std::string Config::table;
 std::string Config::ref_table;
 std::string Config::column;
 std::string Config::ref_column;
+int64_t Config::position;
+int64_t Config::ref_position;
 size_t Config::batch_size;
 
 void Config::Reset() {
@@ -45,6 +47,8 @@ void Config::Reset() {
   ref_table = "";
   column = "";
   ref_column = "";
+  position = -1;
+  ref_position = -1;
   batch_size = 5000;
 }
 
@@ -75,13 +79,22 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     ref_version = vm["ref-version"].as<std::string>();
     GUARD(CheckArg(ref_version.size(),
                    ref_version.empty() || ref_version.size() == 32,
-                   "Length of the reffering version", "0 or 32"));
+                   "Length of the referring version", "0 or 32"));
 
     table = vm["table"].as<std::string>();
     ref_table = vm["ref-table"].as<std::string>();
 
     column = vm["column"].as<std::string>();
     ref_column = vm["ref-column"].as<std::string>();
+
+    if (vm.count("position")) {
+      position = vm["position"].as<int64_t>();
+      GUARD(CheckArgGE(position, 0, "Operating positional index"));
+    }
+    if (vm.count("ref-position")) {
+      ref_position = vm["ref-position"].as<int64_t>();
+      CheckArgGE(ref_position, 0, "Referring positional index");
+    }
 
     auto arg_batch_size = vm["batch-size"].as<int>();
     GUARD(CheckArgGT(arg_batch_size, 0, "Batch size"));
@@ -107,7 +120,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("value,x", po::value<std::string>()->default_value(""),
    "data value")
   ("ref-value,y", po::value<std::string>()->default_value(""),
-   "the reffering data value")
+   "the referring data value")
   ("branch,b", po::value<std::string>()->default_value(""),
    "the operating branch")
   ("ref-branch,c", po::value<std::string>()->default_value(""),
@@ -124,6 +137,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "the operating column")
   ("ref-column,n", po::value<std::string>()->default_value(""),
    "the referring column")
+  ("position,i", po::value<int64_t>(), "the operating positional index")
+  ("ref-position,j", po::value<int64_t>(), "the referring positional index")
   ("batch-size", po::value<int>()->default_value(5000),
    "batch size for data loading");
 

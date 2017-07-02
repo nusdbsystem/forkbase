@@ -555,12 +555,10 @@ ErrorCode ColumnStore::GetRow(const std::string& table_name,
   return ErrorCode::kOK;
 }
 
-ErrorCode ColumnStore::PutRow(const std::string& table_name,
-                              const std::string& branch_name,
-                              const std::string& ref_col_name,
-                              const std::string& ref_val, const Row& row,
-                              size_t* n_rows_affected) {
-  if (n_rows_affected != nullptr) *n_rows_affected = 0;
+ErrorCode ColumnStore::Validate(const Row& row,
+                                const std::string& table_name,
+                                const std::string& branch_name,
+                                size_t* n_fields_not_covered) {
   Table tab;
   USTORE_GUARD(
     GetTable(table_name, branch_name, &tab));
@@ -568,17 +566,40 @@ ErrorCode ColumnStore::PutRow(const std::string& table_name,
   for (auto it = tab.Scan(); !it.end(); it.next()) {
     col_names.emplace(it.key().ToString());
   }
-  std::unordered_set<std::string> check_col_names(col_names);
+  *n_fields_not_covered = col_names.size();
   for (auto& field : row) {
-    if (check_col_names.find(field.first) == check_col_names.end()) {
+    if (col_names.find(field.first) == col_names.end()) {
       LOG(ERROR) << "Unknown field: " << field.first;
       return ErrorCode::kInvalidSchema;
     } else {
-      check_col_names.erase(field.first);
+      --(*n_fields_not_covered);
+      col_names.erase(field.first);
     }
   }
+  return ErrorCode::kOK;
+}
+
+ErrorCode ColumnStore::PutRow(const std::string& table_name,
+                              const std::string& branch_name,
+                              size_t row_idx, const Row& row) {
+  static size_t n_fields_not_covered;
+  USTORE_GUARD(
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+  return UpdateRow(table_name, branch_name, row_idx, row);
+}
+
+ErrorCode ColumnStore::PutRow(const std::string& table_name,
+                              const std::string& branch_name,
+                              const std::string& ref_col_name,
+                              const std::string& ref_val, const Row& row,
+                              size_t* n_rows_affected) {
+  if (n_rows_affected != nullptr) *n_rows_affected = 0;
+  size_t n_fields_not_covered;
+  USTORE_GUARD(
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+  // conditional execution of insertion or update
   if (ref_col_name.empty() || ref_val.empty()) {
-    if (check_col_names.empty()) {
+    if (n_fields_not_covered == 0) {
       return InsertRow(table_name, branch_name, row, n_rows_affected);
     } else {
       LOG(ERROR) << "Incomplete row for insertion";
@@ -616,6 +637,39 @@ ErrorCode ColumnStore::InsertRow(const std::string& table_name,
       odb_.Put(table, tab, branch).stat);
   }
   if (n_rows_affected != nullptr) *n_rows_affected = 1;
+  return ErrorCode::kOK;
+}
+
+ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 size_t row_idx, const Row& row) {
+  for (auto& field : row) {
+    auto col_key_str = GlobalKey(table_name, field.first);
+    Slice col_key(col_key_str);
+    // retrive column corresponding to the field
+    Column col;
+    USTORE_GUARD(
+      ReadColumn(table_name, branch_name, field.first, &col));
+    // validate the row index
+    if (row_idx >= col.numElements()) {
+      LOG(ERROR) << "Index out of range: [Actual] " << row_idx
+                 << ", [Expected] <" << col.numElements();
+      return ErrorCode::kIndexOutOfRange;
+    }
+    // update field value of the column
+    col.Splice(row_idx, 1, {Slice(field.second)});
+    // write the new column into storage
+    auto col_rst = odb_.Put(col_key, col, Slice(branch_name));
+    USTORE_GUARD(col_rst.stat);
+    Version col_ver = col_rst.value.ToBase32();
+    // update column entry in the table
+    Table tab;
+    USTORE_GUARD(
+      GetTable(table_name, branch_name, &tab));
+    tab.Set(Slice(field.first), Slice(col_ver));
+    USTORE_GUARD(
+      odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat);
+  }
   return ErrorCode::kOK;
 }
 
