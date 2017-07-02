@@ -161,6 +161,11 @@ $(document).ready(function() {
 			content.show();
 			content.find('[name="key"]').val(key);
 			content.find('[name="bransion"]').val(branch);
+		} else if ($(this).text() == 'delete') {
+			var content = $("#exe").find('form[name="delete"]');
+			content.show();
+			content.find('[name="key"]').val(key);
+			content.find('[name="bransion"]').val(branch);
 		}
 		return false;
 	});
@@ -240,6 +245,14 @@ $(document).ready(function() {
 			'old_brc': content['bransion'].value,
 			'new_brc': content['new_branch'].value}
 		post_request(rename_url, data, text_data, $(content['result']), $(content['result']).parent());
+		return false;
+	});
+
+	$("#delete").on('click', function(e){
+		var content = $(this).parent().parent()[0];
+		data = {'key': content['key'].value, 
+			'branch': content['bransion'].value}
+		post_request(delete_url, data, text_data, $(content['result']), $(content['result']).parent());
 		return false;
 	});
 });

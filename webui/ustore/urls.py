@@ -29,6 +29,7 @@ urlpatterns = [
     url(r'^list/', views.ulist, name='list'),
     url(r'^rename/', views.urename, name='rename'),
     url(r'^latest', views.ulatest, name='latest'),
+    url(r'^delete', views.udelete, name='delete'),
     
     url(r'^admin/', admin.site.urls),
 ]
