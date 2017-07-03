@@ -175,9 +175,12 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_HANDLER("GET_ROW", ExecGetRow());
   CMD_ALIAS("GET_ROW", "GET-ROW");
   CMD_ALIAS("GET_ROW", "GETROW");
-  CMD_HANDLER("PUT_ROW", ExecPutRow());
-  CMD_ALIAS("PUT_ROW", "PUT-ROW");
-  CMD_ALIAS("PUT_ROW", "PUTROW");
+  CMD_HANDLER("INSERT", ExecInsert());
+  CMD_HANDLER("INSERT_ROW", ExecInsertRow());
+  CMD_ALIAS("INSERT_ROW", "INSERT-ROW");
+  CMD_HANDLER("UPDATE", ExecUpdate());
+  CMD_HANDLER("UPDATE_ROW", ExecUpdateRow());
+  CMD_ALIAS("UPDATE_ROW", "UPDATE-ROW");
   CMD_HANDLER("LOAD_CSV", ExecLoadCSV());
   CMD_ALIAS("LOAD_CSV", "LOAD-CSV");
   CMD_ALIAS("LOAD_CSV", "LOADCSV");
@@ -279,10 +282,14 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "{-s <table_2>} {-n <column_2>}" << std::endl
      << FORMAT_RELATIONAL_CMD("GET_ROW")
      << "-t <table> -b <branch> -n <refer_colum> -y <refer_value>" << std::endl
-     << FORMAT_RELATIONAL_CMD("PUT_ROW")
+     << FORMAT_RELATIONAL_CMD("INSERT_ROW")
+     << "-t <table> -b <branch> -x <field_list>" << std::endl
+     << FORMAT_RELATIONAL_CMD("UPDATE_ROW")
      << "-t <table> -b <branch> -x <field_list> "
      << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
-     << "{-n <refer_colum> -y <refer_value>}" << std::endl
+     << "[-n <refer_colum> -y <refer_value> | "
+     << std::endl << std::setw(kPrintRelationalCmdWidth + 4) << ""
+     << "-i <row_index>]" << std::endl
      << FORMAT_RELATIONAL_CMD("LOAD_CSV")
      << "<file> -t <table> -b <branch>" << std::endl
      << FORMAT_RELATIONAL_CMD("DUMP_CSV")
@@ -494,11 +501,6 @@ ErrorCode Command::ExecGet() {
 }
 
 ErrorCode Command::ExecPut() {
-  // redirection
-  if (!Config::table.empty() && Config::key.empty()) {
-    return ExecPutRow();
-  }
-
   const auto& key = Config::key;
   const auto& val = Config::value;
   const auto& branch = Config::branch;
@@ -1641,7 +1643,70 @@ ErrorCode Command::ExecGetRow() {
   return ec;
 }
 
-ErrorCode Command::ExecPutRow() {
+ErrorCode Command::ParseRowString(const std::string& row_str, Row* row) {
+  row->clear();
+  // TODO(linqian): use regular expression to parse the input value
+  auto tokens = Utils::Tokenize(row_str, "{ :|,}");
+
+  for (auto it = tokens.begin(); it != tokens.end();) {
+    auto& k = *it++;
+    if (it == tokens.end()) return ErrorCode::kInvalidSchema;
+    auto& v = *it++;
+    row->emplace(k, v);
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode Command::ExecInsert() {
+  // redirection
+  return ExecInsertRow();
+}
+
+ErrorCode Command::ExecInsertRow() {
+  const auto& tab = Config::table;
+  const auto& branch = Config::branch;
+  const auto& val = Config::value;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT_ROW] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Row: \"" << val << "\"" << std::endl;
+  };
+  const auto f_rpt_success = []() {
+    std::cout << BOLD_GREEN("[SUCCESS: INSERT_ROW] ")
+              << "1 row has been inserted" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: INSERT_ROW] ")
+              << "Table: \"" << tab << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Row: \"" << val << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (tab.empty() || branch.empty() || val.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  Row row;
+  auto ec = ParseRowString(val, &row);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  ec = cs_.InsertRow(tab, branch, row);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecUpdate() {
+  // redirection
+  return ExecUpdateRow();
+}
+
+ErrorCode Command::ExecUpdateRow() {
   const auto& tab = Config::table;
   const auto& branch = Config::branch;
   const auto& ref_col = Config::ref_column;
@@ -1650,38 +1715,37 @@ ErrorCode Command::ExecPutRow() {
   const auto& val = Config::value;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: PUT_ROW] ")
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
               << "Ref. Value: \"" << ref_val << "\", "
               << "Row Index: " << row_idx << ", "
-              << "Row/Update: \"" << val << "\"" << std::endl;
+              << "Row Update: \"" << val << "\"" << std::endl;
   };
   const auto f_rpt_success =
   [&ref_col, &row_idx](size_t n_rows_affected, double ms) {
-    std::cout << BOLD_GREEN("[SUCCESS: PUT_ROW] ") << n_rows_affected
+    std::cout << BOLD_GREEN("[SUCCESS: UPDATE_ROW] ") << n_rows_affected
               << " row" << (n_rows_affected > 1 ? "s have" : " has")
-              << " been "
-              << (ref_col.empty() && row_idx < 0 ? "inserted" : "updated")
+              << " been updated"
               << " (in " << Utils::TimeString(ms) << ")" << std::endl;
   };
   const auto f_rpt_fail_by_idx = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: PUT_ROW] ")
+    std::cerr << BOLD_RED("[FAILED: UPDATE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Row Index: " << row_idx << ", "
-              << "Row/Update: \"" << val << "\""
+              << "Row Update: \"" << val << "\", "
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   const auto f_rpt_fail_by_col = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: PUT_ROW] ")
+    std::cerr << BOLD_RED("[FAILED: UPDATE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
-              << "Ref. Value: \"" << ref_val << "\""
-              << "Row/Update: \"" << val << "\""
+              << "Ref. Value: \"" << ref_val << "\", "
+              << "Row Update: \"" << val << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
@@ -1693,25 +1757,20 @@ ErrorCode Command::ExecPutRow() {
     return ErrorCode::kInvalidCommandArgument;
   }
   Row row;
-  // TODO(linqian): use regular expression to parse the input value
-  {
-    auto tokens = Utils::Tokenize(val, "{ :|,}");
-    for (auto it = tokens.begin(); it != tokens.end();) {
-      auto& k = *it++;
-      auto& v = *it++;
-      row[k] = v;
-    }
+  auto ec = ParseRowString(val, &row);
+  if (ec != ErrorCode::kOK) {
+    row_idx >= 0 ? f_rpt_fail_by_idx(ec) : f_rpt_fail_by_col(ec);
+    return ec;
   }
-  auto ec = ErrorCode::kUnknownOp;
   if (row_idx >= 0) {
     double ms = Timer::TimeMilliseconds([&]() {
-      ec = cs_.PutRow(tab, branch, row_idx, row);
+      ec = cs_.UpdateRow(tab, branch, row_idx, row);
     });
     ec == ErrorCode::kOK ? f_rpt_success(1, ms) : f_rpt_fail_by_idx(ec);
   } else { // !ref_col.empty()
     size_t n_rows_affected;
     double ms = Timer::TimeMilliseconds([&]() {
-      ec = cs_.PutRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
+      ec = cs_.UpdateRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
     });
     ec == ErrorCode::kOK ?
     f_rpt_success(n_rows_affected, ms) : f_rpt_fail_by_col(ec);

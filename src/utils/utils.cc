@@ -73,7 +73,8 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kInvalidCommandArgument, "invalid command-line argument"},
   {ErrorCode::kUnknownCommand, "unrecognized command"},
   {ErrorCode::kInvalidSchema, "invalid schema"},
-  {ErrorCode::kInconsistentType, "inconsistent data types"}
+  {ErrorCode::kInconsistentType, "inconsistent data types"},
+  {ErrorCode::kInvalidParameter, "invalid parameter"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {

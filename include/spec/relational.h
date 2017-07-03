@@ -104,15 +104,18 @@ class ColumnStore {
                    const std::string& ref_val,
                    std::unordered_map<size_t, Row>* rows);
 
-  ErrorCode PutRow(const std::string& table_name,
-                   const std::string& branch_name,
-                   size_t row_idx, const Row& row);
+  ErrorCode UpdateRow(const std::string& table_name,
+                      const std::string& branch_name,
+                      size_t row_idx, const Row& row);
 
-  ErrorCode PutRow(const std::string& table_name,
-                   const std::string& branch_name,
-                   const std::string& ref_col_name,
-                   const std::string& ref_val, const Row& row,
-                   size_t* n_rows_affected = nullptr);
+  ErrorCode UpdateRow(const std::string& table_name,
+                      const std::string& branch_name,
+                      const std::string& ref_col_name,
+                      const std::string& ref_val, const Row& row,
+                      size_t* n_rows_affected = nullptr);
+
+  ErrorCode InsertRow(const std::string& table_name,
+                      const std::string& branch_name, const Row& row);
 
   inline ColumnDiffIterator DiffColumn(const Column& lhs, const Column& rhs) {
     return UList::DuallyDiff(lhs, rhs);
@@ -164,20 +167,6 @@ class ColumnStore {
   ErrorCode Validate(const Row& row, const std::string& table_name,
                      const std::string& branch_name,
                      size_t* n_fields_not_covered);
-
-  ErrorCode InsertRow(const std::string& table_name,
-                      const std::string& branch_name, const Row& row,
-                      size_t* n_rows_affected);
-
-  ErrorCode UpdateRow(const std::string& table_name,
-                      const std::string& branch_name,
-                      size_t row_idx, const Row& row);
-
-  ErrorCode UpdateRow(const std::string& table_name,
-                      const std::string& branch_name,
-                      const std::string& ref_col_name,
-                      const std::string& ref_val, const Row& row,
-                      size_t* n_rows_affected);
 
   ObjectDB odb_;
 };

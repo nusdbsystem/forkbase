@@ -579,70 +579,13 @@ ErrorCode ColumnStore::Validate(const Row& row,
   return ErrorCode::kOK;
 }
 
-ErrorCode ColumnStore::PutRow(const std::string& table_name,
-                              const std::string& branch_name,
-                              size_t row_idx, const Row& row) {
-  static size_t n_fields_not_covered;
-  USTORE_GUARD(
-    Validate(row, table_name, branch_name, &n_fields_not_covered));
-  return UpdateRow(table_name, branch_name, row_idx, row);
-}
-
-ErrorCode ColumnStore::PutRow(const std::string& table_name,
-                              const std::string& branch_name,
-                              const std::string& ref_col_name,
-                              const std::string& ref_val, const Row& row,
-                              size_t* n_rows_affected) {
-  if (n_rows_affected != nullptr) *n_rows_affected = 0;
-  size_t n_fields_not_covered;
-  USTORE_GUARD(
-    Validate(row, table_name, branch_name, &n_fields_not_covered));
-  // conditional execution of insertion or update
-  if (ref_col_name.empty() || ref_val.empty()) {
-    if (n_fields_not_covered == 0) {
-      return InsertRow(table_name, branch_name, row, n_rows_affected);
-    } else {
-      LOG(ERROR) << "Incomplete row for insertion";
-      return ErrorCode::kInvalidSchema;
-    }
-  } else {
-    return UpdateRow(table_name, branch_name, ref_col_name, ref_val, row,
-                     n_rows_affected);
-  }
-}
-
-ErrorCode ColumnStore::InsertRow(const std::string& table_name,
-                                 const std::string& branch_name,
-                                 const Row& row, size_t* n_rows_affected) {
-  Slice table(table_name);
-  Slice branch(branch_name);
-  for (auto& field : row) {
-    // retrive column corresponding to the field
-    Column col;
-    USTORE_GUARD(
-      ReadColumn(table_name, branch_name, field.first, &col));
-    // append field value to the column
-    col.Append({Slice(field.second)});
-    // write the new column into storage
-    auto col_key = GlobalKey(table_name, field.first);
-    auto col_rst = odb_.Put(Slice(col_key), col, branch);
-    USTORE_GUARD(col_rst.stat);
-    Version col_ver = col_rst.value.ToBase32();
-    // update column entry in the table
-    Table tab;
-    USTORE_GUARD(
-      GetTable(table_name, branch_name, &tab));
-    tab.Set(Slice(field.first), Slice(col_ver));
-    USTORE_GUARD(
-      odb_.Put(table, tab, branch).stat);
-  }
-  if (n_rows_affected != nullptr) *n_rows_affected = 1;
-  return ErrorCode::kOK;
-}
-
 ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
                                  const std::string& branch_name,
                                  size_t row_idx, const Row& row) {
+  static size_t n_fields_not_covered;
+  USTORE_GUARD(
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+
   for (auto& field : row) {
     auto col_key_str = GlobalKey(table_name, field.first);
     Slice col_key(col_key_str);
@@ -678,13 +621,28 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
                                  const std::string& ref_col_name,
                                  const std::string& ref_val, const Row& row,
                                  size_t* n_rows_affected) {
-  Column ref_col;
+  if (n_rows_affected != nullptr) *n_rows_affected = 0;
+  if (ref_col_name.empty()) {
+    LOG(ERROR) << "Referring column is not specified";
+    return ErrorCode::kInvalidParameter;
+  }
+  if (ref_val.empty()) {
+    LOG(ERROR) << "Referring value is missing";
+    return ErrorCode::kInvalidParameter;
+  }
+  static size_t n_fields_not_covered;
   USTORE_GUARD(
-    GetColumn(table_name, branch_name, ref_col_name, &ref_col));
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+
   // search for row indices
   std::list<size_t> indices;
-  for (auto it = ref_col.Scan(); !it.end(); it.next()) {
-    if (it.value() == ref_val) indices.emplace_back(it.index());
+  {
+    Column ref_col;
+    USTORE_GUARD(
+      GetColumn(table_name, branch_name, ref_col_name, &ref_col));
+    for (auto it = ref_col.Scan(); !it.end(); it.next()) {
+      if (it.value() == ref_val) indices.emplace_back(it.index());
+    }
   }
   if (indices.empty()) return ErrorCode::kRowNotExists;
   // apply row updates
@@ -717,6 +675,42 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
       odb_.Put(table, tab, branch).stat);
   }
   if (n_rows_affected != nullptr) *n_rows_affected = indices.size();
+  return ErrorCode::kOK;
+}
+
+ErrorCode ColumnStore::InsertRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 const Row& row) {
+  size_t n_fields_not_covered;
+  USTORE_GUARD(
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+  if (n_fields_not_covered > 0) {
+    LOG(ERROR) << "Incomplete row for insertion";
+    return ErrorCode::kInvalidSchema;
+  }
+
+  Slice table(table_name);
+  Slice branch(branch_name);
+  for (auto& field : row) {
+    // retrive column corresponding to the field
+    Column col;
+    USTORE_GUARD(
+      ReadColumn(table_name, branch_name, field.first, &col));
+    // append field value to the column
+    col.Append({Slice(field.second)});
+    // write the new column into storage
+    auto col_key = GlobalKey(table_name, field.first);
+    auto col_rst = odb_.Put(Slice(col_key), col, branch);
+    USTORE_GUARD(col_rst.stat);
+    Version col_ver = col_rst.value.ToBase32();
+    // update column entry in the table
+    Table tab;
+    USTORE_GUARD(
+      GetTable(table_name, branch_name, &tab));
+    tab.Set(Slice(field.first), Slice(col_ver));
+    USTORE_GUARD(
+      odb_.Put(table, tab, branch).stat);
+  }
   return ErrorCode::kOK;
 }
 

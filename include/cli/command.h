@@ -65,7 +65,6 @@ class Command {
   ErrorCode ExecGetColumn();
   ErrorCode ExecListColumnBranch();
   ErrorCode ExecDeleteColumn();
-  ErrorCode ExecDiff();
   ErrorCode ExecDiffTable();
   ErrorCode ExecDiffColumn();
   ErrorCode ExecExistsTable();
@@ -73,9 +72,14 @@ class Command {
   ErrorCode ExecLoadCSV();
   ErrorCode ExecDumpCSV();
   ErrorCode ExecGetRow();
-  ErrorCode ExecPutRow();
+  ErrorCode ExecInsertRow();
+  ErrorCode ExecUpdateRow();
   ErrorCode ExecInfo();
   ErrorCode ExecMeta();
+
+  ErrorCode ExecDiff();
+  ErrorCode ExecInsert();
+  ErrorCode ExecUpdate();
 
   ErrorCode ExecGetAll();
   ErrorCode ExecListKeyAll();
@@ -85,6 +89,8 @@ class Command {
   ErrorCode ExecMetaManip(
     const std::string& cmd,
     const std::function<ErrorCode(const VMeta&)>& f_output_meta);
+
+  ErrorCode ParseRowString(const std::string& row_str, Row* row);
 
   static const size_t kDefaultLimitPrintElems;
   static size_t limit_print_elems;

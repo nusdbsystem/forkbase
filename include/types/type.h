@@ -101,7 +101,8 @@ enum class ErrorCode : byte_t {
   kInvalidCommandArgument = 29,
   kUnknownCommand = 30,
   kInvalidSchema = 31,
-  kInconsistentType = 32
+  kInconsistentType = 32,
+  kInvalidParameter = 33
 };
 
 }  // namespace ustore
