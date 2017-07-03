@@ -82,14 +82,6 @@ int main(int argc, char* argv[]) {
     return -1;
   }
   Env::Instance()->m_config().set_worker_file("conf/worker_test");
-  // set num_segments large enough for all test cases
-  if (BenchmarkConfig::command == "ALL") {
-    constexpr int seg = 180;
-    std::cout << "Increase to " << seg << " segments for running all tests"
-              << std::endl;
-    Env::Instance()->m_config().set_num_segments(seg);
-  }
-
   BenchmarkWorker();
   BenchmarkClient();
   return 0;

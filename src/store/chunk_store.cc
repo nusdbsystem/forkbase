@@ -55,13 +55,13 @@ std::ostream& operator<<(std::ostream& os, const StoreInfo& obj) {
      << "======================================================" << endl
      // segment type
      << setw(kSegmentAlign) << left << "Segment Type"
-     << " |" << setw(kSegmentAlign) << right << "Total"
-     << " |" << setw(kSegmentAlign) << right << "Free"
+     << " |" << setw(kSegmentAlign) << right << "Maximum"
+     << " |" << setw(kSegmentAlign) << right << "Allocated"
      << " |" << setw(kSegmentAlign) << right << "Used" << endl
      // segment count
      << setw(kSegmentAlign) << left << "Count"
-     << " |" << setw(kSegmentAlign) << right << obj.segments
-     << " |" << setw(kSegmentAlign) << right << obj.freeSegments
+     << " |" << setw(kSegmentAlign) << right << obj.maxSegments
+     << " |" << setw(kSegmentAlign) << right << obj.allocSegments
      << " |" << setw(kSegmentAlign) << right << obj.usedSegments << endl
      << "======================================================" << endl
      // chunk meta

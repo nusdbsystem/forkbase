@@ -467,7 +467,8 @@ ErrorCode ClientDb::GetInfoResponse(std::vector<StoreInfo>* stores) {
     v.chunkBytes = info.chunk_bytes();
     v.validChunks = info.valid_chunks();
     v.validChunkBytes = info.valid_chunk_bytes();
-    v.segments = info.segments();
+    v.maxSegments = info.max_segments();
+    v.allocSegments = info.alloc_segments();
     v.freeSegments = info.free_segments();
     v.usedSegments = info.used_segments();
     size_t size = info.chunk_types_size();

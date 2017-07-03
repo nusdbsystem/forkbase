@@ -362,7 +362,8 @@ void WorkerService::HandleGetInfoRequest(const UMessage& umsg,
   info->set_chunk_bytes(store[0].chunkBytes);
   info->set_valid_chunks(store[0].validChunks);
   info->set_valid_chunk_bytes(store[0].validChunkBytes);
-  info->set_segments(store[0].segments);
+  info->set_max_segments(store[0].maxSegments);
+  info->set_alloc_segments(store[0].allocSegments);
   info->set_free_segments(store[0].freeSegments);
   info->set_used_segments(store[0].usedSegments);
   for (auto& kv : store[0].chunksPerType) {

@@ -162,8 +162,8 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
 
  protected:
   const MapType& map_;
-  const byte_t* ptr_;
   const LSTSegment* segment_;
+  const byte_t* ptr_;
 };
 
 template <typename MapType, typename ChunkType, ChunkType T,
@@ -291,8 +291,8 @@ class LSTStore
 
   LSTStore() : LSTStore(".", "ustore_default", false) {}
   LSTStore(const std::string& dir, const std::string& file, bool persist)
-    : num_segments_(Env::Instance()->config().num_segments()),
-      max_log_size_(kSegmentSize * num_segments_ + kMetaLogSize),
+    : max_segments_(Env::Instance()->config().max_segments()),
+      max_log_size_(kSegmentSize * max_segments_ + kMetaLogSize),
       thread_status_(ThreadStatus::kUnscheduled) {
     MmapUstoreLogFile(dir, file, persist);
   }
@@ -312,13 +312,11 @@ class LSTStore
   LSTSegment* Allocate(LSTSegment*);
   LSTSegment* AllocateMajor();
   LSTSegment* AllocateMinor();
-
   /**
    * @brief enlarge the log
    */
-  void enlarge();
-
-  void updateStore();
+  void Enlarge();
+  void UpdateStore();
 
   MapType chunk_map_;
   LSTSegment *free_list_, *major_list_;
@@ -326,9 +324,9 @@ class LSTStore
   LSTSegment *last_free_segment_;
 
   offset_t major_segment_offset_;
-  const size_t num_segments_ = 64;
-  const offset_t max_log_size_ = kSegmentSize * num_segments_ + kMetaLogSize;
-  const offset_t segment_increment_ = 32;  // # of segments to allocate
+  const size_t max_segments_ = 64;
+  const offset_t max_log_size_ = kSegmentSize * max_segments_ + kMetaLogSize;
+  const offset_t segment_increment_ = 16;  // # of segments to allocate
 
   int fd_;  // mmaped file descriptor
 

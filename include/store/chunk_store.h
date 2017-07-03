@@ -22,7 +22,8 @@ struct StoreInfo {
   MapType chunksPerType;
   MapType bytesPerType;
 
-  size_t segments;
+  size_t maxSegments;
+  size_t allocSegments;
   size_t freeSegments;
   size_t usedSegments;
 

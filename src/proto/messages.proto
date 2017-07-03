@@ -76,9 +76,10 @@ message InfoPayload {
   required int64 chunk_bytes = 2;
   required int64 valid_chunks = 3;
   required int64 valid_chunk_bytes = 4;
-  required int64 segments = 5;
-  required int64 free_segments = 6;
-  required int64 used_segments = 7;
+  required int64 max_segments = 5;
+  required int64 alloc_segments = 6;
+  required int64 free_segments = 7;
+  required int64 used_segments = 8;
   repeated int32 chunk_types = 10;
   repeated int64 chunks_per_type = 11;
   repeated int64 bytes_per_type = 12;

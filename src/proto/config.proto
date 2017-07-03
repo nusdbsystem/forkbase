@@ -12,7 +12,7 @@ message Config {
   // pattern of data file, the final file name is {$pattern}_{$worker_id}.dat
   optional string data_file_pattern = 2 [default = "ustore"];
   // maximum number of data segments allocated by chunk store
-  optional int32 num_segments = 3 [default = 64];
+  optional int32 max_segments = 3 [default = 64];
 
   /* cluster related */
   // file containing worker list in format of hostname:port
