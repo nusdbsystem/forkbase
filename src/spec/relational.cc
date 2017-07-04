@@ -579,13 +579,12 @@ ErrorCode ColumnStore::Validate(const Row& row,
   return ErrorCode::kOK;
 }
 
-ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
-                                 const std::string& branch_name,
-                                 size_t row_idx, const Row& row) {
-  static size_t n_fields_not_covered;
-  USTORE_GUARD(
-    Validate(row, table_name, branch_name, &n_fields_not_covered));
-
+ErrorCode ColumnStore::ManipRow(
+  const std::string& table_name, const std::string& branch_name,
+  size_t row_idx, const Row& row,
+  const std::function<void(Column*, const std::string&)> f_manip_col) {
+  Slice table(table_name);
+  Slice branch(branch_name);
   for (auto& field : row) {
     auto col_key_str = GlobalKey(table_name, field.first);
     Slice col_key(col_key_str);
@@ -599,10 +598,10 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
                  << ", [Expected] <" << col.numElements();
       return ErrorCode::kIndexOutOfRange;
     }
-    // update field value of the column
-    col.Splice(row_idx, 1, {Slice(field.second)});
+    // manipulate field value of the column
+    f_manip_col(&col, field.second);
     // write the new column into storage
-    auto col_rst = odb_.Put(col_key, col, Slice(branch_name));
+    auto col_rst = odb_.Put(col_key, col, branch);
     USTORE_GUARD(col_rst.stat);
     Version col_ver = col_rst.value.ToBase32();
     // update column entry in the table
@@ -611,16 +610,57 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
       GetTable(table_name, branch_name, &tab));
     tab.Set(Slice(field.first), Slice(col_ver));
     USTORE_GUARD(
-      odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat);
+      odb_.Put(table, tab, branch).stat);
   }
   return ErrorCode::kOK;
 }
 
 ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
                                  const std::string& branch_name,
-                                 const std::string& ref_col_name,
-                                 const std::string& ref_val, const Row& row,
-                                 size_t* n_rows_affected) {
+                                 size_t row_idx, const Row& row) {
+  static size_t n_fields_not_covered;
+  USTORE_GUARD(
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+
+  return ManipRow(table_name, branch_name, row_idx, row,
+  [&row_idx](Column * col, const std::string & field_value) {
+    col->Splice(row_idx, 1, {Slice(field_value)});
+  });
+}
+
+ErrorCode ColumnStore::GetTableSchema(const std::string& table_name,
+                                      const std::string& branch_name,
+                                      Row* row) {
+  row->clear();
+  Table tab;
+  USTORE_GUARD(
+    GetTable(table_name, branch_name, &tab));
+  static const std::string null_field("");
+  for (auto it = tab.Scan(); !it.end(); it.next()) {
+    row->emplace(it.key().ToString(), null_field);
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode ColumnStore::DeleteRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 size_t row_idx) {
+  Row row;
+  USTORE_GUARD(
+    GetTableSchema(table_name, branch_name, &row));
+
+  return ManipRow(table_name, branch_name, row_idx, row,
+  [&row_idx](Column * col, const std::string & field_value) {
+    col->Delete(row_idx, 1);
+  });
+}
+
+ErrorCode ColumnStore::ManipRows(
+  const std::string& table_name, const std::string& branch_name,
+  const std::string& ref_col_name, const std::string& ref_val,
+  const Row& row, const std::function<void(
+    Column*, size_t row_idx, const std::string&)> f_manip_col,
+  size_t* n_rows_affected) {
   if (n_rows_affected != nullptr) *n_rows_affected = 0;
   if (ref_col_name.empty()) {
     LOG(ERROR) << "Referring column is not specified";
@@ -630,10 +670,6 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
     LOG(ERROR) << "Referring value is missing";
     return ErrorCode::kInvalidParameter;
   }
-  static size_t n_fields_not_covered;
-  USTORE_GUARD(
-    Validate(row, table_name, branch_name, &n_fields_not_covered));
-
   // search for row indices
   std::list<size_t> indices;
   {
@@ -641,7 +677,7 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
     USTORE_GUARD(
       GetColumn(table_name, branch_name, ref_col_name, &ref_col));
     for (auto it = ref_col.Scan(); !it.end(); it.next()) {
-      if (it.value() == ref_val) indices.emplace_back(it.index());
+      if (it.value() == ref_val) indices.emplace_front(it.index());
     }
   }
   if (indices.empty()) return ErrorCode::kRowNotExists;
@@ -657,8 +693,8 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
       Column col;
       USTORE_GUARD(
         ReadColumn(table_name, branch_name, field.first, &col));
-      // update field value of the column
-      col.Splice(i, 1, {Slice(field.second)});
+      // manipulate field value of the column
+      f_manip_col(&col, i, field.second);
       // write the new column into storage
       auto col_rst = odb_.Put(col_key, col, branch);
       USTORE_GUARD(col_rst.stat);
@@ -676,6 +712,36 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
   }
   if (n_rows_affected != nullptr) *n_rows_affected = indices.size();
   return ErrorCode::kOK;
+}
+
+ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 const std::string& ref_col_name,
+                                 const std::string& ref_val, const Row& row,
+                                 size_t* n_rows_affected) {
+  static size_t n_fields_not_covered;
+  USTORE_GUARD(
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+
+  return ManipRows(table_name, branch_name, ref_col_name, ref_val, row,
+  [](Column * col, size_t row_idx, const std::string & field_value) {
+    col->Splice(row_idx, 1, {Slice(field_value)});
+  }, n_rows_affected);
+}
+
+ErrorCode ColumnStore::DeleteRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 const std::string& ref_col_name,
+                                 const std::string& ref_val,
+                                 size_t* n_rows_deleted) {
+  Row row;
+  USTORE_GUARD(
+    GetTableSchema(table_name, branch_name, &row));
+
+  return ManipRows(table_name, branch_name, ref_col_name, ref_val, row,
+  [](Column * col, size_t row_idx, const std::string & field_value) {
+    col->Delete(row_idx, 1);
+  }, n_rows_deleted);
 }
 
 ErrorCode ColumnStore::InsertRow(const std::string& table_name,

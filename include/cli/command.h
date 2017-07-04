@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include "spec/object_db.h"
 #include "spec/relational.h"
+#include "utils/timer.h"
+#include "utils/utils.h"
 #include "cli/config.h"
 
 namespace ustore {
@@ -74,6 +76,7 @@ class Command {
   ErrorCode ExecGetRow();
   ErrorCode ExecInsertRow();
   ErrorCode ExecUpdateRow();
+  ErrorCode ExecDeleteRow();
   ErrorCode ExecInfo();
   ErrorCode ExecMeta();
 
@@ -95,8 +98,21 @@ class Command {
   static const size_t kDefaultLimitPrintElems;
   static size_t limit_print_elems;
 
+  inline std::string TimeDisplay(const std::string& prefix = " ") {
+    std::string time_display("");
+    if (Config::time_exec) {
+      time_display = prefix + "(in " + Utils::TimeString(time_ms_) + ")";
+    }
+    return time_display;
+  }
+
+  inline void Time(const std::function<void()>& f_exec) {
+    time_ms_ = Timer::TimeMilliseconds(f_exec);
+  }
+
   ObjectDB odb_;
   ColumnStore cs_;
+  double time_ms_;
 };
 
 }  // namespace cli

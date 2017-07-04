@@ -117,6 +117,15 @@ class ColumnStore {
   ErrorCode InsertRow(const std::string& table_name,
                       const std::string& branch_name, const Row& row);
 
+  ErrorCode DeleteRow(const std::string& table_name,
+                      const std::string& branch_name, size_t row_idx);
+
+  ErrorCode DeleteRow(const std::string& table_name,
+                      const std::string& branch_name,
+                      const std::string& ref_col_name,
+                      const std::string& ref_val,
+                      size_t* n_rows_deleted = nullptr);
+
   inline ColumnDiffIterator DiffColumn(const Column& lhs, const Column& rhs) {
     return UList::DuallyDiff(lhs, rhs);
   }
@@ -168,6 +177,22 @@ class ColumnStore {
                      const std::string& branch_name,
                      size_t* n_fields_not_covered);
 
+  ErrorCode ManipRow(
+    const std::string& table_name, const std::string& branch_name,
+    size_t row_idx, const Row& row,
+    const std::function<void(Column*, const std::string&)> f_manip_col);
+
+  ErrorCode ManipRows(
+    const std::string& table_name, const std::string& branch_name,
+    const std::string& ref_col_name, const std::string& ref_val,
+    const Row& row,
+    const std::function<void(
+      Column*, size_t row_idx, const std::string&)> f_manip_col,
+    size_t* n_rows_affected);
+
+  ErrorCode GetTableSchema(const std::string& table_name,
+                           const std::string& branch_name,
+                           Row* row);
   ObjectDB odb_;
 };
 

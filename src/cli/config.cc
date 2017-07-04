@@ -13,6 +13,7 @@ std::string Config::command_options_help;
 std::string Config::command;
 std::string Config::script;
 std::string Config::file;
+bool Config::time_exec;
 bool Config::is_vert_list;
 std::string Config::key;
 std::string Config::value;
@@ -35,6 +36,7 @@ void Config::Reset() {
   command = "";
   script = "";
   file = "";
+  time_exec = false;
   is_vert_list = false;
   key = "";
   value = "";
@@ -63,6 +65,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     script = vm["script"].as<std::string>();
     file = vm["file"].as<std::string>();
 
+    time_exec = vm.count("time") ? true : false;
     is_vert_list = vm.count("vert-list") ? true : false;
 
     key = vm["key"].as<std::string>();
@@ -111,7 +114,9 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   utility.add_options()
   ("help,?", "print usage message")
   ("script", po::value<std::string>()->default_value(""),
-   "script of UStore commands");
+   "script of UStore commands")
+  ("time", "show execution time of command")
+  ("vert-list,1", "list one entry per line");
 
   po::options_description general(BLUE_STR("General Options"), 120);
   general.add_options()
@@ -147,8 +152,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("command", po::value<std::string>()->default_value(""),
    "UStore command")
   ("file", po::value<std::string>()->default_value(""),
-   "path of input/output file")
-  ("vert-list,1", "list one entry per line");
+   "path of input/output file");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);
