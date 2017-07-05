@@ -1782,7 +1782,7 @@ ErrorCode Command::ExecUpdateRow() {
   if (row_idx >= 0) {
     ec = cs_.UpdateRow(tab, branch, row_idx, row);
     ec == ErrorCode::kOK ? f_rpt_success(1) : f_rpt_fail_by_idx(ec);
-  } else { // !ref_col.empty()
+  } else {  // !ref_col.empty()
     size_t n_rows_affected;
     ec = cs_.UpdateRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
     ec == ErrorCode::kOK ?
@@ -1839,7 +1839,7 @@ ErrorCode Command::ExecDeleteRow() {
   if (row_idx >= 0) {
     ec = cs_.DeleteRow(tab, branch, row_idx);
     ec == ErrorCode::kOK ? f_rpt_success(1) : f_rpt_fail_by_idx(ec);
-  } else { // !ref_col.empty()
+  } else {  // !ref_col.empty()
     size_t n_rows_deleted;
     ec = cs_.DeleteRow(tab, branch, ref_col, ref_val, &n_rows_deleted);
     ec == ErrorCode::kOK ?
