@@ -5,6 +5,7 @@
 #include <future>
 #include <iomanip>
 #include <limits>
+#include <thread>
 #include "cluster/remote_client_service.h"
 #include "utils/logging.h"
 #include "utils/service_context.h"
@@ -13,6 +14,9 @@
 #include "spec/relational.h"
 
 namespace ustore {
+
+const size_t kMinRefreshIntervalMs = 500;
+const char kOutputDelimiter[] = "|";
 
 ErrorCode ColumnStore::ExistsTable(const std::string& table_name,
                                    bool* exist) {
@@ -66,6 +70,9 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
   if (ec == ErrorCode::kOK) {
     std::atomic_size_t total_rows(0);
     auto thread_count_rows = std::async(std::launch::async, [&]() {
+#if defined(__DELAY_COUNT_ROWS_IN_MS__)
+      Utils::SleepForMilliseconds(__DELAY_COUNT_ROWS_IN_MS__);
+#endif
       std::ifstream ifs2(file_path);
       std::string line;
       size_t cnt(0);
@@ -211,6 +218,9 @@ class FlushTaskLine
 
 int ConcurrentFlush(FlushTaskLine task_lines[],
                     const std::vector<std::vector<std::string>>& cols) {
+#if defined(__DELAY_BATCH_PROC_IN_MS__)
+  Utils::SleepForMilliseconds(__DELAY_BATCH_PROC_IN_MS__);
+#endif
   auto n_cols = cols.size();
   int load_size = cols[0].size();
   // dispatch task to the task lines
@@ -237,7 +247,24 @@ void RefreshProgress(size_t total_rows, size_t cnt_loaded, double thrupt_kps,
             << "  " << std::right << std::setw(6) << std::fixed
             << std::setprecision(1) << thrupt_kps << "k rows/s  (Time: "
             << std::left << std::setw(13)
-            << (Utils::TimeString(elapsed_ms) + ")");
+            << (Utils::TimeString(elapsed_ms) + ")")
+            << std::flush;
+}
+
+void RefreshStatus(ErrorCode& stat) {
+  static size_t cnt_dots(2);
+  static auto f_init = [] {
+    std::stringstream ss("Loading..");
+    ss.seekp(9);
+    return ss;
+  };
+  static std::stringstream ss(f_init());
+  if (++cnt_dots > 6) {
+    cnt_dots = 1;
+    ss.seekp(7), ss << std::setw(6) << "", ss.seekp(7);;
+  }
+  ss << (stat == ErrorCode::kOK ? '.' : 'x');
+  std::cout << '\r' << ss.str() << std::flush;
 }
 
 void ColumnStore::FlushCSV(
@@ -266,8 +293,11 @@ void ColumnStore::FlushCSV(
     RefreshProgress(
       total_rows, cnt_loaded, thrupt_kps, tm.ElapsedMilliseconds(), stat);
   };
-  if (print_progress) std::cout << GREEN("Loading...");
+  auto f_refresh_status = [&stat]() { RefreshStatus(stat); };
+  if (print_progress) f_refresh_status();
   // flush data batches iteratively
+  size_t acc_loaded(0);  // for periodical refresh of progress
+  double acc_ms(0.0);    // for periodical refresh of progress
   tm.Start();
   while (true) {
     auto cols = batch_queue.Take();
@@ -289,21 +319,19 @@ void ColumnStore::FlushCSV(
       break;
     }
     // print progress
-    if (print_progress) {
-      if (num_loaded > 0) {
-        cnt_loaded += num_loaded;
-        thrupt_kps = num_loaded / elapsed_ms;
-        if (total_rows > 0)
-          f_refresh_progress();
-        else
-          std::cout << GREEN(".");
-      } else {
-        if (total_rows > 0)
-          f_refresh_progress();
-        else
-          std::cout << RED("x");
+    if (!print_progress) continue;
+    if (num_loaded > 0) {
+      cnt_loaded += num_loaded;
+      acc_loaded += num_loaded;
+      acc_ms += elapsed_ms;
+      if (acc_ms > kMinRefreshIntervalMs) {
+        thrupt_kps = acc_loaded / acc_ms;
+        if (total_rows > 0) f_refresh_progress(); else f_refresh_status();
+        acc_loaded = 0;
+        acc_ms = 0.0;
       }
-      std::cout << std::flush;
+    } else {
+      if (total_rows > 0) f_refresh_progress(); else f_refresh_status();
     }
   }  // while
   // print final progress
@@ -320,13 +348,11 @@ void ColumnStore::FlushCSV(
                 << ")" << std::endl;
     }
   }
-  // barrier: wait for the sector-flushing threads to complete
 #ifndef __MOCK_FLUSH__
+  // barrier: wait for the sector-flushing threads to complete
   for (auto& t : threads) t.join();
 #endif
 }
-
-const char kOutputDelimiter[] = "|";
 
 ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
                                const std::string& table_name,

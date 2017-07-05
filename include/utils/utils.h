@@ -4,12 +4,14 @@
 #define USTORE_UTILS_UTILS_H_
 
 #include <algorithm>
+#include <chrono>
 #include <list>
 #include <numeric>
 #include <queue>
 #include <set>
 #include <string>
 #include <sstream>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -107,6 +109,22 @@ namespace ustore {
 class Utils {
  public:
   static const size_t max_size_t;
+
+  static inline void SleepForMilliseconds(size_t ms) {
+    SleepFor<std::chrono::milliseconds>(ms);
+  }
+
+  static inline void SleepForSeconds(size_t sec) {
+    SleepFor<std::chrono::seconds>(sec);
+  }
+
+  static inline void SleepForMinutes(size_t min) {
+    SleepFor<std::chrono::minutes>(min);
+  }
+
+  static inline void SleepForHours(size_t h) {
+    SleepFor<std::chrono::hours>(h);
+  }
 
   template<typename T>
   static inline std::string ToString(const T& obj);
@@ -251,6 +269,12 @@ class Utils {
                               std::ostream& os = std::cout);
 
   static std::string TimeString(double ms);
+
+ private:
+  template<typename T>
+  static inline void SleepFor(size_t units) {
+    std::this_thread::sleep_for(T(units));
+  }
 };
 
 template<typename T>

@@ -3,8 +3,10 @@
 #ifndef USTORE_SPEC_RELATIONAL_H_
 #define USTORE_SPEC_RELATIONAL_H_
 
-// #define __MOCK_FLUSH__  // for bottleneck test only
 #define __FAST_STRING_TOKENIZE__
+// #define __MOCK_FLUSH__  // for bottleneck test only
+// #define __DELAY_COUNT_ROWS_IN_MS__ 2500
+// #define __DELAY_BATCH_PROC_IN_MS__ 250
 
 #include <atomic>
 #include <string>

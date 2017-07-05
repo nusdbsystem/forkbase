@@ -43,8 +43,8 @@ class Command {
                                  const std::string& suffix = "") {
     std::string time_display("");
     if (Config::time_exec && !Config::is_vert_list) {
-      time_display = FONT_CYAN + prefix + "(in " +
-                     Utils::TimeString(time_ms_) + ")" + suffix + FONT_RESET;
+      time_display =
+        prefix + "(in " + Utils::TimeString(time_ms_) + ")" + suffix;
     }
     return time_display;
   }

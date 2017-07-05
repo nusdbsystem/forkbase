@@ -53,8 +53,32 @@ class Timer : private Noncopyable {
   inline double ElapsedHours() const { return Elapsed<hours::period>(); }
   inline double ElapsedDays() const { return Elapsed<std::ratio<86400>>(); }
 
+  static inline double TimeNanoseconds(const std::function<void()>& f) {
+    return Time<std::nano>(f);
+  }
+
+  static inline double TimeMicroseconds(const std::function<void()>& f) {
+    return Time<std::micro>(f);
+  }
+
   static inline double TimeMilliseconds(const std::function<void()>& f) {
     return Time<std::milli>(f);
+  }
+
+  static inline double TimeSeconds(const std::function<void()>& f) {
+    return Time<seconds::period>(f);
+  }
+
+  static inline double TimeMinutes(const std::function<void()>& f) {
+    return Time<minutes::period>(f);
+  }
+
+  static inline double TimeHours(const std::function<void()>& f) {
+    return Time<hours::period>(f);
+  }
+
+  static inline double TimeDays(const std::function<void()>& f) {
+    return Time<std::ratio<86400>>(f);
   }
 
  private:
