@@ -39,8 +39,23 @@ class Command {
 
   ErrorCode ExecCommand(const std::string& command);
 
+  inline std::string TimeDisplay(const std::string& prefix = "",
+                                 const std::string& suffix = "") {
+    std::string time_display("");
+    if (Config::time_exec && !Config::is_vert_list) {
+      time_display = FONT_CYAN + prefix + "(in " +
+                     Utils::TimeString(time_ms_) + ")" + suffix + FONT_RESET;
+    }
+    return time_display;
+  }
+
+  inline void Time(const std::function<void()>& f_exec) {
+    time_ms_ = Timer::TimeMilliseconds(f_exec);
+  }
+
   std::unordered_map<std::string, std::function<ErrorCode()>> cmd_exec_;
   std::unordered_map<std::string, std::function<ErrorCode()>*> alias_exec_;
+  double time_ms_;
 
  private:
   ErrorCode ExecScript(const std::string& script);
@@ -98,21 +113,8 @@ class Command {
   static const size_t kDefaultLimitPrintElems;
   static size_t limit_print_elems;
 
-  inline std::string TimeDisplay(const std::string& prefix = " ") {
-    std::string time_display("");
-    if (Config::time_exec) {
-      time_display = prefix + "(in " + Utils::TimeString(time_ms_) + ")";
-    }
-    return time_display;
-  }
-
-  inline void Time(const std::function<void()>& f_exec) {
-    time_ms_ = Timer::TimeMilliseconds(f_exec);
-  }
-
   ObjectDB odb_;
   ColumnStore cs_;
-  double time_ms_;
 };
 
 }  // namespace cli

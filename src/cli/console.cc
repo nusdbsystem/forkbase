@@ -89,7 +89,9 @@ void Console::Run(const std::string& cmd_line) {
               << std::endl;
     MarkCurrentCommandLineToComment();
   } else {  // everything is ready, go!
-    auto ec = ExecCommand(Config::command);
+    ErrorCode ec(ErrorCode::kUnknownOp);
+    Time([this, &ec] { ec = ExecCommand(Config::command); });
+    std::cout << TimeDisplay("", "\n");
     if (ec != ErrorCode::kOK ||
         console_commands_.find(Config::command) != console_commands_.end()) {
       MarkCurrentCommandLineToComment();

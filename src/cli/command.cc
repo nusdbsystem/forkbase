@@ -362,7 +362,10 @@ ErrorCode Command::Run(int argc, char* argv[]) {
     return ErrorCode::kOK;
   }
   if (!Config::command.empty() && Config::script.empty()) {
-    return ExecCommand(Config::command);
+    ErrorCode ec(ErrorCode::kUnknownOp);
+    Time([this, &ec] { ec = ExecCommand(Config::command); });
+    std::cout << TimeDisplay("", "\n");
+    return ec;
   }
   if (Config::command.empty() && !Config::script.empty()) {
     return ExecScript(Config::script);
@@ -410,9 +413,9 @@ ErrorCode Command::ExecScript(const std::string& script) {
                 << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
     } else {  // everything is ready, go!
-      ec = ExecCommand(Config::command);
+      Time([this, &ec] { ec = ExecCommand(Config::command); });
     }
-    std::cout << std::endl;
+    std::cout << TimeDisplay("", "\n") << std::endl;
   }
   ifs.close();
   return ec;
@@ -467,7 +470,7 @@ ErrorCode Command::ExecGet() {
   if (!Config::table.empty() && Config::key.empty()) {
     if (!Config::column.empty()) return ExecGetColumn();
     if (!Config::ref_column.empty()) return ExecGetRow();
-    return ExecGetColumn();
+    return ExecGetTable();
   }
 
   const auto f_output_meta = [](const VMeta & meta) {
@@ -1638,7 +1641,6 @@ ErrorCode Command::ExecGetRow() {
         std::cout << std::endl;
       }
     }
-    if (Config::time_exec) std::cout << TimeDisplay("") << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: GET_ROW] ")
@@ -1655,10 +1657,7 @@ ErrorCode Command::ExecGetRow() {
     return ErrorCode::kInvalidCommandArgument;
   }
   std::unordered_map<size_t, Row> rows;
-  auto ec = ErrorCode::kUnknownOp;
-  Time([&] {
-    ec = cs_.GetRow(tab, branch, ref_col, ref_val, &rows);
-  });
+  auto ec = cs_.GetRow(tab, branch, ref_col, ref_val, &rows);
   ec == ErrorCode::kOK ? f_rpt_success(rows) : f_rpt_fail(ec);
   return ec;
 }
@@ -1695,7 +1694,7 @@ ErrorCode Command::ExecInsertRow() {
   };
   const auto f_rpt_success = [this]() {
     std::cout << BOLD_GREEN("[SUCCESS: INSERT_ROW] ")
-              << "1 row has been inserted" << TimeDisplay() << std::endl;
+              << "1 row has been inserted" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: INSERT_ROW] ")
@@ -1716,9 +1715,7 @@ ErrorCode Command::ExecInsertRow() {
     f_rpt_fail(ec);
     return ec;
   }
-  Time([&]() {
-    ec = cs_.InsertRow(tab, branch, row);
-  });
+  ec = cs_.InsertRow(tab, branch, row);
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
   return ec;
 }
@@ -1748,7 +1745,7 @@ ErrorCode Command::ExecUpdateRow() {
   const auto f_rpt_success = [this](size_t n_rows_affected) {
     std::cout << BOLD_GREEN("[SUCCESS: UPDATE_ROW] ") << n_rows_affected
               << " row" << (n_rows_affected > 1 ? "s have" : " has")
-              << " been updated" << TimeDisplay() << std::endl;
+              << " been updated" << std::endl;
   };
   const auto f_rpt_fail_by_idx = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: UPDATE_ROW] ")
@@ -1783,15 +1780,11 @@ ErrorCode Command::ExecUpdateRow() {
     return ec;
   }
   if (row_idx >= 0) {
-    Time([&]() {
-      ec = cs_.UpdateRow(tab, branch, row_idx, row);
-    });
+    ec = cs_.UpdateRow(tab, branch, row_idx, row);
     ec == ErrorCode::kOK ? f_rpt_success(1) : f_rpt_fail_by_idx(ec);
   } else { // !ref_col.empty()
     size_t n_rows_affected;
-    Time([&]() {
-      ec = cs_.UpdateRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
-    });
+    ec = cs_.UpdateRow(tab, branch, ref_col, ref_val, row, &n_rows_affected);
     ec == ErrorCode::kOK ?
     f_rpt_success(n_rows_affected) : f_rpt_fail_by_col(ec);
   }
@@ -1816,7 +1809,7 @@ ErrorCode Command::ExecDeleteRow() {
   const auto f_rpt_success = [this](size_t n_rows_deleted) {
     std::cout << BOLD_GREEN("[SUCCESS: DELETE_ROW] ") << n_rows_deleted
               << " row" << (n_rows_deleted > 1 ? "s have" : " has")
-              << " been deleted" << TimeDisplay() << std::endl;
+              << " been deleted" << std::endl;
   };
   const auto f_rpt_fail_by_idx = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: DELETE_ROW] ")
@@ -1844,15 +1837,11 @@ ErrorCode Command::ExecDeleteRow() {
   }
   auto ec = ErrorCode::kUnknownOp;
   if (row_idx >= 0) {
-    Time([&] {
-      ec = cs_.DeleteRow(tab, branch, row_idx);
-    });
+    ec = cs_.DeleteRow(tab, branch, row_idx);
     ec == ErrorCode::kOK ? f_rpt_success(1) : f_rpt_fail_by_idx(ec);
   } else { // !ref_col.empty()
     size_t n_rows_deleted;
-    Time([&] {
-      ec = cs_.DeleteRow(tab, branch, ref_col, ref_val, &n_rows_deleted);
-    });
+    ec = cs_.DeleteRow(tab, branch, ref_col, ref_val, &n_rows_deleted);
     ec == ErrorCode::kOK ?
     f_rpt_success(n_rows_deleted) : f_rpt_fail_by_col(ec);
   }
