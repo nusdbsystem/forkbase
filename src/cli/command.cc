@@ -18,6 +18,7 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_HANDLER("GET_ALL", ExecGetAll());
   CMD_ALIAS("GET_ALL", "GET-ALL");
   CMD_HANDLER("PUT", ExecPut());
+  CMD_HANDLER("APPEND", ExecAppend());
   CMD_HANDLER("MERGE", ExecMerge());
   CMD_HANDLER("BRANCH", ExecBranch());
   CMD_HANDLER("RENAME", ExecRename());
@@ -217,25 +218,21 @@ void Command::PrintCommandHelp(std::ostream& os) {
   os << BLUE("UStore Basic Commands") << ":"
      << std::endl
      << FORMAT_BASIC_CMD("GET{_ALL}")
-     << "-k <key> [-b <branch> | "
-     << std::endl << std::setw(kPrintBasicCmdWidth + 13) << ""
-     << "-v <version>]" << std::endl
+     << "-k <key> [-b <branch> | -v <version>]" << std::endl
      << FORMAT_BASIC_CMD("PUT")
-     << "-k <key> -x <value> {-b <branch> | "
-     << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
-     << "-u <refer_version>}" << std::endl
+     << "-k <key> -x <value> {-b <branch> | -u <refer_version>}" << std::endl
+     << FORMAT_BASIC_CMD("APPEND")
+     << "-k <key> -x <value> [-b <branch> | -u <refer_version>]" << std::endl
      << FORMAT_BASIC_CMD("BRANCH")
      << "-k <key> -b <new_branch> [-c <base_branch> | "
      << std::endl << std::setw(kPrintBasicCmdWidth + 29) << ""
-     << "-u <refer_version>]"
-     << std::endl
+     << "-u <refer_version>]" << std::endl
      << FORMAT_BASIC_CMD("MERGE")
      << "-k <key> -x <value> [-b <target_branch> -c <refer_branch> | "
      << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
      << "-b <target_branch> -u <refer_version> | "
      << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
-     << "-u <refer_version> -v <refer_version_2>]"
-     << std::endl
+     << "-u <refer_version> -v <refer_version_2>]" << std::endl
      << FORMAT_BASIC_CMD("RENAME")
      << "-k <key> "
      << "-c <from_branch> -b <to_branch>" << std::endl
@@ -255,9 +252,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-k <key>" << std::endl
      << FORMAT_BASIC_CMD("LIST_KEY{_ALL}") << std::endl
      << FORMAT_BASIC_CMD("META")
-     << "-k <key> [-b <branch> | "
-     << std::endl << std::setw(kPrintBasicCmdWidth + 13) << ""
-     << "-v <version>]" << std::endl
+     << "-k <key> [-b <branch> | -v <version>]" << std::endl
      << std::endl
      << BLUE("UStore Relational (Columnar) Commands") << ":"
      << std::endl
@@ -295,15 +290,11 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_RELATIONAL_CMD("UPDATE_ROW")
      << "-t <table> -b <branch> -x <field_list> "
      << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
-     << "[-n <refer_colum> -y <refer_value> | "
-     << std::endl << std::setw(kPrintRelationalCmdWidth + 4) << ""
-     << "-i <row_index>]" << std::endl
+     << "[-n <refer_colum> -y <refer_value> | -i <row_index>]" << std::endl
      << FORMAT_RELATIONAL_CMD("DELETE_ROW")
      << "-t <table> -b <branch>"
      << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
-     << "[-n <refer_colum> -y <refer_value> | "
-     << std::endl << std::setw(kPrintRelationalCmdWidth + 4) << ""
-     << "-i <row_index>]" << std::endl
+     << "[-n <refer_colum> -y <refer_value> | -i <row_index>]" << std::endl
      << FORMAT_RELATIONAL_CMD("LOAD_CSV")
      << "<file> -t <table> -b <branch>" << std::endl
      << FORMAT_RELATIONAL_CMD("DUMP_CSV")
@@ -421,28 +412,27 @@ ErrorCode Command::ExecScript(const std::string& script) {
   return ec;
 }
 
-ErrorCode Command::ExecMetaManip(
-  const std::string& cmd,
-  const std::function<ErrorCode(const VMeta&)>& f_output_meta) {
+ErrorCode Command::ExecManipMeta(
+  const std::function<ErrorCode(const VMeta&)>& f_manip_meta) {
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   const auto& ver = Config::version;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
+    std::cerr << BOLD_RED("[INVALID ARGS: GET] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\", "
               << "Version: \"" << ver << "\"" << std::endl;
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+    std::cerr << BOLD_RED("[FAILED: GET] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+    std::cerr << BOLD_RED("[FAILED: GET] ")
               << "Key: \"" << key << "\", "
               << "Version: \"" << ver << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -458,7 +448,7 @@ ErrorCode Command::ExecMetaManip(
              : odb_.Get(Slice(key), Hash::FromBase32(ver));
   auto& ec = rst.stat;
   if (ec == ErrorCode::kOK) {
-    ec = f_output_meta(rst.value);
+    ec = f_manip_meta(rst.value);
   } else {
     branch.empty() ? f_rpt_fail_by_ver(ec) : f_rpt_fail_by_branch(ec);
   }
@@ -473,7 +463,7 @@ ErrorCode Command::ExecGet() {
     return ExecGetTable();
   }
 
-  const auto f_output_meta = [](const VMeta & meta) {
+  const auto f_manip_meta = [](const VMeta & meta) {
     auto type = meta.type();
     if (!Config::is_vert_list) {
       std::cout << BOLD_GREEN("[SUCCESS: GET] ")
@@ -512,7 +502,7 @@ ErrorCode Command::ExecGet() {
     if (!Config::is_vert_list) std::cout << std::endl;
     return ErrorCode::kOK;
   };
-  return ExecMetaManip("GET", f_output_meta);
+  return ExecManipMeta(f_manip_meta);
 }
 
 ErrorCode Command::ExecPut() {
@@ -547,7 +537,7 @@ ErrorCode Command::ExecPut() {
               << std::endl;
   };
   // conditional execution
-  if (key.empty() || val.empty()) {
+  if (key.empty() || val.empty() || !(branch.empty() || ref_ver.empty())) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -557,25 +547,121 @@ ErrorCode Command::ExecPut() {
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
     return ec;
-  }
-  if (branch.empty() && !ref_ver.empty()) {
+  } else if (branch.empty() && !ref_ver.empty()) {
     auto rst =
       odb_.Put(Slice(key), VString(Slice(val)), Hash::FromBase32(ref_ver));
     auto& ec = rst.stat;
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
     return ec;
-  }
-  if (branch.empty() && ref_ver.empty()) {
+  } else { // branch.empty() && ref_ver.empty()
     auto rst = odb_.Put(Slice(key), VString(Slice(val)), Hash::kNull);
     auto& ec = rst.stat;
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
     return ec;
   }
-  // illegal: branch and referring version are neither set or both set
-  f_rpt_invalid_args();
-  return ErrorCode::kInvalidCommandArgument;
+}
+
+ErrorCode Command::ExecAppend() {
+  const auto f_manip_meta = [this](const VMeta & meta) {
+    auto type = meta.type();
+    ErrorCode ec(ErrorCode::kUnknownOp);
+    switch (type) {
+      case UType::kBlob:
+        // TODO(linqian)
+        break;
+      case UType::kList: {
+        auto list = meta.List();
+        ec = ExecAppendListElements(list);
+        break;
+      }
+      case UType::kMap:
+        // TODO(linqian)
+        break;
+      default:
+        std::cout << BOLD_RED("[FAILED: APPEND] ")
+                  << "The operation is not supported for data type \""
+                  << type << "\"" << std::endl;
+        ec = ErrorCode::kTypeUnsupported;
+    }
+    return ec;
+  };
+  Config::version = Config::ref_version;
+  return ExecManipMeta(f_manip_meta);
+}
+
+ErrorCode Command::ExecAppendListElements(VList& list) {
+  const auto& key = Config::key;
+  const auto& branch = Config::branch;
+  const auto& ref_ver = Config::ref_version;
+  const auto& val = Config::value;
+  // screen printing
+  const auto f_rpt_invalid_args = [&val]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+              << "No element is provided: \"" << val << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const Hash & ver) {
+    std::cout << BOLD_GREEN("[SUCCESS: APPEND] ")
+              << "Type: \"" << UType::kList << "\", "
+              << "Version: \"" << ver << '\"' << std::endl;
+  };
+  const auto f_rpt_fail_by_branch = [&key, &branch](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: APPEND] ")
+              << "Key: \"" << key << "\", "
+              << "Type: \"" << UType::kList << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  const auto f_rpt_fail_by_ver = [&key, &ref_ver](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: APPEND] ")
+              << "Key: \"" << key << "\", "
+              << "Type: \"" << UType::kList << "\", "
+              << "Ref. Version: \"" << ref_ver << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  auto elems = Utils::Tokenize(val, "{}[]|,; ");
+  if (elems.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::vector<Slice> slice_elems;
+  slice_elems.reserve(elems.size());
+  for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+  list.Append(slice_elems);
+  if (!branch.empty()) {
+    DCHECK(ref_ver.empty());
+    auto rst = odb_.Put(Slice(key), list, Slice(branch));
+    auto& ec = rst.stat;
+    auto& ver = rst.value;
+    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
+    return ec;
+  } else {
+    DCHECK(!ref_ver.empty());
+    auto rst = odb_.Put(Slice(key), list, Hash::FromBase32(ref_ver));
+    auto& ec = rst.stat;
+    auto& ver = rst.value;
+    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+    return ec;
+  }
+}
+
+ErrorCode Command::ExecDeleteListElements(const VMeta& meta) {
+  // TODO(linqian)
+  return ErrorCode::kUnknownOp;
+}
+
+ErrorCode Command::ExecInsertListElements(const VMeta& meta) {
+  // TODO(linqian)
+  return ErrorCode::kUnknownOp;
+}
+
+ErrorCode Command::ExecReplaceListElement(const VMeta& meta) {
+  // TODO(linqian)
+  return ErrorCode::kUnknownOp;
 }
 
 ErrorCode Command::ExecMerge() {
@@ -1884,7 +1970,7 @@ ErrorCode Command::ExecMeta() {
     }
   }
 
-  const auto f_output_meta = [&expected_type](const VMeta & meta) {
+  const auto f_manip_meta = [&expected_type](const VMeta & meta) {
     auto& ucell = meta.cell();
     // check for type consistency
     auto type = ucell.type();
@@ -1916,7 +2002,7 @@ ErrorCode Command::ExecMeta() {
     os << std::endl;
     return ErrorCode::kOK;
   };
-  return ExecMetaManip("META", f_output_meta);
+  return ExecManipMeta(f_manip_meta);
 }
 
 #define PRINT_ALL(handler) do { \
