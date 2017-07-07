@@ -326,12 +326,18 @@ void ColumnStore::FlushCSV(
       acc_ms += elapsed_ms;
       if (acc_ms > kMinRefreshIntervalMs) {
         thrupt_kps = acc_loaded / acc_ms;
-        if (total_rows > 0) f_refresh_progress(); else f_refresh_status();
+        if (total_rows > 0)
+          f_refresh_progress();
+        else
+          f_refresh_status();
         acc_loaded = 0;
         acc_ms = 0.0;
       }
     } else {
-      if (total_rows > 0) f_refresh_progress(); else f_refresh_status();
+      if (total_rows > 0)
+        f_refresh_progress();
+      else
+        f_refresh_status();
     }
   }  // while
   // print final progress
