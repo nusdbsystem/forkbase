@@ -252,14 +252,14 @@ void RefreshProgress(size_t total_rows, size_t cnt_loaded, double thrupt_kps,
 }
 
 void RefreshStatus(ErrorCode& stat) {
-  static size_t cnt_dots(2);
-  static std::stringstream ss("Loading..");
-  static auto f_init = [] {
-    ss.seekp(9);
-    return true;
+  static std::stringstream ss;
+  static auto f_init = []() -> size_t {
+    ss << "Loading..";
+    return 2;
   };
-  static bool is_init = f_init();
-  if (++cnt_dots > 6 && is_init) {
+  static size_t cnt_dots(f_init());
+  
+  if (++cnt_dots > 6) {
     cnt_dots = 1;
     ss.seekp(7), ss << std::setw(6) << "", ss.seekp(7);;
   }

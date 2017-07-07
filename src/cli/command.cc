@@ -220,7 +220,9 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BASIC_CMD("GET{_ALL}")
      << "-k <key> [-b <branch> | -v <version>]" << std::endl
      << FORMAT_BASIC_CMD("PUT")
-     << "-k <key> -x <value> {-b <branch> | -u <refer_version>}" << std::endl
+     << "-k <key> -x <value> {-p <type>} {-b <branch> |"
+     << std::endl << std::setw(kPrintBasicCmdWidth + 36) << ""
+     << "-u <refer_version>}" << std::endl
      << FORMAT_BASIC_CMD("APPEND")
      << "-k <key> -x <value> [-b <branch> | -u <refer_version>]" << std::endl
      << FORMAT_BASIC_CMD("BRANCH")
@@ -491,7 +493,7 @@ ErrorCode Command::ExecGet() {
             std::cout << it.key() << " -> " << it.value() << std::endl;
         } else {
           Utils::Print(
-            meta.Map(), "[", "]", ", ", "", "", "->", true, limit_print_elems);
+            meta.Map(), "[", "]", ", ", "(", ")", ",", true, limit_print_elems);
         }
         break;
       }
@@ -506,6 +508,7 @@ ErrorCode Command::ExecGet() {
 }
 
 ErrorCode Command::ExecPut() {
+  const auto& type = Config::type;
   const auto& key = Config::key;
   const auto& val = Config::value;
   const auto& branch = Config::branch;
@@ -513,13 +516,15 @@ ErrorCode Command::ExecPut() {
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cerr << BOLD_RED("[INVALID ARGS: PUT] ")
+              << "Type: \"" << type << "\", "
               << "Key: \"" << key << "\", "
               << "Value: \"" << val << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\"" << std::endl;
   };
-  const auto f_rpt_success = [](const Hash & ver) {
+  const auto f_rpt_success = [&type](const Hash & ver) {
     std::cout << BOLD_GREEN("[SUCCESS: PUT] ")
+              << "Type: \"" << type << "\", "
               << "Version: \"" << ver << '\"' << std::endl;
   };
   const auto f_rpt_fail_by_branch = [&key, &branch](const ErrorCode & ec) {
@@ -541,26 +546,68 @@ ErrorCode Command::ExecPut() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (!branch.empty() && ref_ver.empty()) {
-    auto rst = odb_.Put(Slice(key), VString(Slice(val)), Slice(branch));
-    auto& ec = rst.stat;
-    auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
-    return ec;
-  } else if (branch.empty() && !ref_ver.empty()) {
-    auto rst =
-      odb_.Put(Slice(key), VString(Slice(val)), Hash::FromBase32(ref_ver));
-    auto& ec = rst.stat;
-    auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
-    return ec;
-  } else {  // branch.empty() && ref_ver.empty()
-    auto rst = odb_.Put(Slice(key), VString(Slice(val)), Hash::kNull);
-    auto& ec = rst.stat;
-    auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
-    return ec;
+  const auto f_put_val = [&](const VObject & obj) {
+    if (!branch.empty() && ref_ver.empty()) {
+      auto rst = odb_.Put(Slice(key), obj, Slice(branch));
+      auto& ec = rst.stat;
+      auto& ver = rst.value;
+      ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
+      return ec;
+    } else if (branch.empty() && !ref_ver.empty()) {
+      auto rst =
+        odb_.Put(Slice(key), obj, Hash::FromBase32(ref_ver));
+      auto& ec = rst.stat;
+      auto& ver = rst.value;
+      ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+      return ec;
+    } else { // branch.empty() && ref_ver.empty()
+      auto rst = odb_.Put(Slice(key), obj, Hash::kNull);
+      auto& ec = rst.stat;
+      auto& ver = rst.value;
+      ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+      return ec;
+    }
+  };
+  ErrorCode ec(ErrorCode::kUnknownOp);
+  switch (type) {
+    case UType::kString:
+      ec = f_put_val(VString(Slice(val)));
+      break;
+    case UType::kBlob:
+      // TODO(linqian)
+      break;
+    case UType::kList: {
+      auto elems = Utils::Tokenize(val, "{}[]|,; ");
+      std::vector<Slice> slice_elems;
+      slice_elems.reserve(elems.size());
+      for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+      ec = f_put_val(VList(slice_elems));
+      break;
+    }
+    case UType::kMap: {
+      auto elems = Utils::Tokenize(val, "{}[]()|,; ");
+      std::vector<Slice> keys, vals;
+      ec = ErrorCode::kOK;
+      for (auto it = elems.begin(); it != elems.end();) {
+        keys.emplace_back(*it++);
+        if (it == elems.end()) {
+          f_rpt_invalid_args();
+          ec = ErrorCode::kInvalidCommandArgument;
+          break;
+        }
+        vals.emplace_back(*it++);
+      }
+      if (ec == ErrorCode::kOK) ec = f_put_val(VMap(keys, vals));
+      break;
+    }
+    default:
+      std::cout << BOLD_RED("[FAILED: PUT] ")
+                << "The operation is not supported for data type \""
+                << type << "\"" << std::endl;
+      ec = ErrorCode::kTypeUnsupported;
+      break;
   }
+  return ec;
 }
 
 ErrorCode Command::ExecAppend() {
@@ -573,12 +620,27 @@ ErrorCode Command::ExecAppend() {
         break;
       case UType::kList: {
         auto list = meta.List();
-        ec = ExecAppendListElements(list);
+        auto elems = Utils::Tokenize(list, "{}[]|,; ");
+        if (elems.empty()) {
+          std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+                    << "No element is provided: \"" << val << "\"" << std::endl;
+          ec = ErrorCode::kInvalidCommandArgument;
+        } else {
+          std::vector<Slice> slice_elems;
+          slice_elems.reserve(elems.size());
+          for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+          list.Append(slice_elems);
+        ec = ExecAppend()
+        }
+
+        // ec = ExecAppendListElements(list);
         break;
       }
-      case UType::kMap:
-        // TODO(linqian)
+      case UType::kMap: {
+        auto map = meta.Map();
+        ec = ExecAppendMapElements(map);
         break;
+      }
       default:
         std::cout << BOLD_RED("[FAILED: APPEND] ")
                   << "The operation is not supported for data type \""
@@ -597,10 +659,10 @@ ErrorCode Command::ExecAppendListElements(VList& list) {
   const auto& ref_ver = Config::ref_version;
   const auto& val = Config::value;
   // screen printing
-  const auto f_rpt_invalid_args = [&val]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
-              << "No element is provided: \"" << val << "\"" << std::endl;
-  };
+  // const auto f_rpt_invalid_args = [&val]() {
+  //   std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+  //             << "No element is provided: \"" << val << "\"" << std::endl;
+  // };
   const auto f_rpt_success = [](const Hash & ver) {
     std::cout << BOLD_GREEN("[SUCCESS: APPEND] ")
               << "Type: \"" << UType::kList << "\", "
@@ -609,7 +671,6 @@ ErrorCode Command::ExecAppendListElements(VList& list) {
   const auto f_rpt_fail_by_branch = [&key, &branch](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: APPEND] ")
               << "Key: \"" << key << "\", "
-              << "Type: \"" << UType::kList << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
@@ -617,21 +678,20 @@ ErrorCode Command::ExecAppendListElements(VList& list) {
   const auto f_rpt_fail_by_ver = [&key, &ref_ver](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: APPEND] ")
               << "Key: \"" << key << "\", "
-              << "Type: \"" << UType::kList << "\", "
               << "Ref. Version: \"" << ref_ver << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   // conditional execution
-  auto elems = Utils::Tokenize(val, "{}[]|,; ");
-  if (elems.empty()) {
-    f_rpt_invalid_args();
-    return ErrorCode::kInvalidCommandArgument;
-  }
-  std::vector<Slice> slice_elems;
-  slice_elems.reserve(elems.size());
-  for (auto& e : elems) slice_elems.emplace_back(Slice(e));
-  list.Append(slice_elems);
+  // auto elems = Utils::Tokenize(val, "{}[]|,; ");
+  // if (elems.empty()) {
+  //   f_rpt_invalid_args();
+  //   return ErrorCode::kInvalidCommandArgument;
+  // }
+  // std::vector<Slice> slice_elems;
+  // slice_elems.reserve(elems.size());
+  // for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+  // list.Append(slice_elems);
   if (!branch.empty()) {
     DCHECK(ref_ver.empty());
     auto rst = odb_.Put(Slice(key), list, Slice(branch));
@@ -647,6 +707,10 @@ ErrorCode Command::ExecAppendListElements(VList& list) {
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
     return ec;
   }
+}
+
+ErrorCode Command::ExecAppendMapElements(VMap& map) {
+
 }
 
 ErrorCode Command::ExecDeleteListElements(const VMeta& meta) {
@@ -1751,7 +1815,7 @@ ErrorCode Command::ExecGetRow() {
 ErrorCode Command::ParseRowString(const std::string& row_str, Row* row) {
   row->clear();
   // TODO(linqian): use regular expression to parse the input value
-  auto tokens = Utils::Tokenize(row_str, "{ :|,;}");
+  auto tokens = Utils::Tokenize(row_str, "{}:|,; ");
 
   for (auto it = tokens.begin(); it != tokens.end();) {
     auto& k = *it++;

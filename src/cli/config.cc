@@ -15,6 +15,7 @@ std::string Config::script;
 std::string Config::file;
 bool Config::time_exec;
 bool Config::is_vert_list;
+UType Config::type;
 std::string Config::key;
 std::string Config::value;
 std::string Config::ref_value;
@@ -38,6 +39,7 @@ void Config::Reset() {
   file = "";
   time_exec = false;
   is_vert_list = false;
+  type = UType::kString;
   key = "";
   value = "";
   ref_value = "";
@@ -67,6 +69,12 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     time_exec = vm.count("time") ? true : false;
     is_vert_list = vm.count("vert-list") ? true : false;
+
+    auto arg_type = vm["type"].as<std::string>();
+    boost::to_lower(arg_type);
+    type = Utils::ToUType(arg_type);
+    GUARD(CheckArg(arg_type, type != UType::kUnknown, "Data type",
+                   "<supported type>"));
 
     key = vm["key"].as<std::string>();
     value = vm["value"].as<std::string>();
@@ -120,6 +128,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
 
   po::options_description general(BLUE_STR("General Options"), 120);
   general.add_options()
+  ("type,p", po::value<std::string>()->default_value("String"),
+   "data type")
   ("key,k", po::value<std::string>()->default_value(""),
    "key of data")
   ("value,x", po::value<std::string>()->default_value(""),

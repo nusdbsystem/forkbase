@@ -7,8 +7,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "types/type.h"
 #include "utils/logging.h"
-#include "cli/utils.h"
+#include "utils/utils.h"
 
 namespace ustore {
 namespace cli {
@@ -24,6 +25,7 @@ class Config {
   static std::string file;
   static bool time_exec;
   static bool is_vert_list;
+  static UType type;
   static std::string key;
   static std::string value;
   static std::string ref_value;
