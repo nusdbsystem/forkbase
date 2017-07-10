@@ -507,6 +507,55 @@ ErrorCode Command::ExecGet() {
   return ExecManipMeta(f_manip_meta);
 }
 
+ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
+  const auto& key = Config::key;
+  const auto& branch = Config::branch;
+  const auto& ref_ver = Config::ref_version;
+  DCHECK(branch.empty() ^ ref_ver.empty());
+  // screen printing
+  const auto f_rpt_success = [&](const Hash & ver) {
+    std::cout << BOLD_GREEN("[SUCCESS: " << cmd << "] ")
+              << "Type: \"" << obj.value().type << "\", "
+              << "Version: \"" << ver << '\"' << std::endl;
+  };
+  const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+              << "Key: \"" << key << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
+    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+              << "Key: \"" << key << "\", "
+              << "Ref. Version: \"" << ref_ver << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (!branch.empty() && ref_ver.empty()) {
+    DCHECK(ref_ver.empty());
+    auto rst = odb_.Put(Slice(key), obj, Slice(branch));
+    auto& ec = rst.stat;
+    auto& ver = rst.value;
+    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
+    return ec;
+  } else if (branch.empty() && !ref_ver.empty()) {
+    DCHECK(!ref_ver.empty());
+    auto rst = odb_.Put(Slice(key), obj, Hash::FromBase32(ref_ver));
+    auto& ec = rst.stat;
+    auto& ver = rst.value;
+    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+    return ec;
+  } else { // branch.empty() && ref_ver.empty()
+    auto rst = odb_.Put(Slice(key), obj, Hash::kNull);
+    auto& ec = rst.stat;
+    auto& ver = rst.value;
+    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+    return ec;
+  }
+}
+
 ErrorCode Command::ExecPut() {
   const auto& type = Config::type;
   const auto& key = Config::key;
@@ -522,56 +571,15 @@ ErrorCode Command::ExecPut() {
               << "Branch: \"" << branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\"" << std::endl;
   };
-  const auto f_rpt_success = [&type](const Hash & ver) {
-    std::cout << BOLD_GREEN("[SUCCESS: PUT] ")
-              << "Type: \"" << type << "\", "
-              << "Version: \"" << ver << '\"' << std::endl;
-  };
-  const auto f_rpt_fail_by_branch = [&key, &branch](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: PUT] ")
-              << "Key: \"" << key << "\", "
-              << "Branch: \"" << branch << "\""
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  const auto f_rpt_fail_by_ver = [&key, &ref_ver](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: PUT] ")
-              << "Key: \"" << key << "\", "
-              << "Ref. Version: \"" << ref_ver << "\""
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  // conditional execution
   if (key.empty() || val.empty() || !(branch.empty() || ref_ver.empty())) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  const auto f_put_val = [&](const VObject & obj) {
-    if (!branch.empty() && ref_ver.empty()) {
-      auto rst = odb_.Put(Slice(key), obj, Slice(branch));
-      auto& ec = rst.stat;
-      auto& ver = rst.value;
-      ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
-      return ec;
-    } else if (branch.empty() && !ref_ver.empty()) {
-      auto rst =
-        odb_.Put(Slice(key), obj, Hash::FromBase32(ref_ver));
-      auto& ec = rst.stat;
-      auto& ver = rst.value;
-      ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
-      return ec;
-    } else { // branch.empty() && ref_ver.empty()
-      auto rst = odb_.Put(Slice(key), obj, Hash::kNull);
-      auto& ec = rst.stat;
-      auto& ver = rst.value;
-      ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
-      return ec;
-    }
-  };
+  auto f_put = [this](const VObject & obj) { return ExecPut("PUT", obj); };
   ErrorCode ec(ErrorCode::kUnknownOp);
   switch (type) {
     case UType::kString:
-      ec = f_put_val(VString(Slice(val)));
+      ec = f_put(VString(Slice(val)));
       break;
     case UType::kBlob:
       // TODO(linqian)
@@ -581,11 +589,11 @@ ErrorCode Command::ExecPut() {
       std::vector<Slice> slice_elems;
       slice_elems.reserve(elems.size());
       for (auto& e : elems) slice_elems.emplace_back(Slice(e));
-      ec = f_put_val(VList(slice_elems));
+      ec = f_put(VList(slice_elems));
       break;
     }
     case UType::kMap: {
-      auto elems = Utils::Tokenize(val, "{}[]()|,; ");
+      auto elems = Utils::Tokenize(val, "{}[]()|,;: ");
       std::vector<Slice> keys, vals;
       ec = ErrorCode::kOK;
       for (auto it = elems.begin(); it != elems.end();) {
@@ -597,7 +605,7 @@ ErrorCode Command::ExecPut() {
         }
         vals.emplace_back(*it++);
       }
-      if (ec == ErrorCode::kOK) ec = f_put_val(VMap(keys, vals));
+      if (ec == ErrorCode::kOK) ec = f_put(VMap(keys, vals));
       break;
     }
     default:
@@ -611,106 +619,43 @@ ErrorCode Command::ExecPut() {
 }
 
 ErrorCode Command::ExecAppend() {
-  const auto f_manip_meta = [this](const VMeta & meta) {
-    auto type = meta.type();
-    ErrorCode ec(ErrorCode::kUnknownOp);
-    switch (type) {
-      case UType::kBlob:
-        // TODO(linqian)
-        break;
-      case UType::kList: {
-        auto list = meta.List();
-        auto elems = Utils::Tokenize(list, "{}[]|,; ");
-        if (elems.empty()) {
-          std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
-                    << "No element is provided: \"" << val << "\"" << std::endl;
-          ec = ErrorCode::kInvalidCommandArgument;
-        } else {
-          std::vector<Slice> slice_elems;
-          slice_elems.reserve(elems.size());
-          for (auto& e : elems) slice_elems.emplace_back(Slice(e));
-          list.Append(slice_elems);
-        ec = ExecAppend()
-        }
-
-        // ec = ExecAppendListElements(list);
-        break;
-      }
-      case UType::kMap: {
-        auto map = meta.Map();
-        ec = ExecAppendMapElements(map);
-        break;
-      }
-      default:
-        std::cout << BOLD_RED("[FAILED: APPEND] ")
-                  << "The operation is not supported for data type \""
-                  << type << "\"" << std::endl;
-        ec = ErrorCode::kTypeUnsupported;
-    }
-    return ec;
-  };
   Config::version = Config::ref_version;
-  return ExecManipMeta(f_manip_meta);
+  return ExecManipMeta([this](const VMeta & meta) { return ExecAppend(meta); });
 }
 
-ErrorCode Command::ExecAppendListElements(VList& list) {
-  const auto& key = Config::key;
-  const auto& branch = Config::branch;
-  const auto& ref_ver = Config::ref_version;
+ErrorCode Command::ExecAppend(const VMeta& meta) {
   const auto& val = Config::value;
-  // screen printing
-  // const auto f_rpt_invalid_args = [&val]() {
-  //   std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
-  //             << "No element is provided: \"" << val << "\"" << std::endl;
-  // };
-  const auto f_rpt_success = [](const Hash & ver) {
-    std::cout << BOLD_GREEN("[SUCCESS: APPEND] ")
-              << "Type: \"" << UType::kList << "\", "
-              << "Version: \"" << ver << '\"' << std::endl;
-  };
-  const auto f_rpt_fail_by_branch = [&key, &branch](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: APPEND] ")
-              << "Key: \"" << key << "\", "
-              << "Branch: \"" << branch << "\""
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  const auto f_rpt_fail_by_ver = [&key, &ref_ver](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: APPEND] ")
-              << "Key: \"" << key << "\", "
-              << "Ref. Version: \"" << ref_ver << "\""
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  // conditional execution
-  // auto elems = Utils::Tokenize(val, "{}[]|,; ");
-  // if (elems.empty()) {
-  //   f_rpt_invalid_args();
-  //   return ErrorCode::kInvalidCommandArgument;
-  // }
-  // std::vector<Slice> slice_elems;
-  // slice_elems.reserve(elems.size());
-  // for (auto& e : elems) slice_elems.emplace_back(Slice(e));
-  // list.Append(slice_elems);
-  if (!branch.empty()) {
-    DCHECK(ref_ver.empty());
-    auto rst = odb_.Put(Slice(key), list, Slice(branch));
-    auto& ec = rst.stat;
-    auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch(ec);
-    return ec;
-  } else {
-    DCHECK(!ref_ver.empty());
-    auto rst = odb_.Put(Slice(key), list, Hash::FromBase32(ref_ver));
-    auto& ec = rst.stat;
-    auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
-    return ec;
+  auto type = meta.type();
+  auto f_put = [this](const VObject & obj) { return ExecPut("APPEND", obj); };
+  ErrorCode ec(ErrorCode::kUnknownOp);
+  switch (type) {
+    case UType::kBlob:
+      // TODO(linqian)
+      break;
+    case UType::kList: {
+      auto elems = Utils::Tokenize(val, "{}[]|,; ");
+      if (elems.empty()) {
+        std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+                  << "No element is provided: \"" << val << "\""
+                  << std::endl;
+        ec = ErrorCode::kInvalidCommandArgument;
+      } else {
+        std::vector<Slice> slice_elems;
+        slice_elems.reserve(elems.size());
+        for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+        auto list = meta.List();
+        list.Append(slice_elems);
+        ec = f_put(list);
+      }
+      break;
+    }
+    default:
+      std::cout << BOLD_RED("[FAILED: APPEND] ")
+                << "The operation is not supported for data type \""
+                << type << "\"" << std::endl;
+      ec = ErrorCode::kTypeUnsupported;
   }
-}
-
-ErrorCode Command::ExecAppendMapElements(VMap& map) {
-
+  return ec;
 }
 
 ErrorCode Command::ExecDeleteListElements(const VMeta& meta) {

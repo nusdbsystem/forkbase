@@ -95,17 +95,15 @@ class Command {
   ErrorCode ExecInfo();
   ErrorCode ExecMeta();
 
-  ErrorCode ExecAppend();
   ErrorCode ExecDiff();
+  ErrorCode ExecAppend();
   ErrorCode ExecInsert();
   ErrorCode ExecReplace();
   ErrorCode ExecUpdate();
 
-  ErrorCode ExecAppendListElements(VList& list);
   ErrorCode ExecDeleteListElements(const VMeta& meta);
   ErrorCode ExecInsertListElements(const VMeta& meta);
   ErrorCode ExecReplaceListElement(const VMeta& meta);
-
 
   ErrorCode ExecGetAll();
   ErrorCode ExecListKeyAll();
@@ -114,6 +112,9 @@ class Command {
 
   ErrorCode ExecManipMeta(
     const std::function<ErrorCode(const VMeta&)>& f_output_meta);
+
+  ErrorCode ExecPut(const std::string& cmd, const VObject& obj);
+  ErrorCode ExecAppend(const VMeta& meta);
 
   ErrorCode ParseRowString(const std::string& row_str, Row* row);
 
