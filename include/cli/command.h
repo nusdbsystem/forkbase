@@ -109,8 +109,11 @@ class Command {
     const std::function<ErrorCode(const VMeta&)>& f_output_meta);
 
   ErrorCode ExecPut(const std::string& cmd, const VObject& obj);
-  ErrorCode ExecAppend(const VMeta& meta);
-  ErrorCode ExecUpdate(const VMeta& meta);
+  ErrorCode ExecAppend(VList& list);
+  ErrorCode ExecUpdate(VList& list);
+  ErrorCode ExecUpdate(VMap& list);
+  ErrorCode ExecInsert(VList& list);
+  ErrorCode ExecInsert(VMap& map);
 
   ErrorCode ParseRowString(const std::string& row_str, Row* row);
 

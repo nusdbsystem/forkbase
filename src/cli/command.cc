@@ -623,45 +623,45 @@ ErrorCode Command::ExecPut() {
 }
 
 ErrorCode Command::ExecAppend() {
+  auto f_manip_meta = [this](const VMeta & meta) {
+    auto type = meta.type();
+    ErrorCode ec(ErrorCode::kUnknownOp);
+    switch (type) {
+      case UType::kBlob:
+        // TODO(linqian)
+        break;
+      case UType::kList: {
+        auto list = meta.List();
+        ec = ExecAppend(list);
+        break;
+      }
+      default:
+        std::cout << BOLD_RED("[FAILED: APPEND] ")
+                  << "The operation is not supported for data type \""
+                  << type << "\"" << std::endl;
+        ec = ErrorCode::kTypeUnsupported;
+    }
+    return ec;
+  };
   Config::version = Config::ref_version;
-  return ExecManipMeta([this](const VMeta & meta) {
-    return ExecAppend(meta);
-  });
+  return ExecManipMeta(f_manip_meta);
 }
 
-ErrorCode Command::ExecAppend(const VMeta& meta) {
+ErrorCode Command::ExecAppend(VList& list) {
   const auto& val = Config::value;
-  auto type = meta.type();
-  auto f_put = [this](const VObject & obj) { return ExecPut("APPEND", obj); };
-  ErrorCode ec(ErrorCode::kUnknownOp);
-  switch (type) {
-    case UType::kBlob:
-      // TODO(linqian)
-      break;
-    case UType::kList: {
-      auto elems = Utils::Tokenize(val, "{}[]|,; ");
-      if (elems.empty()) {
-        std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
-                  << "No element is provided: \"" << val << "\""
-                  << std::endl;
-        ec = ErrorCode::kInvalidCommandArgument;
-      } else {
-        std::vector<Slice> slice_elems;
-        slice_elems.reserve(elems.size());
-        for (auto& e : elems) slice_elems.emplace_back(Slice(e));
-        auto list = meta.List();
-        list.Append(slice_elems);
-        ec = f_put(list);
-      }
-      break;
-    }
-    default:
-      std::cout << BOLD_RED("[FAILED: APPEND] ")
-                << "The operation is not supported for data type \""
-                << type << "\"" << std::endl;
-      ec = ErrorCode::kTypeUnsupported;
+  // conditional execution
+  auto elems = Utils::Tokenize(val, "{}[]|,; ");
+  if (elems.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+              << "No element is provided: \"" << val << "\""
+              << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
   }
-  return ec;
+  std::vector<Slice> slice_elems;
+  slice_elems.reserve(elems.size());
+  for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+  list.Append(slice_elems);
+  return ExecPut("APPEND", list);
 }
 
 ErrorCode Command::ExecUpdate() {
@@ -670,73 +670,164 @@ ErrorCode Command::ExecUpdate() {
     return ExecUpdateRow();
   }
 
+  auto f_manip_meta = [this](const VMeta & meta) {
+    auto type = meta.type();
+    ErrorCode ec(ErrorCode::kUnknownOp);
+    switch (type) {
+      case UType::kBlob:
+        // TODO(linqian)
+        break;
+      case UType::kList: {
+        auto list = meta.List();
+        ec = ExecUpdate(list);
+        break;
+      }
+      case UType::kMap: {
+        auto map = meta.Map();
+        ec = ExecUpdate(map);
+        break;
+      }
+      default:
+        std::cout << BOLD_RED("[FAILED: UPDATE] ")
+                  << "The operation is not supported for data type \""
+                  << type << "\"" << std::endl;
+        ec = ErrorCode::kTypeUnsupported;
+    }
+    return ec;
+  };
   Config::version = Config::ref_version;
-  return ExecManipMeta([this](const VMeta & meta) {
-    return ExecUpdate(meta);
-  });
+  return ExecManipMeta(f_manip_meta);
 }
 
-ErrorCode Command::ExecUpdate(const VMeta& meta) {
+ErrorCode Command::ExecUpdate(VList& list) {
   const auto& val = Config::value;
   const auto& pos = Config::position;
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+              << "Illegal positional index: [Actual] " << pos
+              << ", [Expected] [0," << list.numElements() << ")"
+              << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (val.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+              << "No element is provided: \"" << val << "\""
+              << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  list.Splice(pos, 1, {Slice(val)});
+  return ExecPut("UPDATE", list);
+}
+
+ErrorCode Command::ExecUpdate(VMap& map) {
+  const auto& val = Config::value;
   const auto& mkey = Config::map_key;
   // conditional execution
-  auto type = meta.type();
-  auto f_put = [this](const VObject & obj) { return ExecPut("UPDATE", obj); };
-  ErrorCode ec(ErrorCode::kUnknownOp);
-  switch (type) {
-    case UType::kBlob:
-      // TODO(linqian)
-      break;
-    case UType::kList: {
-      auto list = meta.List();
-      if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
-        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
-                  << "Illegal positional index: [Actual] " << pos
-                  << ", [Expected] [0," << list.numElements() << ")"
-                  << std::endl;
-        ec = ErrorCode::kInvalidCommandArgument;
-      } if (val.empty()) {
-        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
-                  << "No element is provided: \"" << val << "\""
-                  << std::endl;
-        ec = ErrorCode::kInvalidCommandArgument;
-      } else {
-        list.Splice(pos, 1, {Slice(val)});
-        ec = f_put(list);
-      }
-      break;
-    }
-    case UType::kMap: {
-      if (mkey.empty()) {
-        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
-                  << "Data key of map entry is not provided" << std::endl;
-        ec = ErrorCode::kInvalidCommandArgument;
-      } else if (val.empty()) {
-        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
-                  << "Data value of map entry is not provided: \"" << val
-                  << "\"" << std::endl;
-        ec = ErrorCode::kInvalidCommandArgument;
-      } else { // both key and value of map entry are ready
-        auto map = meta.Map();
-        if (map.Get(Slice(mkey)).empty()) {
-          std::cerr << BOLD_RED("[FAILED: UPDATE] ")
-                    << "Data key of map entry does not exist" << std::endl;
-          ec = ErrorCode::kMapKeyNotExists;
-        } else {
-          map.Set(Slice(mkey), Slice(val));
-          ec = f_put(map);
-        }
-      }
-      break;
-    }
-    default:
-      std::cout << BOLD_RED("[FAILED: UPDATE] ")
-                << "The operation is not supported for data type \""
-                << type << "\"" << std::endl;
-      ec = ErrorCode::kTypeUnsupported;
+  if (mkey.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+              << "Data key of map entry is not provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
   }
-  return ec;
+  if (val.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+              << "Data value of map entry is not provided: \"" << val
+              << "\"" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (map.Get(Slice(mkey)).empty()) {
+    std::cerr << BOLD_RED("[FAILED: UPDATE] ")
+              << "Map entry with Key \"" << mkey << "\" does not exist"
+              << std::endl;
+    return ErrorCode::kMapKeyNotExists;
+  }
+  map.Set(Slice(mkey), Slice(val));
+  return ExecPut("UPDATE", map);
+}
+
+ErrorCode Command::ExecInsert() {
+  // redirection
+  if (!Config::table.empty() && Config::key.empty()) {
+    return ExecInsertRow();
+  }
+
+  auto f_manip_meta = [this](const VMeta & meta) {
+    auto type = meta.type();
+    ErrorCode ec(ErrorCode::kUnknownOp);
+    switch (type) {
+      case UType::kBlob:
+        // TODO(linqian)
+        break;
+      case UType::kList: {
+        auto list = meta.List();
+        ec = ExecInsert(list);
+        break;
+      }
+      case UType::kMap: {
+        auto map = meta.Map();
+        ec = ExecInsert(map);
+        break;
+      }
+      default:
+        std::cout << BOLD_RED("[FAILED: INSERT] ")
+                  << "The operation is not supported for data type \""
+                  << type << "\"" << std::endl;
+        ec = ErrorCode::kTypeUnsupported;
+    }
+    return ec;
+  };
+  Config::version = Config::ref_version;
+  return ExecManipMeta(f_manip_meta);
+}
+
+ErrorCode Command::ExecInsert(VList& list) {
+  const auto& val = Config::value;
+  const auto& pos = Config::position;
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "Illegal positional index: [Actual] " << pos
+              << ", [Expected] [0," << list.numElements() << ")"
+              << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto elems = Utils::Tokenize(val, "{}[]|,; ");
+  if (elems.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "No element is provided: \"" << val << "\""
+              << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::vector<Slice> slice_elems;
+  slice_elems.reserve(elems.size());
+  for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+  list.Insert(pos, slice_elems);
+  return ExecPut("INSERT", list);
+}
+
+ErrorCode Command::ExecInsert(VMap& map) {
+  const auto& val = Config::value;
+  const auto& mkey = Config::map_key;
+  // conditional execution
+  if (mkey.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "Data key of map entry is not provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (val.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "Data value of map entry is not provided: \"" << val
+              << "\"" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (!map.Get(Slice(mkey)).empty()) {
+    std::cerr << BOLD_RED("[FAILED: INSERT] ")
+              << "Map entry with Key \"" << mkey << "\" already exists"
+              << std::endl;
+    return ErrorCode::kMapKeyExists;
+  }
+  map.Set(Slice(mkey), Slice(val));
+  return ExecPut("INSERT", map);
 }
 
 ErrorCode Command::ExecMerge() {
@@ -1835,11 +1926,6 @@ ErrorCode Command::ParseRowString(const std::string& row_str, Row* row) {
     row->emplace(k, v);
   }
   return ErrorCode::kOK;
-}
-
-ErrorCode Command::ExecInsert() {
-  // redirection
-  return ExecInsertRow();
 }
 
 ErrorCode Command::ExecInsertRow() {
