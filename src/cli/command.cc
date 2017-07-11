@@ -20,11 +20,18 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_HANDLER("PUT", ExecPut());
   CMD_HANDLER("APPEND", ExecAppend());
   CMD_HANDLER("UPDATE", ExecUpdate());
+  CMD_HANDLER("INSERT", ExecInsert());
+  CMD_HANDLER("DELETE", ExecDelete());
+  CMD_ALIAS("DELETE", "DEL");
+  CMD_ALIAS("DELETE", "REMOVE");
+  CMD_ALIAS("DELETE", "RM");
   CMD_HANDLER("MERGE", ExecMerge());
   CMD_HANDLER("BRANCH", ExecBranch());
   CMD_HANDLER("RENAME", ExecRename());
-  CMD_HANDLER("DELETE", ExecDelete());
-  CMD_ALIAS("DELETE", "DEL");
+  CMD_HANDLER("DELETE_BRANCH", ExecDeleteBranch());
+  CMD_ALIAS("DELETE_BRANCH", "DELETE-BRANCH");
+  CMD_ALIAS("DELETE_BRANCH", "DEL_BRANCH");
+  CMD_ALIAS("DELETE_BRANCH", "DEL-BRANCH");
   CMD_HANDLER("LIST_KEY", ExecListKey());
   CMD_ALIAS("LIST_KEY", "LIST-KEY");
   CMD_ALIAS("LIST_KEY", "LISTKEY");
@@ -179,7 +186,6 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_HANDLER("GET_ROW", ExecGetRow());
   CMD_ALIAS("GET_ROW", "GET-ROW");
   CMD_ALIAS("GET_ROW", "GETROW");
-  CMD_HANDLER("INSERT", ExecInsert());
   CMD_HANDLER("INSERT_ROW", ExecInsertRow());
   CMD_ALIAS("INSERT_ROW", "INSERT-ROW");
   CMD_HANDLER("UPDATE_ROW", ExecUpdateRow());
@@ -229,6 +235,14 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-k <key> -x <value> [-b <branch> | -u <refer_version>]"
      << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
      << "[-i <index> | -e <map_key>]" << std::endl
+     << FORMAT_BASIC_CMD("INSERT")
+     << "-k <key> -x <value> [-b <branch> | -u <refer_version>]"
+     << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
+     << "[-i <index> | -e <map_key>]" << std::endl
+     << FORMAT_BASIC_CMD("DELETE")
+     << "-k <key> [-b <branch> | -u <refer_version>]"
+     << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
+     << "[-i <index> {-d <num_elements>} | -e <map_key>]" << std::endl
      << FORMAT_BASIC_CMD("BRANCH")
      << "-k <key> -b <new_branch> [-c <base_branch> | "
      << std::endl << std::setw(kPrintBasicCmdWidth + 29) << ""
@@ -242,7 +256,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BASIC_CMD("RENAME")
      << "-k <key> "
      << "-c <from_branch> -b <to_branch>" << std::endl
-     << FORMAT_BASIC_CMD("DELETE")
+     << FORMAT_BASIC_CMD("DELETE_BRANCH")
      << "-k <key> -b <branch>" << std::endl
      << FORMAT_BASIC_CMD("HEAD")
      << "-k <key> -b <branch>" << std::endl
@@ -830,6 +844,77 @@ ErrorCode Command::ExecInsert(VMap& map) {
   return ExecPut("INSERT", map);
 }
 
+ErrorCode Command::ExecDelete() {
+  // redirection
+  if (!Config::table.empty() && Config::key.empty()) {
+    if (!Config::column.empty()) return ExecDeleteColumn();
+    if (!Config::ref_column.empty()
+        || Config::position >= 0) return ExecDeleteRow();
+    return ExecDeleteTable();
+  }
+
+  auto f_manip_meta = [this](const VMeta & meta) {
+    auto type = meta.type();
+    ErrorCode ec(ErrorCode::kUnknownOp);
+    switch (type) {
+      case UType::kBlob:
+        // TODO(linqian)
+        break;
+      case UType::kList: {
+        auto list = meta.List();
+        ec = ExecDelete(list);
+        break;
+      }
+      case UType::kMap: {
+        auto map = meta.Map();
+        ec = ExecDelete(map);
+        break;
+      }
+      default:
+        std::cout << BOLD_RED("[FAILED: REMOVE] ")
+                  << "The operation is not supported for data type \""
+                  << type << "\"" << std::endl;
+        ec = ErrorCode::kTypeUnsupported;
+    }
+    return ec;
+  };
+  Config::version = Config::ref_version;
+  return ExecManipMeta(f_manip_meta);
+}
+
+ErrorCode Command::ExecDelete(VList& list) {
+  const auto& pos = Config::position;
+  const auto& n_elems = Config::num_elements;
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: REMOVE] ")
+              << "Illegal positional index: [Actual] " << pos
+              << ", [Expected] [0," << list.numElements() << ")"
+              << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  list.Delete(pos, n_elems);
+  return ExecPut("REMOVE", list);
+}
+
+ErrorCode Command::ExecDelete(VMap& map) {
+  const auto& mkey = Config::map_key;
+  // conditional execution
+  if (mkey.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: REMOVE] ")
+              << "Data key of map entry is not provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (map.Get(Slice(mkey)).empty()) {
+    std::cerr << BOLD_RED("[FAILED: REMOVE] ")
+              << "Map entry with Key \"" << mkey << "\" does not exist"
+              << std::endl;
+    return ErrorCode::kMapKeyNotExists;
+  }
+  map.Remove(Slice(mkey));
+  return ExecPut("REMOVE", map);
+}
+
 ErrorCode Command::ExecMerge() {
   const auto& key = Config::key;
   const auto& val = Config::value;
@@ -1006,30 +1091,22 @@ ErrorCode Command::ExecRename() {
   return ec;
 }
 
-ErrorCode Command::ExecDelete() {
-  // redirection
-  if (!Config::table.empty() && Config::key.empty()) {
-    if (!Config::column.empty()) return ExecDeleteColumn();
-    if (!Config::ref_column.empty()
-        || Config::position >= 0) return ExecDeleteRow();
-    return ExecDeleteTable();
-  }
-
+ErrorCode Command::ExecDeleteBranch() {
   const auto& key = Config::key;
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
+    std::cerr << BOLD_RED("[INVALID ARGS: DELETE_BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
   const auto f_rpt_success = [&key, &branch]() {
-    std::cout << BOLD_GREEN("[SUCCESS: DELETE] ")
+    std::cout << BOLD_GREEN("[SUCCESS: DELETE_BRANCH] ")
               << "Branch \"" << branch
               << "\" has been deleted for Key \"" << key << "\"" << std::endl;
   };
   const auto f_rpt_fail = [&key, &branch](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DELETE] ")
+    std::cerr << BOLD_RED("[FAILED: DELETE_BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))

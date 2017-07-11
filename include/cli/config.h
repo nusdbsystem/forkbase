@@ -40,6 +40,7 @@ class Config {
   static std::string ref_column;
   static int64_t position;
   static int64_t ref_position;
+  static size_t num_elements;
   static size_t batch_size;
 
   static bool ParseCmdArgs(int argc, char* argv[]);

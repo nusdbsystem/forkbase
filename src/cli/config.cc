@@ -30,6 +30,7 @@ std::string Config::column;
 std::string Config::ref_column;
 int64_t Config::position;
 int64_t Config::ref_position;
+size_t Config::num_elements;
 size_t Config::batch_size;
 
 void Config::Reset() {
@@ -55,6 +56,7 @@ void Config::Reset() {
   ref_column = "";
   position = -1;
   ref_position = -1;
+  num_elements = 1;
   batch_size = 5000;
 }
 
@@ -110,7 +112,11 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
       CheckArgGE(ref_position, 0, "Referring positional index");
     }
 
-    auto arg_batch_size = vm["batch-size"].as<int>();
+    auto arg_num_elements = vm["num-elements"].as<int32_t>();
+    GUARD(CheckArgGT(arg_num_elements, 0, "Number of elements"));
+    num_elements = static_cast<size_t>(arg_num_elements);
+
+    auto arg_batch_size = vm["batch-size"].as<int32_t>();
     GUARD(CheckArgGT(arg_batch_size, 0, "Batch size"));
     batch_size = static_cast<size_t>(arg_batch_size);
   } catch (std::exception& e) {
@@ -159,7 +165,9 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "the referring column")
   ("position,i", po::value<int64_t>(), "the operating positional index")
   ("ref-position,j", po::value<int64_t>(), "the referring positional index")
-  ("batch-size", po::value<int>()->default_value(5000),
+  ("num-elements,d", po::value<int32_t>()->default_value(1),
+   "number of elements")
+  ("batch-size", po::value<int32_t>()->default_value(5000),
    "batch size for data loading");
 
   po::options_description backend("Hidden Options");

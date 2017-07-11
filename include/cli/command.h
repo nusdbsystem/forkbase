@@ -66,7 +66,7 @@ class Command {
   ErrorCode ExecMerge();
   ErrorCode ExecBranch();
   ErrorCode ExecRename();
-  ErrorCode ExecDelete();
+  ErrorCode ExecDeleteBranch();
   ErrorCode ExecListKey();
   ErrorCode ExecListBranch();
   ErrorCode ExecHead();
@@ -95,10 +95,11 @@ class Command {
   ErrorCode ExecInfo();
   ErrorCode ExecMeta();
 
+  ErrorCode ExecDelete();
   ErrorCode ExecDiff();
   ErrorCode ExecAppend();
-  ErrorCode ExecInsert();
   ErrorCode ExecUpdate();
+  ErrorCode ExecInsert();
 
   ErrorCode ExecGetAll();
   ErrorCode ExecListKeyAll();
@@ -114,6 +115,8 @@ class Command {
   ErrorCode ExecUpdate(VMap& list);
   ErrorCode ExecInsert(VList& list);
   ErrorCode ExecInsert(VMap& map);
+  ErrorCode ExecDelete(VList& list);
+  ErrorCode ExecDelete(VMap& map);
 
   ErrorCode ParseRowString(const std::string& row_str, Row* row);
 

@@ -94,7 +94,7 @@ run "latest -k nokey" 0
 run "list_key" 0
 run "put --key cde -x value -b main" 0
 run "list_key" 0
-run "delete -k abc -b side" 0
+run "delete_branch -k abc -b side" 0
 run "exists -k abc -b side" 0
 run "list_branch -k abc" 0
 run "rename -k abc -c master -b main" 0
