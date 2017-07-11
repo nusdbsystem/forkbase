@@ -717,10 +717,10 @@ ErrorCode Command::ExecUpdate(VList& list) {
   const auto& val = Config::value;
   const auto& pos = Config::position;
   // conditional execution
-  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
+  if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
     std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "Illegal positional index: [Actual] " << pos
-              << ", [Expected] [0," << list.numElements() << ")"
+              << ", [Expected] [0," << list.numElements() << "]"
               << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -798,10 +798,10 @@ ErrorCode Command::ExecInsert(VList& list) {
   const auto& val = Config::value;
   const auto& pos = Config::position;
   // conditional execution
-  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
+  if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
     std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Illegal positional index: [Actual] " << pos
-              << ", [Expected] [0," << list.numElements() << ")"
+              << ", [Expected] [0," << list.numElements() << "]"
               << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -871,7 +871,7 @@ ErrorCode Command::ExecDelete() {
         break;
       }
       default:
-        std::cout << BOLD_RED("[FAILED: REMOVE] ")
+        std::cout << BOLD_RED("[FAILED: DELETE] ")
                   << "The operation is not supported for data type \""
                   << type << "\"" << std::endl;
         ec = ErrorCode::kTypeUnsupported;
@@ -886,33 +886,33 @@ ErrorCode Command::ExecDelete(VList& list) {
   const auto& pos = Config::position;
   const auto& n_elems = Config::num_elements;
   // conditional execution
-  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: REMOVE] ")
+  if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
               << "Illegal positional index: [Actual] " << pos
-              << ", [Expected] [0," << list.numElements() << ")"
+              << ", [Expected] [0," << list.numElements() << "]"
               << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   list.Delete(pos, n_elems);
-  return ExecPut("REMOVE", list);
+  return ExecPut("DELETE", list);
 }
 
 ErrorCode Command::ExecDelete(VMap& map) {
   const auto& mkey = Config::map_key;
   // conditional execution
   if (mkey.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: REMOVE] ")
+    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
               << "Data key of map entry is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (map.Get(Slice(mkey)).empty()) {
-    std::cerr << BOLD_RED("[FAILED: REMOVE] ")
+    std::cerr << BOLD_RED("[FAILED: DELETE] ")
               << "Map entry with Key \"" << mkey << "\" does not exist"
               << std::endl;
     return ErrorCode::kMapKeyNotExists;
   }
   map.Remove(Slice(mkey));
-  return ExecPut("REMOVE", map);
+  return ExecPut("DELETE", map);
 }
 
 ErrorCode Command::ExecMerge() {
