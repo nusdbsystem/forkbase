@@ -136,7 +136,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("key,k", po::value<std::string>()->default_value(""),
    "key of data")
   ("map-key,e", po::value<std::string>()->default_value(""),
-   "key within a map")
+   "key of map entry")
   ("value,x", po::value<std::string>()->default_value(""),
    "data value")
   ("ref-value,y", po::value<std::string>()->default_value(""),

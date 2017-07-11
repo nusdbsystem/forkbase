@@ -102,7 +102,9 @@ enum class ErrorCode : byte_t {
   kUnknownCommand = 30,
   kInvalidSchema = 31,
   kInconsistentType = 32,
-  kInvalidParameter = 33
+  kInvalidParameter = 33,
+  kMapKeyNotExists = 34,
+  kMapKeyExists = 35
 };
 
 }  // namespace ustore

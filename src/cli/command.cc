@@ -19,6 +19,7 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("GET_ALL", "GET-ALL");
   CMD_HANDLER("PUT", ExecPut());
   CMD_HANDLER("APPEND", ExecAppend());
+  CMD_HANDLER("UPDATE", ExecUpdate());
   CMD_HANDLER("MERGE", ExecMerge());
   CMD_HANDLER("BRANCH", ExecBranch());
   CMD_HANDLER("RENAME", ExecRename());
@@ -181,7 +182,6 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_HANDLER("INSERT", ExecInsert());
   CMD_HANDLER("INSERT_ROW", ExecInsertRow());
   CMD_ALIAS("INSERT_ROW", "INSERT-ROW");
-  CMD_HANDLER("UPDATE", ExecUpdate());
   CMD_HANDLER("UPDATE_ROW", ExecUpdateRow());
   CMD_ALIAS("UPDATE_ROW", "UPDATE-ROW");
   CMD_HANDLER("DELETE_ROW", ExecDeleteRow());
@@ -225,6 +225,10 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-u <refer_version>}" << std::endl
      << FORMAT_BASIC_CMD("APPEND")
      << "-k <key> -x <value> [-b <branch> | -u <refer_version>]" << std::endl
+     << FORMAT_BASIC_CMD("UPDATE")
+     << "-k <key> -x <value> [-b <branch> | -u <refer_version>]"
+     << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
+     << "[-i <index> | -e <map_key>]" << std::endl
      << FORMAT_BASIC_CMD("BRANCH")
      << "-k <key> -b <new_branch> [-c <base_branch> | "
      << std::endl << std::setw(kPrintBasicCmdWidth + 29) << ""
@@ -675,6 +679,8 @@ ErrorCode Command::ExecUpdate() {
 ErrorCode Command::ExecUpdate(const VMeta& meta) {
   const auto& val = Config::value;
   const auto& pos = Config::position;
+  const auto& mkey = Config::map_key;
+  // conditional execution
   auto type = meta.type();
   auto f_put = [this](const VObject & obj) { return ExecPut("UPDATE", obj); };
   ErrorCode ec(ErrorCode::kUnknownOp);
@@ -691,13 +697,36 @@ ErrorCode Command::ExecUpdate(const VMeta& meta) {
                   << std::endl;
         ec = ErrorCode::kInvalidCommandArgument;
       } if (val.empty()) {
-        std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
                   << "No element is provided: \"" << val << "\""
                   << std::endl;
         ec = ErrorCode::kInvalidCommandArgument;
       } else {
         list.Splice(pos, 1, {Slice(val)});
         ec = f_put(list);
+      }
+      break;
+    }
+    case UType::kMap: {
+      if (mkey.empty()) {
+        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+                  << "Data key of map entry is not provided" << std::endl;
+        ec = ErrorCode::kInvalidCommandArgument;
+      } else if (val.empty()) {
+        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+                  << "Data value of map entry is not provided: \"" << val
+                  << "\"" << std::endl;
+        ec = ErrorCode::kInvalidCommandArgument;
+      } else { // both key and value of map entry are ready
+        auto map = meta.Map();
+        if (map.Get(Slice(mkey)).empty()) {
+          std::cerr << BOLD_RED("[FAILED: UPDATE] ")
+                    << "Data key of map entry does not exist" << std::endl;
+          ec = ErrorCode::kMapKeyNotExists;
+        } else {
+          map.Set(Slice(mkey), Slice(val));
+          ec = f_put(map);
+        }
       }
       break;
     }
