@@ -17,6 +17,7 @@ bool Config::time_exec;
 bool Config::is_vert_list;
 UType Config::type;
 std::string Config::key;
+std::string Config::map_key;
 std::string Config::value;
 std::string Config::ref_value;
 std::string Config::branch;
@@ -41,6 +42,7 @@ void Config::Reset() {
   is_vert_list = false;
   type = UType::kString;
   key = "";
+  map_key = "";
   value = "";
   ref_value = "";
   branch = "";
@@ -77,6 +79,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
                    "<supported type>"));
 
     key = vm["key"].as<std::string>();
+    map_key = vm["map-key"].as<std::string>();
     value = vm["value"].as<std::string>();
     ref_value = vm["ref-value"].as<std::string>();
 
@@ -132,6 +135,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "data type")
   ("key,k", po::value<std::string>()->default_value(""),
    "key of data")
+  ("map-key,e", po::value<std::string>()->default_value(""),
+   "key within a map")
   ("value,x", po::value<std::string>()->default_value(""),
    "data value")
   ("ref-value,y", po::value<std::string>()->default_value(""),

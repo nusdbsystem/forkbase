@@ -620,7 +620,9 @@ ErrorCode Command::ExecPut() {
 
 ErrorCode Command::ExecAppend() {
   Config::version = Config::ref_version;
-  return ExecManipMeta([this](const VMeta & meta) { return ExecAppend(meta); });
+  return ExecManipMeta([this](const VMeta & meta) {
+    return ExecAppend(meta);
+  });
 }
 
 ErrorCode Command::ExecAppend(const VMeta& meta) {
@@ -658,19 +660,54 @@ ErrorCode Command::ExecAppend(const VMeta& meta) {
   return ec;
 }
 
-ErrorCode Command::ExecDeleteListElements(const VMeta& meta) {
-  // TODO(linqian)
-  return ErrorCode::kUnknownOp;
+ErrorCode Command::ExecUpdate() {
+  // redirection
+  if (!Config::table.empty() && Config::key.empty()) {
+    return ExecUpdateRow();
+  }
+
+  Config::version = Config::ref_version;
+  return ExecManipMeta([this](const VMeta & meta) {
+    return ExecUpdate(meta);
+  });
 }
 
-ErrorCode Command::ExecInsertListElements(const VMeta& meta) {
-  // TODO(linqian)
-  return ErrorCode::kUnknownOp;
-}
-
-ErrorCode Command::ExecReplaceListElement(const VMeta& meta) {
-  // TODO(linqian)
-  return ErrorCode::kUnknownOp;
+ErrorCode Command::ExecUpdate(const VMeta& meta) {
+  const auto& val = Config::value;
+  const auto& pos = Config::position;
+  auto type = meta.type();
+  auto f_put = [this](const VObject & obj) { return ExecPut("UPDATE", obj); };
+  ErrorCode ec(ErrorCode::kUnknownOp);
+  switch (type) {
+    case UType::kBlob:
+      // TODO(linqian)
+      break;
+    case UType::kList: {
+      auto list = meta.List();
+      if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
+        std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+                  << "Illegal positional index: [Actual] " << pos
+                  << ", [Expected] [0," << list.numElements() << ")"
+                  << std::endl;
+        ec = ErrorCode::kInvalidCommandArgument;
+      } if (val.empty()) {
+        std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+                  << "No element is provided: \"" << val << "\""
+                  << std::endl;
+        ec = ErrorCode::kInvalidCommandArgument;
+      } else {
+        list.Splice(pos, 1, {Slice(val)});
+        ec = f_put(list);
+      }
+      break;
+    }
+    default:
+      std::cout << BOLD_RED("[FAILED: UPDATE] ")
+                << "The operation is not supported for data type \""
+                << type << "\"" << std::endl;
+      ec = ErrorCode::kTypeUnsupported;
+  }
+  return ec;
 }
 
 ErrorCode Command::ExecMerge() {
@@ -1813,11 +1850,6 @@ ErrorCode Command::ExecInsertRow() {
   ec = cs_.InsertRow(tab, branch, row);
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
   return ec;
-}
-
-ErrorCode Command::ExecUpdate() {
-  // redirection
-  return ExecUpdateRow();
 }
 
 ErrorCode Command::ExecUpdateRow() {

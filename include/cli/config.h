@@ -27,6 +27,7 @@ class Config {
   static bool is_vert_list;
   static UType type;
   static std::string key;
+  static std::string map_key;
   static std::string value;
   static std::string ref_value;
   static std::string branch;
