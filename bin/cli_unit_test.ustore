@@ -1,0 +1,46 @@
+# Unit test for UStore CLI
+
+put --key abc --branch master --value Hello
+is_head -k abc -b master -v KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB
+is_head -k abc -b master -v AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+is_latest -k abc -v KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB
+is_latest -k abc -v AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+put --key abc --branch side --value ustore
+put --key abc -u KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB --value ustore
+put --key abc -u AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB --value ustore --expect-fail ...
+get -k abc -b master
+get -k abc -b side
+get -k nokey -b side --expect-fail ...
+get -k abc -b dont-have --expect-fail ...
+branch -k abc -c master -b dev
+branch -k abc -c noexist -b dev2 --expect-fail ...
+branch -k abc -u KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB -b dev3
+branch -k abc -u QU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB -b dev4 --expect-fail ...
+merge -k abc -x merged -b master -c side
+merge -k abc -x merged -b master -c no-exist --expect-fail ...
+merge -k nokey -x merged -b master -c no-exist --expect-fail ...
+merge -k abc -x 2merged -b master -u KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB
+merge -k abc -x 3merged -b master -u AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB --expect-fail ...
+merge -k abc -x 3merged -b noexist -u A6OQ2335VNJN6TVA2RLOPIXCUFRAS7IA --expect-fail ...
+merge -k abc -x 3merged -u A6OQ2335VNJN6TVA2RLOPIXCUFRAS7IA -v KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB
+merge -k abc -x 4merged -u AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB -v KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB --expect-fail ...
+merge -k abc -x 4merged -v AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB -u KU54VWWR6GQS6XFGXTXMLXMU3UGC3FLB --expect-fail ...
+list_branch -k abc
+list_branch -k nokey
+hEAd -k abc -b master
+hEAd -k abc -b nobranch --expect-fail ...
+exists -k abc
+exists -k nokey
+exists -k abc -b master
+exists -k abc -b nobranch
+latest -k abc
+latest -k nokey
+list_key
+put --key cde -x value -b main
+list_key
+delete_branch -k abc -b side
+exists -k abc -b side
+list_branch -k abc
+rename -k abc -c master -b main
+list_branch -k abc
+rename -k abc -c noexist -b main --expect-fail ...

@@ -110,6 +110,9 @@ class Command {
     const std::function<ErrorCode(const VMeta&)>& f_output_meta);
 
   ErrorCode ExecPut(const std::string& cmd, const VObject& obj);
+  ErrorCode ExecPutString();
+  ErrorCode ExecPutList();
+  ErrorCode ExecPutMap();
   ErrorCode ExecAppend(VList& list);
   ErrorCode ExecUpdate(VList& list);
   ErrorCode ExecUpdate(VMap& list);

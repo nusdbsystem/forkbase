@@ -76,7 +76,8 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kInconsistentType, "inconsistent data types"},
   {ErrorCode::kInvalidParameter, "invalid parameter"},
   {ErrorCode::kMapKeyNotExists, "Key of map entry does not exist"},
-  {ErrorCode::kMapKeyExists, "Key of map entry already exists"}
+  {ErrorCode::kMapKeyExists, "Key of map entry already exists"},
+  {ErrorCode::kUnexpectedSuccess, "Unexpected success of command execution"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {

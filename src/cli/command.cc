@@ -397,10 +397,12 @@ ErrorCode Command::ExecScript(const std::string& script) {
     return ErrorCode::kFailedOpenFile;
   }
   auto ec = ErrorCode::kOK;
+  auto& ignore_fail = Config::ignore_fail;
+  auto& expected_fail = Config::expected_fail;
   std::string line;
   size_t cnt_line = 0;
   std::vector<std::string> args;
-  while ((ec == ErrorCode::kOK) && std::getline(ifs, line)) {
+  while ((ignore_fail || ec == ErrorCode::kOK) && std::getline(ifs, line)) {
     ++cnt_line;
     boost::trim(line);
     if (line.empty() || boost::starts_with(line, "#")) continue;
@@ -425,6 +427,17 @@ ErrorCode Command::ExecScript(const std::string& script) {
       ec = ErrorCode::kInvalidCommandArgument;
     } else {  // everything is ready, go!
       Time([this, &ec] { ec = ExecCommand(Config::command); });
+    }
+    if (!expected_fail.empty()) {
+      if (ec == ErrorCode::kOK) {
+        std::cerr << BOLD_RED("[FAILURE EXPECTED] ")
+                  << expected_fail << std::endl;
+        ec = ErrorCode::kUnexpectedSuccess;
+      } else {
+        std::cout << BOLD_GREEN("[FAILURE EXPECTED] ")
+                  << expected_fail << std::endl;
+        ec = ErrorCode::kOK;
+      }
     }
     std::cout << TimeDisplay("", "\n") << std::endl;
   }
@@ -580,52 +593,31 @@ ErrorCode Command::ExecPut() {
   const auto& val = Config::value;
   const auto& branch = Config::branch;
   const auto& ref_ver = Config::ref_version;
-  // screen printing
-  const auto f_rpt_invalid_args = [&]() {
+  // conditional execution
+  if (key.empty() || val.empty() || !(branch.empty() || ref_ver.empty())) {
     std::cerr << BOLD_RED("[INVALID ARGS: PUT] ")
               << "Type: \"" << type << "\", "
               << "Key: \"" << key << "\", "
               << "Value: \"" << val << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\"" << std::endl;
-  };
-  if (key.empty() || val.empty() || !(branch.empty() || ref_ver.empty())) {
-    f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  auto f_put = [this](const VObject & obj) { return ExecPut("PUT", obj); };
   ErrorCode ec(ErrorCode::kUnknownOp);
   switch (type) {
     case UType::kString:
-      ec = f_put(VString(Slice(val)));
+      // ec = ExecPut("PUT", VString(Slice(val)));
+      ec = ExecPutString();
       break;
     case UType::kBlob:
       // TODO(linqian)
       break;
-    case UType::kList: {
-      auto elems = Utils::Tokenize(val, "{}[]|,; ");
-      std::vector<Slice> slice_elems;
-      slice_elems.reserve(elems.size());
-      for (auto& e : elems) slice_elems.emplace_back(Slice(e));
-      ec = f_put(VList(slice_elems));
+    case UType::kList:
+      ec = ExecPutList();
       break;
-    }
-    case UType::kMap: {
-      auto elems = Utils::Tokenize(val, "{}[]()|,;: ");
-      std::vector<Slice> keys, vals;
-      ec = ErrorCode::kOK;
-      for (auto it = elems.begin(); it != elems.end();) {
-        keys.emplace_back(*it++);
-        if (it == elems.end()) {
-          f_rpt_invalid_args();
-          ec = ErrorCode::kInvalidCommandArgument;
-          break;
-        }
-        vals.emplace_back(*it++);
-      }
-      if (ec == ErrorCode::kOK) ec = f_put(VMap(keys, vals));
+    case UType::kMap:
+      ec = ExecPutMap();
       break;
-    }
     default:
       std::cout << BOLD_RED("[FAILED: PUT] ")
                 << "The operation is not supported for data type \""
@@ -634,6 +626,38 @@ ErrorCode Command::ExecPut() {
       break;
   }
   return ec;
+}
+
+ErrorCode Command::ExecPutString() {
+  const auto& val = Config::value;
+  return ExecPut("PUT", VString(Slice(val)));
+}
+
+ErrorCode Command::ExecPutList() {
+  const auto& val = Config::value;
+  auto elems = Utils::Tokenize(val, "{}[]|,; ");
+  std::vector<Slice> slice_elems;
+  slice_elems.reserve(elems.size());
+  for (auto& e : elems) slice_elems.emplace_back(Slice(e));
+  return ExecPut("PUT", VList(slice_elems));
+}
+
+ErrorCode Command::ExecPutMap() {
+  const auto& val = Config::value;
+  auto elems = Utils::Tokenize(val, "{}[]()|,;: ");
+  std::vector<Slice> keys, vals;
+  for (auto it = elems.begin(); it != elems.end();) {
+    keys.emplace_back(*it++);
+    if (it == elems.end()) {
+      std::cerr << BOLD_RED("[INVALID ARGS: PUT] ")
+                << "Data value for map entry with Key \"" << *(it - 1)
+                << "\" is not provided" << std::endl;
+      return ErrorCode::kInvalidCommandArgument;
+      break;
+    }
+    vals.emplace_back(*it++);
+  }
+  return ExecPut("PUT", VMap(keys, vals));
 }
 
 ErrorCode Command::ExecAppend() {
@@ -717,11 +741,10 @@ ErrorCode Command::ExecUpdate(VList& list) {
   const auto& val = Config::value;
   const auto& pos = Config::position;
   // conditional execution
-  if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
+  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
     std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "Illegal positional index: [Actual] " << pos
-              << ", [Expected] [0," << list.numElements() << "]"
-              << std::endl;
+              << ", [Expected] 0.." << list.numElements() - 1 << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (val.empty()) {
@@ -745,8 +768,8 @@ ErrorCode Command::ExecUpdate(VMap& map) {
   }
   if (val.empty()) {
     std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
-              << "Data value of map entry is not provided: \"" << val
-              << "\"" << std::endl;
+              << "Data value for map entry with Key \"" << mkey
+              << "\" is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (map.Get(Slice(mkey)).empty()) {
@@ -801,8 +824,7 @@ ErrorCode Command::ExecInsert(VList& list) {
   if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
     std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Illegal positional index: [Actual] " << pos
-              << ", [Expected] [0," << list.numElements() << "]"
-              << std::endl;
+              << ", [Expected] 0.." << list.numElements() << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   auto elems = Utils::Tokenize(val, "{}[]|,; ");
@@ -830,8 +852,8 @@ ErrorCode Command::ExecInsert(VMap& map) {
   }
   if (val.empty()) {
     std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
-              << "Data value of map entry is not provided: \"" << val
-              << "\"" << std::endl;
+              << "Data value for map entry with Key \"" << mkey
+              << "\" is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (!map.Get(Slice(mkey)).empty()) {
@@ -886,11 +908,10 @@ ErrorCode Command::ExecDelete(VList& list) {
   const auto& pos = Config::position;
   const auto& n_elems = Config::num_elements;
   // conditional execution
-  if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
+  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
     std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
               << "Illegal positional index: [Actual] " << pos
-              << ", [Expected] [0," << list.numElements() << "]"
-              << std::endl;
+              << ", [Expected] 0.." << list.numElements() - 1 << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   list.Delete(pos, n_elems);

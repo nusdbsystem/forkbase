@@ -22,6 +22,8 @@ class Config {
   static std::string command_options_help;
   static std::string command;
   static std::string script;
+  static bool ignore_fail;
+  static std::string expected_fail;
   static std::string file;
   static bool time_exec;
   static bool is_vert_list;

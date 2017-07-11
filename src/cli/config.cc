@@ -12,6 +12,8 @@ bool Config::is_help;
 std::string Config::command_options_help;
 std::string Config::command;
 std::string Config::script;
+bool Config::ignore_fail = false;
+std::string Config::expected_fail;
 std::string Config::file;
 bool Config::time_exec;
 bool Config::is_vert_list;
@@ -38,6 +40,7 @@ void Config::Reset() {
   command_options_help = "";
   command = "";
   script = "";
+  expected_fail = "";
   file = "";
   time_exec = false;
   is_vert_list = false;
@@ -69,6 +72,10 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     boost::to_upper(command);
 
     script = vm["script"].as<std::string>();
+    if (!script.empty()) {
+      ignore_fail = vm.count("ignore-fail") ? true : false;
+    }
+    expected_fail = vm["expect-fail"].as<std::string>();
     file = vm["file"].as<std::string>();
 
     time_exec = vm.count("time") ? true : false;
@@ -132,6 +139,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("help,?", "print usage message")
   ("script", po::value<std::string>()->default_value(""),
    "script of UStore commands")
+  ("expect-fail", po::value<std::string>()->default_value(""),
+   "description of expected failure")
   ("time", "show execution time of command")
   ("vert-list,1", "list one entry per line");
 
@@ -175,7 +184,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("command", po::value<std::string>()->default_value(""),
    "UStore command")
   ("file", po::value<std::string>()->default_value(""),
-   "path of input/output file");
+   "path of input/output file")
+  ("ignore-fail", "ignore command failure in script execution");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);
