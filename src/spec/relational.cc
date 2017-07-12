@@ -258,7 +258,7 @@ void RefreshStatus(ErrorCode& stat) {
     return 2;
   };
   static size_t cnt_dots(f_init());
-  
+
   if (++cnt_dots > 6) {
     cnt_dots = 1;
     ss.seekp(7), ss << std::setw(6) << "", ss.seekp(7);;

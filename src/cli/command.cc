@@ -579,7 +579,7 @@ ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
     auto& ver = rst.value;
     ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
     return ec;
-  } else { // branch.empty() && ref_ver.empty()
+  } else {  // branch.empty() && ref_ver.empty()
     auto rst = odb_.Put(Slice(key), obj, Hash::kNull);
     auto& ec = rst.stat;
     auto& ver = rst.value;
