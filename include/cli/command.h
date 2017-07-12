@@ -65,7 +65,7 @@ class Command {
   ErrorCode ExecPut();
   ErrorCode ExecMerge();
   ErrorCode ExecBranch();
-  ErrorCode ExecRename();
+  ErrorCode ExecRenameBranch();
   ErrorCode ExecDeleteBranch();
   ErrorCode ExecListKey();
   ErrorCode ExecListBranch();
@@ -95,11 +95,12 @@ class Command {
   ErrorCode ExecInfo();
   ErrorCode ExecMeta();
 
-  ErrorCode ExecDelete();
+  ErrorCode ExecRename();
   ErrorCode ExecDiff();
   ErrorCode ExecAppend();
   ErrorCode ExecUpdate();
   ErrorCode ExecInsert();
+  ErrorCode ExecDelete();
 
   ErrorCode ExecGetAll();
   ErrorCode ExecListKeyAll();
@@ -111,13 +112,18 @@ class Command {
 
   ErrorCode ExecPut(const std::string& cmd, const VObject& obj);
   ErrorCode ExecPutString();
+  ErrorCode ExecPutBlob();
   ErrorCode ExecPutList();
   ErrorCode ExecPutMap();
+  ErrorCode ExecAppend(VBlob& blob);
   ErrorCode ExecAppend(VList& list);
+  ErrorCode ExecUpdate(VBlob& blob);
   ErrorCode ExecUpdate(VList& list);
-  ErrorCode ExecUpdate(VMap& list);
+  ErrorCode ExecUpdate(VMap& map);
+  ErrorCode ExecInsert(VBlob& blob);
   ErrorCode ExecInsert(VList& list);
   ErrorCode ExecInsert(VMap& map);
+  ErrorCode ExecDelete(VBlob& blob);
   ErrorCode ExecDelete(VList& list);
   ErrorCode ExecDelete(VMap& map);
 

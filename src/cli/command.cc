@@ -28,6 +28,8 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_HANDLER("MERGE", ExecMerge());
   CMD_HANDLER("BRANCH", ExecBranch());
   CMD_HANDLER("RENAME", ExecRename());
+  CMD_HANDLER("RENAME_BRANCH", ExecRenameBranch());
+  CMD_ALIAS("RENAME_BRANCH", "RENAME-BRANCH");
   CMD_HANDLER("DELETE_BRANCH", ExecDeleteBranch());
   CMD_ALIAS("DELETE_BRANCH", "DELETE-BRANCH");
   CMD_ALIAS("DELETE_BRANCH", "DEL_BRANCH");
@@ -234,7 +236,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BASIC_CMD("UPDATE")
      << "-k <key> -x <value> [-b <branch> | -u <refer_version>]"
      << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
-     << "[-i <index> | -e <map_key>]" << std::endl
+     << "[-i <index> | -e <map_key>] {-d <num_elements>}" << std::endl
      << FORMAT_BASIC_CMD("INSERT")
      << "-k <key> -x <value> [-b <branch> | -u <refer_version>]"
      << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
@@ -253,9 +255,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-b <target_branch> -u <refer_version> | "
      << std::endl << std::setw(kPrintBasicCmdWidth + 24) << ""
      << "-u <refer_version> -v <refer_version_2>]" << std::endl
-     << FORMAT_BASIC_CMD("RENAME")
-     << "-k <key> "
-     << "-c <from_branch> -b <to_branch>" << std::endl
+     << FORMAT_BASIC_CMD("RENAME_BRANCH")
+     << "-k <key> -c <from_branch> -b <to_branch>" << std::endl
      << FORMAT_BASIC_CMD("DELETE_BRANCH")
      << "-k <key> -b <branch>" << std::endl
      << FORMAT_BASIC_CMD("HEAD")
@@ -607,11 +608,10 @@ ErrorCode Command::ExecPut() {
   ErrorCode ec(ErrorCode::kUnknownOp);
   switch (type) {
     case UType::kString:
-      // ec = ExecPut("PUT", VString(Slice(val)));
       ec = ExecPutString();
       break;
     case UType::kBlob:
-      // TODO(linqian)
+      ec = ExecPutBlob();
       break;
     case UType::kList:
       ec = ExecPutList();
@@ -632,6 +632,11 @@ ErrorCode Command::ExecPut() {
 ErrorCode Command::ExecPutString() {
   const auto& val = Config::value;
   return ExecPut("PUT", VString(Slice(val)));
+}
+
+ErrorCode Command::ExecPutBlob() {
+  const auto& val = Config::value;
+  return ExecPut("PUT", VBlob(Slice(val)));
 }
 
 ErrorCode Command::ExecPutList() {
@@ -666,9 +671,11 @@ ErrorCode Command::ExecAppend() {
     auto type = meta.type();
     ErrorCode ec(ErrorCode::kUnknownOp);
     switch (type) {
-      case UType::kBlob:
-        // TODO(linqian)
+      case UType::kBlob: {
+        auto blob = meta.Blob();
+        ec = ExecAppend(blob);
         break;
+      }
       case UType::kList: {
         auto list = meta.List();
         ec = ExecAppend(list);
@@ -684,6 +691,18 @@ ErrorCode Command::ExecAppend() {
   };
   Config::version = Config::ref_version;
   return ExecManipMeta(f_manip_meta);
+}
+
+ErrorCode Command::ExecAppend(VBlob& blob) {
+  const auto& val = Config::value;
+  // conditional execution
+  if (val.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+              << "No data is provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  blob.Append(reinterpret_cast<const byte_t*>(val.c_str()), val.size());
+  return ExecPut("APPEND", blob);
 }
 
 ErrorCode Command::ExecAppend(VList& list) {
@@ -713,9 +732,11 @@ ErrorCode Command::ExecUpdate() {
     auto type = meta.type();
     ErrorCode ec(ErrorCode::kUnknownOp);
     switch (type) {
-      case UType::kBlob:
-        // TODO(linqian)
+      case UType::kBlob: {
+        auto blob = meta.Blob();
+        ec = ExecUpdate(blob);
         break;
+      }
       case UType::kList: {
         auto list = meta.List();
         ec = ExecUpdate(list);
@@ -736,6 +757,27 @@ ErrorCode Command::ExecUpdate() {
   };
   Config::version = Config::ref_version;
   return ExecManipMeta(f_manip_meta);
+}
+
+ErrorCode Command::ExecUpdate(VBlob& blob) {
+  const auto& val = Config::value;
+  const auto& pos = Config::position;
+  const auto& n_elems = Config::num_elements;
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) >= blob.numElements()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+              << "Illegal positional index: [Actual] " << pos
+              << ", [Expected] 0.." << blob.numElements() - 1 << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (val.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+              << "No data is provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  blob.Splice(pos, n_elems, reinterpret_cast<const byte_t*>(val.c_str()),
+              val.size());
+  return ExecPut("UPDATE", blob);
 }
 
 ErrorCode Command::ExecUpdate(VList& list) {
@@ -793,9 +835,11 @@ ErrorCode Command::ExecInsert() {
     auto type = meta.type();
     ErrorCode ec(ErrorCode::kUnknownOp);
     switch (type) {
-      case UType::kBlob:
-        // TODO(linqian)
+      case UType::kBlob: {
+        auto blob = meta.Blob();
+        ec = ExecInsert(blob);
         break;
+      }
       case UType::kList: {
         auto list = meta.List();
         ec = ExecInsert(list);
@@ -816,6 +860,25 @@ ErrorCode Command::ExecInsert() {
   };
   Config::version = Config::ref_version;
   return ExecManipMeta(f_manip_meta);
+}
+
+ErrorCode Command::ExecInsert(VBlob& blob) {
+  const auto& val = Config::value;
+  const auto& pos = Config::position;
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) > blob.numElements()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "Illegal positional index: [Actual] " << pos
+              << ", [Expected] 0.." << blob.numElements() << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (val.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "No data is provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  blob.Insert(pos, reinterpret_cast<const byte_t*>(val.c_str()), val.size());
+  return ExecPut("INSERT", blob);
 }
 
 ErrorCode Command::ExecInsert(VList& list) {
@@ -880,9 +943,11 @@ ErrorCode Command::ExecDelete() {
     auto type = meta.type();
     ErrorCode ec(ErrorCode::kUnknownOp);
     switch (type) {
-      case UType::kBlob:
-        // TODO(linqian)
+      case UType::kBlob: {
+        auto blob = meta.Blob();
+        ec = ExecDelete(blob);
         break;
+      }
       case UType::kList: {
         auto list = meta.List();
         ec = ExecDelete(list);
@@ -903,6 +968,20 @@ ErrorCode Command::ExecDelete() {
   };
   Config::version = Config::ref_version;
   return ExecManipMeta(f_manip_meta);
+}
+
+ErrorCode Command::ExecDelete(VBlob& blob) {
+  const auto& pos = Config::position;
+  const auto& n_elems = Config::num_elements;
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) >= blob.numElements()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
+              << "Illegal positional index: [Actual] " << pos
+              << ", [Expected] 0.." << blob.numElements() - 1 << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  blob.Delete(pos, n_elems);
+  return ExecPut("DELETE", blob);
 }
 
 ErrorCode Command::ExecDelete(VList& list) {
@@ -1059,7 +1138,8 @@ ErrorCode Command::ExecBranch() {
               << std::endl;
   };
   // conditional execution
-  if (key.empty() || tgt_branch.empty()) {
+  if (key.empty() || tgt_branch.empty() ||
+      !(ref_branch.empty() ^ ref_ver.empty())) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -1067,19 +1147,20 @@ ErrorCode Command::ExecBranch() {
     auto ec = odb_.Branch(Slice(key), Slice(ref_branch), Slice(tgt_branch));
     ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_branch(ec);
     return ec;
-  }
-  if (ref_branch.empty() && !ref_ver.empty()) {
-    auto ec = odb_.Branch(Slice(key), Hash::FromBase32(ref_ver),
-                          Slice(tgt_branch));
+  } else { // ref_branch.empty() && !ref_ver.empty()
+    auto ec =
+      odb_.Branch(Slice(key), Hash::FromBase32(ref_ver), Slice(tgt_branch));
     ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_ver(ec);
     return ec;
   }
-  // illegal: ref_branch and ref_ver are neither set or both set
-  f_rpt_invalid_args();
-  return ErrorCode::kInvalidCommandArgument;
 }
 
 ErrorCode Command::ExecRename() {
+  // redirection
+  return ExecRenameBranch();
+}
+
+ErrorCode Command::ExecRenameBranch() {
   const auto& key = Config::key;
   const auto& old_branch = Config::ref_branch;
   const auto& new_branch = Config::branch;

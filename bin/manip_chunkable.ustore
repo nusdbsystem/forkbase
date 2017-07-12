@@ -1,6 +1,18 @@
 # Run:
 # ./ustore_cli --script /path/to/this_script.ustore
 
+# For blob
+put -p blob -k 123 -b dev -x "Hello"
+get -k 123 -b dev
+append -k 123 -b dev -x ", world!"
+get -k 123 -b dev
+update -k 123 -b dev -i 7 -d 10 -x "girl~"
+get -k 123 -b dev
+insert -k 123 -b dev -i 6 -x " pretty"
+get -k 123 -b dev
+del -k 123 -b dev -i 2 -d 3
+get -k 123 -b dev
+
 # For list
 put -p list -k abc -b dev -x "[1 | 2| 3 |4|5]"
 get -k abc -b dev
