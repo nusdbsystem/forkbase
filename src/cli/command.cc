@@ -548,6 +548,7 @@ ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
     std::cout << BOLD_GREEN("[SUCCESS: " << cmd << "] ")
               << "Type: \"" << obj.value().type << "\", "
               << "Version: \"" << ver << '\"' << std::endl;
+    Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
@@ -956,6 +957,7 @@ ErrorCode Command::ExecMerge() {
   const auto f_rpt_success = [](const Hash & ver) {
     std::cout << BOLD_GREEN("[SUCCESS: MERGE] ")
               << "Version: \"" << ver << '\"' << std::endl;
+    Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: MERGE] ")
@@ -1218,6 +1220,7 @@ ErrorCode Command::ExecHead() {
   const auto f_rpt_success = [](const Hash & ver) {
     std::cout << BOLD_GREEN("[SUCCESS: HEAD] ")
               << "Version: \"" << ver << '\"' << std::endl;
+    Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail = [&key, &branch](const ErrorCode & ec) {
     std::cerr << BOLD_RED("[FAILED: HEAD] ")

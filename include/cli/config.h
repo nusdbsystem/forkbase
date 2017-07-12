@@ -5,6 +5,7 @@
 
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <list>
 #include <string>
 #include <vector>
 #include "types/type.h"
@@ -49,8 +50,19 @@ class Config {
 
   static bool ParseCmdArgs(const std::vector<std::string>& args);
 
+  static inline void AddHistoryVersion(const std::string& ver) {
+    history_vers_.emplace_front(ver);
+    if (history_vers_.size() > 32) history_vers_.pop_back();
+  }
+
+  static inline void AddHistoryVersion(const Hash& ver) {
+    AddHistoryVersion(ver.ToBase32());
+  }
+
  private:
   static void Reset();
+
+  static bool ParseHistoryVersion(std::string* ver);
 
   static bool ParseCmdArgs(int argc, char* argv[], po::variables_map* vm);
 
@@ -127,6 +139,8 @@ class Config {
     return CheckArg(var, lbound < var && var < ubound, title, "range of" +
                     Utils::ToStringPair(lbound, ubound, "(", ")", ","));
   }
+
+  static std::list<std::string> history_vers_;
 };
 
 template<typename T>

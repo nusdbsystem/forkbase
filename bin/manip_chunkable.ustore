@@ -15,8 +15,8 @@ delete -k abc -b dev -i 2
 get -k abc -b dev
 del -k abc -b dev -i 2 -d 2
 get -k abc -b dev
-remove -k abc -b dev -i 1 -d 5
-get -k abc -b dev
+remove -k abc -u @1 -i 1 -d 5
+get -k abc -v @1
 
 # For map
 put -p map -k xyz -b master -x "{a:1, (b,2); [c, 3] | d,4 | e:5}"

@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include <boost/algorithm/string.hpp>
+#include <iterator>
 #include <utility>
 
 #include "cli/config.h"
@@ -34,6 +35,8 @@ int64_t Config::position;
 int64_t Config::ref_position;
 size_t Config::num_elements;
 size_t Config::batch_size;
+
+std::list<std::string> Config::history_vers_;
 
 void Config::Reset() {
   is_help = false;
@@ -96,10 +99,12 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     ref_branch = vm["ref-branch"].as<std::string>();
 
     version = vm["version"].as<std::string>();
+    ParseHistoryVersion(&version);
     GUARD(CheckArg(version.size(), version.empty() || version.size() == 32,
                    "Length of the operating version", "0 or 32"));
 
     ref_version = vm["ref-version"].as<std::string>();
+    ParseHistoryVersion(&ref_version);
     GUARD(CheckArg(ref_version.size(),
                    ref_version.empty() || ref_version.size() == 32,
                    "Length of the referring version", "0 or 32"));
@@ -228,6 +233,29 @@ bool Config::ParseCmdArgs(const std::vector<std::string>& args) {
   auto ec = ParseCmdArgs(argc, argv);
   for (size_t i = 1; i < argc; ++i) delete argv[i];
   return ec;
+}
+
+bool Config::ParseHistoryVersion(std::string* ver) {
+  if (!boost::starts_with(*ver, "@") || history_vers_.empty()) return false;
+  try {
+    auto idx = std::stoi(ver->substr(1));
+    if (idx <= 0 || static_cast<size_t>(idx) > history_vers_.size()) {
+      std::cerr << BOLD_RED("[ERROR] ")
+                << "Index out of range: [Actual] " << *ver
+                << ", [Expected] @1.." << history_vers_.size() << std::endl;
+      return false;
+    }
+    std::cout << BOLD_GREEN("[CONVERTED] ") << *ver << ": ";
+    *ver = idx == 1
+           ? history_vers_.front()
+           : *(std::next(history_vers_.begin(), idx - 1));
+    std::cout << '\"' << *ver << '\"' << std::endl;
+  } catch (std::exception& e) {
+    std::cerr << BOLD_RED("[ERROR] ")
+              << "Failed to parse placeholder: " << *ver << std::endl;
+    return false;
+  }
+  return true;
 }
 
 }  // namespace cli
