@@ -106,6 +106,12 @@ namespace ustore {
   if (var == ErrorCode::from) var = ErrorCode::to; \
 } while (0)
 
+#define HASH_TO_SLICE(hash) \
+  ::ustore::Slice(hash.value(), ::ustore::Hash::kByteLength)
+
+#define SLICE_TO_HASH(slice) \
+  ::ustore::Hash(slice.data())
+
 class Utils {
  public:
   static const size_t max_size_t;

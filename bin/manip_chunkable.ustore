@@ -18,7 +18,7 @@ put -p list -k abc -b dev -x "[1 | 2| 3 |4|5]"
 get -k abc -b dev
 append -k abc -b dev -x "6, 7"
 Get -k abc -b dev
-update -k abc -b dev -i 7 -x three --expect-fail "Index out of range"
+update -k abc -b dev -i 7 -x three -F "Index out of range"
 UPDATE -k abc -b dev -i 2 -x three
 GET -k abc -b dev
 insert -k abc -b dev -i 1 -x "one two"
@@ -33,12 +33,12 @@ get -k abc -v @1
 # For map
 put -p map -k xyz -b master -x "{a:1, (b,2); [c, 3] | d,4 | e:5}"
 get -k xyz -b master
-UPDATE -k xyz -b master -e "f" -x 6 --expect-fail "Entry does not exist"
+UPDATE -k xyz -b master -e "f" -x 6 -F "Entry does not exist"
 Update -k xyz -b master -e b -x two
 geT -k xyz -b master
 insert -k xyz -b master -e f -x 6
-insert -k xyz -b master -e "f" -x 6 --expect-fail "Entry already exists"
+insert -k xyz -b master -e "f" -x 6 -F "Entry already exists"
 get -k xyz -b master
-Remove -k xyz -b master -e G --expect-fail "Entry does not exist"
+Remove -k xyz -b master -e G -F "Entry does not exist"
 rm -k xyz -b master -e d
 get -k xyz -b master

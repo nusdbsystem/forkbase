@@ -142,11 +142,11 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   po::options_description utility(BLUE_STR("Utility Options"), 120);
   utility.add_options()
   ("help,?", "print usage message")
-  ("script", po::value<std::string>()->default_value(""),
+  ("script,S", po::value<std::string>()->default_value(""),
    "script of UStore commands")
-  ("expect-fail", po::value<std::string>()->default_value(""),
+  ("expect-fail,F", po::value<std::string>()->default_value(""),
    "description of expected failure")
-  ("time", "show execution time of command")
+  ("time,T", "show execution time of command")
   ("vert-list,1", "list one entry per line");
 
   po::options_description general(BLUE_STR("General Options"), 120);
