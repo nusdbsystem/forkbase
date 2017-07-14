@@ -1147,7 +1147,7 @@ ErrorCode Command::ExecBranch() {
     auto ec = odb_.Branch(Slice(key), Slice(ref_branch), Slice(tgt_branch));
     ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_branch(ec);
     return ec;
-  } else { // ref_branch.empty() && !ref_ver.empty()
+  } else {  // ref_branch.empty() && !ref_ver.empty()
     auto ec =
       odb_.Branch(Slice(key), Hash::FromBase32(ref_ver), Slice(tgt_branch));
     ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_ver(ec);
