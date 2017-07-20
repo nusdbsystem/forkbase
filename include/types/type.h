@@ -97,15 +97,16 @@ enum class ErrorCode : byte_t {
   kNotEmptyTable = 25,
   kColumnNotExists = 26,
   kRowNotExists = 27,
-  kFailedOpenFile = 28,
-  kInvalidCommandArgument = 29,
-  kUnknownCommand = 30,
-  kInvalidSchema = 31,
-  kInconsistentType = 32,
-  kInvalidParameter = 33,
-  kMapKeyNotExists = 34,
-  kMapKeyExists = 35,
-  kUnexpectedSuccess = 36
+  kRowExists = 28,
+  kFailedOpenFile = 29,
+  kInvalidCommandArgument = 30,
+  kUnknownCommand = 31,
+  kInvalidSchema = 32,
+  kInconsistentType = 33,
+  kInvalidParameter = 34,
+  kMapKeyNotExists = 35,
+  kMapKeyExists = 36,
+  kUnexpectedSuccess = 37
 };
 
 }  // namespace ustore

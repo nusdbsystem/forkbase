@@ -47,7 +47,7 @@ ErrorCode ColumnStore::LoadCSV(const std::string& file_path,
                                const std::string& branch_name,
                                size_t batch_size, bool print_progress) {
   Table tab;
-  USTORE_GUARD(GetTable(table_name, branch_name, &tab));
+  USTORE_GUARD(ReadTable(Slice(table_name), Slice(branch_name), &tab));
   USTORE_GUARD(tab.numElements() > 0 ?
                ErrorCode::kNotEmptyTable : ErrorCode::kOK);
   std::ifstream ifs(file_path);
@@ -110,9 +110,10 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
   // update table once loading columns completes with success
   auto ec = stat_flush;
   if (ec == ErrorCode::kOK) {
+    Slice table(table_name), branch(branch_name);
     Table tab;
     for (auto& name : col_names) {
-      ec = GetTable(table_name, branch_name, &tab);
+      ec = ReadTable(table, branch, &tab);
       if (ec != ErrorCode::kOK) break;
       auto col_key = GlobalKey(table_name, name);
       auto rst = odb_.GetBranchHead(Slice(col_key), Slice(branch_name));
@@ -120,7 +121,7 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
       if (ec != ErrorCode::kOK) break;
       auto& col_ver = rst.value;
       tab.Set(Slice(name), HASH_TO_SLICE(col_ver));
-      ec = odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
+      ec = odb_.Put(table, tab, branch).stat;
     }
   }
   return ec;
@@ -363,9 +364,10 @@ ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
                                const std::string& branch_name) {
   std::ofstream ofs(file_path);
   USTORE_GUARD(ofs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
+  Slice table(table_name), branch(branch_name);
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
+    ReadTable(table, branch, &tab));
   USTORE_GUARD(tab.numElements() == 0 ?
                ErrorCode::kEmptyTable : ErrorCode::kOK);
   // retrieve the column-based table
@@ -397,12 +399,16 @@ ErrorCode ColumnStore::DumpCSV(const std::string& file_path,
 }
 
 ErrorCode ColumnStore::GetTable(const std::string& table_name,
-                                const std::string& branch_name,
-                                Table* table) {
-  auto tab_rst = odb_.Get(Slice(table_name), Slice(branch_name));
-  auto& ec = tab_rst.stat;
+                                const std::string& branch_name, Table* tab) {
+  return ReadTable(Slice(table_name), Slice(branch_name), tab);
+}
+
+ErrorCode ColumnStore::ReadTable(const Slice& table, const Slice& branch,
+                                 Table* tab) {
+  auto rst = odb_.Get(table, branch);
+  auto& ec = rst.stat;
   if (ec == ErrorCode::kOK) {
-    *table = tab_rst.value.Map();
+    *tab = rst.value.Map();
   } else {
     ERROR_CODE_FWD(ec, kKeyNotExists, kTableNotExists);
   }
@@ -412,19 +418,19 @@ ErrorCode ColumnStore::GetTable(const std::string& table_name,
 ErrorCode ColumnStore::BranchTable(const std::string& table_name,
                                    const std::string& old_branch_name,
                                    const std::string& new_branch_name) {
-  const Slice old_branch(old_branch_name);
-  const Slice new_branch(new_branch_name);
+  Slice table(table_name),
+        old_branch(old_branch_name), new_branch(new_branch_name);
   // branch all columns of the table
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, old_branch_name, &tab));
+    ReadTable(table, old_branch, &tab));
   for (auto it = tab.Scan(); !it.end(); it.next()) {
     auto col_key = GlobalKey(table_name, it.key());
     USTORE_GUARD(
       odb_.Branch(Slice(col_key), old_branch, new_branch));
   }
   // branch the table
-  return odb_.Branch(Slice(table_name), old_branch, new_branch);
+  return odb_.Branch(table, old_branch, new_branch);
 }
 
 ErrorCode ColumnStore::ListTableBranch(const std::string& table_name,
@@ -441,7 +447,7 @@ ErrorCode ColumnStore::MergeTable(const std::string& table_name,
                                   const std::string& remove_col_name) {
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, tgt_branch_name, &tab));
+    ReadTable(Slice(table_name), Slice(tgt_branch_name), &tab));
   tab.Remove(Slice(remove_col_name));
   return odb_.Merge(Slice(table_name), tab, Slice(tgt_branch_name),
                     Slice(ref_branch_name)).stat;
@@ -457,7 +463,7 @@ ErrorCode ColumnStore::MergeTable(
                 &new_col_ver));
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, tgt_branch_name, &tab));
+    ReadTable(Slice(table_name), Slice(tgt_branch_name), &tab));
   tab.Set(Slice(new_col_name), HASH_TO_SLICE(new_col_ver));
   return odb_.Merge(Slice(table_name), tab, Slice(tgt_branch_name),
                     Slice(ref_branch_name)).stat;
@@ -468,7 +474,7 @@ ErrorCode ColumnStore::DeleteTable(const std::string& table_name,
   // delete all columns of the table
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
+    ReadTable(Slice(table_name), Slice(branch_name), &tab));
   for (auto it = tab.Scan(); !it.end(); it.next()) {
     auto col_key = GlobalKey(table_name, it.key());
     USTORE_GUARD(
@@ -497,11 +503,9 @@ ErrorCode ColumnStore::ExistsColumn(const std::string& table_name,
   return rst.stat;
 }
 
-ErrorCode ColumnStore::ReadColumn(const std::string& table_name,
-                                  const std::string& col_name,
-                                  const Hash& col_ver, Column* col) {
-  auto col_key = GlobalKey(table_name, col_name);
-  auto col_rst = odb_.Get(Slice(col_key), col_ver);
+ErrorCode ColumnStore::ReadColumn(const Slice& col_key, const Hash& col_ver,
+                                  Column* col) {
+  auto col_rst = odb_.Get(col_key, col_ver);
   USTORE_GUARD(col_rst.stat);
   *col = col_rst.value.List();
   return ErrorCode::kOK;
@@ -512,24 +516,26 @@ ErrorCode ColumnStore::GetColumn(
   const std::string& col_name, Column* col) {
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
-
+    ReadTable(Slice(table_name), Slice(branch_name), &tab));
   auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
   if (col_ver.empty()) {
     LOG(WARNING) << "Column \"" << col_name << "\" does not exist in Table \""
                  << table_name << "\" of Branch \"" << branch_name << "\"";
     return ErrorCode::kColumnNotExists;
   }
-  return ReadColumn(table_name, col_name, col_ver, col);
+  auto col_key = GlobalKey(table_name, col_name);
+  return ReadColumn(Slice(col_key), col_ver, col);
 }
 
 ErrorCode ColumnStore::WriteColumn(const std::string& table_name,
                                    const std::string& branch_name,
                                    const std::string& col_name,
-                                   const std::vector<Slice>& col_vals,
+                                   const std::vector<std::string>& col_vals,
                                    Hash* ver) {
+  std::vector<Slice> col_slices;
+  for (const auto& str : col_vals) col_slices.emplace_back(str);
+  Column col(col_slices);
   auto col_key = GlobalKey(table_name, col_name);
-  Column col(col_vals);
   auto col_rst = odb_.Put(Slice(col_key), col, Slice(branch_name));
   USTORE_GUARD(col_rst.stat);
   *ver = std::move(col_rst.value);
@@ -543,11 +549,12 @@ ErrorCode ColumnStore::PutColumn(const std::string& table_name,
   Hash col_ver;
   USTORE_GUARD(
     WriteColumn(table_name, branch_name, col_name, col_vals, &col_ver));
+  Slice table(table_name), branch(branch_name);
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
+    ReadTable(table, branch, &tab));
   tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver));
-  return odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
+  return odb_.Put(table, tab, branch).stat;
 }
 
 ErrorCode ColumnStore::ListColumnBranch(const std::string& table_name,
@@ -568,11 +575,30 @@ ErrorCode ColumnStore::DeleteColumn(const std::string& table_name,
   USTORE_GUARD(
     odb_.Delete(Slice(col_key), Slice(branch_name)));
   // delete the column entry in the table
+  Slice table(table_name), branch(branch_name);
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
+    ReadTable(table, branch, &tab));
   tab.Remove(Slice(col_name));
-  return odb_.Put(Slice(table_name), tab, Slice(branch_name)).stat;
+  return odb_.Put(table, tab, branch).stat;
+}
+
+ErrorCode ColumnStore::ExistsRow(const std::string& table_name,
+                                 const std::string& branch_name,
+                                 const std::string& ref_col_name,
+                                 const std::string& ref_val,
+                                 bool* exists) {
+  *exists = false;
+  Column ref_col;
+  USTORE_GUARD(
+    GetColumn(table_name, branch_name, ref_col_name, &ref_col));
+  for (auto it = ref_col.Scan(); !it.end(); it.next()) {
+    if (it.value() == ref_val) {
+      *exists = true;
+      break;
+    }
+  }
+  return ErrorCode::kOK;
 }
 
 ErrorCode ColumnStore::GetRow(const std::string& table_name,
@@ -596,14 +622,15 @@ ErrorCode ColumnStore::GetRow(const std::string& table_name,
   // construct rows according to the indices
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
+    ReadTable(Slice(table_name), Slice(branch_name), &tab));
   for (auto it = tab.Scan(); !it.end(); it.next()) {
     auto col_name = it.key().ToString();
     if (col_name == ref_col_name) continue;
     auto col_ver = SLICE_TO_HASH(it.value());
+    auto col_key = GlobalKey(table_name, col_name);
     Column col;
     USTORE_GUARD(
-      ReadColumn(table_name, col_name, col_ver, &col));
+      ReadColumn(Slice(col_key), col_ver, &col));
     for (auto i_r : *rows) {
       rows->at(i_r.first).emplace(col_name, col.Get(i_r.first).ToString());
     }
@@ -617,7 +644,7 @@ ErrorCode ColumnStore::Validate(const Row& row,
                                 size_t* n_fields_not_covered) {
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
+    ReadTable(Slice(table_name), Slice(branch_name), &tab));
   std::unordered_set<std::string> col_names;
   for (auto it = tab.Scan(); !it.end(); it.next()) {
     col_names.emplace(it.key().ToString());
@@ -639,19 +666,20 @@ ErrorCode ColumnStore::ManipRow(
   const std::string& table_name, const std::string& branch_name,
   size_t row_idx, const Row& row,
   const std::function<void(Column*, const std::string&)> f_manip_col) {
-  Slice table(table_name);
-  Slice branch(branch_name);
+  Slice table(table_name), branch(branch_name);
   for (auto& field : row) {
     auto& col_name = field.first;
     auto& field_value = field.second;
     Table tab;
     USTORE_GUARD(
-      GetTable(table_name, branch_name, &tab));
+      ReadTable(table, branch, &tab));
     // retrive column corresponding to the field
     auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
+    auto col_key_str = GlobalKey(table_name, col_name);
+    Slice col_key(col_key_str);
     Column col;
     USTORE_GUARD(
-      ReadColumn(table_name, col_name, col_ver, &col));
+      ReadColumn(col_key, col_ver, &col));
     // validate the row index
     if (row_idx >= col.numElements()) {
       LOG(ERROR) << "Index out of range: [Actual] " << row_idx
@@ -661,8 +689,6 @@ ErrorCode ColumnStore::ManipRow(
     // manipulate field value of the column
     f_manip_col(&col, field_value);
     // write the new column into storage
-    auto col_key_str = GlobalKey(table_name, col_name);
-    Slice col_key(col_key_str);
     auto col_rst = odb_.Put(col_key, col, branch);
     USTORE_GUARD(col_rst.stat);
     auto& col_ver_new = col_rst.value;
@@ -689,14 +715,14 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
 
 ErrorCode ColumnStore::GetTableSchema(const std::string& table_name,
                                       const std::string& branch_name,
-                                      Row* row) {
-  row->clear();
+                                      Row* schema) {
+  schema->clear();
   Table tab;
   USTORE_GUARD(
-    GetTable(table_name, branch_name, &tab));
+    ReadTable(Slice(table_name), Slice(branch_name), &tab));
   static const std::string null_field("");
   for (auto it = tab.Scan(); !it.end(); it.next()) {
-    row->emplace(it.key().ToString(), null_field);
+    schema->emplace(it.key().ToString(), null_field);
   }
   return ErrorCode::kOK;
 }
@@ -704,11 +730,11 @@ ErrorCode ColumnStore::GetTableSchema(const std::string& table_name,
 ErrorCode ColumnStore::DeleteRow(const std::string& table_name,
                                  const std::string& branch_name,
                                  size_t row_idx) {
-  Row row;
+  Row schema;
   USTORE_GUARD(
-    GetTableSchema(table_name, branch_name, &row));
+    GetTableSchema(table_name, branch_name, &schema));
 
-  return ManipRow(table_name, branch_name, row_idx, row,
+  return ManipRow(table_name, branch_name, row_idx, schema,
   [&row_idx](Column * col, const std::string & field_value) {
     col->Delete(row_idx, 1);
   });
@@ -741,14 +767,13 @@ ErrorCode ColumnStore::ManipRows(
   }
   if (indices.empty()) return ErrorCode::kRowNotExists;
   // apply row updates
-  Slice table(table_name);
-  Slice branch(branch_name);
+  Slice table(table_name), branch(branch_name);
   for (auto& field : row) {
     auto& col_name = field.first;
     auto& field_value = field.second;
     Table tab;
     USTORE_GUARD(
-      GetTable(table_name, branch_name, &tab));
+      ReadTable(table, branch, &tab));
     auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
     auto col_key_str = GlobalKey(table_name, col_name);
     Slice col_key(col_key_str);
@@ -757,7 +782,7 @@ ErrorCode ColumnStore::ManipRows(
       // retrive column corresponding to the field
       Column col;
       USTORE_GUARD(
-        ReadColumn(table_name, col_name, col_ver, &col));
+        ReadColumn(col_key, col_ver, &col));
       // manipulate field value of the column
       f_manip_col(&col, i, field_value);
       // write the new column into storage
@@ -814,25 +839,53 @@ ErrorCode ColumnStore::InsertRow(const std::string& table_name,
     LOG(ERROR) << "Incomplete row for insertion";
     return ErrorCode::kInvalidSchema;
   }
+  return InsertRow(Slice(table_name), Slice(branch_name), row);
+}
 
-  Slice table(table_name);
-  Slice branch(branch_name);
+ErrorCode ColumnStore::InsertRowDistinct(
+  const std::string& table_name, const std::string& branch_name,
+  const std::string& distinct_col_name, const Row& row) {
+  auto distinct_field = row.find(distinct_col_name);
+  if (distinct_field == row.end()) return ErrorCode::kColumnNotExists;
+  auto& distinct_col_val = distinct_field->second;
+
+  size_t n_fields_not_covered;
+  USTORE_GUARD(
+    Validate(row, table_name, branch_name, &n_fields_not_covered));
+  if (n_fields_not_covered > 0) {
+    LOG(ERROR) << "Incomplete row for insertion";
+    return ErrorCode::kInvalidSchema;
+  }
+
+  Column col;
+  USTORE_GUARD(
+    GetColumn(table_name, branch_name, distinct_col_name, &col));
+  for (auto it = col.Scan(); !it.end(); it.next()) {
+    if (it.value() == distinct_col_val) return ErrorCode::kRowExists;
+  }
+  return InsertRow(Slice(table_name), Slice(branch_name), row);
+}
+
+ErrorCode ColumnStore::InsertRow(const Slice& table, const Slice& branch,
+                                 const Row& row) {
+  auto table_name = table.ToString();
   for (auto& field : row) {
     auto& col_name = field.first;
     auto& field_value = field.second;
     Table tab;
     USTORE_GUARD(
-      GetTable(table_name, branch_name, &tab));
+      ReadTable(table, branch, &tab));
     auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
     // retrive column corresponding to the field
+    auto col_key_str = GlobalKey(table_name, col_name);
+    Slice col_key(col_key_str);
     Column col;
     USTORE_GUARD(
-      ReadColumn(table_name, col_name, col_ver, &col));
+      ReadColumn(col_key, col_ver, &col));
     // append field value to the column
     col.Append({Slice(field_value)});
     // write the new column into storage
-    auto col_key = GlobalKey(table_name, col_name);
-    auto col_rst = odb_.Put(Slice(col_key), col, branch);
+    auto col_rst = odb_.Put(col_key, col, branch);
     USTORE_GUARD(col_rst.stat);
     auto& col_ver_new = col_rst.value;
     // update column entry in the table

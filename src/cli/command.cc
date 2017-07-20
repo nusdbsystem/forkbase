@@ -307,7 +307,9 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_RELATIONAL_CMD("GET_ROW")
      << "-t <table> -b <branch> -n <refer_colum> -y <refer_value>" << std::endl
      << FORMAT_RELATIONAL_CMD("INSERT_ROW")
-     << "-t <table> -b <branch> -x <field_list>" << std::endl
+     << "-t <table> -b <branch> -x <field_list>"
+     << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
+     << "{--distinct -m <distinct_column>}" << std::endl
      << FORMAT_RELATIONAL_CMD("UPDATE_ROW")
      << "-t <table> -b <branch> -x <field_list> "
      << std::endl << std::setw(kPrintRelationalCmdWidth + 3) << ""
@@ -1514,13 +1516,12 @@ ErrorCode Command::ExecGetTable() {
               << "Table: \"" << tab_name << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
-  const auto f_rpt_success = [](const Table & tab) {
+  const auto f_rpt_success = [](const Row & schema) {
     if (Config::is_vert_list) {
-      for (auto it = tab.Scan(); !it.end(); it.next())
-        std::cout << it.key() << std::endl;
+      Utils::PrintKeys(schema, "", "\n", "\n");
     } else {
       std::cout << BOLD_GREEN("[SUCCESS: GET_TABLE] ") << "Columns: ";
-      Utils::PrintKeys(tab, "[", "]", ", ", true);
+      Utils::PrintKeys(schema, "[", "]", ", ", true);
       std::cout << std::endl;
     }
   };
@@ -1536,9 +1537,9 @@ ErrorCode Command::ExecGetTable() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  Table tab;
-  auto ec = cs_.GetTable(tab_name, branch, &tab);
-  ec == ErrorCode::kOK ? f_rpt_success(tab) : f_rpt_fail(ec);
+  Row schema;
+  auto ec = cs_.GetTableSchema(tab_name, branch, &schema);
+  ec == ErrorCode::kOK ? f_rpt_success(schema) : f_rpt_fail(ec);
   return ec;
 }
 
@@ -2113,12 +2114,15 @@ ErrorCode Command::ParseRowString(const std::string& row_str, Row* row) {
 ErrorCode Command::ExecInsertRow() {
   const auto& tab = Config::table;
   const auto& branch = Config::branch;
+  const auto& distinct = Config::distinct;
+  const auto& distinct_col = Config::column;
   const auto& val = Config::value;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cerr << BOLD_RED("[INVALID ARGS: INSERT_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
+              << (distinct ? "Distinct Column: \"" + distinct_col + "\", " : "")
               << "Row: \"" << val << "\"" << std::endl;
   };
   const auto f_rpt_success = [this]() {
@@ -2129,12 +2133,14 @@ ErrorCode Command::ExecInsertRow() {
     std::cerr << BOLD_RED("[FAILED: INSERT_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
+              << (distinct ? "Distinct Column: \"" + distinct_col + "\", " : "")
               << "Row: \"" << val << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   // conditional execution
-  if (tab.empty() || branch.empty() || val.empty()) {
+  if (tab.empty() || branch.empty() || val.empty() ||
+      (distinct && distinct_col.empty())) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -2144,7 +2150,11 @@ ErrorCode Command::ExecInsertRow() {
     f_rpt_fail(ec);
     return ec;
   }
-  ec = cs_.InsertRow(tab, branch, row);
+  if (distinct) {
+    ec = cs_.InsertRowDistinct(tab, branch, distinct_col, row);
+  } else {
+    ec = cs_.InsertRow(tab, branch, row);
+  }
   ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
   return ec;
 }

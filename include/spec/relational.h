@@ -11,6 +11,7 @@
 #include <atomic>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include "spec/object_db.h"
@@ -48,7 +49,10 @@ class ColumnStore {
                     const std::string& branch_name);
 
   ErrorCode GetTable(const std::string& table_name,
-                     const std::string& branch_name, Table* table);
+                     const std::string& branch_name, Table* tab);
+
+  ErrorCode GetTableSchema(const std::string& table_name,
+                           const std::string& branch_name, Row* schema);
 
   ErrorCode BranchTable(const std::string& table_name,
                         const std::string& old_branch_name,
@@ -99,6 +103,12 @@ class ColumnStore {
                          const std::string& branch_name,
                          const std::string& col_name);
 
+  ErrorCode ExistsRow(const std::string& table_name,
+                      const std::string& branch_name,
+                      const std::string& ref_col_name,
+                      const std::string& ref_val,
+                      bool* exists);
+
   ErrorCode GetRow(const std::string& table_name,
                    const std::string& branch_name,
                    const std::string& ref_col_name,
@@ -117,6 +127,11 @@ class ColumnStore {
 
   ErrorCode InsertRow(const std::string& table_name,
                       const std::string& branch_name, const Row& row);
+
+  ErrorCode InsertRowDistinct(const std::string& table_name,
+                              const std::string& branch_name,
+                              const std::string& distinct_col_name,
+                              const Row& row);
 
   ErrorCode DeleteRow(const std::string& table_name,
                       const std::string& branch_name, size_t row_idx);
@@ -138,25 +153,14 @@ class ColumnStore {
   }
 
  private:
-  ErrorCode ReadColumn(const std::string& table_name,
-                       const std::string& col_name, const Hash& col_ver,
-                       Column* col);
+  ErrorCode ReadTable(const Slice& table, const Slice& branch, Table* tab);
 
-  ErrorCode WriteColumn(const std::string& table_name,
-                        const std::string& branch_name,
-                        const std::string& col_name,
-                        const std::vector<Slice>& col_vals,
-                        Hash* ver);
+  ErrorCode ReadColumn(const Slice& col_key, const Hash& col_ver, Column* col);
 
-  inline ErrorCode WriteColumn(const std::string& table_name,
-                               const std::string& branch_name,
-                               const std::string& col_name,
-                               const std::vector<std::string>& col_vals,
-                               Hash* ver) {
-    std::vector<Slice> col_slices;
-    for (const auto& str : col_vals) col_slices.emplace_back(str);
-    return WriteColumn(table_name, branch_name, col_name, col_slices, ver);
-  }
+  ErrorCode WriteColumn(
+    const std::string& table_name, const std::string& branch_name,
+    const std::string& col_name, const std::vector<std::string>& col_vals,
+    Hash* ver);
 
   ErrorCode LoadCSV(
     std::ifstream& ifs, const std::string& table_name,
@@ -193,9 +197,8 @@ class ColumnStore {
       Column*, size_t row_idx, const std::string&)> f_manip_col,
     size_t* n_rows_affected);
 
-  ErrorCode GetTableSchema(const std::string& table_name,
-                           const std::string& branch_name,
-                           Row* row);
+  ErrorCode InsertRow(const Slice& table, const Slice& branch, const Row& row);
+
   ObjectDB odb_;
 };
 

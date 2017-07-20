@@ -31,6 +31,7 @@ std::string Config::table;
 std::string Config::ref_table;
 std::string Config::column;
 std::string Config::ref_column;
+bool Config::distinct;
 int64_t Config::position;
 int64_t Config::ref_position;
 size_t Config::num_elements;
@@ -60,6 +61,7 @@ void Config::Reset() {
   ref_table = "";
   column = "";
   ref_column = "";
+  distinct = false;
   position = -1;
   ref_position = -1;
   num_elements = 1;
@@ -111,6 +113,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     table = vm["table"].as<std::string>();
     ref_table = vm["ref-table"].as<std::string>();
+    distinct = vm.count("distinct") ? true : false;
 
     column = vm["column"].as<std::string>();
     ref_column = vm["ref-column"].as<std::string>();
@@ -181,6 +184,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("ref-position,j", po::value<int64_t>(), "the referring positional index")
   ("num-elements,d", po::value<int32_t>()->default_value(1),
    "number of elements")
+  ("distinct", "enforcing the distinct constraint")
   ("batch-size", po::value<int32_t>()->default_value(5000),
    "batch size for data loading");
 

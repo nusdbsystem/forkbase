@@ -267,6 +267,14 @@ class Utils {
                     const std::string& entry_sep = "->",
                     bool elem_in_quote = false, std::ostream& os = std::cout);
 
+  template<class T1, class T2>
+  static void PrintKeys(const std::unordered_map<T1, T2>& map,
+                        const std::string& lsymbol = "[",
+                        const std::string& rsymbol = "]",
+                        const std::string& sep = ", ",
+                        bool elem_in_quote = false,
+                        std::ostream& os = std::cout);
+
   static void PrintPercentBar(double fraction, const std::string& front_symbol,
                               size_t width = 40,
                               const std::string& lsymbol = "[",
@@ -352,7 +360,6 @@ void Utils::PrintSeq(const T& begin, const T& end,
   auto it = begin;
   if (it != end) {
     os << quote << *it++ << quote;
-    // size_t cnt(1);
     while (it != end) os << sep << quote << *it++ << quote;
   }
   os << rsymbol;
@@ -420,6 +427,23 @@ void Utils::Print(const std::unordered_map<T1, T2>& map,
     while (++it != map.end()) {
       os << sep;
       f_print_it();
+    }
+  }
+  os << rsymbol;
+}
+
+template<class T1, class T2>
+void Utils::PrintKeys(const std::unordered_map<T1, T2>& map,
+                      const std::string& lsymbol, const std::string& rsymbol,
+                      const std::string& sep, bool elem_in_quote,
+                      std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = map.begin();
+  os << lsymbol;
+  if (it != map.end()) {
+    os << quote << it->first << quote;
+    while (++it != map.end()) {
+      os << sep << quote << it->first << quote;
     }
   }
   os << rsymbol;

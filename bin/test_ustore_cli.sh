@@ -49,4 +49,4 @@ else
     echo -e "${RED}[FAILED]${NE} Failed test is found!"
 fi
 
-exit $?
+exit ${RST}
