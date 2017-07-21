@@ -409,6 +409,7 @@ ErrorCode Command::ExecScript(const std::string& script) {
     ++cnt_line;
     boost::trim(line);
     if (line.empty() || boost::starts_with(line, "#")) continue;
+    if (line == "exit") break;
     std::cout << YELLOW(cnt_line << ":> ") << line << std::endl;
     if (!Utils::TokenizeArgs(line, &args)) {
       std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
@@ -539,6 +540,35 @@ ErrorCode Command::ExecGet() {
     return ErrorCode::kOK;
   };
   return ExecManipMeta(f_manip_meta);
+}
+
+bool Command::IsDistinct(const std::string& cmd,
+                         const std::vector<std::string>& elems,
+                         const VList& list) {
+  const auto f_rpt_fail_by_distinct = [&cmd](const Slice & elem) {
+    std::cerr << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
+              << "Element \"" << elem << "\" violates the distinct constraint"
+              << std::endl;
+  };
+  // check for intra-duplication
+  std::unordered_set<Slice> elems_set(elems.size());
+  for (auto& e : elems) {
+    Slice e_slice(e);
+    if (elems_set.find(e_slice) != elems_set.end()) {
+      f_rpt_fail_by_distinct(e_slice);
+      return false;
+    }
+    elems_set.emplace(e_slice);
+  }
+  // check for inter-duplication
+  for (auto it = list.Scan(); !it.end(); it.next()) {
+    auto e = it.value();
+    if (elems_set.find(it.value()) != elems_set.end()) {
+      f_rpt_fail_by_distinct(e);
+      return false;
+    }
+  }
+  return true;
 }
 
 ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
@@ -709,13 +739,21 @@ ErrorCode Command::ExecAppend(VBlob& blob) {
 
 ErrorCode Command::ExecAppend(VList& list) {
   const auto& val = Config::value;
-  // conditional execution
-  auto elems = Utils::Tokenize(val, "{}[]|,; ");
-  if (elems.empty()) {
+  const auto& distinct = Config::distinct;
+  // screen printing
+  const auto f_rpt_invalid_args = [&val]() {
     std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
               << "No element is provided: \"" << val << "\""
               << std::endl;
+  };
+  // conditional execution
+  auto elems = Utils::Tokenize(val, "{}[]|,; ");
+  if (elems.empty()) {
+    f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
+  }
+  if (distinct && !IsDistinct("APPEND", elems, list)) {
+    return ErrorCode::kElementExists;
   }
   std::vector<Slice> slice_elems;
   slice_elems.reserve(elems.size());
@@ -888,15 +926,15 @@ ErrorCode Command::ExecInsert(VList& list) {
   const auto& distinct = Config::distinct;
   const auto& pos = Config::position;
   // screen printing
+  const auto f_rpt_invalid_args = [&val]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "No element is provided: \"" << val << "\""
+              << std::endl;
+  };
   const auto f_rpt_fail_by_index = [&list, &pos]() {
     std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << list.numElements() << std::endl;
-  };
-  const auto f_rpt_fail_by_distinct = [](const Slice & elem) {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
-              << "Element \"" << elem << "\" violates the distinct constraint"
-              << std::endl;
   };
   // conditional execution
   if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
@@ -905,30 +943,11 @@ ErrorCode Command::ExecInsert(VList& list) {
   }
   auto elems = Utils::Tokenize(val, "{}[]|,; ");
   if (elems.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
-              << "No element is provided: \"" << val << "\""
-              << std::endl;
+    f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (distinct) {
-    // check for intra-duplication
-    std::unordered_set<Slice> elems_set(elems.size());
-    for (auto& e : elems) {
-      Slice e_slice(e);
-      if (elems_set.find(e_slice) != elems_set.end()) {
-        f_rpt_fail_by_distinct(e_slice);
-        return ErrorCode::kElementExists;
-      }
-      elems_set.emplace(e_slice);
-    }
-    // check for inter-duplication
-    for (auto it = list.Scan(); !it.end(); it.next()) {
-      auto e = it.value();
-      if (elems_set.find(it.value()) != elems_set.end()) {
-        f_rpt_fail_by_distinct(e);
-        return ErrorCode::kElementExists;
-      }
-    }
+  if (distinct && !IsDistinct("INSERT", elems, list)) {
+    return ErrorCode::kElementExists;
   }
   std::vector<Slice> slice_elems;
   slice_elems.reserve(elems.size());

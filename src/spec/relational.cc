@@ -457,31 +457,33 @@ ErrorCode ColumnStore::MergeTable(
   const std::string& table_name, const std::string& tgt_branch_name,
   const std::string& ref_branch_name, const std::string& new_col_name,
   const std::vector<std::string>& new_col_vals) {
+  Slice table(table_name),
+        tgt_branch(tgt_branch_name), ref_branch(ref_branch_name);
+  Table tab;
+  USTORE_GUARD(
+    ReadTable(table, tgt_branch, &tab));
   Hash new_col_ver;
   USTORE_GUARD(
     WriteColumn(table_name, tgt_branch_name, new_col_name, new_col_vals,
                 &new_col_ver));
-  Table tab;
-  USTORE_GUARD(
-    ReadTable(Slice(table_name), Slice(tgt_branch_name), &tab));
   tab.Set(Slice(new_col_name), HASH_TO_SLICE(new_col_ver));
-  return odb_.Merge(Slice(table_name), tab, Slice(tgt_branch_name),
-                    Slice(ref_branch_name)).stat;
+  return odb_.Merge(table, tab, tgt_branch, ref_branch).stat;
 }
 
 ErrorCode ColumnStore::DeleteTable(const std::string& table_name,
                                    const std::string& branch_name) {
+  Slice table(table_name), branch(branch_name);
   // delete all columns of the table
   Table tab;
   USTORE_GUARD(
-    ReadTable(Slice(table_name), Slice(branch_name), &tab));
+    ReadTable(table, branch, &tab));
   for (auto it = tab.Scan(); !it.end(); it.next()) {
     auto col_key = GlobalKey(table_name, it.key());
     USTORE_GUARD(
-      odb_.Delete(Slice(col_key), Slice(branch_name)));
+      odb_.Delete(Slice(col_key), branch));
   }
   // delete the table
-  return odb_.Delete(Slice(table_name), Slice(branch_name));
+  return odb_.Delete(table, branch);
 }
 
 ErrorCode ColumnStore::ExistsColumn(const std::string& table_name,
@@ -546,13 +548,13 @@ ErrorCode ColumnStore::PutColumn(const std::string& table_name,
                                  const std::string& branch_name,
                                  const std::string& col_name,
                                  const std::vector<std::string>& col_vals) {
-  Hash col_ver;
-  USTORE_GUARD(
-    WriteColumn(table_name, branch_name, col_name, col_vals, &col_ver));
   Slice table(table_name), branch(branch_name);
   Table tab;
   USTORE_GUARD(
     ReadTable(table, branch, &tab));
+  Hash col_ver;
+  USTORE_GUARD(
+    WriteColumn(table_name, branch_name, col_name, col_vals, &col_ver));
   tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver));
   return odb_.Put(table, tab, branch).stat;
 }

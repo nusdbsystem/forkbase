@@ -16,12 +16,12 @@ get -k 123 -b dev
 # For list
 put -p list -k abc -b dev -x "[1 | 2| 3 |4|5]"
 get -k abc -b dev
-append -k abc -b dev -x "6, 7"
+append -k abc -b dev -x "5, 6"
 Get -k abc -b dev
 update -k abc -b dev -i 7 -x three -F "Index out of range"
 UPDATE -k abc -b dev -i 2 -x three
 GET -k abc -b dev
-insert -k abc -b dev -i 1 -x "one two"
+insert -k abc -b dev -i 1 -x "one two 3"
 gEt -k abc -b dev
 delete -k abc -b dev -i 2
 get -k abc -b dev
@@ -29,6 +29,12 @@ del -k abc -b dev -i 2 -d 2
 get -k abc -b dev
 remove -k abc -u @1 -i 1 -d 5
 get -k abc -v @1
+insert -k abc -b dev -i 0 -x "1 a" --distinct -F "2 already exists"
+insert -k abc -b dev -i 0 -x "a" --distinct
+get -k abc -b dev
+append -k abc -b dev -x "6;7" --distinct -F "6 already exists"
+append -k abc -b dev -x "7|8" --distinct
+get -k abc -b dev
 
 # For map
 put -p map -k xyz -b master -x "{a:1, (b,2); [c, 3] | d,4 | e:5}"
