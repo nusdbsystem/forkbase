@@ -106,7 +106,8 @@ enum class ErrorCode : byte_t {
   kInvalidParameter = 34,
   kMapKeyNotExists = 35,
   kMapKeyExists = 36,
-  kUnexpectedSuccess = 37
+  kElementExists = 37,
+  kUnexpectedSuccess = 38
 };
 
 }  // namespace ustore

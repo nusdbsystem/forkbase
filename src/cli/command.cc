@@ -885,12 +885,22 @@ ErrorCode Command::ExecInsert(VBlob& blob) {
 
 ErrorCode Command::ExecInsert(VList& list) {
   const auto& val = Config::value;
+  const auto& distinct = Config::distinct;
   const auto& pos = Config::position;
-  // conditional execution
-  if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
+  // screen printing
+  const auto f_rpt_fail_by_index = [&list, &pos]() {
     std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << list.numElements() << std::endl;
+  };
+  const auto f_rpt_fail_by_distinct = [](const Slice & elem) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "Element \"" << elem << "\" violates the distinct constraint"
+              << std::endl;
+  };
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) > list.numElements()) {
+    f_rpt_fail_by_index();
     return ErrorCode::kInvalidCommandArgument;
   }
   auto elems = Utils::Tokenize(val, "{}[]|,; ");
@@ -899,6 +909,26 @@ ErrorCode Command::ExecInsert(VList& list) {
               << "No element is provided: \"" << val << "\""
               << std::endl;
     return ErrorCode::kInvalidCommandArgument;
+  }
+  if (distinct) {
+    // check for intra-duplication
+    std::unordered_set<Slice> elems_set(elems.size());
+    for (auto& e : elems) {
+      Slice e_slice(e);
+      if (elems_set.find(e_slice) != elems_set.end()) {
+        f_rpt_fail_by_distinct(e_slice);
+        return ErrorCode::kElementExists;
+      }
+      elems_set.emplace(e_slice);
+    }
+    // check for inter-duplication
+    for (auto it = list.Scan(); !it.end(); it.next()) {
+      auto e = it.value();
+      if (elems_set.find(it.value()) != elems_set.end()) {
+        f_rpt_fail_by_distinct(e);
+        return ErrorCode::kElementExists;
+      }
+    }
   }
   std::vector<Slice> slice_elems;
   slice_elems.reserve(elems.size());

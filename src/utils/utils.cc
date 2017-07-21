@@ -76,8 +76,9 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kInvalidSchema, "invalid schema"},
   {ErrorCode::kInconsistentType, "inconsistent data types"},
   {ErrorCode::kInvalidParameter, "invalid parameter"},
-  {ErrorCode::kMapKeyNotExists, "Key of map entry does not exist"},
-  {ErrorCode::kMapKeyExists, "Key of map entry already exists"},
+  {ErrorCode::kMapKeyNotExists, "key of map entry does not exist"},
+  {ErrorCode::kMapKeyExists, "key of map entry already exists"},
+  {ErrorCode::kElementExists, "element already exists"},
   {ErrorCode::kUnexpectedSuccess, "Unexpected success of command execution"}
 };
 

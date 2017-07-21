@@ -130,7 +130,7 @@ class ColumnStore {
 
   ErrorCode InsertRowDistinct(const std::string& table_name,
                               const std::string& branch_name,
-                              const std::string& distinct_col_name,
+                              const std::string& dist_col_name,
                               const Row& row);
 
   ErrorCode DeleteRow(const std::string& table_name,

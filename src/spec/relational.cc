@@ -844,10 +844,14 @@ ErrorCode ColumnStore::InsertRow(const std::string& table_name,
 
 ErrorCode ColumnStore::InsertRowDistinct(
   const std::string& table_name, const std::string& branch_name,
-  const std::string& distinct_col_name, const Row& row) {
-  auto distinct_field = row.find(distinct_col_name);
-  if (distinct_field == row.end()) return ErrorCode::kColumnNotExists;
-  auto& distinct_col_val = distinct_field->second;
+  const std::string& dist_col_name, const Row& row) {
+  auto dist_field = row.find(dist_col_name);
+  if (dist_field == row.end()) {
+    LOG(ERROR) << "Field \"" << dist_col_name << "\" is invalde, or "
+               << "the insertion row is incomplete";
+    return ErrorCode::kInvalidSchema;
+  }
+  auto& dist_col_val = dist_field->second;
 
   size_t n_fields_not_covered;
   USTORE_GUARD(
@@ -857,12 +861,10 @@ ErrorCode ColumnStore::InsertRowDistinct(
     return ErrorCode::kInvalidSchema;
   }
 
-  Column col;
+  bool exists;
   USTORE_GUARD(
-    GetColumn(table_name, branch_name, distinct_col_name, &col));
-  for (auto it = col.Scan(); !it.end(); it.next()) {
-    if (it.value() == distinct_col_val) return ErrorCode::kRowExists;
-  }
+    ExistsRow(table_name, branch_name, dist_col_name, dist_col_val, &exists));
+  if (exists) return ErrorCode::kRowExists;
   return InsertRow(Slice(table_name), Slice(branch_name), row);
 }
 
