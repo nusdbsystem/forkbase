@@ -542,9 +542,9 @@ ErrorCode Command::ExecGet() {
   return ExecManipMeta(f_manip_meta);
 }
 
-bool Command::IsDistinct(const std::string& cmd,
-                         const std::vector<std::string>& elems,
-                         const VList& list) {
+ErrorCode Command::ValidateDistinct(const std::string& cmd,
+                                    const std::vector<std::string>& elems,
+                                    const VList& list, size_t ignored_pos) {
   const auto f_rpt_fail_by_distinct = [&cmd](const Slice & elem) {
     std::cerr << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
               << "Element \"" << elem << "\" violates the distinct constraint"
@@ -556,19 +556,20 @@ bool Command::IsDistinct(const std::string& cmd,
     Slice e_slice(e);
     if (elems_set.find(e_slice) != elems_set.end()) {
       f_rpt_fail_by_distinct(e_slice);
-      return false;
+      return ErrorCode::kElementExists;
     }
     elems_set.emplace(e_slice);
   }
   // check for inter-duplication
   for (auto it = list.Scan(); !it.end(); it.next()) {
     auto e = it.value();
-    if (elems_set.find(it.value()) != elems_set.end()) {
+    if (elems_set.find(it.value()) != elems_set.end() &&
+        it.index() != ignored_pos) {
       f_rpt_fail_by_distinct(e);
-      return false;
+      return ErrorCode::kElementExists;
     }
   }
-  return true;
+  return ErrorCode::kOK;
 }
 
 ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
@@ -752,9 +753,7 @@ ErrorCode Command::ExecAppend(VList& list) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (distinct && !IsDistinct("APPEND", elems, list)) {
-    return ErrorCode::kElementExists;
-  }
+  if (distinct) USTORE_GUARD(ValidateDistinct("APPEND", elems, list));
   std::vector<Slice> slice_elems;
   slice_elems.reserve(elems.size());
   for (auto& e : elems) slice_elems.emplace_back(Slice(e));
@@ -821,21 +820,30 @@ ErrorCode Command::ExecUpdate(VBlob& blob) {
 }
 
 ErrorCode Command::ExecUpdate(VList& list) {
-  const auto& val = Config::value;
-  const auto& pos = Config::position;
-  // conditional execution
-  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
-              << "Illegal positional index: [Actual] " << pos
-              << ", [Expected] 0.." << list.numElements() - 1 << std::endl;
-    return ErrorCode::kInvalidCommandArgument;
-  }
-  if (val.empty()) {
+  auto& val = Config::value;
+  auto& distinct = Config::distinct;
+  auto& pos = Config::position;
+  // screen printing
+  const auto f_rpt_invalid_args = [&val]() {
     std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "No element is provided: \"" << val << "\""
               << std::endl;
+  };
+  const auto f_rpt_fail_by_index = [&list, &pos]() {
+    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+              << "Illegal positional index: [Actual] " << pos
+              << ", [Expected] 0.." << list.numElements() - 1 << std::endl;
+  };
+  // conditional execution
+  if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
+    f_rpt_fail_by_index();
     return ErrorCode::kInvalidCommandArgument;
   }
+  if (val.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (distinct) USTORE_GUARD(ValidateDistinct("UPDATE", {val}, list, pos));
   list.Splice(pos, 1, {Slice(val)});
   return ExecPut("UPDATE", list);
 }
@@ -946,9 +954,7 @@ ErrorCode Command::ExecInsert(VList& list) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (distinct && !IsDistinct("INSERT", elems, list)) {
-    return ErrorCode::kElementExists;
-  }
+  if (distinct) USTORE_GUARD(ValidateDistinct("INSERT", elems, list));
   std::vector<Slice> slice_elems;
   slice_elems.reserve(elems.size());
   for (auto& e : elems) slice_elems.emplace_back(Slice(e));

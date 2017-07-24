@@ -129,8 +129,10 @@ class Command {
 
   ErrorCode ParseRowString(const std::string& row_str, Row* row);
 
-  bool IsDistinct(const std::string& cmd, const std::vector<std::string>& elems,
-                  const VList& list);
+  ErrorCode ValidateDistinct(const std::string& cmd,
+                             const std::vector<std::string>& elems,
+                             const VList& list,
+                             size_t ignored_pos = Utils::max_size_t);
 
   static const size_t kDefaultLimitPrintElems;
   static size_t limit_print_elems;
