@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "spec/object_db.h"
 #include "spec/relational.h"
 #include "utils/timer.h"
