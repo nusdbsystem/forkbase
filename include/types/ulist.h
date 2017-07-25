@@ -63,15 +63,14 @@ class UList : public ChunkableType {
 
  protected:
   UList() = default;
-  UList(UList&& rhs) = default;
+  UList(UList&&) = default;
+  UList& operator=(UList&&) = default;
   // create an empty map
   // construct chunk loader for server
   explicit UList(std::shared_ptr<ChunkLoader> loader) noexcept :
     ChunkableType(loader) {}
   // construct chunk loader for server
-  virtual ~UList() = default;
-
-  UList& operator=(UList&& rhs) = default;
+  ~UList() = default;
 
   bool SetNodeForHash(const Hash& hash) override;
 };

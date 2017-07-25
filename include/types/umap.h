@@ -63,12 +63,11 @@ class UMap : public ChunkableType {
 
  protected:
   UMap() = default;
-  UMap(UMap&& rhs) = default;
+  UMap(UMap&&) = default;
+  UMap& operator=(UMap&&) = default;
   explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept :
       ChunkableType(loader) {}
-  virtual ~UMap() = default;
-
-  UMap& operator=(UMap&& rhs) = default;
+  ~UMap() = default;
 
   bool SetNodeForHash(const Hash& hash) override;
 };

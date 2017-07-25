@@ -27,10 +27,10 @@ class OrderedKey {
   explicit OrderedKey(uint64_t value) noexcept;
   // Set the hash data for key
   OrderedKey(bool by_value, const byte_t* data, size_t num_bytes) noexcept;
-  OrderedKey(const OrderedKey& key) = default;
+  OrderedKey(const OrderedKey&) = default;
   ~OrderedKey() = default;
 
-  OrderedKey& operator=(const OrderedKey& key) = default;
+  OrderedKey& operator=(const OrderedKey&) = default;
 
   inline const byte_t* data() const { return slice_.data(); }
   inline size_t numBytes() const {

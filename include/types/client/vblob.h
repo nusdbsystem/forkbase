@@ -14,12 +14,11 @@ class VBlob : public UBlob, public VObject {
 
  public:
   VBlob() noexcept : VBlob(Slice()) {}
-  VBlob(VBlob&& rhs) = default;
+  VBlob(VBlob&&) = default;
+  VBlob& operator=(VBlob&&) = default;
   // Create new VBlob
   explicit VBlob(const Slice& slice) noexcept;
   ~VBlob() = default;
-
-  VBlob& operator=(VBlob&& rhs) = default;
 
   Hash Splice(size_t pos, size_t num_delete, const byte_t* data,
               size_t num_insert) const override;

@@ -16,22 +16,12 @@
 namespace ustore {
 
 // TODO(wangsh): modify DB api and remove version in VMeta
-class VMeta : private Noncopyable {
+class VMeta : private Moveable {
  public:
   VMeta(DB* db, UCell&& cell) : db_(db), cell_(std::move(cell)) {}
-  // moveable
-  VMeta(VMeta&& other) {
-    db_ = other.db_;
-    std::swap(cell_, other.cell_);
-  }
+  VMeta(VMeta&&) = default;
+  VMeta& operator=(VMeta&&) = default;
   ~VMeta() = default;
-
-  // moveable
-  VMeta& operator=(VMeta&& other) {
-    db_ = other.db_;
-    std::swap(cell_, other.cell_);
-    return *this;
-  }
 
   inline UType type() const { return cell_.type(); }
   inline const UCell& cell() const { return cell_; }

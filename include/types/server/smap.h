@@ -12,7 +12,8 @@ namespace ustore {
 class SMap : public UMap {
  public:
   SMap() = default;
-  SMap(SMap&& rhs) = default;
+  SMap(SMap&&) = default;
+  SMap& operator=(SMap&&) = default;
   // Load existing SMap
   explicit SMap(const Hash& root_hash) noexcept;
   // Create new SMap
@@ -20,8 +21,6 @@ class SMap : public UMap {
   SMap(const std::vector<Slice>& keys,
        const std::vector<Slice>& vals) noexcept;
   ~SMap() = default;
-
-  SMap& operator=(SMap&& rhs) = default;
 
   // Both Use chunk builder to do splice
   // this kv_items must be sorted in descending order before

@@ -14,12 +14,11 @@ class VString : public UString, public VObject {
 
  public:
   VString() noexcept : VString(Slice()) {}
-  VString(VString && rhs) = default;
+  VString(VString&&) = default;
+  VString& operator=(VString&&) = default;
   // Create new VString
   explicit VString(const Slice& slice) noexcept;
   ~VString() = default;
-
-  VString& operator=(VString&& rhs) = default;
 
  protected:
   // Load existing VString

@@ -15,7 +15,7 @@
 
 namespace ustore {
 
-class UCell : private Noncopyable {
+class UCell : private Moveable {
  public:
   // Create the chunk data and dump to storage
   // Return the UCell instance
@@ -26,15 +26,11 @@ class UCell : private Noncopyable {
   static UCell Load(const Hash& unode_hash);
 
   UCell() = default;
-  UCell(UCell&& ucell) : node_(std::move(ucell.node_)) {}
+  UCell(UCell&&) = default;
+  UCell& operator=(UCell&&) = default;
   // To be called by Load(), Create() and ClientDb()
   explicit UCell(Chunk&& chunk);
   ~UCell() = default;
-
-  UCell& operator=(UCell&& ucell) {
-    std::swap(node_, ucell.node_);
-    return *this;
-  }
 
   inline bool empty() const { return node_.get() == nullptr; }
   inline UType type() const { return node_->type(); }

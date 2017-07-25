@@ -23,8 +23,9 @@ class UBlob : public ChunkableType {
     */
     friend class UBlob;
    public:
-    Iterator(Iterator&& other) = default;
-    Iterator& operator=(Iterator&& other) = default;
+    Iterator(Iterator&&) = default;
+    Iterator& operator=(Iterator&&) = default;
+    ~Iterator() = default;
 
     inline Slice key() const override {
       LOG(WARNING) << "Key not supported for blob";
@@ -50,13 +51,9 @@ class UBlob : public ChunkableType {
     */
     friend class UBlob;
    public:
-    ChunkIterator(ChunkIterator&& other) noexcept
-      : cursor_(std::move(other.cursor_)) {}
-
-    ChunkIterator& operator=(ChunkIterator&& other) {
-      std::swap(cursor_, other.cursor_);
-      return *this;
-    }
+    ChunkIterator(ChunkIterator&&) = default;
+    ChunkIterator& operator=(ChunkIterator&&) = default;
+    ~ChunkIterator() = default;
 
     bool next() override;
     bool previous() override;
@@ -142,12 +139,11 @@ class UBlob : public ChunkableType {
 
  protected:
   UBlob() = default;
-  UBlob(UBlob&& rhs) = default;
+  UBlob(UBlob&&) = default;
+  UBlob& operator=(UBlob&&) = default;
   explicit UBlob(std::shared_ptr<ChunkLoader> loader) noexcept :
     ChunkableType(loader) {}
-  virtual ~UBlob() = default;
-
-  UBlob& operator=(UBlob&& rhs) = default;
+  ~UBlob() = default;
 
   bool SetNodeForHash(const Hash& hash) override;
 };

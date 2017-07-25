@@ -39,11 +39,9 @@ class NodeCursor {
   // Need to recursively copy the parent NodeCursor
   NodeCursor(const NodeCursor& cursor) noexcept;
   // move ctor
-  NodeCursor(NodeCursor&& cursor) = default;
+  NodeCursor(NodeCursor&&) = default;
+  NodeCursor& operator=(NodeCursor&&) = default;
   ~NodeCursor() = default;
-
-  // move assignment
-  NodeCursor& operator=(NodeCursor&& cursor) = default;
 
   // Advance the pointer by one element,
   // Allow to cross the boundary and advance to the start of next node

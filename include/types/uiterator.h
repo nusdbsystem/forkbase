@@ -14,7 +14,7 @@
 
 namespace ustore {
 
-class UIterator : private Noncopyable {
+class UIterator : private Moveable {
 /*
 UIterator is a genric Iterator interface that shall be inherited
  and overrided for the API.
@@ -23,13 +23,10 @@ UIterator is a genric Iterator interface that shall be inherited
   // point to next element
   //  return false if cursor points to end after movement
   virtual bool next() = 0;
-
   // point to previous element
   //  return false if cursor points to head after movement
   virtual bool previous() = 0;
-
   virtual bool head() const = 0;
-
   virtual bool end() const = 0;
 
   inline Slice value() const {
@@ -39,6 +36,9 @@ UIterator is a genric Iterator interface that shall be inherited
 
  protected:
   UIterator() = default;
+  UIterator(UIterator&&) = default;
+  UIterator& operator=(UIterator&&) = default;
+
   virtual ~UIterator() = default;
 
   // Override this method to return actual value
@@ -52,12 +52,8 @@ The valid elements are specified by a vector of IndexRange.
 */
  public:
   CursorIterator() = default;
-
-  CursorIterator(CursorIterator&& rhs) noexcept :
-      ranges_(std::move(rhs.ranges_)),
-      curr_range_idx_(rhs.curr_range_idx_),
-      curr_idx_in_range_(rhs.curr_idx_in_range_),
-      cursor_(std::move(rhs.cursor_)) {}
+  CursorIterator(CursorIterator&&) = default;
+  CursorIterator& operator=(CursorIterator&&) = default;
 
   CursorIterator(const Hash& root, const std::vector<IndexRange>& ranges,
             ChunkLoader* loader) noexcept
@@ -73,15 +69,7 @@ The valid elements are specified by a vector of IndexRange.
         curr_idx_in_range_(0),
         cursor_(root, ranges_.size() ? index() : 0, loader) {}
 
-  virtual ~CursorIterator() = default;
-
-  CursorIterator& operator=(CursorIterator&& rhs) noexcept {
-    ranges_ = std::move(rhs.ranges_);
-    curr_range_idx_ = rhs.curr_range_idx_;
-    curr_idx_in_range_ = rhs.curr_idx_in_range_;
-    cursor_ = std::move(rhs.cursor_);
-    return *this;
-  }
+  ~CursorIterator() = default;
 
   // point to next element
   //  return false if cursor points to end after movement

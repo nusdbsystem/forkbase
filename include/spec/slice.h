@@ -20,7 +20,7 @@ namespace ustore {
 class Slice {
  public:
   Slice() = default;
-  Slice(const Slice& slice) = default;
+  Slice(const Slice&) = default;
   Slice(const byte_t* slice, size_t len) : data_(slice), len_(len) {}
   // share data from c string
   Slice(const char* slice, size_t len)
@@ -31,10 +31,10 @@ class Slice {
     : Slice(slice.data(), slice.length()) {}
   // delete constructor that takes in rvalue std::string
   //   to avoid the memory space of parameter is released unawares.
-  explicit Slice(std::string&& slice) = delete;
+  explicit Slice(std::string&&) = delete;
   ~Slice() = default;
 
-  Slice& operator=(const Slice& other) = default;
+  Slice& operator=(const Slice&) = default;
 
   inline bool operator<(const Slice& slice) const {
     size_t min_len = std::min(len_, slice.len_);

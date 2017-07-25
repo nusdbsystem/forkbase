@@ -24,11 +24,10 @@ class UString : public BaseType {
 
  protected:
   UString() = default;
+  UString(UString&&) = default;
+  UString& operator=(UString&&) = default;
   explicit UString(const UCell& cell) noexcept : node_(cell.node()) {}
-  UString(UString&& rhs) = default;
   ~UString() = default;
-
-  UString& operator=(UString&& rhs) = default;
 
  protected:
   // Responsible to remove during destructing

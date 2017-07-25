@@ -11,14 +11,13 @@ namespace ustore {
 class SBlob : public UBlob {
  public:
   SBlob() = default;
-  SBlob(SBlob&& rhs) = default;
+  SBlob(SBlob&&) = default;
+  SBlob& operator=(SBlob&&) = default;
   // Load exsiting SBlob
   explicit SBlob(const Hash& root_hash) noexcept;
   // Create new SBlob
   explicit SBlob(const Slice& slice) noexcept;
   ~SBlob() = default;
-
-  SBlob& operator=(SBlob&& rhs) = default;
 
   Hash Splice(size_t pos, size_t num_delete,
               const byte_t* data, size_t num_insert) const override;

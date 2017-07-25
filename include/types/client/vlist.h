@@ -15,12 +15,11 @@ class VList : public UList, public VObject {
 
  public:
   VList() noexcept : VList(std::vector<Slice>()) {}
-  VList(VList&& rhs) = default;
+  VList(VList&&) = default;
+  VList& operator=(VList&&) = default;
   // Create new VList
   explicit VList(const std::vector<Slice>& elements) noexcept;
   ~VList() = default;
-
-  VList& operator=(VList&& rhs) = default;
 
   // entry vector can be empty
   Hash Splice(uint64_t start_idx, uint64_t num_to_delete,

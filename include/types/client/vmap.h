@@ -15,12 +15,11 @@ class VMap : public UMap, public VObject {
 
  public:
   VMap() noexcept : VMap(std::vector<Slice>(), std::vector<Slice>()) {}
-  VMap(VMap&& rhs) = default;
+  VMap(VMap&&) = default;
+  VMap& operator=(VMap&&) = default;
   // Create new VMap
   VMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals) noexcept;
   ~VMap() = default;
-
-  VMap& operator=(VMap&& rhs) = default;
 
   Hash Set(const Slice& key, const Slice& val) const override;
   Hash Remove(const Slice& key) const override;

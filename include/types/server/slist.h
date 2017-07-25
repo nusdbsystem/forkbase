@@ -12,14 +12,13 @@ namespace ustore {
 class SList : public UList {
  public:
   SList() = default;
-  SList(SList&& rhs) = default;
+  SList(SList&&) = default;
+  SList& operator=(SList&&) = default;
   // Load existing SList
   explicit SList(const Hash& root_hash) noexcept;
   // create new SList
   explicit SList(const std::vector<Slice>& elements) noexcept;
   ~SList() = default;
-
-  SList& operator=(SList&& rhs) = default;
 
   // entry vector can be empty
   Hash Splice(uint64_t start_idx, uint64_t num_to_delete,

@@ -15,7 +15,7 @@
 
 namespace ustore {
 
-class Chunk : private Noncopyable {
+class Chunk : private Moveable {
  public:
   /*
    * Chunk format:
@@ -39,20 +39,10 @@ class Chunk : private Noncopyable {
   Chunk(const byte_t* head, const byte_t* hash) noexcept
     : head_(head), hash_(hash) {}
   // movable
-  Chunk(Chunk&& other) noexcept : own_(std::move(other.own_)), head_(other.head_),
-    hash_(std::move(other.hash_)) {
-    other.head_ = nullptr;
-  }
+  Chunk(Chunk&&) = default;
+  Chunk& operator=(Chunk&&) = default;
 
-  ~Chunk() {}
-
-  // movable
-  inline Chunk& operator=(Chunk&& other) {
-    own_.swap(other.own_);
-    std::swap(head_, other.head_);
-    std::swap(hash_, other.hash_);
-    return *this;
-  }
+  ~Chunk() = default;
 
   inline bool empty() const noexcept { return head_ == nullptr; }
   // total number of bytes

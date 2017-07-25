@@ -32,7 +32,7 @@ class Hash {
 
   Hash() = default;
   // movable
-  Hash(Hash&& hash) = default;
+  Hash(Hash&&) = default;
   // use existing hash
   Hash(const Hash& hash) noexcept : value_(hash.value_) {}
   // use existing byte array

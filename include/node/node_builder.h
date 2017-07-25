@@ -14,7 +14,7 @@
 #include "utils/noncopyable.h"
 
 namespace ustore {
-class NodeBuilder : Noncopyable {
+class NodeBuilder : private Noncopyable {
  public:
   // Perform operation at element with key at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, const OrderedKey& key,

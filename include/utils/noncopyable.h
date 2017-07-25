@@ -6,10 +6,17 @@
 namespace ustore {
 
 struct Noncopyable {
-  Noncopyable() {}
-  ~Noncopyable() {}
+  Noncopyable() = default;
+  ~Noncopyable() = default;
   Noncopyable(const Noncopyable&) = delete;
   Noncopyable& operator=(const Noncopyable&) = delete;
+};
+
+struct Moveable : private Noncopyable {
+  Moveable() = default;
+  ~Moveable() = default;
+  Moveable(Moveable&&) {}
+  Moveable& operator=(Moveable&&) { return *this; }
 };
 
 }  // namespace ustore

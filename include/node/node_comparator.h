@@ -62,7 +62,7 @@ struct OrderedKeyTrait {
 };
 
 template <class KeyTrait>
-class NodeComparator : Noncopyable {
+class NodeComparator : private Noncopyable {
  public:
 // loader is used for both lhs and rhs
   NodeComparator(const Hash& rhs,

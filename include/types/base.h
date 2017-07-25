@@ -14,16 +14,15 @@
 namespace ustore {
 
 // A genric type for all utypes
-class BaseType : private Noncopyable {
+class BaseType : private Moveable {
  public:
   virtual bool empty() const = 0;
 
  protected:
   BaseType() = default;
-  BaseType(BaseType&& rhs) noexcept {}
+  BaseType(BaseType&&) = default;
+  BaseType& operator=(BaseType&&) = default;
   virtual ~BaseType() = default;
-  // move assignment
-  BaseType& operator=(BaseType&& rhs) noexcept { return *this; }
 };
 
 class ChunkableType : public BaseType {
@@ -41,12 +40,11 @@ class ChunkableType : public BaseType {
 
  protected:
   ChunkableType() = default;
-  ChunkableType(ChunkableType&& rhs) = default;
+  ChunkableType(ChunkableType&&) = default;
+  ChunkableType& operator=(ChunkableType&&) = default;
   explicit ChunkableType(std::shared_ptr<ChunkLoader> loader) noexcept :
       chunk_loader_(std::move(loader)) {}
-  virtual ~ChunkableType() = default;
-  // move assignment
-  ChunkableType& operator=(ChunkableType&& rhs) = default;
+  ~ChunkableType() = default;
 
   // Must be called at the last step of construction
   virtual bool SetNodeForHash(const Hash& hash) = 0;
