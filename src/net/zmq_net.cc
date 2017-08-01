@@ -142,36 +142,45 @@ void ClientZmqNet::Start() {
     backend_threads_.push_back(
               std::thread(&ClientZmqNet::ClientThread, this));
 
-  zpoller_t *zpoller = zpoller_new(request_sock_);
+  int pollsize = netmap_.size() + 1; 
+  zmq_pollitem_t items[pollsize];
+  items[0] = {zsock_resolve(request_sock_), 0, ZMQ_POLLIN, 0};
   // start DEALER socket to other
   unordered_map<node_id_t, void*> out_socks;
+  int counter = 0;
   for (auto n : netmap_) {
     void *sock_ = zsock_new(ZMQ_DEALER);
     string host = "tcp://" + n.first;
     CHECK_EQ(zsock_connect((zsock_t *)sock_, "%s", host.c_str()), 0);
     out_socks[n.first] = sock_;
-    zpoller_add(zpoller, sock_);
+    //zpoller_add(zpoller, sock_);
+    items[++counter] = {zsock_resolve(sock_), 0, ZMQ_POLLIN, 0};
   }
 
   while (is_running_) {
-    void *sock = zpoller_wait(zpoller, kWaitInterval);
-    if (!sock && !zpoller_expired(zpoller)) break;
-    if (zpoller_expired(zpoller) && is_running_ && !(timeout_counter_--)
+    int rc = zmq_poll(items, pollsize, kWaitInterval);
+    // error
+    if (rc < 0) break;
+
+    // expired
+    if (rc == 0 && is_running_ && !(timeout_counter_--)
         && request_counter_)
        LOG(FATAL) << "Connection timed out. Server may not be ready yet!";
-    if (sock) {
-      zmsg_t *msg = zmsg_recv(sock);
-      if (!msg) break;
 
-      if (sock == request_sock_) {
-        // forward to out_socks
-        // pop first frame
-        zmsg_pop(msg);
-        char *dest_id = zmsg_popstr(msg);
-        zmsg_send(&msg, out_socks[dest_id]);
-        request_counter_++;
-        timeout_counter_ = kPollRetries;
-      } else {  // send to backend
+    // all well
+    if (items[0].revents & ZMQ_POLLIN) {
+      zmsg_t *msg = zmsg_recv(request_sock_);
+      if (!msg) break;
+      zmsg_pop(msg);
+      char *dest_id = zmsg_popstr(msg);
+      zmsg_send(&msg, out_socks[dest_id]);
+      request_counter_++;
+      timeout_counter_ = kPollRetries;
+    }
+    for (int i = 1; i < pollsize; i++) {
+      if (items[i].revents & ZMQ_POLLIN) {
+        zmsg_t *msg = zmsg_recv(items[i].socket);
+        if (!msg) break;
         zmsg_send(&msg, backend_sock_);
         request_counter_--;
         timeout_counter_ = kPollRetries;
@@ -184,7 +193,7 @@ void ClientZmqNet::Start() {
   for (auto s : out_socks)
     zsock_destroy((zsock_t **)&s.second);
 
-  zpoller_destroy(&zpoller);
+  //zpoller_destroy(&zpoller);
   for (size_t i=0; i < backend_threads_.size(); i++)
     backend_threads_[i].join();
 }
@@ -194,13 +203,15 @@ void ClientZmqNet::ClientThread() {
   void *frontend = zsock_new(ZMQ_DEALER);
   CHECK_EQ(zsock_connect((zsock_t *)frontend,
            "%s", inproc_ep_.c_str()), 0);
-  zpoller_t *zpoller = zpoller_new(frontend, NULL);
+  zmq_pollitem_t items[1];
+  items[0] = {zsock_resolve(frontend), 0, ZMQ_POLLIN, 0};
   while (IsRunning()) {
-    void *sock = zpoller_wait(zpoller, kWaitInterval);
-    if (!sock && !zpoller_expired(zpoller))
+    int rc = zmq_poll(items, 1, kWaitInterval);
+    if (rc < 0)
       break;
-    if (sock) {
-      zmsg_t *msg = zmsg_recv(sock);
+
+    if (items[0].revents & ZMQ_POLLIN) {
+      zmsg_t *msg = zmsg_recv(frontend);
       if (!msg)
         break;
 
@@ -289,27 +300,35 @@ void ServerZmqNet::Start() {
                     std::thread(&ServerZmqNetContext::Start, nctx, this));
   }
 
-  zpoller_t *zpoller = zpoller_new(recv_sock_, result_sock_, NULL);
-  CHECK_NOTNULL(zpoller);
+  //zpoller_t *zpoller = zpoller_new(recv_sock_, result_sock_, NULL);
+  //CHECK_NOTNULL(zpoller);
+  zmq_pollitem_t items[2];
+  items[0] = {zsock_resolve(recv_sock_), 0, ZMQ_POLLIN, 0};
+  items[1] = {zsock_resolve(result_sock_), 0, ZMQ_POLLIN, 0};
 
   while (is_running_) {
-    void *sock = zpoller_wait(zpoller, kWaitInterval);
-    if (!sock && !zpoller_expired(zpoller))
-      break;
-    if (sock) {
-      zmsg_t *msg = zmsg_recv(sock);
-      if (!msg)
-        break;
-      // send to backend
-      sock == recv_sock_ ? zmsg_send(&msg, backend_sock_)
-                         : zmsg_send(&msg, recv_sock_);
+    //void *sock = zpoller_wait(zpoller, kWaitInterval);
+    int rc = zmq_poll(items, 2, kWaitInterval);
+    if (rc < 0) break;
+
+    //LOG(ERROR) << "Got client message ";
+    if (items[0].revents & ZMQ_POLLIN) {
+      zmsg_t *msg = zmsg_recv(items[0].socket);
+      if (!msg) break;
+      zmsg_send(&msg, zsock_resolve(backend_sock_));
+    }
+
+    if (items[1].revents & ZMQ_POLLIN) {
+      zmsg_t *msg = zmsg_recv(items[1].socket);
+      if (!msg) break;
+      zmsg_send(&msg, zsock_resolve(recv_sock_));
     }
   }
   // Stop when ^C
   zsock_destroy((zsock_t **)&recv_sock_);
   zsock_destroy((zsock_t **)&backend_sock_);
   zsock_destroy((zsock_t **)&result_sock_);
-  zpoller_destroy(&zpoller);
+  //zpoller_destroy(&zpoller);
 
   for (size_t i=0; i < backend_threads_.size(); i++)
     backend_threads_[i].join();
@@ -344,13 +363,17 @@ ssize_t ServerZmqNetContext::Send(const void *ptr, size_t len, CallBack* func) {
 
 void ServerZmqNetContext::Start(ServerZmqNet *net) {
   // listen from  recv_sock_
-  zpoller_t *zpoller = zpoller_new(recv_sock_, NULL);
+  //zpoller_t *zpoller = zpoller_new(recv_sock_, NULL);
+  zmq_pollitem_t items[1];
+  items[0] = {zsock_resolve(recv_sock_), 0, ZMQ_POLLIN, 0};
   while (net->IsRunning()) {
-    void *sock = zpoller_wait(zpoller, kWaitInterval);
-    if (!sock && !zpoller_expired(zpoller))
+    // void *sock = zpoller_wait(zpoller, kWaitInterval);
+    int rc = zmq_poll(items, 1, kWaitInterval);
+    if (rc < 0)
       break;
-    if (sock) {
-      zmsg_t *msg = zmsg_recv(sock);
+
+    if (items[0].revents && ZMQ_POLLIN) {
+      zmsg_t *msg = zmsg_recv(items[0].socket);
       if (!msg)
         break;
 
