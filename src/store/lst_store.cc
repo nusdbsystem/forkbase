@@ -181,12 +181,14 @@ void LSTStore::Enlarge() {
 
     AppendInteger(meta_segment, prev_segment_offset, next_segment_offset);
     ::lseek(fd_, offset, SEEK_SET);
-    ::write(fd_, meta_segment, kMetaSegmentSize);
+    if (::write(fd_, meta_segment, kMetaSegmentSize) != kMetaSegmentSize)
+      LOG(WARNING) << "Failed to write to disk";
   }
 
   meta_segment[0] = 1;
   ::lseek(fd_, offset - 1, SEEK_SET);
-  ::write(fd_, meta_segment, 1);
+  if (::write(fd_, meta_segment, 1) != 1)
+    LOG(WARNING) << "Failed to write to disk";
   delete[] meta_segment;
 
   SyncToDisk(end_of_log + reinterpret_cast<char*>(LSTSegment::base_addr_),
@@ -226,7 +228,8 @@ void* LSTStore::MmapUstoreLogFile(const std::string& dir,
     std::memset(meta_log, 0, kMetaLogSize);
     meta_log[kMetaLogSize - 1] = 'a';
     LOG(INFO) << "init meta segment";
-    ::write(fd_, meta_log, kMetaLogSize);
+    if (::write(fd_, meta_log, kMetaLogSize) != kMetaLogSize)
+      LOG(WARNING) << "Failed to write to disk";
     delete[] meta_log;
     LOG_LST_STORE_FATAL_ERROR_IF(-1 == fsync(fd_), "FSYNC ERROR");
     LOG(INFO) << "init segments done";
