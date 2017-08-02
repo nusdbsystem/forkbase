@@ -45,7 +45,7 @@ class Worker : public DB, private Noncopyable {
   }
 
   inline ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
-                                 Hash* ver) override {
+                                 Hash* ver) const override {
     *ver = GetBranchHead(key, branch);
     return *ver == Hash::kNull ? ErrorCode::kBranchNotExists : ErrorCode::kOK;
   }
@@ -58,7 +58,8 @@ class Worker : public DB, private Noncopyable {
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell) override;
+  ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell) const
+    override;
 
   /**
    * @brief Read the value of a version.
@@ -68,7 +69,8 @@ class Worker : public DB, private Noncopyable {
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell) override;
+  ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell) const
+    override;
 
   /**
    * @brief Write a new value as the head of a branch.
@@ -203,14 +205,15 @@ class Worker : public DB, private Noncopyable {
     return Merge(key, val, ref_ver1, ref_ver2, &ver);
   }
 
-  ErrorCode GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) override;
+  ErrorCode GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) const
+    override;
 
-  ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) override;
+  ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const override;
 
-  ErrorCode ListKeys(std::vector<std::string>* keys) override;
+  ErrorCode ListKeys(std::vector<std::string>* keys) const override;
 
-  ErrorCode ListBranches(const Slice& key,
-                         std::vector<std::string>* branches) override;
+  ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
+    const override;
 
   bool Exists(const Hash& ver) const;
 
@@ -218,7 +221,7 @@ class Worker : public DB, private Noncopyable {
     return head_ver_.Exists(key);
   }
 
-  inline ErrorCode Exists(const Slice& key, bool* exist) override {
+  inline ErrorCode Exists(const Slice& key, bool* exist) const override {
     *exist = Exists(key);
     return ErrorCode::kOK;
   }
@@ -235,7 +238,7 @@ class Worker : public DB, private Noncopyable {
   }
 
   inline ErrorCode Exists(const Slice& key, const Slice& branch,
-                          bool* exist) override {
+                          bool* exist) const override {
     *exist = Exists(key, branch);
     return ErrorCode::kOK;
   }
@@ -256,7 +259,7 @@ class Worker : public DB, private Noncopyable {
   }
 
   inline ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
-                                const Hash& ver, bool* is_head) override {
+                                const Hash& ver, bool* is_head) const override {
     *is_head = IsBranchHead(key, branch, ver);
     return ErrorCode::kOK;
   }
@@ -273,8 +276,8 @@ class Worker : public DB, private Noncopyable {
     return head_ver_.GetLatest(key);
   }
 
-  inline ErrorCode GetLatestVersions(const Slice& key,
-                                     std::vector<Hash>* vers) override {
+  inline ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* vers)
+    const override {
     *vers = GetLatestVersions(key);
     return ErrorCode::kOK;
   }
@@ -290,7 +293,7 @@ class Worker : public DB, private Noncopyable {
   }
 
   inline ErrorCode IsLatestVersion(const Slice& key, const Hash& ver,
-                                   bool* is_latest) override {
+                                   bool* is_latest) const override {
     *is_latest = IsLatestVersion(key, ver);
     return ErrorCode::kOK;
   }

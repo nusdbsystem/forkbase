@@ -12,7 +12,7 @@ Install all required [dependencies](depend.md).
   cmake ..
   make
 ```
-UStore have many compilation options, which can be found in ``CMakeLits.txt``.
+UStore have many compilation options, which can be found in ``CMakeList.txt``.
 ```
   # compile with RDMA and examples
   cmake -DUSE_RDMA=ON -DENABLE_EXAMPLE=ON ..

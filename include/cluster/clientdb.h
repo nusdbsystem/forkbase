@@ -70,10 +70,10 @@ class ClientDb : public DB {
   ~ClientDb() = default;
 
   // Storage APIs. Inheritted from DB.
-  ErrorCode Get(const Slice& key, const Slice& branch,
-                UCell* meta) override;
+  ErrorCode Get(const Slice& key, const Slice& branch, UCell* meta) const
+    override;
   ErrorCode Get(const Slice& key, const Hash& version,
-                UCell* meta) override;
+                UCell* meta) const override;
 
   ErrorCode Put(const Slice& key, const Value& value,
                 const Slice& branch, Hash* version) override;
@@ -90,22 +90,23 @@ class ClientDb : public DB {
                   const Hash& ref_version1, const Hash& ref_version2,
                   Hash* version) override;
 
-  ErrorCode ListKeys(std::vector<std::string>* keys) override;
+  ErrorCode ListKeys(std::vector<std::string>* keys) const override;
   ErrorCode ListBranches(const Slice& key,
-                         std::vector<std::string>* branches) override;
+                         std::vector<std::string>* branches) const override;
 
-  ErrorCode Exists(const Slice& key, bool* exist) override;
-  ErrorCode Exists(const Slice& key, const Slice& branch, bool* exist) override;
+  ErrorCode Exists(const Slice& key, bool* exist) const override;
+  ErrorCode Exists(const Slice& key, const Slice& branch, bool* exist) const
+    override;
 
   ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
-                          Hash* version) override;
+                          Hash* version) const override;
   ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
-                         const Hash& version, bool* isHead) override;
+                         const Hash& version, bool* isHead) const override;
 
   ErrorCode GetLatestVersions(const Slice& key,
-                              std::vector<Hash>* versions) override;
+                              std::vector<Hash>* versions) const override;
   ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
-                            bool* isLatest) override;
+                            bool* isLatest) const override;
 
   ErrorCode Branch(const Slice& key, const Slice& old_branch,
                    const Slice& new_branch) override;
@@ -116,36 +117,38 @@ class ClientDb : public DB {
   ErrorCode Delete(const Slice& key, const Slice& branch) override;
 
   ErrorCode GetChunk(const Slice& key, const Hash& version,
-                     Chunk* chunk) override;
+                     Chunk* chunk) const override;
 
-  ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) override;
+  ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const override;
 
   inline int id() const noexcept { return id_; }
 
  private:
   // send request to a node. Return false if there are
   // errors with network communication.
-  bool Send(const Message& msg, const node_id_t& node_id);
+  bool Send(const Message& msg, const node_id_t& node_id) const;
   // wait for response, and take ownership of the message.
-  std::unique_ptr<UMessage> WaitForResponse();
+  std::unique_ptr<UMessage> WaitForResponse() const;
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
   // helper methods for creating messages
-  void CreatePutMessage(const Slice& key, const Value& value, UMessage* msg);
-  void CreateGetMessage(const Slice& key, UMessage* msg);
+  void CreatePutMessage(const Slice& key, const Value& value, UMessage* msg)
+      const;
+  void CreateGetMessage(const Slice& key, UMessage* msg) const;
   void CreateBranchMessage(const Slice& key, const Slice& new_branch,
-                           UMessage* msg);
-  void CreateMergeMessage(const Slice& key, const Value& value, UMessage* msg);
+      UMessage* msg) const;
+  void CreateMergeMessage(const Slice& key, const Value& value, UMessage* msg)
+      const;
   // helper methods for getting response
-  ErrorCode GetEmptyResponse();
-  ErrorCode GetVersionResponse(Hash* version);
-  ErrorCode GetUCellResponse(UCell* value);
-  ErrorCode GetStringListResponse(std::vector<string>* vals);
-  ErrorCode GetVersionListResponse(std::vector<Hash>* versions);
-  ErrorCode GetBoolResponse(bool* exists);
-  ErrorCode GetChunkResponse(Chunk* chunk);
-  ErrorCode GetInfoResponse(std::vector<StoreInfo>* info);
-  inline Hash ToHash(const std::string& request) {
+  ErrorCode GetEmptyResponse() const;
+  ErrorCode GetVersionResponse(Hash* version) const;
+  ErrorCode GetUCellResponse(UCell* value) const;
+  ErrorCode GetStringListResponse(std::vector<string>* vals) const;
+  ErrorCode GetVersionListResponse(std::vector<Hash>* versions) const;
+  ErrorCode GetBoolResponse(bool* exists) const;
+  ErrorCode GetChunkResponse(Chunk* chunk) const;
+  ErrorCode GetInfoResponse(std::vector<StoreInfo>* info) const;
+  inline Hash ToHash(const std::string& request) const {
     return Hash(reinterpret_cast<const byte_t*>(request.data()));
   }
 

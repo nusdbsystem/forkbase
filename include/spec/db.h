@@ -26,7 +26,7 @@ class DB {
    * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Get(const Slice& key, const Slice& branch,
-                        UCell* meta) = 0;
+                        UCell* meta) const = 0;
   /**
    * @brief Read the value of a version.
    *
@@ -36,7 +36,7 @@ class DB {
    * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Get(const Slice& key, const Hash& version,
-                        UCell* meta) = 0;
+                        UCell* meta) const = 0;
   /**
    * @brief Write a new value as the head of a branch.
    *
@@ -104,7 +104,7 @@ class DB {
    * @param keys  Returned set of keys.
    * @return      Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode ListKeys(std::vector<std::string>* versions) = 0;
+  virtual ErrorCode ListKeys(std::vector<std::string>* versions) const = 0;
   /**
    * @brief List all branches of the specified key.
    *
@@ -113,7 +113,7 @@ class DB {
    * @return          Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode ListBranches(const Slice& key,
-                                 std::vector<std::string>* branches) = 0;
+                                 std::vector<std::string>* branches) const = 0;
   /**
    * @brief Check for the existence of the specified key.
    *
@@ -121,7 +121,7 @@ class DB {
    * @param exist  True if the specified key exists.
    * @return       Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode Exists(const Slice& key, bool* exist) = 0;
+  virtual ErrorCode Exists(const Slice& key, bool* exist) const = 0;
   /**
    * @brief Check for the existence of the specified branch.
    *
@@ -131,7 +131,7 @@ class DB {
    * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode Exists(const Slice& key, const Slice& branch,
-                           bool* exist) = 0;
+                           bool* exist) const = 0;
   /**
    * @brief Obtain the head version of the specified branch.
    *
@@ -142,7 +142,7 @@ class DB {
    * @return         Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
-                                  Hash* version) = 0;
+                                  Hash* version) const = 0;
   /**
    * @brief Check whether the given version is the head version of the
    *        specified branch.
@@ -154,7 +154,7 @@ class DB {
    * @return         Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode IsBranchHead(const Slice& key, const Slice& branch,
-                                 const Hash& version, bool* isHead) = 0;
+                                 const Hash& version, bool* isHead) const = 0;
   /**
    * @brief Obtain all latest versions of the specified key.
    *
@@ -163,7 +163,7 @@ class DB {
    * @return          Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode GetLatestVersions(const Slice& key,
-                                      std::vector<Hash>* versions) = 0;
+                                      std::vector<Hash>* versions) const = 0;
   /**
    * @brief Check whether the given version is the head version of the
    *        specified branch.
@@ -174,7 +174,7 @@ class DB {
    * @return          Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode IsLatestVersion(const Slice& key, const Hash& version,
-                                    bool* isLatest) = 0;
+                                    bool* isLatest) const = 0;
   /**
    * @brief Create a new branch which points to the head of a branch.
    *
@@ -224,14 +224,14 @@ class DB {
    * @return        Error code. (ErrorCode::kOK for success)
    */
   virtual ErrorCode GetChunk(const Slice& key, const Hash& version,
-                             Chunk* chunk) = 0;
+                             Chunk* chunk) const = 0;
   /**
    * @brief Read storage information.
    *
    * @param info    Returned storage information.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) = 0;
+  virtual ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const = 0;
 
  protected:
   DB() = default;

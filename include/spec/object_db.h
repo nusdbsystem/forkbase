@@ -3,6 +3,9 @@
 #ifndef USTORE_SPEC_OBJECT_DB_H_
 #define USTORE_SPEC_OBJECT_DB_H_
 
+#include <string>
+#include <vector>
+
 #include "spec/db.h"
 #include "types/client/vmeta.h"
 
@@ -20,8 +23,8 @@ class ObjectDB {
   explicit ObjectDB(DB* db) noexcept : db_(db) {}
 
   // Get Object
-  Result<VMeta> Get(const Slice& key, const Slice& branch);
-  Result<VMeta> Get(const Slice& key, const Hash& version);
+  Result<VMeta> Get(const Slice& key, const Slice& branch) const;
+  Result<VMeta> Get(const Slice& key, const Hash& version) const;
   // Put Object
   Result<Hash> Put(const Slice& key, const VObject& object,
                    const Slice& branch);
@@ -35,18 +38,18 @@ class ObjectDB {
   Result<Hash> Merge(const Slice& key, const VObject& object,
                      const Hash& ref_version1, const Hash& ref_version2);
   // List Keys/Branches
-  Result<std::vector<std::string>> ListKeys();
-  Result<std::vector<std::string>> ListBranches(const Slice& key);
+  Result<std::vector<std::string>> ListKeys() const;
+  Result<std::vector<std::string>> ListBranches(const Slice& key) const;
   // Check Existence
-  Result<bool> Exists(const Slice& key);
-  Result<bool> Exists(const Slice& key, const Slice& branch);
+  Result<bool> Exists(const Slice& key) const;
+  Result<bool> Exists(const Slice& key, const Slice& branch) const;
   // Check Branch Head
-  Result<Hash> GetBranchHead(const Slice& key, const Slice& branch);
+  Result<Hash> GetBranchHead(const Slice& key, const Slice& branch) const;
   Result<bool> IsBranchHead(const Slice& key, const Slice& branch,
-                            const Hash& version);
+                            const Hash& version) const;
   // Check Latest Version
-  Result<std::vector<Hash>> GetLatestVersions(const Slice& key);
-  Result<bool> IsLatestVersion(const Slice& key, const Hash& version);
+  Result<std::vector<Hash>> GetLatestVersions(const Slice& key) const;
+  Result<bool> IsLatestVersion(const Slice& key, const Hash& version) const;
   // Create Branch
   ErrorCode Branch(const Slice& key, const Slice& old_branch,
                    const Slice& new_branch);
@@ -58,7 +61,7 @@ class ObjectDB {
   // Delete Branch
   ErrorCode Delete(const Slice& key, const Slice& branch);
   // Get Storage Info
-  Result<std::vector<StoreInfo>> GetStorageInfo();
+  Result<std::vector<StoreInfo>> GetStorageInfo() const;
 
  private:
   DB* db_;

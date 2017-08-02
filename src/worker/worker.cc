@@ -55,7 +55,8 @@ Worker::~Worker() {
   }
 }
 
-ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
+ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell)
+    const {
   const auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
     if (Exists(key)) {
@@ -70,7 +71,7 @@ ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell) {
   return Get(key, *version_opt, ucell);
 }
 
-ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) {
+ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) const {
   DCHECK_NE(ver, Hash::kNull);
   *ucell = UCell::Load(ver);
   if (ucell->empty()) {
@@ -334,20 +335,21 @@ ErrorCode Worker::Delete(const Slice& key, const Slice& branch) {
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) {
+ErrorCode Worker::GetChunk(const Slice& key, const Hash& ver, Chunk* chunk)
+    const {
   static const auto chunk_store = store::GetChunkStore();
   *chunk = chunk_store->Get(ver);
   if (chunk->empty()) return ErrorCode::kChunkNotExists;
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::GetStorageInfo(std::vector<StoreInfo>* info) {
+ErrorCode Worker::GetStorageInfo(std::vector<StoreInfo>* info) const {
   static const auto chunk_store = store::GetChunkStore();
   info->push_back(chunk_store->GetInfo());
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::ListKeys(std::vector<std::string>* keys) {
+ErrorCode Worker::ListKeys(std::vector<std::string>* keys) const {
   keys->clear();
   for (auto& k : head_ver_.ListKey()) {
     keys->emplace_back(k.ToString());
@@ -356,7 +358,7 @@ ErrorCode Worker::ListKeys(std::vector<std::string>* keys) {
 }
 
 ErrorCode Worker::ListBranches(const Slice& key,
-                               std::vector<std::string>* branches) {
+                               std::vector<std::string>* branches) const {
   branches->clear();
   for (auto& b : head_ver_.ListBranch(key)) {
     branches->emplace_back(b.ToString());

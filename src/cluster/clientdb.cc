@@ -9,7 +9,7 @@ namespace ustore {
 using std::vector;
 using std::string;
 
-std::unique_ptr<UMessage> ClientDb::WaitForResponse() {
+std::unique_ptr<UMessage> ClientDb::WaitForResponse() const {
   std::unique_lock<std::mutex> lck(res_blob_->lock);
   // res_blob_->has_msg = false;
   while (!(res_blob_->has_msg))
@@ -19,7 +19,7 @@ std::unique_ptr<UMessage> ClientDb::WaitForResponse() {
       dynamic_cast<UMessage*>(res_blob_->message));
 }
 
-bool ClientDb::Send(const Message& msg, const node_id_t& node_id) {
+bool ClientDb::Send(const Message& msg, const node_id_t& node_id) const {
   // serialize and send
   int msg_size = msg.ByteSize();
   byte_t *serialized = new byte_t[msg_size];
@@ -33,7 +33,7 @@ bool ClientDb::Send(const Message& msg, const node_id_t& node_id) {
 }
 
 void ClientDb::CreatePutMessage(const Slice &key, const Value &value,
-                                UMessage* msg) {
+                                UMessage* msg) const {
   // header
   msg->set_type(UMessage::PUT_REQUEST);
   msg->set_source(id_);
@@ -76,7 +76,7 @@ ErrorCode ClientDb::Put(const Slice& key, const Value& value,
   return GetVersionResponse(version);
 }
 
-void ClientDb::CreateGetMessage(const Slice &key, UMessage* msg) {
+void ClientDb::CreateGetMessage(const Slice &key, UMessage* msg) const {
   // header
   msg->set_type(UMessage::GET_REQUEST);
   msg->set_source(id_);
@@ -85,7 +85,8 @@ void ClientDb::CreateGetMessage(const Slice &key, UMessage* msg) {
   request->set_key(key.data(), key.len());
 }
 
-ErrorCode ClientDb::Get(const Slice& key, const Slice& branch, UCell* meta) {
+ErrorCode ClientDb::Get(const Slice& key, const Slice& branch, UCell* meta)
+    const {
   UMessage msg;
   CreateGetMessage(key, &msg);
   // request
@@ -96,7 +97,8 @@ ErrorCode ClientDb::Get(const Slice& key, const Slice& branch, UCell* meta) {
   return GetUCellResponse(meta);
 }
 
-ErrorCode ClientDb::Get(const Slice& key, const Hash& version, UCell* meta) {
+ErrorCode ClientDb::Get(const Slice& key, const Hash& version, UCell* meta)
+    const {
   UMessage msg;
   CreateGetMessage(key, &msg);
   // request
@@ -108,7 +110,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Hash& version, UCell* meta) {
 }
 
 ErrorCode ClientDb::GetChunk(const Slice& key, const Hash& version,
-                             Chunk* chunk) {
+                             Chunk* chunk) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::GET_CHUNK_REQUEST);
@@ -122,7 +124,7 @@ ErrorCode ClientDb::GetChunk(const Slice& key, const Hash& version,
   return GetChunkResponse(chunk);
 }
 
-ErrorCode ClientDb::GetStorageInfo(std::vector<StoreInfo>* info) {
+ErrorCode ClientDb::GetStorageInfo(std::vector<StoreInfo>* info) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::GET_INFO_REQUEST);
@@ -137,7 +139,7 @@ ErrorCode ClientDb::GetStorageInfo(std::vector<StoreInfo>* info) {
 }
 
 void ClientDb::CreateBranchMessage(const Slice &key, const Slice &new_branch,
-                                   UMessage* msg) {
+                                   UMessage* msg) const {
   // header
   msg->set_type(UMessage::BRANCH_REQUEST);
   msg->set_source(id_);
@@ -188,7 +190,7 @@ ErrorCode ClientDb::Rename(const Slice& key, const Slice& old_branch,
 }
 
 void ClientDb::CreateMergeMessage(const Slice &key, const Value &value,
-                                  UMessage* msg) {
+                                  UMessage* msg) const {
   // header
   msg->set_type(UMessage::MERGE_REQUEST);
   msg->set_source(id_);
@@ -249,7 +251,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
   return GetVersionResponse(version);
 }
 
-ErrorCode ClientDb::ListKeys(std::vector<std::string>* keys) {
+ErrorCode ClientDb::ListKeys(std::vector<std::string>* keys) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::LIST_REQUEST);
@@ -264,7 +266,7 @@ ErrorCode ClientDb::ListKeys(std::vector<std::string>* keys) {
 }
 
 ErrorCode ClientDb::ListBranches(const Slice& key,
-                                 std::vector<std::string>* branches) {
+                                 std::vector<std::string>* branches) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::LIST_REQUEST);
@@ -277,7 +279,7 @@ ErrorCode ClientDb::ListBranches(const Slice& key,
   return GetStringListResponse(branches);
 }
 
-ErrorCode ClientDb::Exists(const Slice& key, bool* exist) {
+ErrorCode ClientDb::Exists(const Slice& key, bool* exist) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::EXISTS_REQUEST);
@@ -290,7 +292,8 @@ ErrorCode ClientDb::Exists(const Slice& key, bool* exist) {
   return GetBoolResponse(exist);
 }
 
-ErrorCode ClientDb::Exists(const Slice& key, const Slice& branch, bool* exist) {
+ErrorCode ClientDb::Exists(const Slice& key, const Slice& branch, bool* exist)
+    const {
   UMessage msg;
   // header
   msg.set_type(UMessage::EXISTS_REQUEST);
@@ -305,7 +308,7 @@ ErrorCode ClientDb::Exists(const Slice& key, const Slice& branch, bool* exist) {
 }
 
 ErrorCode ClientDb::GetBranchHead(const Slice& key, const Slice& branch,
-                                  Hash* version) {
+                                  Hash* version) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::GET_BRANCH_HEAD_REQUEST);
@@ -320,7 +323,7 @@ ErrorCode ClientDb::GetBranchHead(const Slice& key, const Slice& branch,
 }
 
 ErrorCode ClientDb::IsBranchHead(const Slice& key, const Slice& branch,
-                         const Hash& version, bool* isHead) {
+                                 const Hash& version, bool* isHead) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::IS_BRANCH_HEAD_REQUEST);
@@ -336,7 +339,7 @@ ErrorCode ClientDb::IsBranchHead(const Slice& key, const Slice& branch,
 }
 
 ErrorCode ClientDb::GetLatestVersions(const Slice& key,
-                                      std::vector<Hash>* versions) {
+                                      std::vector<Hash>* versions) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::GET_LATEST_VERSION_REQUEST);
@@ -350,7 +353,7 @@ ErrorCode ClientDb::GetLatestVersions(const Slice& key,
 }
 
 ErrorCode ClientDb::IsLatestVersion(const Slice& key, const Hash& version,
-                            bool* isLatest) {
+                                    bool* isLatest) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::IS_LATEST_VERSION_REQUEST);
@@ -378,14 +381,14 @@ ErrorCode ClientDb::Delete(const Slice& key, const Slice& branch) {
   return GetEmptyResponse();
 }
 
-ErrorCode ClientDb::GetEmptyResponse() {
+ErrorCode ClientDb::GetEmptyResponse() const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
   return err;
 }
 
-ErrorCode ClientDb::GetVersionResponse(Hash* version) {
+ErrorCode ClientDb::GetVersionResponse(Hash* version) const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
@@ -395,7 +398,7 @@ ErrorCode ClientDb::GetVersionResponse(Hash* version) {
   return err;
 }
 
-ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
+ErrorCode ClientDb::GetUCellResponse(UCell* meta) const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
@@ -409,7 +412,7 @@ ErrorCode ClientDb::GetUCellResponse(UCell* meta) {
   return err;
 }
 
-ErrorCode ClientDb::GetChunkResponse(Chunk* chunk) {
+ErrorCode ClientDb::GetChunkResponse(Chunk* chunk) const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
@@ -422,7 +425,7 @@ ErrorCode ClientDb::GetChunkResponse(Chunk* chunk) {
   return err;
 }
 
-ErrorCode ClientDb::GetStringListResponse(vector<string>* vals) {
+ErrorCode ClientDb::GetStringListResponse(vector<string>* vals) const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
@@ -434,7 +437,7 @@ ErrorCode ClientDb::GetStringListResponse(vector<string>* vals) {
   return err;
 }
 
-ErrorCode ClientDb::GetVersionListResponse(vector<Hash>* versions) {
+ErrorCode ClientDb::GetVersionListResponse(vector<Hash>* versions) const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
@@ -446,7 +449,7 @@ ErrorCode ClientDb::GetVersionListResponse(vector<Hash>* versions) {
   return err;
 }
 
-ErrorCode ClientDb::GetBoolResponse(bool *value) {
+ErrorCode ClientDb::GetBoolResponse(bool *value) const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
@@ -456,7 +459,7 @@ ErrorCode ClientDb::GetBoolResponse(bool *value) {
   return err;
 }
 
-ErrorCode ClientDb::GetInfoResponse(std::vector<StoreInfo>* stores) {
+ErrorCode ClientDb::GetInfoResponse(std::vector<StoreInfo>* stores) const {
   auto msg = WaitForResponse();
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
