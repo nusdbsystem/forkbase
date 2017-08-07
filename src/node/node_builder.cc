@@ -361,7 +361,7 @@ Segment* NodeBuilder::SegAtCursor() {
   } else {
     seg = new VarSegment(cursor_->current());
   }
-  created_segs_.push_back(std::unique_ptr<const Segment>(seg));
+  created_segs_.emplace_back(seg);
   return seg;
 }
 }  // namespace ustore

@@ -94,7 +94,7 @@ void RemoteClientService::Stop() {
 ClientDb RemoteClientService::CreateClientDb() {
   // adding a new response blob
   ResponseBlob* resblob = new ResponseBlob();
-  responses_.push_back(std::unique_ptr<ResponseBlob>(resblob));
+  responses_.emplace_back(resblob);
   return ClientDb(master_, nclients_++, net_.get(), resblob, &workers_);
 }
 

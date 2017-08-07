@@ -139,8 +139,7 @@ NetContext* ZmqNet::CreateNetContext(const node_id_t& id) {
 void ClientZmqNet::Start() {
   // start backend thread
   for (int i = 0; i < nthreads_; i++)
-    backend_threads_.push_back(
-              std::thread(&ClientZmqNet::ClientThread, this));
+    backend_threads_.emplace_back(&ClientZmqNet::ClientThread, this);
 
   int pollsize = netmap_.size() + 1;
   zmq_pollitem_t items[pollsize];
@@ -297,8 +296,7 @@ void ServerZmqNet::Start() {
               new ServerZmqNetContext("", "", inproc_ep_, result_ep_,
                                     std::to_string(i));
     netmap_[std::to_string(i)] = nctx;
-    backend_threads_.push_back(
-                    std::thread(&ServerZmqNetContext::Start, nctx, this));
+    backend_threads_.emplace_back(&ServerZmqNetContext::Start, nctx, this);
   }
 
   // zpoller_t *zpoller = zpoller_new(recv_sock_, result_sock_, NULL);

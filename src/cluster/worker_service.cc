@@ -163,10 +163,10 @@ Value WorkerService::ValueFromRequest(const ValuePayload& payload) {
   // even though Slice only take pointer, the pointer
   // to keys and values will persist till the end of HandleRequest
   for (int i = 0; i < vals_size; i++)
-    val.vals.push_back(Slice(payload.values(i)));
+    val.vals.emplace_back(payload.values(i));
   int keys_size = payload.keys_size();
   for (int i = 0; i < keys_size; i++)
-    val.keys.push_back(Slice(payload.keys(i)));
+    val.keys.emplace_back(payload.keys(i));
   return val;
 }
 
