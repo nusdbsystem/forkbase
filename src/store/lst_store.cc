@@ -152,7 +152,7 @@ void LSTStore::Enlarge() {
   // wait until the status is set kScheduled
   while (thread_status_.load() != ThreadStatus::kScheduled) {}
 
-  int new_segments = this->segment_increment_ * 2;
+  size_t new_segments = this->segment_increment_ * 2;
   if (storeInfo.allocSegments + new_segments > this->max_segments_)
     new_segments = max_segments_ - storeInfo.allocSegments;
 
@@ -167,7 +167,7 @@ void LSTStore::Enlarge() {
   offset_t end_of_log = kMetaLogSize + storeInfo.allocSegments * kSegmentSize;
   offset_t offset = end_of_log;
 
-  for (int i = 0; i < new_segments; offset += kSegmentSize, ++i) {
+  for (size_t i = 0; i < new_segments; offset += kSegmentSize, ++i) {
     DLOG(INFO) << "init the " << i << "-th new segment";
     offset_t prev_segment_offset = 0, next_segment_offset = 0;
     int chunk_id = i + storeInfo.allocSegments;
@@ -197,7 +197,7 @@ void LSTStore::Enlarge() {
 
   sync_block_.head_ = OffsetToLstSegmentPtr(end_of_log);
   sync_block_.last_ = sync_block_.head_;
-  int ns = LinkSegmentList(&sync_block_.last_);
+  size_t ns = LinkSegmentList(&sync_block_.last_);
   CHECK_EQ(ns, new_segments);
 
   thread_status_.store(ThreadStatus::kCompleted);

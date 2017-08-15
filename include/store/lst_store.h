@@ -19,6 +19,7 @@
 #include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "store/chunk_store.h"
+#include "store/iterator.h"
 #include "types/type.h"
 #include "utils/chars.h"
 #include "utils/env.h"
@@ -109,11 +110,7 @@ static inline ChunkType PtrToChunkType(const byte_t* byte) {
 
 template <typename MapType,
          template<typename> class CheckPolicy = NoCheckPolicy>
-class LSTStoreIterator : public std::iterator<std::input_iterator_tag
-                         , Chunk
-                         , std::ptrdiff_t
-                         , const Chunk*
-                         , Chunk>,
+class LSTStoreIterator : public StoreIteratorBase,
                          protected CheckPolicy<MapType> {
  public:
   using BaseIterator = LSTStoreIterator;
@@ -122,18 +119,14 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
       const LSTSegment* first,
       const byte_t* ptr) noexcept : map_(map), segment_(first), ptr_(ptr) {}
 
-  LSTStoreIterator(const LSTStoreIterator&) noexcept = default;
+  LSTStoreIterator(const LSTStoreIterator&) = default;
   LSTStoreIterator& operator=(const LSTStoreIterator&) = default;
 
-  inline bool operator==(const LSTStoreIterator& other) const {
+  bool operator==(const LSTStoreIterator& other) const {
     return ptr_ == other.ptr_;
   }
 
-  inline bool operator!=(const LSTStoreIterator& other) const {
-    return !(*this == other);
-  }
-
-  LSTStoreIterator& operator++() {
+  void operator++() override {
     if (ptr_ == nullptr || IsEndChunk(PtrToChunkType(ptr_))) {
       throw std::out_of_range("LSTStoreIterator");
     }
@@ -148,22 +141,25 @@ class LSTStoreIterator : public std::iterator<std::input_iterator_tag
              && !IsEndChunk(PtrToChunkType(ptr_)));
 
     DCHECK(IsChunkValid(PtrToChunkType(ptr_)));
-    return *this;
   }
 
-  LSTStoreIterator operator++(int) {
-    LSTStoreIterator ret = *this; ++(*this); return ret;
-  }
-
-  reference operator*() const {
+  Chunk operator*() const override {
     DCHECK(CheckPolicy<MapType>::check(map_, ptr_ + PtrToChunkLength(ptr_)));
     return Chunk(ptr_, ptr_ + PtrToChunkLength(ptr_));
   }
 
+  LSTStoreIterator* clone() const override {
+    return new LSTStoreIterator(*this);
+  }
+  
  protected:
   const MapType& map_;
   const LSTSegment* segment_;
   const byte_t* ptr_;
+
+  bool equal(const StoreIteratorBase& other) const override {
+    return operator==(static_cast<const LSTStoreIterator<MapType, CheckPolicy>&>(other));
+  }
 };
 
 template <typename MapType, typename ChunkType, ChunkType T,
@@ -175,12 +171,15 @@ class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
 
   static constexpr ChunkType type_ = T;
 
-  explicit LSTStoreTypeIterator(parent iterator) : parent(iterator) {
-    if (!parent::ptr_) return;
-    ChunkType type = PtrToChunkType(parent::ptr_);
-    if (type != type_ && !IsEndChunk(type))
-      operator++();
-  }
+  //explicit LSTStoreTypeIterator(parent iterator) : parent(iterator) {
+  //  if (!parent::ptr_) return;
+  //  ChunkType type = PtrToChunkType(parent::ptr_);
+  //  if (type != type_ && !IsEndChunk(type))
+  //    operator++();
+  //}
+
+  LSTStoreTypeIterator(const LSTStoreTypeIterator&) noexcept = default;
+  LSTStoreTypeIterator& operator=(const LSTStoreTypeIterator&) = default;
 
   LSTStoreTypeIterator(const MapType& map,
       const LSTSegment* segment,
@@ -191,27 +190,16 @@ class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
       operator++();
   }
 
-  LSTStoreTypeIterator(const LSTStoreTypeIterator&) noexcept = default;
-  LSTStoreTypeIterator& operator=(const LSTStoreTypeIterator&) = default;
-
-  inline bool operator==(const LSTStoreTypeIterator& other) const {
-    return parent::operator==(other);
-  }
-  inline bool operator!=(const LSTStoreTypeIterator& other) const {
-    return !(*this == other);
-  }
-
-  LSTStoreTypeIterator& operator++() {
+  void operator++() override {
     ChunkType type;
     do {
       parent::operator++();
       type = PtrToChunkType(parent::ptr_);
     } while (type != type_ && !IsEndChunk(type));
-    return *this;
   }
 
-  LSTStoreTypeIterator operator++(int) {
-    LSTStoreTypeIterator ret = *this; ++(*this); return ret;
+  LSTStoreTypeIterator* clone() const override {
+    return new LSTStoreTypeIterator(*this);
   }
 };
 
@@ -252,27 +240,43 @@ class LSTStore
     return storeInfo;
   }
 
-  template <typename Iterator = iterator>
-  Iterator begin() {
-    const byte_t* ptr = major_list_ ? GetFirstChunkPtr(major_list_) : nullptr;
-    return Iterator(chunk_map_, major_list_, ptr);
+  StoreIterator begin() const override {
+    return begin<iterator>();
+  }
+
+  StoreIterator cbegin() const override {
+    return begin();
+  }
+
+  StoreIterator end() const override {
+    return end<iterator>();
+  }
+
+  StoreIterator cend() const override {
+    return cend();
   }
 
   template <typename Iterator = iterator>
-  Iterator cbegin() {
+  StoreIterator begin() const {
+    const byte_t* ptr = major_list_ ? GetFirstChunkPtr(major_list_) : nullptr;
+    return StoreIterator(new Iterator(chunk_map_, major_list_, ptr));
+  }
+
+  template <typename Iterator = iterator>
+  StoreIterator cbegin() const {
     return begin<Iterator>();
   }
 
   template <typename Iterator = iterator>
-  Iterator end() {
+  StoreIterator end() const {
     const byte_t* ptr = current_major_segment_ ?
       (const byte_t*)current_major_segment_->segment_ + major_segment_offset_
       : nullptr;
-    return Iterator(chunk_map_, current_major_segment_, ptr);
+    return StoreIterator(new Iterator(chunk_map_, current_major_segment_, ptr));
   }
 
   template <typename Iterator = iterator>
-  Iterator cend() {
+  StoreIterator cend() const {
     return end<Iterator>();
   }
 

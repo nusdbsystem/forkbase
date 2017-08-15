@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include "chunk/chunk.h"
 #include "types/type.h"
+#include "store/iterator.h"
 
 namespace ustore {
 
@@ -45,6 +46,11 @@ class ChunkStore {
   virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
   virtual bool Exists(const Hash& key) = 0;
   virtual const StoreInfo& GetInfo() const = 0;
+
+  virtual StoreIterator begin() const = 0;
+  virtual StoreIterator cbegin() const = 0;
+  virtual StoreIterator end() const = 0;
+  virtual StoreIterator cend() const = 0;
 };
 
 // wrap global functions inside a namespace

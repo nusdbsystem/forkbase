@@ -7,6 +7,7 @@
 #include "gtest/gtest.h"
 #include "store/lst_store.h"
 #include "utils/iterator.h"
+#include "store/iterator.h"
 #include "utils/type_traits.h"
 
 #define MAKE_TYPE_ITERATOR(type) \
@@ -25,9 +26,10 @@ ustore::byte_t hash[NUMBER][ustore::Hash::kByteLength];
 
 using LSTStore = ustore::lst_store::LSTStore;
 using Chunk = ustore::Chunk;
+using StoreIterator = ustore::StoreIterator;
 
 template <typename Iterator>
-Iterator FindChunk(const Chunk& chunk) {
+StoreIterator FindChunk(const Chunk& chunk) {
   LSTStore* lstStore = LSTStore::Instance();
   auto it = lstStore->begin<Iterator>();
   for (; it != lstStore->end<Iterator>(); ++it) {
@@ -38,23 +40,25 @@ Iterator FindChunk(const Chunk& chunk) {
 }
 
 template <typename Iterator>
-Iterator begin() {
+StoreIterator begin() {
   std::memset(raw_data, 0, LEN);
   ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
   chunk.forceHash();
-  return Iterator(FindChunk<typename Iterator::BaseIterator>(chunk));
+  return FindChunk<Iterator>(chunk);
 }
 
 template <typename Iterator>
-Iterator end() {
+StoreIterator end() {
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   *val = NUMBER - 1;
   ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
   chunk.forceHash();
-  return Iterator(++FindChunk<typename Iterator::BaseIterator>(chunk));
+  auto it = FindChunk<Iterator>(chunk);
+  if (chunk.hash() == (*it).hash()) return ++it;
+  else return it;
 }
 
 TEST(LSTStore, Put) {
@@ -83,7 +87,7 @@ TEST(LSTStore, Get) {
   LSTStore* lstStore = LSTStore::Instance();
   for (int i = 0; i < NUMBER; ++i) {
     // load from stroage
-    const ustore::Chunk c =
+    ustore::Chunk c =
       lstStore->Get(ustore::Hash(hash[i]));
       EXPECT_EQ(c.type(), ustore::ChunkType::kBlob);
       EXPECT_EQ(c.numBytes(), LEN + ::ustore::Chunk::kMetaLength);
