@@ -21,18 +21,17 @@ class StoreIteratorBase {
 
   virtual void operator++() = 0;
   virtual Chunk operator*() const = 0;
+  // return a newly allocated object
   virtual StoreIteratorBase* clone() const = 0;
 
  protected:
   virtual bool equal(const StoreIteratorBase& other) const = 0;
 };
 
-class StoreIterator : public std::iterator<std::input_iterator_tag
-                      , Chunk
-                      , std::ptrdiff_t
-                      , const Chunk*
-                      , Chunk> {
+class StoreIterator : public std::iterator<std::input_iterator_tag,
+    Chunk, std::ptrdiff_t, const Chunk*, Chunk> {
  public:
+  // take ownership of the pointer
   explicit StoreIterator(StoreIteratorBase* ptr) : itr_(ptr) {}
   StoreIterator(const StoreIterator& other) : itr_(other.itr_->clone()) {}
   StoreIterator(StoreIterator&& other) = default;

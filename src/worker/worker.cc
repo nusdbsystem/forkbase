@@ -4,7 +4,6 @@
 
 #include <boost/filesystem.hpp>
 #include <memory>
-#include "store/lst_store.h"
 #include "types/server/sblob.h"
 #include "types/server/slist.h"
 #include "types/server/smap.h"
@@ -15,8 +14,6 @@
 namespace ustore {
 
 namespace fs = boost::filesystem;
-using CellIterator =
-  typename lst_store::LSTStore::type_iterator<ChunkType, ChunkType::kCell>;
 
 Worker::Worker(const WorkerID& id, bool persist) : id_(id), persist_(persist) {
   // create data/log dir
@@ -32,14 +29,11 @@ Worker::Worker(const WorkerID& id, bool persist) : id_(id), persist_(persist) {
     std::string head_path = dir + "/" + data_file + ".head";
     if (fs::exists(fs::path(head_path))) head_ver_.LoadBranchVersion(head_path);
     // load latest versions
-    auto store = dynamic_cast<lst_store::LSTStore*>(store::GetChunkStore());
-    if (store) {
-      for (auto it = store->begin<CellIterator>();
-           it != store->end<CellIterator>(); ++it) {
-        UpdateLatestVersion(UCell(std::move(*it)));
-      }
-    } else {
-      LOG(WARNING) << "Fail to get LST Store instance";
+    auto store = store::GetChunkStore();
+    for (auto it = store->begin(); it != store->end(); ++it) {
+      Chunk chunk = *it;
+      if (chunk.type() == ChunkType::kCell)
+        UpdateLatestVersion(UCell(std::move(chunk)));
     }
   }
 }

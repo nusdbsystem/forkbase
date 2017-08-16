@@ -79,7 +79,7 @@ class WorkerService {
     std::vector<node_id_t> addresses_;  // worker addresses
     std::unique_ptr<Worker> worker_;  // where the logic happens
     std::unique_ptr<Net> net_;
-    std::unique_ptr<CallBack> cb_ = nullptr;
+    std::unique_ptr<CallBack> cb_;
     std::mutex lock_;
     bool persist_;
 };

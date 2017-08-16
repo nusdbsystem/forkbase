@@ -164,7 +164,7 @@ class LSTStoreIterator : public StoreIteratorBase,
 
 template <typename MapType, typename ChunkType, ChunkType T,
          template<typename> class CheckPolicy = NoCheckPolicy>
-class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
+class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy> {
  public:
   using parent = LSTStoreIterator<MapType, CheckPolicy>;
   using BaseIterator = parent;

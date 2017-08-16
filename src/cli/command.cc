@@ -261,7 +261,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-k <key> -b <branch>" << std::endl
      << FORMAT_BASIC_CMD("HEAD")
      << "-k <key> -b <branch>" << std::endl
-     << FORMAT_BASIC_CMD("LATEST_{_ALL}")
+     << FORMAT_BASIC_CMD("LATEST{_ALL}")
      << "-k <key>" << std::endl
      << FORMAT_BASIC_CMD("EXISTS")
      << "-k <key> {-b <branch>}" << std::endl
