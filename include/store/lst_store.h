@@ -5,7 +5,6 @@
 
 #include <cstdint>
 
-
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -23,10 +22,10 @@
 #include "types/type.h"
 #include "utils/chars.h"
 #include "utils/env.h"
+#include "utils/map_check_policy.h"
 #include "utils/noncopyable.h"
 #include "utils/singleton.h"
 #include "utils/type_traits.h"
-#include "utils/map_check_policy.h"
 
 namespace ustore {
 namespace lst_store {
@@ -151,14 +150,15 @@ class LSTStoreIterator : public StoreIteratorBase,
   LSTStoreIterator* clone() const override {
     return new LSTStoreIterator(*this);
   }
-  
+
  protected:
   const MapType& map_;
   const LSTSegment* segment_;
   const byte_t* ptr_;
 
   bool equal(const StoreIteratorBase& other) const override {
-    return operator==(static_cast<const LSTStoreIterator<MapType, CheckPolicy>&>(other));
+    return operator==(
+        static_cast<const LSTStoreIterator<MapType, CheckPolicy>&>(other));
   }
 };
 
@@ -170,13 +170,6 @@ class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy>{
   using BaseIterator = parent;
 
   static constexpr ChunkType type_ = T;
-
-  //explicit LSTStoreTypeIterator(parent iterator) : parent(iterator) {
-  //  if (!parent::ptr_) return;
-  //  ChunkType type = PtrToChunkType(parent::ptr_);
-  //  if (type != type_ && !IsEndChunk(type))
-  //    operator++();
-  //}
 
   LSTStoreTypeIterator(const LSTStoreTypeIterator&) noexcept = default;
   LSTStoreTypeIterator& operator=(const LSTStoreTypeIterator&) = default;
@@ -240,21 +233,10 @@ class LSTStore
     return storeInfo;
   }
 
-  StoreIterator begin() const override {
-    return begin<iterator>();
-  }
-
-  StoreIterator cbegin() const override {
-    return begin();
-  }
-
-  StoreIterator end() const override {
-    return end<iterator>();
-  }
-
-  StoreIterator cend() const override {
-    return cend();
-  }
+  StoreIterator begin() const override { return begin<iterator>(); }
+  StoreIterator cbegin() const override { return begin(); }
+  StoreIterator end() const override { return end<iterator>(); }
+  StoreIterator cend() const override { return cend(); }
 
   template <typename Iterator = iterator>
   StoreIterator begin() const {

@@ -12,7 +12,7 @@
 #include <type_traits>
 
 #include "utils/chars.h"
-#include "utils/iterator.h"
+#include "utils/enum.h"
 #include "utils/logging.h"
 #include "utils/timer.h"
 

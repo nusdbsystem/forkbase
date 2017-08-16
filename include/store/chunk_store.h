@@ -7,8 +7,8 @@
 #include <string>
 #include <unordered_map>
 #include "chunk/chunk.h"
-#include "types/type.h"
 #include "store/iterator.h"
+#include "types/type.h"
 
 namespace ustore {
 

@@ -1,72 +1,76 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_STORE_CHUNK_ITERATOR_H_
-#define USTORE_STORE_CHUNK_ITERATOR_H_
+#ifndef USTORE_STORE_ITERATOR_H_
+#define USTORE_STORE_ITERATOR_H_
 
 #include <iterator>
+#include <memory>
+#include <utility>
 
 #include "chunk/chunk.h"
 
 namespace ustore {
+
 class StoreIteratorBase {
-  public:
-    bool operator==(const StoreIteratorBase& other) const {
-      return typeid(*this) == typeid(other) && equal(other);
-    }
+ public:
+  virtual ~StoreIteratorBase() {}
 
-    virtual void operator++() = 0;  
+  bool operator==(const StoreIteratorBase& other) const {
+    return typeid(*this) == typeid(other) && equal(other);
+  }
 
-    virtual Chunk operator*() const = 0;
+  virtual void operator++() = 0;
+  virtual Chunk operator*() const = 0;
+  virtual StoreIteratorBase* clone() const = 0;
 
-    virtual StoreIteratorBase* clone() const = 0;
-
-    virtual ~StoreIteratorBase() {}
-
-  protected:
-
-    virtual bool equal(const StoreIteratorBase& other) const = 0;
+ protected:
+  virtual bool equal(const StoreIteratorBase& other) const = 0;
 };
 
 class StoreIterator : public std::iterator<std::input_iterator_tag
-                         , Chunk
-                         , std::ptrdiff_t
-                         , const Chunk*
-                         , Chunk> {
-  public:
-    StoreIterator(StoreIteratorBase* ptr) : itr_(ptr) {}
-    StoreIterator(const StoreIterator& other) : itr_(other.itr_->clone()) {}
-    StoreIterator(StoreIterator&& other) : itr_(std::move(other.itr_)) {}
+                      , Chunk
+                      , std::ptrdiff_t
+                      , const Chunk*
+                      , Chunk> {
+ public:
+  explicit StoreIterator(StoreIteratorBase* ptr) : itr_(ptr) {}
+  StoreIterator(const StoreIterator& other) : itr_(other.itr_->clone()) {}
+  StoreIterator(StoreIterator&& other) = default;
 
-    // copy & swap idiom; strong exception guarantee
-    // note there is no extra cost 
-    StoreIterator& operator=(StoreIterator other) {
-      std::swap(itr_, other.itr_);
-      return *this;
-    }
+  // copy & swap idiom; strong exception guarantee
+  // note there is no extra cost
+  StoreIterator& operator=(StoreIterator other) {
+    std::swap(itr_, other.itr_);
+    return *this;
+  }
 
-    inline bool operator==(const StoreIterator& other) const {
-      return itr_ == other.itr_ || *itr_ == *other.itr_;
-    }
+  inline bool operator==(const StoreIterator& other) const {
+    return itr_ == other.itr_ || *itr_ == *other.itr_;
+  }
 
-    inline bool operator!=(const StoreIterator& other) const {
-      return !(*this == other);
-    }
+  inline bool operator!=(const StoreIterator& other) const {
+    return !(*this == other);
+  }
 
-    inline StoreIterator& operator++() {
-      ++(*itr_); return *this;
-    }
+  inline StoreIterator& operator++() {
+    ++(*itr_);
+    return *this;
+  }
 
-    inline StoreIterator operator++(int) {
-      StoreIterator it = *this; ++(*this); return it;
-    }
+  inline StoreIterator operator++(int) {
+    StoreIterator it = *this;
+    ++(*this);
+    return it;
+  }
 
-    reference operator*() const {
-      return itr_->operator*(); 
-    }
+  reference operator*() const {
+    return itr_->operator*();
+  }
 
-  private:
-    std::unique_ptr<StoreIteratorBase> itr_;
-
+ private:
+  std::unique_ptr<StoreIteratorBase> itr_;
 };
-}
-#endif
+
+}  // namespace ustore
+
+#endif  // USTORE_STORE_ITERATOR_H_

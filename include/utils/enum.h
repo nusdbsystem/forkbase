@@ -1,12 +1,12 @@
 // Copyright (c) 2017 The Ustore Authors.
+#ifndef USTORE_UTILS_ENUM_H_
+#define USTORE_UTILS_ENUM_H_
 
-#ifndef USTORE_UTILS_ITERATOR_H_
-#define USTORE_UTILS_ITERATOR_H_
 #include <iterator>
 
 #include "utils/type_traits.h"
 
-namespace ustore{
+namespace ustore {
 
 template <typename T, typename = enable_if_t<std::is_enum<T>::value>>
 struct Enum {
@@ -51,4 +51,4 @@ typename Enum<T>::Iterator end(Enum<T>) {
 
 }  // namespace ustore
 
-#endif  // USTORE_UTILS_ITERATOR_H_
+#endif  // USTORE_UTILS_ENUM_H_

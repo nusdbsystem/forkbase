@@ -6,8 +6,8 @@
 #include <thread>
 #include "gtest/gtest.h"
 #include "store/lst_store.h"
-#include "utils/iterator.h"
 #include "store/iterator.h"
+#include "utils/enum.h"
 #include "utils/type_traits.h"
 
 #define MAKE_TYPE_ITERATOR(type) \

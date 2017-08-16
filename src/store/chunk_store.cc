@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <iomanip>
 
-#include "utils/iterator.h"
+#include "utils/enum.h"
 #include "utils/logging.h"
 #ifdef USE_LEVELDB
 #include "store/ldb_store.h"
