@@ -75,14 +75,27 @@ UList::Iterator UList::Scan() const {
 
 UList::Iterator UList::Diff(const UList& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
-  IndexComparator cmptor(rhs.hash(), chunk_loader_);
-  return Iterator(hash(), cmptor.Diff(hash()), chunk_loader_.get());
+  if (this->numElements() == 0) {
+    return UList::Iterator(hash(), {}, chunk_loader_.get());
+  } else if (rhs.numElements() == 0) {
+    return UList::Iterator(hash(), {{0, numElements()}}, chunk_loader_.get());
+  } else {
+    IndexDiffer differ(rhs.hash(), chunk_loader_);
+    return UList::Iterator(hash(), differ.Compare(hash()), chunk_loader_.get());
+  }
+
 }
 
 UList::Iterator UList::Intersect(const UList& rhs) const {
   // Assume this and rhs both uses this chunk_loader_
-  IndexComparator cmptor(rhs.hash(), chunk_loader_);
-  return Iterator(hash(), cmptor.Intersect(hash()), chunk_loader_.get());
+
+  if (this->numElements() == 0 || rhs.numElements() == 0) {
+    return UList::Iterator(hash(), {}, chunk_loader_.get());
+  } else {
+    IndexIntersector intersector(rhs.hash(), chunk_loader_);
+    return UList::Iterator(hash(), intersector.Compare(hash()),
+                          chunk_loader_.get());
+  }
 }
 
 std::ostream& operator<<(std::ostream& os, const UList& obj) {

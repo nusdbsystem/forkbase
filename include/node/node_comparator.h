@@ -61,41 +61,226 @@ struct OrderedKeyTrait {
   }
 };
 
+// THe following two traits specify two procedures during two prolly tree comparing and traversing.
+//   The first procedure is performed when encountering the same hashes
+//   The second procedure is performed either side reaches the leaf node
 template <class KeyTrait>
+struct Intersector {
+/*Intersector is used to find the index ranges of lhs elements that occur in rhs*/
+  typedef std::vector<IndexRange> ResultType;
+  // Both lhs and rhs share the same elements due to the identical hashes
+  //   Return the entire index range of lhs side
+  static ResultType IdenticalHashes(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx) {
+    std::vector<IndexRange> result;
+    result.push_back({lhs_start_idx, lhs->numElements()});
+    return result;
+  }
+
+  static ResultType IterateLeaves(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
+    std::vector<IndexRange> results;
+
+    NodeCursor lhs_cursor(lhs->hash(), 0, loader);
+    NodeCursor rhs_cursor(rhs->hash(), 0, loader);
+
+    uint64_t lhs_idx = lhs_start_idx;
+    uint64_t rhs_idx = rhs_start_idx;
+
+    // if curr_cr.num_subsequent = 0,
+    //   this curr_cr is invalid.
+    IndexRange curr_cr{0, 0};
+
+    while (!lhs_cursor.isEnd() && !rhs_cursor.isEnd()) {
+      OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
+      OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
+
+      if (lhs_key > rhs_key) {
+        ++rhs_idx;
+        rhs_cursor.Advance(true);
+      } else if (lhs_key == rhs_key) {
+        size_t lhs_len = lhs_cursor.numCurrentBytes();
+        size_t rhs_len = rhs_cursor.numCurrentBytes();
+
+        if (lhs_len == rhs_len &&
+            std::memcmp(lhs_cursor.current(),
+                        rhs_cursor.current(),
+                        lhs_len) == 0) {
+        // Identical elements
+          if (curr_cr.num_subsequent == 0) {
+            curr_cr.start_idx = lhs_idx;
+            curr_cr.num_subsequent = 1;
+          } else {
+            ++curr_cr.num_subsequent;
+          }
+        } else {
+          if (curr_cr.num_subsequent != 0) {
+            results.push_back(curr_cr);
+            curr_cr.num_subsequent = 0;
+          }  // end if
+        }  // data comparison
+
+        ++lhs_idx;
+        ++rhs_idx;
+        lhs_cursor.Advance(true);
+        rhs_cursor.Advance(true);
+      } else {
+        // lhs_idx < rhs_idx
+        //   element pointed by lhs cursor
+        //   does not appear ih rhs
+        if (curr_cr.num_subsequent != 0) {
+          results.push_back(curr_cr);
+          curr_cr.num_subsequent = 0;
+        }  // end if
+        ++lhs_idx;
+        lhs_cursor.Advance(true);
+      }
+    }  // end while
+
+    if (curr_cr.num_subsequent != 0) {
+      results.push_back(curr_cr);
+    }  // end if
+
+    return results;
+  }
+};
+
+template <class KeyTrait>
+struct Differ {
+/*Differ is used to find the index ranges of lhs elements that DOES NOT occur in rhs*/
+  typedef std::vector<IndexRange> ResultType;
+  // Due to the identical hash, all lhs elements is contained in rhs. Return empty index range
+  static ResultType IdenticalHashes(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx) {
+    // Return empty result
+      std::vector<IndexRange> result;
+      return result;
+  }
+
+  static ResultType IterateLeaves(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader*loader) {
+
+    // DLOG(INFO) << "Iterate Diff: \n"
+    //            << "LHS: " << lhs << " Start_Idx: " << lhs_start_idx << "\n"
+    //            << "RHS: " << rhs << " Start_Idx: " << rhs_start_idx;
+
+    std::vector<IndexRange> results;
+
+    NodeCursor lhs_cursor(lhs->hash(), 0, loader);
+    NodeCursor rhs_cursor(rhs->hash(), 0, loader);
+
+    uint64_t lhs_idx = lhs_start_idx;
+    uint64_t rhs_idx = rhs_start_idx;
+
+    // whether num_subsequent field = 0 in curr_cr to
+    //   mark whether this curr_cr is valid or not.
+    IndexRange curr_cr{0, 0};
+
+    while (!lhs_cursor.isEnd() && !rhs_cursor.isEnd()) {
+      const OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
+      const OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
+
+      if (lhs_key > rhs_key) {
+        ++rhs_idx;
+        rhs_cursor.Advance(true);
+      } else if (lhs_key == rhs_key) {
+        size_t lhs_len = lhs_cursor.numCurrentBytes();
+        size_t rhs_len = rhs_cursor.numCurrentBytes();
+
+        if (lhs_len == rhs_len &&
+            std::memcmp(lhs_cursor.current(),
+                        rhs_cursor.current(),
+                        lhs_len) == 0) {
+        // Identical elements,
+        //   Stop updating curr_cr if valid
+          if (curr_cr.num_subsequent != 0) {
+            results.push_back(curr_cr);
+            curr_cr.num_subsequent = 0;  // mark curr_cr is invalid
+          }  // end if
+        } else {
+          if (curr_cr.num_subsequent == 0) {
+            // DLOG(INFO) << "Diff Start Idx: "
+            //           << lhs_idx;
+            curr_cr.start_idx = lhs_idx;
+            curr_cr.num_subsequent = 1;
+          } else {
+            ++curr_cr.num_subsequent;
+            // DLOG(INFO) << "  Incrementing for idx " << lhs_idx
+            //            << " to " << curr_cr.num_subsequent;
+          }
+        }  // data comparison
+
+        ++lhs_idx;
+        ++rhs_idx;
+        lhs_cursor.Advance(true);
+        rhs_cursor.Advance(true);
+      } else {
+        // lhs_idx < rhs_idx
+        //   rhs does not contain the element pointed by lhs
+        if (curr_cr.num_subsequent == 0) {
+          curr_cr.start_idx = lhs_idx;
+          curr_cr.num_subsequent = 1;
+        } else {
+          ++curr_cr.num_subsequent;
+        }
+        ++lhs_idx;
+        lhs_cursor.Advance(true);
+      }
+    }  // end while
+
+    // if lhs not to the end,
+    //   the rest of elements are not contained in rhs
+    // Include all of them in index range
+
+    if (!lhs_cursor.isEnd()) {
+      if (curr_cr.num_subsequent == 0) {
+        curr_cr.start_idx = lhs_idx;
+        curr_cr.num_subsequent = 0;
+      }  // end if
+
+      do {
+        ++curr_cr.num_subsequent;
+        // DLOG(INFO) << "  Incrementing for idx " << lhs_idx
+        //            << " to " << curr_cr.num_subsequent;
+        ++lhs_idx;
+      } while (lhs_cursor.Advance(true));  // end while
+    }  // end if
+
+    if (curr_cr.num_subsequent != 0) {
+      results.push_back(curr_cr);
+    }  // end if
+
+    return results;
+  }
+};
+
+template <class KeyTrait, template<class> class Traverser>
 class NodeComparator : private Noncopyable {
+/*
+NodeComparator compares two prolly trees using the following procedure:
+
+For each lhs node in pre-order tranversal:
+  Find the deepest rhs node which must contain all the lhs node element;
+  If lhs and rhs node share the same hash:
+    Perform the procedure specified in Traverser
+    return;
+
+  If lhs or rhs node reaches the leaf:
+    Perform the procedure specified in Traverser
+    return;
+
+  Recursive perform the above steps for each lhs child node
+
+
+KeyTrait specifies the key for traversing, either can be prolly index or orderedkey
+*/
  public:
+  using ReturnType = typename Traverser<KeyTrait>::ResultType;
 // loader is used for both lhs and rhs
   NodeComparator(const Hash& rhs,
                  std::shared_ptr<ChunkLoader> loader) noexcept;
 
   virtual ~NodeComparator() = default;
 
-// return the index range for elements both occur in lhs and rhs
-  virtual std::vector<IndexRange> Intersect(const Hash& lhs) const;
-
-// return the index range for elements only occur in lhs NOT in rhs
-  virtual std::vector<IndexRange> Diff(const Hash& lhs) const;
+  ReturnType Compare(const Hash& lhs) const;
 
  private:
-    // Function to scan element by element to perform diff or intersection
-  using IterateProcedure =
-      std::function<std::vector<IndexRange>(const Hash& lhs_root,
-                                            uint64_t lhs_start_idx,
-                                            const Hash& rhs_root,
-                                            uint64_t rhs_start_idx,
-                                            ChunkLoader*)>;
-
-  // Function to perform diff or intersection when encounting the same hash
-  using IdenticalProcedure =
-      std::function<std::vector<IndexRange>(const SeqNode* lhs,
-                                            uint64_t lhs_start_idx)>;
-
-  // Return the hash of deepest seq node in rhs which is guranteed to contain
-  //   all the lhs elements with key between lhs_lower and lhs_upper
-  //   as long as such elements occur in rhs
-
-  // The index of its first element is also returned from last parameter
-
   // This function starts to search for this deepest seq node from rhs_seq_node
   std::shared_ptr<const SeqNode> SmallestOverlap(
       const OrderedKey& lhs_lower, const OrderedKey& lhs_upper,
@@ -103,25 +288,9 @@ class NodeComparator : private Noncopyable {
       uint64_t rhs_start_idx, uint64_t* return_start_idx) const;
 
   // Compare the lhs tree with rhs in preorder format
-  std::vector<IndexRange> Compare(
+  ReturnType Compare(
       const SeqNode* lhs, uint64_t lhs_start_idx, const OrderedKey& lhs_min_key,
-      std::shared_ptr<const SeqNode> rhs_root_node, uint64_t rhs_start_idx,
-      IdenticalProcedure identical_procedure,
-      IterateProcedure iterate_procedure) const;
-
-  // Iterate all elements in both lhs and rhs to detect co-occuring elements
-  static std::vector<IndexRange> IterateIntersect(const Hash& lhs,
-                                                  uint64_t lhs_start_idx,
-                                                  const Hash& rhs,
-                                                  uint64_t rhs_start_idx,
-                                                  ChunkLoader* loader);
-
-  // Iterate all elements in both lhs and rhs to detect lhs-only element
-  static std::vector<IndexRange> IterateDiff(const Hash& lhs,
-                                             uint64_t lhs_start_idx,
-                                             const Hash& rhs,
-                                             uint64_t rhs_start_idx,
-                                             ChunkLoader* loader);
+      std::shared_ptr<const SeqNode> rhs_root_node, uint64_t rhs_start_idx) const;
 
   // loader for both lhs and rhs
   mutable std::shared_ptr<ChunkLoader> loader_;
@@ -129,8 +298,8 @@ class NodeComparator : private Noncopyable {
   std::shared_ptr<const SeqNode> rhs_root_;
 };
 
-template <class KeyTrait>
-NodeComparator<KeyTrait>::NodeComparator(const Hash& rhs,
+template <class KeyTrait, template<class> class Traverser>
+NodeComparator<KeyTrait, Traverser>::NodeComparator(const Hash& rhs,
                                std::shared_ptr<ChunkLoader>
                                    loader) noexcept :
     loader_(loader) {
@@ -138,72 +307,28 @@ NodeComparator<KeyTrait>::NodeComparator(const Hash& rhs,
   rhs_root_ = SeqNode::CreateFromChunk(chunk);
 }
 
-template <class KeyTrait>
-std::vector<IndexRange> NodeComparator<KeyTrait>
-    ::Intersect(const Hash& lhs) const {
+template <class KeyTrait, template<class> class Traverser>
+typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait, Traverser>
+    ::Compare(const Hash& lhs) const {
   std::unique_ptr<const SeqNode> lhs_root =
         SeqNode::CreateFromChunk(loader_->Load(lhs));
 
   uint64_t lhs_start_idx = 0;
   uint64_t rhs_start_idx = 0;
-
-// If seq node of lhs and rhs with same hash,
-//   there rooted elements are also identical
-//   return the index range of lhs rooted elements
-  IdenticalProcedure identical_intersect =
-      [](const SeqNode* lhs, uint64_t lhs_start_idx) {
-          std::vector<IndexRange> result;
-          result.push_back({lhs_start_idx, lhs->numElements()});
-          return result;};
-
-  IterateProcedure iterate_intersect =
-      NodeComparator<KeyTrait>::IterateIntersect;
 
   return IndexRange::Compact(Compare(lhs_root.get(),
                              lhs_start_idx,
                              KeyTrait::MinKey(),
                              rhs_root_,
-                             rhs_start_idx,
-                             identical_intersect,
-                             iterate_intersect));
+                             rhs_start_idx));
 }
 
-template <class KeyTrait>
-std::vector<IndexRange> NodeComparator<KeyTrait>::Diff(const Hash& lhs) const {
-  std::unique_ptr<const SeqNode> lhs_root =
-        SeqNode::CreateFromChunk(loader_->Load(lhs));
-
-  uint64_t lhs_start_idx = 0;
-  uint64_t rhs_start_idx = 0;
-
-  IdenticalProcedure identical_diff =
-      [](const SeqNode* lhs, uint64_t lhs_start_idx) {
-        // return empty vector
-          std::vector<IndexRange> result;
-          return result;};
-
-// If seq node of lhs and rhs with same hash,
-//   there rooted elements are also identical
-//   return empty index ranges for diff
-  IterateProcedure iterate_diff = NodeComparator<KeyTrait>::IterateDiff;
-
-  return IndexRange::Compact(Compare(lhs_root.get(),
-                            lhs_start_idx,
-                            KeyTrait::MinKey(),
-                            rhs_root_,
-                            rhs_start_idx,
-                            identical_diff,
-                            iterate_diff));
-}
-
-template <class KeyTrait>
-std::vector<IndexRange> NodeComparator<KeyTrait>::Compare(
+template <class KeyTrait, template<class> class Traverser>
+typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait, Traverser>::Compare(
     const SeqNode* lhs, uint64_t lhs_start_idx, const OrderedKey& lhs_min_key,
-    const std::shared_ptr<const SeqNode> rhs_node, uint64_t rhs_start_idx,
-    IdenticalProcedure identical_procedure,
-    IterateProcedure iterate_procedure) const {
+    const std::shared_ptr<const SeqNode> rhs_node, uint64_t rhs_start_idx) const {
   // rhs_root_node is guaranteed to contain all the elements rooted in lhs
-  std::vector<IndexRange> results;
+   ReturnType results;
 
   // DLOG(INFO) << "Start Comparing LHS and RHS: \n"
   //            << "LHS Hash: " << lhs->hash().ToBase32()
@@ -227,15 +352,16 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::Compare(
   //            << "Hash: " << rhs_closest_node->hash()
   //            << " Start Idx: " << closest_start_idx;
   if (lhs->hash() == rhs_deepest_node->hash()) {
-    return identical_procedure(lhs, lhs_start_idx);
+    return Traverser<KeyTrait>::IdenticalHashes(lhs, lhs_start_idx,
+                                                rhs_deepest_node.get(),
+                                                deepest_start_idx);
   }
 
   if (lhs->isLeaf() || rhs_deepest_node->isLeaf()) {
-    return iterate_procedure(lhs->hash(),
-                             lhs_start_idx,
-                             rhs_deepest_node->hash(),
-                             deepest_start_idx,
-                             loader_.get());
+    return Traverser<KeyTrait>::IterateLeaves(lhs, lhs_start_idx,
+                                              rhs_deepest_node.get(),
+                                              deepest_start_idx,
+                                              loader_.get());
   }  // end if
 
   // Preorder Traversal
@@ -254,9 +380,7 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::Compare(
                 lhs_child_start_idx,
                 lhs_child_min_key,
                 rhs_deepest_node,
-                deepest_start_idx,
-                identical_procedure,
-                iterate_procedure);
+                deepest_start_idx);
 
 // Concat child_results at the end of final results by moving
     results.insert(results.end(), child_results.begin(), child_results.end());
@@ -268,10 +392,10 @@ std::vector<IndexRange> NodeComparator<KeyTrait>::Compare(
     lhs_child_start_idx += lhs_me.numElements();
   }
   return results;
-}
+};
 
-template <class KeyTrait>
-std::shared_ptr<const SeqNode> NodeComparator<KeyTrait>::SmallestOverlap(
+template <class KeyTrait, template<class> class Traverser>
+std::shared_ptr<const SeqNode> NodeComparator<KeyTrait, Traverser>::SmallestOverlap(
                                             const OrderedKey& lhs_lower,
                                             const OrderedKey& lhs_upper,
                                             std::shared_ptr<const SeqNode>
@@ -320,180 +444,13 @@ std::shared_ptr<const SeqNode> NodeComparator<KeyTrait>::SmallestOverlap(
   return rhs_node;
 }
 
-template <class KeyTrait>
-std::vector<IndexRange> NodeComparator<KeyTrait>::IterateIntersect(
-    const Hash& lhs, uint64_t lhs_start_idx,
-    const Hash& rhs, uint64_t rhs_start_idx,
-    ChunkLoader* loader) {
+using IndexIntersector = NodeComparator<IndexTrait, Intersector>;
 
-  std::vector<IndexRange> results;
+using IndexDiffer = NodeComparator<IndexTrait, Differ>;
 
-  NodeCursor lhs_cursor(lhs, 0, loader);
-  NodeCursor rhs_cursor(rhs, 0, loader);
+using KeyIntersector = NodeComparator<OrderedKeyTrait, Intersector>;
 
-  uint64_t lhs_idx = lhs_start_idx;
-  uint64_t rhs_idx = rhs_start_idx;
-
-  // if curr_cr.num_subsequent = 0,
-  //   this curr_cr is invalid.
-  IndexRange curr_cr{0, 0};
-
-  while (!lhs_cursor.isEnd() && !rhs_cursor.isEnd()) {
-    OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
-    OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
-
-    if (lhs_key > rhs_key) {
-      ++rhs_idx;
-      rhs_cursor.Advance(true);
-    } else if (lhs_key == rhs_key) {
-      size_t lhs_len = lhs_cursor.numCurrentBytes();
-      size_t rhs_len = rhs_cursor.numCurrentBytes();
-
-      if (lhs_len == rhs_len &&
-          std::memcmp(lhs_cursor.current(),
-                      rhs_cursor.current(),
-                      lhs_len) == 0) {
-      // Identical elements
-        if (curr_cr.num_subsequent == 0) {
-          curr_cr.start_idx = lhs_idx;
-          curr_cr.num_subsequent = 1;
-        } else {
-          ++curr_cr.num_subsequent;
-        }
-      } else {
-        if (curr_cr.num_subsequent != 0) {
-          results.push_back(curr_cr);
-          curr_cr.num_subsequent = 0;
-        }  // end if
-      }  // data comparison
-
-      ++lhs_idx;
-      ++rhs_idx;
-      lhs_cursor.Advance(true);
-      rhs_cursor.Advance(true);
-    } else {
-      // lhs_idx < rhs_idx
-      //   element pointed by lhs cursor
-      //   does not appear ih rhs
-      if (curr_cr.num_subsequent != 0) {
-        results.push_back(curr_cr);
-        curr_cr.num_subsequent = 0;
-      }  // end if
-      ++lhs_idx;
-      lhs_cursor.Advance(true);
-    }
-  }  // end while
-
-  if (curr_cr.num_subsequent != 0) {
-    results.push_back(curr_cr);
-  }  // end if
-
-  return results;
-}
-
-template <class KeyTrait>
-std::vector<IndexRange> NodeComparator<KeyTrait>::IterateDiff(
-    const Hash& lhs, uint64_t lhs_start_idx,
-    const Hash& rhs, uint64_t rhs_start_idx,
-    ChunkLoader* loader) {
-
-  // DLOG(INFO) << "Iterate Diff: \n"
-  //            << "LHS: " << lhs << " Start_Idx: " << lhs_start_idx << "\n"
-  //            << "RHS: " << rhs << " Start_Idx: " << rhs_start_idx;
-
-  std::vector<IndexRange> results;
-
-  NodeCursor lhs_cursor(lhs, 0, loader);
-  NodeCursor rhs_cursor(rhs, 0, loader);
-
-  uint64_t lhs_idx = lhs_start_idx;
-  uint64_t rhs_idx = rhs_start_idx;
-
-  // whether num_subsequent field = 0 in curr_cr to
-  //   mark whether this curr_cr is valid or not.
-  IndexRange curr_cr{0, 0};
-
-  while (!lhs_cursor.isEnd() && !rhs_cursor.isEnd()) {
-    const OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
-    const OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
-
-    if (lhs_key > rhs_key) {
-      ++rhs_idx;
-      rhs_cursor.Advance(true);
-    } else if (lhs_key == rhs_key) {
-      size_t lhs_len = lhs_cursor.numCurrentBytes();
-      size_t rhs_len = rhs_cursor.numCurrentBytes();
-
-      if (lhs_len == rhs_len &&
-          std::memcmp(lhs_cursor.current(),
-                      rhs_cursor.current(),
-                      lhs_len) == 0) {
-      // Identical elements,
-      //   Stop updating curr_cr if valid
-        if (curr_cr.num_subsequent != 0) {
-          results.push_back(curr_cr);
-          curr_cr.num_subsequent = 0;  // mark curr_cr is invalid
-        }  // end if
-      } else {
-        if (curr_cr.num_subsequent == 0) {
-          // DLOG(INFO) << "Diff Start Idx: "
-          //           << lhs_idx;
-          curr_cr.start_idx = lhs_idx;
-          curr_cr.num_subsequent = 1;
-        } else {
-          ++curr_cr.num_subsequent;
-          // DLOG(INFO) << "  Incrementing for idx " << lhs_idx
-          //            << " to " << curr_cr.num_subsequent;
-        }
-      }  // data comparison
-
-      ++lhs_idx;
-      ++rhs_idx;
-      lhs_cursor.Advance(true);
-      rhs_cursor.Advance(true);
-    } else {
-      // lhs_idx < rhs_idx
-      //   rhs does not contain the element pointed by lhs
-      if (curr_cr.num_subsequent == 0) {
-        curr_cr.start_idx = lhs_idx;
-        curr_cr.num_subsequent = 1;
-      } else {
-        ++curr_cr.num_subsequent;
-      }
-      ++lhs_idx;
-      lhs_cursor.Advance(true);
-    }
-  }  // end while
-
-  // if lhs not to the end,
-  //   the rest of elements are not contained in rhs
-  // Include all of them in index range
-
-  if (!lhs_cursor.isEnd()) {
-    if (curr_cr.num_subsequent == 0) {
-      curr_cr.start_idx = lhs_idx;
-      curr_cr.num_subsequent = 0;
-    }  // end if
-
-    do {
-      ++curr_cr.num_subsequent;
-      // DLOG(INFO) << "  Incrementing for idx " << lhs_idx
-      //            << " to " << curr_cr.num_subsequent;
-      ++lhs_idx;
-    } while (lhs_cursor.Advance(true));  // end while
-  }  // end if
-
-  if (curr_cr.num_subsequent != 0) {
-    results.push_back(curr_cr);
-  }  // end if
-
-  return results;
-}
-
-
-using IndexComparator = NodeComparator<IndexTrait>;
-
-using KeyComparator = NodeComparator<OrderedKeyTrait>;
+using KeyDiffer = NodeComparator<OrderedKeyTrait, Differ>;
 
 }  // namespace ustore
 

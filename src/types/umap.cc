@@ -52,8 +52,8 @@ UMap::Iterator UMap::Diff(const UMap& rhs) const {
   } else if (rhs.numElements() == 0) {
     return UMap::Iterator(hash(), {{0, numElements()}}, chunk_loader_.get());
   } else {
-    KeyComparator cmptor(rhs.hash(), chunk_loader_);
-    return UMap::Iterator(hash(), cmptor.Diff(hash()), chunk_loader_.get());
+    KeyDiffer differ(rhs.hash(), chunk_loader_);
+    return UMap::Iterator(hash(), differ.Compare(hash()), chunk_loader_.get());
   }
 }
 
@@ -62,8 +62,8 @@ UMap::Iterator UMap::Intersect(const UMap& rhs) const {
   if (this->numElements() == 0 || rhs.numElements() == 0) {
     return UMap::Iterator(hash(), {}, chunk_loader_.get());
   } else {
-    KeyComparator cmptor(rhs.hash(), chunk_loader_);
-    return UMap::Iterator(hash(), cmptor.Intersect(hash()),
+    KeyIntersector intersector(rhs.hash(), chunk_loader_);
+    return UMap::Iterator(hash(), intersector.Compare(hash()),
                           chunk_loader_.get());
   }
 }

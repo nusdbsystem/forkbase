@@ -20,16 +20,20 @@ class IndexComparatorSmallEnv : public ::testing::Test {
     nb.SpliceElements(0, &seg);
     rhs_root_ = nb.Commit();
 
-    rhs_cmptor_ = new ustore::IndexComparator(rhs_root_, loader_);
+    rhs_intersector_ = new ustore::IndexIntersector(rhs_root_, loader_);
+    rhs_differ_ = new ustore::IndexDiffer(rhs_root_, loader_);
   }
 
   virtual void TearDown() {
-    delete rhs_cmptor_;
+    delete rhs_intersector_;
+    delete rhs_differ_;
   }
 
   std::shared_ptr<ustore::ChunkLoader> loader_;
   ustore::Hash rhs_root_;
-  const ustore::IndexComparator* rhs_cmptor_;
+
+  const ustore::IndexIntersector* rhs_intersector_;
+  const ustore::IndexDiffer* rhs_differ_;
 };
 
 
@@ -54,7 +58,7 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
   ustore::Hash lhs = nb2.Commit();
 
   // lhs DIFF rhs
-  std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
+  std::vector<ustore::IndexRange> df_ranges = rhs_differ_->Compare(lhs);
 
   ASSERT_EQ(size_t(2), df_ranges.size());
 
@@ -66,7 +70,7 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
-      = rhs_cmptor_->Intersect(lhs);
+      = rhs_intersector_->Compare(lhs);
 
   ASSERT_EQ(size_t(2), intersect_ranges.size());
 
@@ -89,7 +93,7 @@ TEST_F(IndexComparatorSmallEnv, Insertion) {
   ustore::Hash lhs = nb.Commit();
 
   //  lhs DIFF rhs
-  std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
+  std::vector<ustore::IndexRange> df_ranges = rhs_differ_->Compare(lhs);
 
   ASSERT_EQ(size_t(1), df_ranges.size());
 
@@ -98,7 +102,7 @@ TEST_F(IndexComparatorSmallEnv, Insertion) {
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
-      = rhs_cmptor_->Intersect(lhs);
+      = rhs_intersector_->Compare(lhs);
 
   ASSERT_EQ(size_t(1), intersect_ranges.size());
 
@@ -118,7 +122,7 @@ TEST_F(IndexComparatorSmallEnv, Deletion) {
   ustore::Hash lhs = nb.Commit();
 
   //  lhs DIFF rhs
-  std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
+  std::vector<ustore::IndexRange> df_ranges = rhs_differ_->Compare(lhs);
 
   ASSERT_EQ(size_t(1), df_ranges.size());
 
@@ -127,7 +131,7 @@ TEST_F(IndexComparatorSmallEnv, Deletion) {
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
-      = rhs_cmptor_->Intersect(lhs);
+      = rhs_intersector_->Compare(lhs);
 
   ASSERT_EQ(size_t(1), intersect_ranges.size());
 
@@ -182,17 +186,21 @@ class IndexComparatorBigEnv : public ::testing::Test {
     nb.SpliceElements(0, &seg);
     rhs_root_ = nb.Commit();
 
-    rhs_cmptor_ = new ustore::IndexComparator(rhs_root_, loader_);
+    rhs_intersector_ = new ustore::IndexIntersector(rhs_root_, loader_);
+    rhs_differ_ = new ustore::IndexDiffer(rhs_root_, loader_);
   }
 
   virtual void TearDown() {
-    delete rhs_cmptor_;
+    delete rhs_intersector_;
+    delete rhs_differ_;
   }
 
   std::shared_ptr<ustore::ChunkLoader> loader_;
   ustore::Hash rhs_root_;
   size_t rhs_len_;
-  const ustore::IndexComparator* rhs_cmptor_;
+
+  const ustore::IndexDiffer* rhs_differ_;
+  const ustore::IndexIntersector* rhs_intersector_;
 };
 
 
@@ -218,7 +226,7 @@ TEST_F(IndexComparatorBigEnv, Basic) {
   ustore::Hash lhs = nb2.Commit();
 
   //  lhs DIFF rhs
-  std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
+  std::vector<ustore::IndexRange> df_ranges = rhs_differ_->Compare(lhs);
 
   ASSERT_EQ(size_t(2), df_ranges.size());
 
@@ -230,7 +238,7 @@ TEST_F(IndexComparatorBigEnv, Basic) {
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
-      = rhs_cmptor_->Intersect(lhs);
+      = rhs_intersector_->Compare(lhs);
 
   ASSERT_EQ(size_t(2), intersect_ranges.size());
 
@@ -279,7 +287,8 @@ class KeyComparatorSmallEnv : public ::testing::Test {
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
 
-    rhs_cmptor_ = new ustore::KeyComparator(rhs_root_, loader_);
+    rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_);
+    rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_);
   }
 
   uint64_t numElements(const ustore::Hash& root) {
@@ -289,12 +298,15 @@ class KeyComparatorSmallEnv : public ::testing::Test {
   }
 
   virtual void TearDown() {
-    delete rhs_cmptor_;
+    delete rhs_differ_;
+    delete rhs_intersector_;
   }
 
   std::shared_ptr<ustore::ChunkLoader> loader_;
   ustore::Hash rhs_root_;
-  const ustore::KeyComparator* rhs_cmptor_;
+
+  const ustore::KeyDiffer* rhs_differ_;
+  const ustore::KeyIntersector* rhs_intersector_;
 };
 
 
@@ -367,7 +379,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ASSERT_EQ(size_t(7), numElements(lhs));
 
   //  lhs DIFF rhs
-  std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
+  std::vector<ustore::IndexRange> df_ranges = rhs_differ_->Compare(lhs);
 
   ASSERT_EQ(size_t(3), df_ranges.size());
 
@@ -382,7 +394,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 
   // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
-      = rhs_cmptor_->Intersect(lhs);
+      = rhs_intersector_->Compare(lhs);
 
   ASSERT_EQ(size_t(3), intersect_ranges.size());
 
@@ -431,7 +443,8 @@ class KeyComparatorBigEnv : public ::testing::Test {
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
 
-    rhs_cmptor_ = new ustore::KeyComparator(rhs_root_, loader_);
+    rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_);
+    rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_);
   }
 
   uint64_t numElements(const ustore::Hash& root) {
@@ -441,7 +454,8 @@ class KeyComparatorBigEnv : public ::testing::Test {
   }
 
   virtual void TearDown() {
-    delete rhs_cmptor_;
+    delete rhs_differ_;
+    delete rhs_intersector_;
 
     for (auto key : keys_) { delete key; }
 
@@ -457,7 +471,9 @@ class KeyComparatorBigEnv : public ::testing::Test {
 
   std::shared_ptr<ustore::ChunkLoader> loader_;
   ustore::Hash rhs_root_;
-  const ustore::KeyComparator* rhs_cmptor_;
+
+  const ustore::KeyDiffer* rhs_differ_;
+  const ustore::KeyIntersector* rhs_intersector_;
 };
 
 
@@ -495,7 +511,7 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
 
   //  lhs DIFF rhs
-  std::vector<ustore::IndexRange> df_ranges = rhs_cmptor_->Diff(lhs);
+  std::vector<ustore::IndexRange> df_ranges = rhs_differ_->Compare(lhs);
 
   ASSERT_EQ(size_t(1), df_ranges.size());
 
@@ -505,7 +521,7 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
   // // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
-      = rhs_cmptor_->Intersect(lhs);
+      = rhs_intersector_->Compare(lhs);
 
   ASSERT_EQ(size_t(2), intersect_ranges.size());
 
