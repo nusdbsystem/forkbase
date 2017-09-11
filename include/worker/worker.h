@@ -7,14 +7,9 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include "chunk/chunk.h"
-#include "chunk/chunk_writer.h"
-#include "hash/hash.h"
 #include "spec/db.h"
-#include "spec/slice.h"
-#include "spec/value.h"
 #include "store/chunk_store.h"
-#include "types/type.h"
+#include "types/server/factory.h"
 #include "types/ucell.h"
 #include "utils/noncopyable.h"
 #include "worker/head_version.h"
@@ -334,7 +329,7 @@ class Worker : public DB, private Noncopyable {
 
   const WorkerID id_;
   bool persist_;
-  std::unique_ptr<ChunkWriter> writer_;
+  ChunkableTypeFactory factory_;
 };
 
 }  // namespace ustore

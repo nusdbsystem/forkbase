@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 
+#include "types/server/factory.h"
 #include "types/server/sblob.h"
 
 #include "utils/debug.h"
@@ -67,9 +68,9 @@ class SBlobEnv : public ::testing::Test {
     append_data_ = new ustore::byte_t[append_data_bytes_];
     std::memcpy(append_data_, raw_data_append, append_data_bytes_);
 
-    ustore::ServerChunkWriter writer;
+    ustore::ChunkableTypeFactory factory;
     ustore::Slice data(data_, data_bytes_);
-    const ustore::SBlob sblob_(data, &writer);
+    const ustore::SBlob sblob_ = factory.CreateBlob(data);
     blob_hash_ = sblob_.hash().Clone();
   }
 
@@ -88,8 +89,8 @@ class SBlobEnv : public ::testing::Test {
 };
 
 TEST_F(SBlobEnv, Iterator) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
   auto it = sblob.Scan();
 
   const ustore::byte_t* data_ptr = data_;
@@ -158,14 +159,13 @@ TEST_F(SBlobEnv, Iterator) {
 }
 
 TEST_F(SBlobEnv, Splice) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
 
   size_t splice_idx = 666;
   size_t num_delete = 777;
-  ustore::SBlob new_sblob(
-      sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_),
-      &writer);
+  ustore::SBlob new_sblob = factory.LoadBlob(
+      sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ - num_delete + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -186,16 +186,15 @@ TEST_F(SBlobEnv, Splice) {
 
 // Number of elements to delete exceeds the blob end
 TEST_F(SBlobEnv, SpliceOverflow) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
 
   size_t num_delete = 777;
   size_t real_delete = 400;
   size_t splice_idx = data_bytes_ - real_delete;
 
-  ustore::SBlob new_sblob(
-      sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_),
-      &writer);
+  ustore::SBlob new_sblob = factory.LoadBlob(
+      sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ - real_delete + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -215,13 +214,12 @@ TEST_F(SBlobEnv, SpliceOverflow) {
 }
 
 TEST_F(SBlobEnv, Insert) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
 
   size_t insert_idx = 888;
-  ustore::SBlob new_sblob(
-      sblob.Insert(insert_idx, append_data_, append_data_bytes_),
-      &writer);
+  ustore::SBlob new_sblob = factory.LoadBlob(
+      sblob.Insert(insert_idx, append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -240,12 +238,13 @@ TEST_F(SBlobEnv, Insert) {
 }
 
 TEST_F(SBlobEnv, Delete) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
 
   size_t delete_idx = 999;
   size_t num_delete = 500;
-  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete), &writer);
+  ustore::SBlob new_sblob = factory.LoadBlob(
+      sblob.Delete(delete_idx, num_delete));
 
   size_t expected_len = data_bytes_ - num_delete;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -265,14 +264,15 @@ TEST_F(SBlobEnv, Delete) {
 
 // Number of elements to delete exceeds the blob end
 TEST_F(SBlobEnv, DeleteOverflow) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
 
   size_t num_delete = 500;
   size_t real_delete = 300;
   size_t delete_idx = data_bytes_ - real_delete;
 
-  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete), &writer);
+  ustore::SBlob new_sblob = factory.LoadBlob(
+      sblob.Delete(delete_idx, num_delete));
 
   size_t expected_len = data_bytes_ - real_delete;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -291,11 +291,11 @@ TEST_F(SBlobEnv, DeleteOverflow) {
 }
 
 TEST_F(SBlobEnv, Append) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
 
-  ustore::SBlob new_sblob(sblob.Append(append_data_, append_data_bytes_),
-                          &writer);
+  ustore::SBlob new_sblob = factory.LoadBlob(
+      sblob.Append(append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -314,8 +314,8 @@ TEST_F(SBlobEnv, Append) {
 }
 
 TEST_F(SBlobEnv, Read) {
-  ustore::ServerChunkWriter writer;
-  const ustore::SBlob sblob(blob_hash_, &writer);
+  ustore::ChunkableTypeFactory factory;
+  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
   EXPECT_EQ(sblob.size(), data_bytes_);
 
   // Read from Middle
@@ -348,7 +348,7 @@ TEST_F(SBlobEnv, Read) {
 }
 
 TEST(SimpleSBlob, Load) {
-  ustore::ServerChunkWriter writer;
+  ustore::ChunkableTypeFactory factory;
   const ustore::byte_t raw_data[] =
       "The quick brown fox jumps over the lazy dog";
   size_t len = sizeof(raw_data);
@@ -358,10 +358,10 @@ TEST(SimpleSBlob, Load) {
   ustore::Chunk chunk(ustore::ChunkType::kBlob, len);
   std::memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
   // Put the chunk into storage
-  writer.Write(chunk.hash(), chunk);
+  ustore::store::GetChunkStore()->Put(chunk.hash(), chunk);
   ///////////////////////////////////////
 
-  ustore::SBlob sblob(chunk.hash(), &writer);
+  ustore::SBlob sblob = factory.LoadBlob(chunk.hash());
 
   // size()
   EXPECT_EQ(len, sblob.size());
@@ -405,19 +405,19 @@ TEST(SimpleSBlob, Load) {
 }
 
 TEST(SBlob, Empty) {
-  ustore::ServerChunkWriter writer;
+  ustore::ChunkableTypeFactory factory;
   ustore::Slice empty;
-  ustore::SBlob sblob(empty, &writer);
+  ustore::SBlob sblob = factory.CreateBlob(empty);
 
   ASSERT_EQ(size_t(0), sblob.numElements());
 
   // Append 3 elements
   ustore::byte_t d[] = "abc";
-  ustore::SBlob s1(sblob.Append(d, 3), &writer);
+  ustore::SBlob s1 = factory.LoadBlob(sblob.Append(d, 3));
   ASSERT_EQ(size_t(3), s1.numElements());
 
   // Remove the only 3 elements
-  ustore::SBlob s2(s1.Delete(0, 3), &writer);
+  ustore::SBlob s2 = factory.LoadBlob(s1.Delete(0, 3));
   ASSERT_EQ(size_t(0), s2.numElements());
 
   // Test on normal iterator

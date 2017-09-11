@@ -21,11 +21,11 @@ class ChunkWriter : private Noncopyable {
   ChunkWriter() = default;
 };
 
-class ServerChunkWriter : public ChunkWriter {
+class LocalChunkWriter : public ChunkWriter {
  public:
-  // let ServerChunkWriter call chunkStore internally
-  ServerChunkWriter() : cs_(store::GetChunkStore()) {}
-  ~ServerChunkWriter() = default;
+  // let LocalChunkWriter call chunkStore internally
+  LocalChunkWriter() : cs_(store::GetChunkStore()) {}
+  ~LocalChunkWriter() = default;
 
   bool Write(const Hash& key, const Chunk& chunk) override;
 

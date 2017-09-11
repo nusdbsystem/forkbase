@@ -19,7 +19,7 @@ TEST(NodeCursor, EmptyNode) {
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
 
-  ustore::ServerChunkLoader loader;
+  ustore::LocalChunkLoader loader;
 
   ustore::NodeCursor cr2empty(ca.hash(), 0, &loader);
   ASSERT_FALSE(cr2empty.empty());
@@ -60,7 +60,7 @@ TEST(NodeCursor, SingleNode) {
   // Write the constructed chunk to storage
   EXPECT_TRUE(chunk_store->Put(ca.hash(), ca));
 
-  ustore::ServerChunkLoader loader;
+  ustore::LocalChunkLoader loader;
 
   // idx exceed number of elements
   ustore::NodeCursor empty_cr(ca.hash(), 4, &loader);
@@ -183,7 +183,7 @@ TEST(NodeCursor, Tree) {
   EXPECT_TRUE(chunk_store->Put(cm.hash(), cm));
 
   ///////////////////////////////////////////////////////////////
-  ustore::ServerChunkLoader loader;
+  ustore::LocalChunkLoader loader;
 
   ustore::NodeCursor leaf_cursor(cm.hash(), 1, &loader);
 
@@ -292,7 +292,7 @@ TEST(NodeCursor, SingleNodeByKey) {
 
   ustore::Chunk chunk(std::move(chunk_info.chunk));
   ustore::ChunkStore* chunk_store = ustore::store::GetChunkStore();
-  ustore::ServerChunkLoader loader;
+  ustore::LocalChunkLoader loader;
   EXPECT_TRUE(chunk_store->Put(chunk.hash(), chunk));
 
   // Find the smallest key
@@ -374,7 +374,7 @@ TEST(NodeCursor, TreeByKey) {
 
   ustore::Hash root_hash = chunkinfo_meta.chunk.hash();
 
-  ustore::ServerChunkLoader loader;
+  ustore::LocalChunkLoader loader;
 
   // Find the smallest key
   constexpr ustore::byte_t k0[] = "k0";
@@ -449,7 +449,7 @@ TEST(NodeCursor, MultiStep) {
   ustore::byte_t* content = new ustore::byte_t[num_bytes];
   std::memcpy(content, raw_data, num_bytes);
 
-  ustore::ServerChunkWriter writer;
+  ustore::LocalChunkWriter writer;
   ustore::NodeBuilder builder(&writer, ustore::BlobChunker::Instance(), true);
 
   ustore::FixedSegment seg(content, num_bytes, 1);
@@ -465,7 +465,7 @@ TEST(NodeCursor, MultiStep) {
   67  38  193  183  512  320  53  55  74  256 (# of Byte in BlobChunk)
   */
 
-  ustore::ServerChunkLoader loader;
+  ustore::LocalChunkLoader loader;
 
 /////////////////////////////////////////
 // Test on Advancing

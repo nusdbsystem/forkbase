@@ -27,12 +27,12 @@ class ChunkLoader : private Noncopyable {
   std::map<Hash, Chunk> cache_;
 };
 
-class ServerChunkLoader : public ChunkLoader {
+class LocalChunkLoader : public ChunkLoader {
  public:
-  // let ServerChunkLoader call chunkStore internally
-  ServerChunkLoader() : cs_(store::GetChunkStore()) {}
+  // let LocalChunkLoader call chunkStore internally
+  LocalChunkLoader() : cs_(store::GetChunkStore()) {}
   // Delete all chunks
-  ~ServerChunkLoader() = default;
+  ~LocalChunkLoader() = default;
 
  protected:
   Chunk GetChunk(const Hash& key) override;

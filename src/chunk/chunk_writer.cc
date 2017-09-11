@@ -4,7 +4,7 @@
 
 namespace ustore {
 
-bool ServerChunkWriter::Write(const Hash& key, const Chunk& chunk) {
+bool LocalChunkWriter::Write(const Hash& key, const Chunk& chunk) {
   return cs_->Put(key, chunk);
 }
 

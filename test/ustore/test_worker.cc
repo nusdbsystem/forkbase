@@ -4,11 +4,8 @@
 #include <utility>
 #include <vector>
 #include "gtest/gtest.h"
-#include "hash/hash.h"
-#include "spec/slice.h"
-#include "types/server/sblob.h"
+#include "types/server/factory.h"
 #include "types/server/sstring.h"
-#include "types/type.h"
 #include "utils/utils.h"
 #include "worker/worker_ext.h"
 
@@ -178,7 +175,7 @@ TEST(Worker, NamedBranch_Merge) {
 }
 
 TEST(Worker, UnnamedBranch_GetPutBlob) {
-  ServerChunkWriter writer;
+  ChunkableTypeFactory factory;
 
   Hash version;
 
@@ -215,40 +212,40 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
   EXPECT_EQ(size_t(2), latest.size());
 
   UCell value;
-  SBlob blob(Slice(), &writer);
+  SBlob blob = factory.CreateBlob(Slice());
   std::unique_ptr<byte_t[]> buf;
 
   worker().Get(key[1], ver[5], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = SBlob(value.dataHash(), &writer);
+  blob = factory.LoadBlob(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[5], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[6], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = SBlob(value.dataHash(), &writer);
+  blob = factory.LoadBlob(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[6], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[7], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = SBlob(value.dataHash(), &writer);
+  blob = factory.LoadBlob(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[7], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[8], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = SBlob(value.dataHash(), &writer);
+  blob = factory.LoadBlob(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[8], Slice(buf.get(), blob.size()));
 }
 
 TEST(Worker, UnnamedBranch_Merge) {
-  ServerChunkWriter writer;
+  ChunkableTypeFactory factory;
 
   Hash version;
 
@@ -267,26 +264,26 @@ TEST(Worker, UnnamedBranch_Merge) {
   EXPECT_EQ(size_t(1), latest.size());
 
   UCell value;
-  SBlob blob(Slice(), &writer);
+  SBlob blob = factory.CreateBlob(Slice());
   std::unique_ptr<byte_t[]> buf;
 
   worker().Get(key[1], ver[9], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = SBlob(value.dataHash(), &writer);
+  blob = factory.LoadBlob(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[9], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[10], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = SBlob(value.dataHash(), &writer);
+  blob = factory.LoadBlob(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[10], Slice(buf.get(), blob.size()));
 }
 
 TEST(Worker, NamedBranch_GetPutList_Value) {
-  ServerChunkWriter writer;
+  ChunkableTypeFactory factory;
 
   Hash version;
   UCell ucell;
@@ -316,7 +313,7 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
 
   ec = worker().GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SList list1(ucell.dataHash(), &writer);
+  const SList list1 = factory.LoadList(ucell.dataHash());
   auto itr_list1 = list1.Scan();
   EXPECT_EQ(vals[0], itr_list1.value());
   EXPECT_TRUE(itr_list1.next());
@@ -344,7 +341,7 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
 
   ec = worker().GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SList list2(ucell.dataHash(), &writer);
+  const SList list2 = factory.LoadList(ucell.dataHash());
   EXPECT_EQ(size_t(3), list2.numElements());
   EXPECT_EQ(vals[0], list2.Get(0));
   EXPECT_EQ(vals[3], list2.Get(1));
@@ -365,7 +362,7 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
   // diff on two lists
   ec = worker().GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SList list3(ucell.dataHash(), &writer);
+  const SList list3 = factory.LoadList(ucell.dataHash());
   EXPECT_EQ(size_t(5), list3.numElements());
   auto itr_diff = UList::DuallyDiff(list1, list3);
   EXPECT_EQ(size_t(1), itr_diff.index());
@@ -387,7 +384,7 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
 }
 
 TEST(Worker, NamedBranch_GetPutMap_Value) {
-  ServerChunkWriter writer;
+  ChunkableTypeFactory factory;
 
   Hash version;
   UCell ucell;
@@ -421,7 +418,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
 
   ec = worker().GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SMap map1(ucell.dataHash(), &writer);
+  const SMap map1 = factory.LoadMap(ucell.dataHash());
   EXPECT_EQ(vals[5], map1.Get(vals[0]));
   EXPECT_EQ(vals[6], map1.Get(vals[1]));
 
@@ -444,7 +441,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
 
   ec = worker().GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SMap map2(ucell.dataHash(), &writer);
+  const SMap map2 = factory.LoadMap(ucell.dataHash());
   EXPECT_EQ(size_t(3), map2.numElements());
   EXPECT_EQ(vals[7], map2.Get(vals[2]));
 
@@ -461,7 +458,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
 
   ec = worker().GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SMap map3(ucell.dataHash(), &writer);
+  const SMap map3 = factory.LoadMap(ucell.dataHash());
   EXPECT_EQ(size_t(2), map3.numElements());
   size_t n_diffs = 0;
   for (auto itr_diff = UMap::DuallyDiff(map1, map3);

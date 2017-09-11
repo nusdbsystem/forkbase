@@ -12,7 +12,7 @@ const Chunk* ChunkLoader::Load(const Hash& key) {
   return &cache_[key];
 }
 
-Chunk ServerChunkLoader::GetChunk(const Hash& key) {
+Chunk LocalChunkLoader::GetChunk(const Hash& key) {
   return cs_->Get(key);
 }
 

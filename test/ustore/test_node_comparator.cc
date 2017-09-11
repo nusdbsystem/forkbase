@@ -10,10 +10,10 @@
 class IndexComparatorSmallEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ServerChunkLoader>();
+    loader_ = std::make_shared<ustore::LocalChunkLoader>();
     constexpr ustore::byte_t rhs_data[] = "abcededfhijklmnopqrst";  // 20 chars
 
-    ustore::ServerChunkWriter writer;
+    ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::BlobChunker::Instance(), true);
 
     ustore::FixedSegment seg(rhs_data, 20, 1);
@@ -36,7 +36,7 @@ class IndexComparatorSmallEnv : public ::testing::Test {
 TEST_F(IndexComparatorSmallEnv, Basic) {
   // lhs is constructed by replacing 3 elements starting at 10th with xxx
   //   And removing the last two elements in the end and append y
-  ustore::ServerChunkWriter writer;
+  ustore::LocalChunkWriter writer;
   ustore::NodeBuilder nb1(rhs_root_, 10, loader_.get(), &writer,
                           ustore::BlobChunker::Instance(), true);
 
@@ -78,7 +78,7 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
 }
 
 TEST_F(IndexComparatorSmallEnv, Insertion) {
-  ustore::ServerChunkWriter writer;
+  ustore::LocalChunkWriter writer;
   // lhs is constructed by inserting 3 elements at 10th of rhs with xxx
   ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(), &writer,
                          ustore::BlobChunker::Instance(), true);
@@ -107,7 +107,7 @@ TEST_F(IndexComparatorSmallEnv, Insertion) {
 }
 
 TEST_F(IndexComparatorSmallEnv, Deletion) {
-  ustore::ServerChunkWriter writer;
+  ustore::LocalChunkWriter writer;
   // lhs is constructed by removing 3 elements at 10th of rhs with xxx
   ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(), &writer,
                          ustore::BlobChunker::Instance(), true);
@@ -138,7 +138,7 @@ TEST_F(IndexComparatorSmallEnv, Deletion) {
 class IndexComparatorBigEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ServerChunkLoader>();
+    loader_ = std::make_shared<ustore::LocalChunkLoader>();
     const ustore::byte_t rhs_data[] = {
         "SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
         "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
@@ -174,7 +174,7 @@ class IndexComparatorBigEnv : public ::testing::Test {
         "pitch, Who else would soar above the view of men And keep us all in "
         "servile fearfulness. Exeunt"};
 
-    ustore::ServerChunkWriter writer;
+    ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::BlobChunker::Instance(), true);
 
     rhs_len_ = sizeof(rhs_data) - 1;
@@ -197,7 +197,7 @@ class IndexComparatorBigEnv : public ::testing::Test {
 
 
 TEST_F(IndexComparatorBigEnv, Basic) {
-  ustore::ServerChunkWriter writer;
+  ustore::LocalChunkWriter writer;
   // lhs is constructed by replacing 10 elements starting at 60th
   //   And removing the last 5 elements in the end and append 10
   ustore::NodeBuilder nb1(rhs_root_, 60, loader_.get(), &writer,
@@ -245,7 +245,7 @@ TEST_F(IndexComparatorBigEnv, Basic) {
 class KeyComparatorSmallEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ServerChunkLoader>();
+    loader_ = std::make_shared<ustore::LocalChunkLoader>();
 
     constexpr const ustore::byte_t k1[] = "k1";
     constexpr const ustore::byte_t v1[] = "v1";
@@ -273,7 +273,7 @@ class KeyComparatorSmallEnv : public ::testing::Test {
     std::unique_ptr<const ustore::Segment> seg =
         ustore::MapNode::Encode({kv1, kv2, kv3, kv4, kv5, kv6, kv7});
 
-    ustore::ServerChunkWriter writer;
+    ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::MapChunker::Instance(), false);
 
     nb.SpliceElements(0, seg.get());
@@ -299,7 +299,7 @@ class KeyComparatorSmallEnv : public ::testing::Test {
 
 
 TEST_F(KeyComparatorSmallEnv, Basic) {
-  ustore::ServerChunkWriter writer;
+  ustore::LocalChunkWriter writer;
   // lhs is constructed by
   //   replacing k2 with new v2, remove kv3
   //   replace kv5 with new kv5
@@ -400,7 +400,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 class KeyComparatorBigEnv : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    loader_ = std::make_shared<ustore::ServerChunkLoader>();
+    loader_ = std::make_shared<ustore::LocalChunkLoader>();
 
     // the num bytes for both key and value
     entry_size_ = 2 * sizeof(uint32_t);
@@ -425,7 +425,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
     std::unique_ptr<const ustore::Segment> seg =
         ustore::MapNode::Encode(kvs_);
 
-    ustore::ServerChunkWriter writer;
+    ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::MapChunker::Instance(), false);
 
     nb.SpliceElements(0, seg.get());
@@ -462,7 +462,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
 
 
 TEST_F(KeyComparatorBigEnv, Basic) {
-  ustore::ServerChunkWriter writer;
+  ustore::LocalChunkWriter writer;
   // lhs is constructed by
   //   replacing 100 kvitems from the 400th
   //   removing 200 kvitems from the 100th item

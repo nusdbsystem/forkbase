@@ -37,8 +37,6 @@ Worker::Worker(const WorkerID& id, bool persist) : id_(id), persist_(persist) {
         UpdateLatestVersion(UCell(std::move(chunk)));
     }
   }
-  // create global chunk writer
-  writer_.reset(new ServerChunkWriter());
 }
 
 Worker::~Worker() {
@@ -162,7 +160,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
   DCHECK(val.type == UType::kBlob);
   if (val.base.empty()) {  // new insertion
     if (val.vals.size() != 1) return ErrorCode::kInvalidValue;
-    SBlob sblob(val.vals.front(), writer_.get());
+    SBlob sblob = factory_.CreateBlob(val.vals.front());
     if (sblob.empty()) {
       LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
       return ErrorCode::kFailedCreateSBlob;
@@ -173,7 +171,7 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
     return CreateUCell(key, UType::kBlob, val.base, prev_ver1, prev_ver2, ver);
   } else {  // update
     if (val.vals.size() > 1) return ErrorCode::kInvalidValue;
-    SBlob sblob(val.base, writer_.get());
+    SBlob sblob = factory_.LoadBlob(val.base);
     Slice slice = val.vals.empty() ? Slice() : val.vals.front();
     auto data_hash = sblob.Splice(val.pos, val.dels, slice.data(), slice.len());
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySBlob;
@@ -203,7 +201,7 @@ ErrorCode Worker::WriteList(const Slice& key, const Value& val,
                             Hash* ver) {
   DCHECK(val.type == UType::kList);
   if (val.base.empty()) {  // new insertion
-    SList list(val.vals, writer_.get());
+    SList list = factory_.CreateList(val.vals);
     if (list.empty()) {
       LOG(ERROR) << "Failed to create SList for Key \"" << key << "\"";
       return ErrorCode::kFailedCreateSList;
@@ -213,7 +211,7 @@ ErrorCode Worker::WriteList(const Slice& key, const Value& val,
   } else if (!val.dels && val.vals.empty()) {  // origin
     return CreateUCell(key, UType::kList, val.base, prev_ver1, prev_ver2, ver);
   } else {  // update
-    SList list(val.base, writer_.get());
+    SList list = factory_.LoadList(val.base);
     auto data_hash = list.Splice(val.pos, val.dels, val.vals);
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySList;
     return CreateUCell(key, UType::kList, data_hash, prev_ver1, prev_ver2, ver);
@@ -226,7 +224,7 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
   DCHECK(val.type == UType::kMap);
   if (val.base.empty()) {  // new insertion
     if (val.keys.size() != val.vals.size()) return ErrorCode::kInvalidValue;
-    SMap map(val.keys, val.vals, writer_.get());
+    SMap map = factory_.CreateMap(val.keys, val.vals);
     if (map.empty()) {
       LOG(ERROR) << "Failed to create SMap for Key \"" << key << "\"";
       return ErrorCode::kFailedCreateSMap;
@@ -239,7 +237,7 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
     if (val.keys.size() != 1 || val.keys.size() < val.vals.size())
       return ErrorCode::kInvalidValue;
     auto mkey = val.keys.front();
-    SMap map(val.base, writer_.get());
+    SMap map = factory_.LoadMap(val.base);
     Hash data_hash;
     if (val.vals.empty()) {
       data_hash = map.Remove(mkey);

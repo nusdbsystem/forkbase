@@ -8,14 +8,14 @@
 #include "utils/utils.h"
 
 namespace ustore {
-SMap::SMap(const Hash& root_hash, ChunkWriter* writer) noexcept :
-    UMap(std::make_shared<ServerChunkLoader>()), chunk_writer_(writer) {
+SMap::SMap(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader,
+    ChunkWriter* writer) noexcept : UMap(loader), chunk_writer_(writer) {
   SetNodeForHash(root_hash);
 }
 
 SMap::SMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals,
-           ChunkWriter* writer) noexcept :
-    UMap(std::make_shared<ServerChunkLoader>()), chunk_writer_(writer) {
+    std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept
+    : UMap(loader), chunk_writer_(writer) {
   CHECK_GE(keys.size(), size_t(0));
   CHECK_EQ(vals.size(), keys.size());
   if (keys.size() == 0) {
