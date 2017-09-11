@@ -5,27 +5,30 @@
 
 #include <vector>
 
+#include "chunk/chunk_writer.h"
 #include "types/umap.h"
 
 namespace ustore {
 
 class SMap : public UMap {
  public:
-  SMap() = default;
   SMap(SMap&&) = default;
   SMap& operator=(SMap&&) = default;
   // Load existing SMap
-  explicit SMap(const Hash& root_hash) noexcept;
+  SMap(const Hash& root_hash, ChunkWriter* writer) noexcept;
   // Create new SMap
   // kv_items must be sorted in strict ascending order based on key
-  SMap(const std::vector<Slice>& keys,
-       const std::vector<Slice>& vals) noexcept;
+  SMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals,
+       ChunkWriter* writer) noexcept;
   ~SMap() = default;
 
   // Both Use chunk builder to do splice
   // this kv_items must be sorted in descending order before
   Hash Set(const Slice& key, const Slice& val) const override;
   Hash Remove(const Slice& key) const override;
+
+ private:
+  ChunkWriter* chunk_writer_;
 };
 
 }  // namespace ustore

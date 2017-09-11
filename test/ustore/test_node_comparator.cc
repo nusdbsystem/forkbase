@@ -13,7 +13,8 @@ class IndexComparatorSmallEnv : public ::testing::Test {
     loader_ = std::make_shared<ustore::ServerChunkLoader>();
     constexpr ustore::byte_t rhs_data[] = "abcededfhijklmnopqrst";  // 20 chars
 
-    ustore::NodeBuilder nb(ustore::BlobChunker::Instance(), true);
+    ustore::ServerChunkWriter writer;
+    ustore::NodeBuilder nb(&writer, ustore::BlobChunker::Instance(), true);
 
     ustore::FixedSegment seg(rhs_data, 20, 1);
     nb.SpliceElements(0, &seg);
@@ -35,7 +36,8 @@ class IndexComparatorSmallEnv : public ::testing::Test {
 TEST_F(IndexComparatorSmallEnv, Basic) {
   // lhs is constructed by replacing 3 elements starting at 10th with xxx
   //   And removing the last two elements in the end and append y
-  ustore::NodeBuilder nb1(rhs_root_, 10, loader_.get(),
+  ustore::ServerChunkWriter writer;
+  ustore::NodeBuilder nb1(rhs_root_, 10, loader_.get(), &writer,
                           ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data1[] = "xxx";
@@ -43,7 +45,7 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
   nb1.SpliceElements(3, &seg1);
   ustore::Hash lhs_temporal = nb1.Commit();
 
-  ustore::NodeBuilder nb2(lhs_temporal, 18, loader_.get(),
+  ustore::NodeBuilder nb2(lhs_temporal, 18, loader_.get(), &writer,
                           ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data2[] = "y";
@@ -76,8 +78,9 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
 }
 
 TEST_F(IndexComparatorSmallEnv, Insertion) {
+  ustore::ServerChunkWriter writer;
   // lhs is constructed by inserting 3 elements at 10th of rhs with xxx
-  ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(),
+  ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(), &writer,
                          ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data[] = "xxx";
@@ -104,11 +107,10 @@ TEST_F(IndexComparatorSmallEnv, Insertion) {
 }
 
 TEST_F(IndexComparatorSmallEnv, Deletion) {
+  ustore::ServerChunkWriter writer;
   // lhs is constructed by removing 3 elements at 10th of rhs with xxx
-  ustore::NodeBuilder nb(rhs_root_, 10,
-                         loader_.get(),
-                         ustore::BlobChunker::Instance(),
-                         true);
+  ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(), &writer,
+                         ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t* lhs_data = nullptr;
   ustore::FixedSegment seg(lhs_data, 0, 1);
@@ -172,7 +174,8 @@ class IndexComparatorBigEnv : public ::testing::Test {
         "pitch, Who else would soar above the view of men And keep us all in "
         "servile fearfulness. Exeunt"};
 
-    ustore::NodeBuilder nb(ustore::BlobChunker::Instance(), true);
+    ustore::ServerChunkWriter writer;
+    ustore::NodeBuilder nb(&writer, ustore::BlobChunker::Instance(), true);
 
     rhs_len_ = sizeof(rhs_data) - 1;
     ustore::FixedSegment seg(rhs_data, rhs_len_, 1);
@@ -194,12 +197,11 @@ class IndexComparatorBigEnv : public ::testing::Test {
 
 
 TEST_F(IndexComparatorBigEnv, Basic) {
+  ustore::ServerChunkWriter writer;
   // lhs is constructed by replacing 10 elements starting at 60th
   //   And removing the last 5 elements in the end and append 10
-  ustore::NodeBuilder nb1(rhs_root_, 60,
-                          loader_.get(),
-                          ustore::BlobChunker::Instance(),
-                          true);
+  ustore::NodeBuilder nb1(rhs_root_, 60, loader_.get(), &writer,
+                          ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data1[] = "9999999999";  // 10 9s
   ustore::FixedSegment seg1(lhs_data1, 10, 1);
@@ -207,7 +209,7 @@ TEST_F(IndexComparatorBigEnv, Basic) {
   ustore::Hash lhs_temporal = nb1.Commit();
 
   ustore::NodeBuilder nb2(lhs_temporal, rhs_len_ - 5,
-                          loader_.get(),
+                          loader_.get(), &writer,
                           ustore::BlobChunker::Instance(), true);
 
   constexpr ustore::byte_t lhs_data2[] = "9999999999";  // 10 9s
@@ -271,7 +273,8 @@ class KeyComparatorSmallEnv : public ::testing::Test {
     std::unique_ptr<const ustore::Segment> seg =
         ustore::MapNode::Encode({kv1, kv2, kv3, kv4, kv5, kv6, kv7});
 
-    ustore::NodeBuilder nb(ustore::MapChunker::Instance(), false);
+    ustore::ServerChunkWriter writer;
+    ustore::NodeBuilder nb(&writer, ustore::MapChunker::Instance(), false);
 
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
@@ -296,6 +299,7 @@ class KeyComparatorSmallEnv : public ::testing::Test {
 
 
 TEST_F(KeyComparatorSmallEnv, Basic) {
+  ustore::ServerChunkWriter writer;
   // lhs is constructed by
   //   replacing k2 with new v2, remove kv3
   //   replace kv5 with new kv5
@@ -327,11 +331,8 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 
 
 // replacing k2 with new v2, remove kv3
-  ustore::NodeBuilder nb1(
-      rhs_root_, key2, loader_.get(),
-      ustore::MapChunker::Instance(),
-      false);
-
+  ustore::NodeBuilder nb1(rhs_root_, key2, loader_.get(), &writer,
+                          ustore::MapChunker::Instance(), false);
 
   std::unique_ptr<const ustore::Segment> seg1 =
       ustore::MapNode::Encode({new_kv2});
@@ -342,9 +343,8 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ASSERT_EQ(size_t(6), numElements(lhs_t1));
 
 // replace kv5 with new_kv5
-  ustore::NodeBuilder nb2(
-      lhs_t1, key5, loader_.get(), ustore::MapChunker::Instance(),
-      false);
+  ustore::NodeBuilder nb2(lhs_t1, key5, loader_.get(), &writer,
+                          ustore::MapChunker::Instance(), false);
 
   std::unique_ptr<const ustore::Segment> seg2 =
       ustore::MapNode::Encode({new_kv5});
@@ -355,10 +355,8 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 
 
 // remove k6 and append kv7 and kv8
-  ustore::NodeBuilder nb3(
-      lhs_t2, key7, loader_.get(),
-      ustore::MapChunker::Instance(),
-      false);
+  ustore::NodeBuilder nb3(lhs_t2, key7, loader_.get(), &writer,
+                          ustore::MapChunker::Instance(), false);
 
   std::unique_ptr<const ustore::Segment> seg3 =
       ustore::MapNode::Encode({kv8, kv9});
@@ -427,7 +425,8 @@ class KeyComparatorBigEnv : public ::testing::Test {
     std::unique_ptr<const ustore::Segment> seg =
         ustore::MapNode::Encode(kvs_);
 
-    ustore::NodeBuilder nb(ustore::MapChunker::Instance(), false);
+    ustore::ServerChunkWriter writer;
+    ustore::NodeBuilder nb(&writer, ustore::MapChunker::Instance(), false);
 
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
@@ -463,6 +462,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
 
 
 TEST_F(KeyComparatorBigEnv, Basic) {
+  ustore::ServerChunkWriter writer;
   // lhs is constructed by
   //   replacing 100 kvitems from the 400th
   //   removing 200 kvitems from the 100th item
@@ -475,25 +475,17 @@ TEST_F(KeyComparatorBigEnv, Basic) {
   }
   auto seg1 = ustore::MapNode::Encode(new_items);
 
-  ustore::NodeBuilder nb1(
-      rhs_root_, key400,
-      loader_.get(),
-      ustore::MapChunker::Instance(),
-      false);
-
+  ustore::NodeBuilder nb1(rhs_root_, key400, loader_.get(), &writer,
+                          ustore::MapChunker::Instance(), false);
 
   nb1.SpliceElements(100, seg1.get());
   ustore::Hash lhs_t = nb1.Commit();
   ASSERT_EQ(num_items_, numElements(lhs_t));
 
-
   const ustore::OrderedKey key100{false, keys_[100], entry_size_};
 
-  ustore::NodeBuilder nb2(
-      lhs_t, key100, loader_.get(),
-      ustore::MapChunker::Instance(),
-      false);
-
+  ustore::NodeBuilder nb2(lhs_t, key100, loader_.get(), &writer,
+                          ustore::MapChunker::Instance(), false);
 
   ustore::VarSegment seg2(nullptr, 0, {});
 

@@ -23,6 +23,7 @@ class ChunkLoader : private Noncopyable {
  protected:
   ChunkLoader() = default;
   virtual Chunk GetChunk(const Hash& key) = 0;
+
   std::map<Hash, Chunk> cache_;
 };
 
@@ -37,7 +38,7 @@ class ServerChunkLoader : public ChunkLoader {
   Chunk GetChunk(const Hash& key) override;
 
  private:
-  ChunkStore* cs_;
+  ChunkStore* const cs_;
 };
 
 class ClientChunkLoader : public ChunkLoader {
@@ -52,7 +53,7 @@ class ClientChunkLoader : public ChunkLoader {
   Chunk GetChunk(const Hash& key) override;
 
  private:
-  DB* db_;
+  DB* const db_;
   std::string key_;
 };
 

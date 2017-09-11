@@ -8,22 +8,22 @@
 #include "utils/utils.h"
 
 namespace ustore {
-SMap::SMap(const Hash& root_hash) noexcept :
-    UMap(std::make_shared<ServerChunkLoader>()) {
+SMap::SMap(const Hash& root_hash, ChunkWriter* writer) noexcept :
+    UMap(std::make_shared<ServerChunkLoader>()), chunk_writer_(writer) {
   SetNodeForHash(root_hash);
 }
 
-SMap::SMap(const std::vector<Slice>& keys,
-           const std::vector<Slice>& vals) noexcept :
-    UMap(std::make_shared<ServerChunkLoader>()) {
+SMap::SMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals,
+           ChunkWriter* writer) noexcept :
+    UMap(std::make_shared<ServerChunkLoader>()), chunk_writer_(writer) {
   CHECK_GE(keys.size(), size_t(0));
   CHECK_EQ(vals.size(), keys.size());
   if (keys.size() == 0) {
     ChunkInfo chunk_info = MapChunker::Instance()->Make({});
-    store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
+    chunk_writer_->Write(chunk_info.chunk.hash(), chunk_info.chunk);
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
-    NodeBuilder nb(MapChunker::Instance(), false);
+    NodeBuilder nb(chunk_writer_, MapChunker::Instance(), false);
     std::vector<KVItem> kv_items;
 
     for (size_t i : Utils::SortIndexes<Slice>(keys)) {
@@ -39,7 +39,7 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
   CHECK(!empty());
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 MapChunker::Instance(), false);
+                 chunk_writer_, MapChunker::Instance(), false);
 
   // Try to find whether this key already exists
   NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
@@ -73,7 +73,7 @@ Hash SMap::Remove(const Slice& key) const {
   // Create an empty segment
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr), 0, {});
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 MapChunker::Instance(), false);
+                 chunk_writer_, MapChunker::Instance(), false);
   nb.SpliceElements(1, &seg);
   return nb.Commit();
 }

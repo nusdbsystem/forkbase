@@ -67,8 +67,9 @@ class SBlobEnv : public ::testing::Test {
     append_data_ = new ustore::byte_t[append_data_bytes_];
     std::memcpy(append_data_, raw_data_append, append_data_bytes_);
 
+    ustore::ServerChunkWriter writer;
     ustore::Slice data(data_, data_bytes_);
-    const ustore::SBlob sblob_(data);
+    const ustore::SBlob sblob_(data, &writer);
     blob_hash_ = sblob_.hash().Clone();
   }
 
@@ -87,7 +88,8 @@ class SBlobEnv : public ::testing::Test {
 };
 
 TEST_F(SBlobEnv, Iterator) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
   auto it = sblob.Scan();
 
   const ustore::byte_t* data_ptr = data_;
@@ -156,14 +158,14 @@ TEST_F(SBlobEnv, Iterator) {
 }
 
 TEST_F(SBlobEnv, Splice) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
 
   size_t splice_idx = 666;
   size_t num_delete = 777;
   ustore::SBlob new_sblob(
-      sblob.Splice(splice_idx, num_delete,
-                   append_data_,
-                   append_data_bytes_));
+      sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_),
+      &writer);
 
   size_t expected_len = data_bytes_ - num_delete + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -184,15 +186,16 @@ TEST_F(SBlobEnv, Splice) {
 
 // Number of elements to delete exceeds the blob end
 TEST_F(SBlobEnv, SpliceOverflow) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
 
   size_t num_delete = 777;
   size_t real_delete = 400;
   size_t splice_idx = data_bytes_ - real_delete;
 
   ustore::SBlob new_sblob(
-      sblob.Splice(splice_idx, num_delete,
-                   append_data_, append_data_bytes_));
+      sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_),
+      &writer);
 
   size_t expected_len = data_bytes_ - real_delete + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -212,12 +215,13 @@ TEST_F(SBlobEnv, SpliceOverflow) {
 }
 
 TEST_F(SBlobEnv, Insert) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
 
   size_t insert_idx = 888;
   ustore::SBlob new_sblob(
-      sblob.Insert(insert_idx, append_data_,
-                   append_data_bytes_));
+      sblob.Insert(insert_idx, append_data_, append_data_bytes_),
+      &writer);
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -236,11 +240,12 @@ TEST_F(SBlobEnv, Insert) {
 }
 
 TEST_F(SBlobEnv, Delete) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
 
   size_t delete_idx = 999;
   size_t num_delete = 500;
-  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete));
+  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete), &writer);
 
   size_t expected_len = data_bytes_ - num_delete;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -260,13 +265,14 @@ TEST_F(SBlobEnv, Delete) {
 
 // Number of elements to delete exceeds the blob end
 TEST_F(SBlobEnv, DeleteOverflow) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
 
   size_t num_delete = 500;
   size_t real_delete = 300;
   size_t delete_idx = data_bytes_ - real_delete;
 
-  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete));
+  ustore::SBlob new_sblob(sblob.Delete(delete_idx, num_delete), &writer);
 
   size_t expected_len = data_bytes_ - real_delete;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -285,9 +291,11 @@ TEST_F(SBlobEnv, DeleteOverflow) {
 }
 
 TEST_F(SBlobEnv, Append) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
 
-  ustore::SBlob new_sblob(sblob.Append(append_data_, append_data_bytes_));
+  ustore::SBlob new_sblob(sblob.Append(append_data_, append_data_bytes_),
+                          &writer);
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
   ASSERT_EQ(expected_len, new_sblob.size());
@@ -306,7 +314,8 @@ TEST_F(SBlobEnv, Append) {
 }
 
 TEST_F(SBlobEnv, Read) {
-  const ustore::SBlob sblob(blob_hash_);
+  ustore::ServerChunkWriter writer;
+  const ustore::SBlob sblob(blob_hash_, &writer);
   EXPECT_EQ(sblob.size(), data_bytes_);
 
   // Read from Middle
@@ -339,6 +348,7 @@ TEST_F(SBlobEnv, Read) {
 }
 
 TEST(SimpleSBlob, Load) {
+  ustore::ServerChunkWriter writer;
   const ustore::byte_t raw_data[] =
       "The quick brown fox jumps over the lazy dog";
   size_t len = sizeof(raw_data);
@@ -347,12 +357,11 @@ TEST(SimpleSBlob, Load) {
   // Create a junk to load
   ustore::Chunk chunk(ustore::ChunkType::kBlob, len);
   std::memcpy(chunk.m_data(), raw_data, sizeof(raw_data));
-  ustore::ChunkStore* cs = ustore::store::GetChunkStore();
   // Put the chunk into storage
-  cs->Put(chunk.hash(), chunk);
+  writer.Write(chunk.hash(), chunk);
   ///////////////////////////////////////
 
-  ustore::SBlob sblob(chunk.hash());
+  ustore::SBlob sblob(chunk.hash(), &writer);
 
   // size()
   EXPECT_EQ(len, sblob.size());
@@ -367,8 +376,7 @@ TEST(SimpleSBlob, Load) {
 
 
   // Test for move assignment
-  ustore::SBlob sblob_m;
-  sblob_m = std::move(sblob);
+  ustore::SBlob sblob_m = std::move(sblob);
 
   // size()
   EXPECT_EQ(len, sblob_m.size());
@@ -397,18 +405,19 @@ TEST(SimpleSBlob, Load) {
 }
 
 TEST(SBlob, Empty) {
+  ustore::ServerChunkWriter writer;
   ustore::Slice empty;
-  ustore::SBlob sblob(empty);
+  ustore::SBlob sblob(empty, &writer);
 
   ASSERT_EQ(size_t(0), sblob.numElements());
 
   // Append 3 elements
   ustore::byte_t d[] = "abc";
-  ustore::SBlob s1(sblob.Append(d, 3));
+  ustore::SBlob s1(sblob.Append(d, 3), &writer);
   ASSERT_EQ(size_t(3), s1.numElements());
 
   // Remove the only 3 elements
-  ustore::SBlob s2(s1.Delete(0, 3));
+  ustore::SBlob s2(s1.Delete(0, 3), &writer);
   ASSERT_EQ(size_t(0), s2.numElements());
 
   // Test on normal iterator

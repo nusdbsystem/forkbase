@@ -8,6 +8,7 @@
 
 #include "chunk/chunker.h"
 #include "chunk/chunk_loader.h"
+#include "chunk/chunk_writer.h"
 #include "node/cursor.h"
 #include "node/rolling_hash.h"
 #include "types/type.h"
@@ -18,16 +19,17 @@ class NodeBuilder : private Noncopyable {
  public:
   // Perform operation at element with key at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, const OrderedKey& key,
-              ChunkLoader* chunk_loader, const Chunker* chunker,
-              bool isFixedEntryLen) noexcept;
+              ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
+              const Chunker* chunker, bool isFixedEntryLen) noexcept;
 
   // Perform operation at idx-th element at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, size_t idx,
-              ChunkLoader* chunk_loader, const Chunker* chunker,
-              bool isFixedEntryLen) noexcept;
+              ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
+              const Chunker* chunker, bool isFixedEntryLen) noexcept;
 
   // Construct a node builder to construct a fresh new Prolly Tree
-  NodeBuilder(const Chunker* chunker, bool isFixedEntryLen) noexcept;
+  NodeBuilder(ChunkWriter* chunk_writer, const Chunker* chunker,
+              bool isFixedEntryLen) noexcept;
 
   ~NodeBuilder() = default;
 
@@ -44,10 +46,10 @@ class NodeBuilder : private Noncopyable {
   // Internal constructor used to recursively construct Parent NodeBuilder
   // is_leaf shall set to FALSE
   NodeBuilder(std::unique_ptr<NodeCursor>&& cursor,
-              size_t level, const Chunker* chunker,
+              size_t level, ChunkWriter* chunk_writer, const Chunker* chunker,
               bool isFixedEntryLen) noexcept;
 
-  NodeBuilder(size_t level, const Chunker* chunker,
+  NodeBuilder(size_t level, ChunkWriter* chunk_writer, const Chunker* chunker,
               bool isFixedEntryLen) noexcept;
 
   // Remove elements from cursor
@@ -98,7 +100,8 @@ class NodeBuilder : private Noncopyable {
   bool commited_ = true;    // false if exists operation to commit
   size_t num_skip_entries_ = 0;
   size_t level_ = 0;
-  const Chunker* chunker_;
+  ChunkWriter* const chunk_writer_;
+  const Chunker* const chunker_;
   // whether the built entry is fixed length
   // type blob: true
   const bool isFixedEntryLen_;

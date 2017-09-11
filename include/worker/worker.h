@@ -3,10 +3,12 @@
 #ifndef USTORE_WORKER_WORKER_H_
 #define USTORE_WORKER_WORKER_H_
 
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
 #include "chunk/chunk.h"
+#include "chunk/chunk_writer.h"
 #include "hash/hash.h"
 #include "spec/db.h"
 #include "spec/slice.h"
@@ -332,6 +334,7 @@ class Worker : public DB, private Noncopyable {
 
   const WorkerID id_;
   bool persist_;
+  std::unique_ptr<ChunkWriter> writer_;
 };
 
 }  // namespace ustore

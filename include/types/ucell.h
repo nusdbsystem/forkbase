@@ -6,6 +6,7 @@
 #include <memory>
 #include <utility>
 #include "chunk/chunk.h"
+#include "chunk/chunk_writer.h"
 #include "hash/hash.h"
 #include "node/cell_node.h"
 #include "spec/slice.h"
@@ -15,14 +16,17 @@
 
 namespace ustore {
 
+// UCell always write to local store, so no chunk loader/writer is needed.
 class UCell : private Moveable {
  public:
   // Create the chunk data and dump to storage
   // Return the UCell instance
   static UCell Create(UType type, const Slice& key, const Slice& data,
                       const Hash& preHash1, const Hash& preHash2);
+                      // ChunkWriter* writer);
   static UCell Create(UType type, const Slice& key, const Hash& data,
                       const Hash& preHash1, const Hash& preHash2);
+                      // ChunkWriter* writer);
   static UCell Load(const Hash& unode_hash);
 
   UCell() = default;
