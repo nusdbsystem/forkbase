@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include "cluster/clientdb.h"
+#include "cluster/partitioner.h"
 #include "net/net.h"
 
 namespace ustore {
@@ -28,7 +29,7 @@ class RemoteClientService {
                                const node_id_t& source);
 
   explicit RemoteClientService(const node_id_t& master)
-      : node_addr_(""), master_(master), is_running_(false), nclients_(0) {}
+      : master_(master), is_running_(false), nclients_(0), ptt_("") {}
   ~RemoteClientService() = default;
 
   // initialize the network, register callback
@@ -56,18 +57,14 @@ class RemoteClientService {
    */
   virtual ClientDb CreateClientDb();
 
-  static int range_cmp(const RangeInfo& a, const RangeInfo& b);
-
  private:
-  node_id_t node_addr_;  // the node's address
   node_id_t master_;  // master node
   volatile bool is_running_;  // volatile to avoid caching old value
   int nclients_;  // how many RequestHandler thread it uses
-  WorkerList workers_;  // worker list
   std::vector<std::unique_ptr<ResponseBlob>> responses_;  // the response queue
-  std::vector<node_id_t> addresses_;  // worker addresses
   std::unique_ptr<Net> net_;
   std::unique_ptr<CallBack> cb_;
+  const Partitioner ptt_;
 };
 
 }  // namespace ustore

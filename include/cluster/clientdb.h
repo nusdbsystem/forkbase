@@ -8,6 +8,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "cluster/partitioner.h"
 #include "net/net.h"
 #include "proto/messages.pb.h"
 #include "spec/db.h"
@@ -17,8 +18,6 @@
 namespace ustore {
 
 using google::protobuf::Message;
-
-class WorkerList;
 
 /**
  * A unit on the response queue. Each client request thread
@@ -64,8 +63,8 @@ struct ResponseBlob {
 class ClientDb : public DB {
  public:
   ClientDb(const node_id_t& master, int id, Net* net, ResponseBlob* blob,
-           WorkerList* workers)
-    : master_(master), id_(id), net_(net), res_blob_(blob), workers_(workers) {}
+           const Partitioner* ptt)
+    : master_(master), id_(id), net_(net), res_blob_(blob), ptt_(ptt) {}
 
   ~ClientDb() = default;
 
@@ -156,43 +155,9 @@ class ClientDb : public DB {
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   Net* net_ = nullptr;  // for network communication
   ResponseBlob* res_blob_ = nullptr;  // response blob
-  WorkerList* workers_ = nullptr;  // lists of workers to which requests are
-                                   // dispatched
+  const Partitioner* ptt_;  // partitioner to route destination worker
 };
 
-/**
- * List of workers and their key ranges. It is initialized and updated
- * with the information from the Master. The RequestHandler uses this to
- * determine where to send the requests to. One WorkerList object is shared
- * by multiple RequestHandler.
- *
- * Different partition strategies may implement the list differently, especially
- * regarding the mapping from key to worker ID (Get_Worker method).
- */
-class WorkerList {
- public:
-  WorkerList() = default;
-  explicit WorkerList(const std::vector<RangeInfo>& workers);
-  ~WorkerList() = default;
-
-  /**
-   * Invoked whenever the list is out of date.
-   */
-  bool Update(const std::vector<RangeInfo>& workers);
-  /**
-   * Return the ID (address string) of the worker node whose key range
-   * contains the given key.
-   * It always returns a valid ID, but the node may have gone offline. The calling
-   * function is responsible for updating the list.
-   */
-  node_id_t GetWorker(const Slice& key);
-
-  std::vector<node_id_t> GetWorkerIds();
-
- private:
-  // should be sorted by the range
-  std::vector<RangeInfo> workers_;
-};
 }  // namespace ustore
 
 #endif  // USTORE_CLUSTER_CLIENTDB_H_

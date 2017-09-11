@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "cluster/partitioner.h"
 #include "net/net.h"
 #include "proto/messages.pb.h"
 #include "spec/value.h"
@@ -28,10 +29,9 @@ class WorkerService {
     static void RequestDispatch(const void *msg, int size, void *handler,
                                 const node_id_t& source);
 
-    static int range_cmp(const RangeInfo& a, const RangeInfo& b);
-
     WorkerService(const node_id_t& addr, const node_id_t& master, bool persist)
-      : node_addr_(addr), master_(master), persist_(persist) {}
+      : node_addr_(addr), master_(master), ptt_(addr),
+        worker_(ptt_.id(), persist) {}
     virtual ~WorkerService() = default;
 
     // initialize the network, the worker and register callback
@@ -75,13 +75,12 @@ class WorkerService {
 
     node_id_t node_addr_;  // this node's address
     node_id_t master_;  // master node
-    std::vector<RangeInfo> ranges_;  // global knowledge about key ranges
     std::vector<node_id_t> addresses_;  // worker addresses
-    std::unique_ptr<Worker> worker_;  // where the logic happens
     std::unique_ptr<Net> net_;
     std::unique_ptr<CallBack> cb_;
     std::mutex lock_;
-    bool persist_;
+    const Partitioner ptt_;
+    Worker worker_;  // where the logic happens
 };
 }  // namespace ustore
 

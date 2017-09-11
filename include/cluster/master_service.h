@@ -16,7 +16,7 @@ class Master;
  * The MasterService receives requests from ClientService about key
  * range changes (RangeInfo). It then invokes Master to return
  * the ranges.
- * Basically a simplified version of WorkerService. 
+ * Basically a simplified version of WorkerService.
  */
 class MasterService: public WorkerService {
  public:

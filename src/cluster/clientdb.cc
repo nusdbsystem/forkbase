@@ -60,7 +60,7 @@ ErrorCode ClientDb::Put(const Slice& key, const Value& value,
   auto request = msg.mutable_request_payload();
   request->set_version(pre_version.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -72,7 +72,7 @@ ErrorCode ClientDb::Put(const Slice& key, const Value& value,
   auto request = msg.mutable_request_payload();
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -93,7 +93,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Slice& branch, UCell* meta)
   auto request = msg.mutable_request_payload();
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetUCellResponse(meta);
 }
 
@@ -105,7 +105,7 @@ ErrorCode ClientDb::Get(const Slice& key, const Hash& version, UCell* meta)
   auto request = msg.mutable_request_payload();
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetUCellResponse(meta);
 }
 
@@ -120,7 +120,7 @@ ErrorCode ClientDb::GetChunk(const Slice& key, const Hash& version,
   request->set_key(key.data(), key.len());
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetChunkResponse(chunk);
 }
 
@@ -130,7 +130,7 @@ ErrorCode ClientDb::GetStorageInfo(std::vector<StoreInfo>* info) const {
   msg.set_type(UMessage::GET_INFO_REQUEST);
   msg.set_source(id_);
   // go through all workers to retrieve keys
-  for (const auto& dest : workers_->GetWorkerIds()) {
+  for (const auto& dest : ptt_->workerAddrs()) {
     Send(msg, dest);
     ErrorCode err = GetInfoResponse(info);
     if (err != ErrorCode::kOK) return err;
@@ -157,7 +157,7 @@ ErrorCode ClientDb::Branch(const Slice& key, const Slice& old_branch,
   auto request = msg.mutable_request_payload();
   request->set_ref_branch(old_branch.data(), old_branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetEmptyResponse();
 }
 
@@ -169,7 +169,7 @@ ErrorCode ClientDb::Branch(const Slice& key, const Hash& version,
   auto request = msg.mutable_request_payload();
   request->set_ref_version(version.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetEmptyResponse();
 }
 
@@ -185,7 +185,7 @@ ErrorCode ClientDb::Rename(const Slice& key, const Slice& old_branch,
   request->set_ref_branch(old_branch.data(), old_branch.len());
   request->set_branch(new_branch.data(), new_branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetEmptyResponse();
 }
 
@@ -219,7 +219,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
   request->set_branch(tgt_branch.data(), tgt_branch.len());
   request->set_ref_branch(ref_branch.data(), ref_branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -233,7 +233,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
   request->set_branch(tgt_branch.data(), tgt_branch.len());
   request->set_ref_version(ref_version.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -247,7 +247,7 @@ ErrorCode ClientDb::Merge(const Slice& key, const Value& value,
   request->set_version(ref_version1.value(), Hash::kByteLength);
   request->set_ref_version(ref_version2.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -257,7 +257,7 @@ ErrorCode ClientDb::ListKeys(std::vector<std::string>* keys) const {
   msg.set_type(UMessage::LIST_REQUEST);
   msg.set_source(id_);
   // go through all workers to retrieve keys
-  for (const auto& dest : workers_->GetWorkerIds()) {
+  for (const auto& dest : ptt_->workerAddrs()) {
     Send(msg, dest);
     ErrorCode err = GetStringListResponse(keys);
     if (err != ErrorCode::kOK) return err;
@@ -275,7 +275,7 @@ ErrorCode ClientDb::ListBranches(const Slice& key,
   auto request = msg.mutable_request_payload();
   request->set_key(key.data(), key.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetStringListResponse(branches);
 }
 
@@ -288,7 +288,7 @@ ErrorCode ClientDb::Exists(const Slice& key, bool* exist) const {
   auto request = msg.mutable_request_payload();
   request->set_key(key.data(), key.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetBoolResponse(exist);
 }
 
@@ -303,7 +303,7 @@ ErrorCode ClientDb::Exists(const Slice& key, const Slice& branch, bool* exist)
   request->set_key(key.data(), key.len());
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetBoolResponse(exist);
 }
 
@@ -318,7 +318,7 @@ ErrorCode ClientDb::GetBranchHead(const Slice& key, const Slice& branch,
   request->set_key(key.data(), key.len());
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -334,7 +334,7 @@ ErrorCode ClientDb::IsBranchHead(const Slice& key, const Slice& branch,
   request->set_branch(branch.data(), branch.len());
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetBoolResponse(isHead);
 }
 
@@ -348,7 +348,7 @@ ErrorCode ClientDb::GetLatestVersions(const Slice& key,
   auto request = msg.mutable_request_payload();
   request->set_key(key.data(), key.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetVersionListResponse(versions);
 }
 
@@ -363,7 +363,7 @@ ErrorCode ClientDb::IsLatestVersion(const Slice& key, const Hash& version,
   request->set_key(key.data(), key.len());
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetBoolResponse(isLatest);
 }
 
@@ -377,7 +377,7 @@ ErrorCode ClientDb::Delete(const Slice& key, const Slice& branch) {
   request->set_key(key.data(), key.len());
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(msg, workers_->GetWorker(key));
+  Send(msg, ptt_->GetWorkerAddr(key));
   return GetEmptyResponse();
 }
 
@@ -486,41 +486,6 @@ ErrorCode ClientDb::GetInfoResponse(std::vector<StoreInfo>* stores) const {
     stores->push_back(std::move(v));
   }
   return err;
-}
-
-WorkerList::WorkerList(const std::vector<RangeInfo> &workers) {
-  Update(workers);
-}
-
-bool WorkerList::Update(const std::vector<RangeInfo> &workers) {
-  workers_.clear();
-  for (const RangeInfo& ri : workers)
-    workers_.push_back(ri);
-  return true;
-}
-
-node_id_t WorkerList::GetWorker(const Slice& key) {
-// TODO(wangsh): consider partition based on content later,
-//               as this will affect latency
-//   string h = Hash::ComputeFrom(key.data(), key.len()).ToBase32();
-//   Slice hk = Slice(h.data(), h.length());
-//
-//   for (const RangeInfo& ri : workers_)
-//     if (Slice(ri.start()) > hk) {
-//       return ri.address();
-//     }
-//   return workers_[0].address();
-  Hash h = Hash::ComputeFrom(key.data(), key.len());
-  uint64_t idx = *reinterpret_cast<const int64_t*>(h.value() + 9);
-  // size_t idx = MurmurHash(key.data(), key.len()) % workers_.size();
-  return workers_[idx%workers_.size()].address();
-}
-
-vector<node_id_t> WorkerList::GetWorkerIds() {
-  vector<node_id_t> ids;
-  for (auto ri : workers_)
-    ids.push_back(ri.address());
-  return ids;
 }
 
 }  // namespace ustore
