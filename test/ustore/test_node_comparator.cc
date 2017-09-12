@@ -289,6 +289,7 @@ class KeyComparatorSmallEnv : public ::testing::Test {
 
     rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_);
     rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_);
+    rhs_mapper_ = new ustore::KeyMapper(rhs_root_, loader_);
   }
 
   uint64_t numElements(const ustore::Hash& root) {
@@ -300,6 +301,7 @@ class KeyComparatorSmallEnv : public ::testing::Test {
   virtual void TearDown() {
     delete rhs_differ_;
     delete rhs_intersector_;
+    delete rhs_mapper_;
   }
 
   std::shared_ptr<ustore::ChunkLoader> loader_;
@@ -307,15 +309,21 @@ class KeyComparatorSmallEnv : public ::testing::Test {
 
   const ustore::KeyDiffer* rhs_differ_;
   const ustore::KeyIntersector* rhs_intersector_;
+  const ustore::KeyMapper* rhs_mapper_;
 };
 
 
 TEST_F(KeyComparatorSmallEnv, Basic) {
   ustore::LocalChunkWriter writer;
   // lhs is constructed by
-  //   replacing k2 with new v2, remove kv3
+  //   replacing k2 with new v2,
+  //   remove kv3
   //   replace kv5 with new kv5
-  //   remove k7 and append k8 and k9
+  //   remove k7
+  //   append k8 and k9
+
+  // lhs: k1->v1. k2->v22, k4->v4, k5->v22, k6->v6, k8->v8, k9->v9
+  // rhs: k1->v1, k2->v2, k3->v3, k4->v4, k55->v55, k6->v6, k7->v7
 
   constexpr const ustore::byte_t k2[] = "k2";
   constexpr const ustore::byte_t new_v2[] = "v22";
@@ -366,7 +374,6 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   ASSERT_EQ(size_t(6), numElements(lhs_t2));
 
 
-// remove k6 and append kv7 and kv8
   ustore::NodeBuilder nb3(lhs_t2, key7, loader_.get(), &writer,
                           ustore::MapChunker::Instance(), false);
 
@@ -389,7 +396,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
   EXPECT_EQ(size_t(3), df_ranges[1].start_idx);  // for key5
   EXPECT_EQ(size_t(1), df_ranges[1].num_subsequent);
 
-  EXPECT_EQ(size_t(5), df_ranges[2].start_idx);  // for key7 and key8
+  EXPECT_EQ(size_t(5), df_ranges[2].start_idx);  // for key8 and key9
   EXPECT_EQ(size_t(2), df_ranges[2].num_subsequent);
 
   // lhs INTERSECT rhs
@@ -406,6 +413,33 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 
   EXPECT_EQ(size_t(4), intersect_ranges[2].start_idx);
   EXPECT_EQ(size_t(1), intersect_ranges[2].num_subsequent);
+
+  // lhs MAP rhs
+  std::vector<std::pair<ustore::IndexRange, ustore::IndexRange>> range_maps
+      = rhs_mapper_->Compare(lhs);
+
+  ASSERT_EQ(size_t(3), range_maps.size());
+
+  // lhs: {0, 1} -> rhs: {0, 1}
+  EXPECT_EQ(size_t(0), range_maps[0].first.start_idx);
+  EXPECT_EQ(size_t(1), range_maps[0].first.num_subsequent);
+
+  EXPECT_EQ(size_t(0), range_maps[0].second.start_idx);
+  EXPECT_EQ(size_t(1), range_maps[0].second.num_subsequent);
+
+  // lhs: {2, 1} -> rhs: {3, 1}
+  EXPECT_EQ(size_t(2), range_maps[1].first.start_idx);
+  EXPECT_EQ(size_t(1), range_maps[1].first.num_subsequent);
+
+  EXPECT_EQ(size_t(3), range_maps[1].second.start_idx);
+  EXPECT_EQ(size_t(1), range_maps[1].second.num_subsequent);
+
+  // lhs: {4, 1} -> rhs: {5, 1}
+  EXPECT_EQ(size_t(4), range_maps[2].first.start_idx);
+  EXPECT_EQ(size_t(1), range_maps[2].first.num_subsequent);
+
+  EXPECT_EQ(size_t(5), range_maps[2].second.start_idx);
+  EXPECT_EQ(size_t(1), range_maps[2].second.num_subsequent);
 }
 
 
@@ -445,6 +479,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
 
     rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_);
     rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_);
+    rhs_mapper_ = new ustore::KeyMapper(rhs_root_, loader_);
   }
 
   uint64_t numElements(const ustore::Hash& root) {
@@ -456,6 +491,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
   virtual void TearDown() {
     delete rhs_differ_;
     delete rhs_intersector_;
+    delete rhs_mapper_;
 
     for (auto key : keys_) { delete key; }
 
@@ -474,6 +510,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
 
   const ustore::KeyDiffer* rhs_differ_;
   const ustore::KeyIntersector* rhs_intersector_;
+  const ustore::KeyMapper* rhs_mapper_;
 };
 
 
@@ -519,7 +556,7 @@ TEST_F(KeyComparatorBigEnv, Basic) {
   EXPECT_EQ(size_t(100), df_ranges[0].num_subsequent);
 
 
-  // // lhs INTERSECT rhs
+  // lhs INTERSECT rhs
   std::vector<ustore::IndexRange> intersect_ranges
       = rhs_intersector_->Compare(lhs);
 
@@ -530,4 +567,32 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
   EXPECT_EQ(size_t(300), intersect_ranges[1].start_idx);
   EXPECT_EQ(num_items_ - 200 - 300, intersect_ranges[1].num_subsequent);
+
+
+  // lhs MAP rhs
+  std::vector<std::pair<ustore::IndexRange, ustore::IndexRange>> range_maps
+      = rhs_mapper_->Compare(lhs);
+
+  ASSERT_EQ(size_t(3), range_maps.size());
+
+  // lhs: {0, 100} -> rhs: {0, 100}
+  EXPECT_EQ(size_t(0), range_maps[0].first.start_idx);
+  EXPECT_EQ(size_t(100), range_maps[0].first.num_subsequent);
+
+  EXPECT_EQ(size_t(0), range_maps[0].second.start_idx);
+  EXPECT_EQ(size_t(100), range_maps[0].second.num_subsequent);
+
+  // lhs: {100, 100} -> rhs: {300, 100}
+  EXPECT_EQ(size_t(100), range_maps[1].first.start_idx);
+  EXPECT_EQ(size_t(100), range_maps[1].first.num_subsequent);
+
+  EXPECT_EQ(size_t(300), range_maps[1].second.start_idx);
+  EXPECT_EQ(size_t(100), range_maps[1].second.num_subsequent);
+
+  // lhs: {300, end} -> rhs: {500, end}
+  EXPECT_EQ(size_t(300), range_maps[2].first.start_idx);
+  EXPECT_EQ(num_items_ - 200 - 300, range_maps[2].first.num_subsequent);
+
+  EXPECT_EQ(size_t(500), range_maps[2].second.start_idx);
+  EXPECT_EQ(num_items_ - 500, range_maps[2].second.num_subsequent);
 }

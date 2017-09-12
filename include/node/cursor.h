@@ -22,6 +22,12 @@ struct IndexRange {
 //  {start_idx, num_subsequent}
 //   {0, 3} + {3, 6} -> {0, 9}
   static std::vector<IndexRange> Compact(const std::vector<IndexRange>& ranges);
+
+// Compact continuous index range maps to a single one, e.g.
+// {0, 2} => {3, 2} + {2, 4} => {5, 4}
+//   {0, 6} => {3, 6}
+  static std::vector<std::pair<IndexRange, IndexRange>> Compact(
+      const std::vector<std::pair<IndexRange, IndexRange>>& range_map);
 };
 
 class NodeCursor {

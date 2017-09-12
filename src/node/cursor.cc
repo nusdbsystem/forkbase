@@ -37,6 +37,48 @@ std::vector<IndexRange> IndexRange::Compact(
   return result;
 }
 
+std::vector<std::pair<IndexRange, IndexRange>> IndexRange::Compact(
+    const std::vector<std::pair<IndexRange, IndexRange>>& range_maps) {
+  if (range_maps.size() == 0) return range_maps;
+  std::vector<std::pair<IndexRange, IndexRange>> result;
+
+  IndexRange cur_lhs_range = range_maps[0].first;
+  IndexRange cur_rhs_range = range_maps[0].second;
+
+  uint64_t pre_lhs_upper = cur_lhs_range.start_idx
+                           + cur_lhs_range.num_subsequent;
+  uint64_t pre_rhs_upper = cur_rhs_range.start_idx
+                           + cur_rhs_range.num_subsequent;
+
+  for (size_t i = 1; i < range_maps.size(); ++i) {
+    IndexRange lhs_range = range_maps[i].first;
+    IndexRange rhs_range = range_maps[i].second;
+
+    DCHECK_NE(lhs_range.num_subsequent, size_t(0));
+    DCHECK_EQ(lhs_range.num_subsequent, rhs_range.num_subsequent);
+
+    if (pre_lhs_upper < lhs_range.start_idx ||
+        pre_rhs_upper < rhs_range.start_idx) {
+      result.push_back({cur_lhs_range, cur_rhs_range});
+      cur_lhs_range = lhs_range;
+      cur_rhs_range = rhs_range;
+    } else if (pre_lhs_upper == lhs_range.start_idx &&
+               pre_rhs_upper == rhs_range.start_idx) {
+
+      cur_lhs_range.num_subsequent += lhs_range.num_subsequent;
+      cur_rhs_range.num_subsequent += rhs_range.num_subsequent;
+    } else {
+      LOG(FATAL) << "Invalid Index Range Maps. ";
+    }
+
+    pre_lhs_upper = cur_lhs_range.start_idx + cur_lhs_range.num_subsequent;
+    pre_rhs_upper = cur_rhs_range.start_idx + cur_rhs_range.num_subsequent;
+  }
+
+  result.push_back({cur_lhs_range, cur_rhs_range});
+  return result;
+}
+
 NodeCursor::NodeCursor(const Hash& hash, size_t idx,
                        ChunkLoader* ch_loader) noexcept {
   NodeCursor* parent_cursor = nullptr;

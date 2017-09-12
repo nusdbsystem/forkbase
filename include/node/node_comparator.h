@@ -3,7 +3,6 @@
 #ifndef USTORE_NODE_NODE_COMPARATOR_H_
 #define USTORE_NODE_NODE_COMPARATOR_H_
 
-#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -61,7 +60,7 @@ struct OrderedKeyTrait {
   }
 };
 
-// THe following two traits specify two procedures during two prolly tree comparing and traversing.
+// THe following traits specify two procedures during two prolly tree comparing and traversing.
 //   The first procedure is performed when encountering the same hashes
 //   The second procedure is performed either side reaches the leaf node
 template <class KeyTrait>
@@ -250,6 +249,118 @@ struct Differ {
   }
 };
 
+template <class KeyTrait>
+struct Mapper {
+/*
+Mapper is used to map the index range of identical lhs elements to rhs elements
+*/
+  typedef std::vector<std::pair<IndexRange, IndexRange>> ResultType;
+  // Both lhs and rhs share the same elements due to the identical hashes
+  //   Map the entire lhs index range to the entire rhs index range
+  static ResultType IdenticalHashes(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx) {
+    ResultType result;
+
+    IndexRange lhs_range{lhs_start_idx, lhs->numElements()};
+    IndexRange rhs_range{rhs_start_idx, rhs->numElements()};
+
+    result.push_back({lhs_range, rhs_range});
+    return result;
+  }
+
+  static ResultType IterateLeaves(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
+    ResultType results;
+
+    NodeCursor lhs_cursor(lhs->hash(), 0, loader);
+    NodeCursor rhs_cursor(rhs->hash(), 0, loader);
+
+    uint64_t lhs_idx = lhs_start_idx;
+    uint64_t rhs_idx = rhs_start_idx;
+
+    // if lhs_range.num_subsequent = 0,
+    //   this lhs_range is invalid.
+    IndexRange lhs_range{0, 0};
+    IndexRange rhs_range{0, 0};
+
+    while (!lhs_cursor.isEnd() && !rhs_cursor.isEnd()) {
+      OrderedKey lhs_key = KeyTrait::Key(lhs_cursor, lhs_idx);
+      OrderedKey rhs_key = KeyTrait::Key(rhs_cursor, rhs_idx);
+
+      if (lhs_key > rhs_key) {
+        if (lhs_range.num_subsequent != 0) {
+          DCHECK(rhs_range.num_subsequent != 0);
+          DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
+          results.push_back({lhs_range, rhs_range});
+          // Mark both ranges as invalid
+          lhs_range.num_subsequent = 0;
+          rhs_range.num_subsequent = 0;
+        }
+
+        ++rhs_idx;
+        rhs_cursor.Advance(true);
+      } else if (lhs_key == rhs_key) {
+        size_t lhs_len = lhs_cursor.numCurrentBytes();
+        size_t rhs_len = rhs_cursor.numCurrentBytes();
+
+        if (lhs_len == rhs_len &&
+            std::memcmp(lhs_cursor.current(),
+                        rhs_cursor.current(),
+                        lhs_len) == 0) {
+        // Identical elements
+          if (lhs_range.num_subsequent == 0) {
+            DCHECK(rhs_range.num_subsequent == 0);
+            lhs_range.start_idx = lhs_idx;
+            lhs_range.num_subsequent = 1;
+
+            rhs_range.start_idx = rhs_idx;
+            rhs_range.num_subsequent = 1;
+          } else {
+            DCHECK(lhs_range.num_subsequent != 0);
+            ++lhs_range.num_subsequent;
+            ++rhs_range.num_subsequent;
+          }
+        } else {
+          if (lhs_range.num_subsequent != 0) {
+            DCHECK(rhs_range.num_subsequent != 0);
+            DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
+            results.push_back({lhs_range, rhs_range});
+            // Mark both ranges as invalid
+            lhs_range.num_subsequent = 0;
+            rhs_range.num_subsequent = 0;
+          }
+        }  // data comparison
+
+        ++lhs_idx;
+        ++rhs_idx;
+        lhs_cursor.Advance(true);
+        rhs_cursor.Advance(true);
+      } else {
+        if (lhs_range.num_subsequent != 0) {
+          DCHECK(rhs_range.num_subsequent != 0);
+          DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
+          results.push_back({lhs_range, rhs_range});
+          // Mark both ranges as invalid
+          lhs_range.num_subsequent = 0;
+          rhs_range.num_subsequent = 0;
+        }
+        ++lhs_idx;
+        lhs_cursor.Advance(true);
+      }
+    }  // end while
+
+    if (lhs_range.num_subsequent != 0) {
+      DCHECK(rhs_range.num_subsequent != 0);
+      DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
+
+      results.push_back({lhs_range, rhs_range});
+      // Mark both ranges as invalid
+      lhs_range.num_subsequent = 0;
+      rhs_range.num_subsequent = 0;
+    }
+
+    return results;
+  }
+};
+
 template <class KeyTrait, template<class> class Traverser>
 class NodeComparator : private Noncopyable {
 /*
@@ -375,7 +486,7 @@ typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait
     std::unique_ptr<const SeqNode> lhs_child_node =
         SeqNode::CreateFromChunk(loader_->Load(lhs_me.targetHash()));
 
-    std::vector<IndexRange> child_results =
+    ReturnType child_results =
         Compare(lhs_child_node.get(),
                 lhs_child_start_idx,
                 lhs_child_min_key,
@@ -451,6 +562,8 @@ using IndexDiffer = NodeComparator<IndexTrait, Differ>;
 using KeyIntersector = NodeComparator<OrderedKeyTrait, Intersector>;
 
 using KeyDiffer = NodeComparator<OrderedKeyTrait, Differ>;
+
+using KeyMapper = NodeComparator<OrderedKeyTrait, Mapper>;
 
 }  // namespace ustore
 
