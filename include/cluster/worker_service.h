@@ -31,7 +31,10 @@ class WorkerService {
 
     WorkerService(const node_id_t& addr, const node_id_t& master, bool persist)
       : node_addr_(addr), master_(master), ptt_(addr),
-        worker_(ptt_.id(), persist) {}
+      // TODO(anh): pass real partitioner to worker when partitioned
+      //            chunk loader/writer is done
+      // worker_(ptt_.id(), &ptt_, persist) {}
+        worker_(ptt_.id(), nullptr, persist) {}
     virtual ~WorkerService() = default;
 
     // initialize the network, the worker and register callback

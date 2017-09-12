@@ -10,8 +10,9 @@ namespace ustore {
 
 class WorkerExt : public Worker {
  public:
-  explicit WorkerExt(const WorkerID& id, bool persist) : Worker(id, persist) {}
-  ~WorkerExt() {}
+  explicit WorkerExt(const WorkerID& id, const Partitioner* ptt, bool persist)
+    : Worker(id, ptt, persist) {}
+  ~WorkerExt() = default;
 
   ErrorCode GetForType(const UType& type, const Slice& key,
                        const Hash& ver, UCell* ucell);

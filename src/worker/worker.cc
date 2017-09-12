@@ -15,7 +15,8 @@ namespace ustore {
 
 namespace fs = boost::filesystem;
 
-Worker::Worker(const WorkerID& id, bool persist) : id_(id), persist_(persist) {
+Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool persist)
+  : id_(id), factory_(ptt), persist_(persist) {
   // create data/log dir
   auto dir = Env::Instance()->config().data_dir();
   auto pattern = Env::Instance()->config().data_file_pattern();

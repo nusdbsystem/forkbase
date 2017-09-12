@@ -23,7 +23,7 @@ using WorkerID = uint32_t;
  */
 class Worker : public DB, private Noncopyable {
  public:
-  Worker(const WorkerID& id, bool persist);
+  Worker(const WorkerID& id, const Partitioner* ptt, bool persist);
   ~Worker();
 
   inline WorkerID id() const { return id_; }
@@ -328,8 +328,8 @@ class Worker : public DB, private Noncopyable {
   }
 
   const WorkerID id_;
-  bool persist_;
   ChunkableTypeFactory factory_;
+  bool persist_;
 };
 
 }  // namespace ustore

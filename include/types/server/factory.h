@@ -35,17 +35,25 @@ class ChunkableTypeFactory : private Noncopyable {
   }
 
   inline std::shared_ptr<ChunkLoader> loader() {
-    return std::make_shared<LocalChunkLoader>();
+    if (ptt_)
+      return std::make_shared<PartitionedChunkLoader>(ptt_);
+    else
+      return std::make_shared<LocalChunkLoader>();
   }
 
   inline ChunkWriter* writer() {
-    if (!writer_) writer_.reset(new LocalChunkWriter());
+    if (!writer_) {
+      if (ptt_)
+        writer_.reset(new PartitionedChunkWriter(ptt_));
+      else
+        writer_.reset(new LocalChunkWriter());
+    }
     return writer_.get();
   }
 
  private:
-  const Partitioner* ptt_;
-  std::unique_ptr<ChunkWriter> writer_;
+  const Partitioner* const ptt_;
+  std::unique_ptr<ChunkWriter> writer_;  // chunk writer is shared
 };
 
 }  // namespace ustore

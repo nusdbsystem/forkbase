@@ -19,7 +19,7 @@ using namespace ustore;
 constexpr int kSleepTime = 100000;
 
 void BenchmarkWorker() {
-  Worker worker {2018, false};
+  Worker worker {2018, nullptr, false};
   ObjectDB db(&worker);
   std::vector<ObjectDB*> dbs;
   dbs.push_back(&db);

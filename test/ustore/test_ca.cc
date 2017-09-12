@@ -16,7 +16,7 @@ void ASSERT_FAILED(ustore::ErrorCode code) {
 }
 
 TEST(Relational, Basic) {
-  ustore::Worker worker(2017, false);
+  ustore::Worker worker(2017, nullptr, false);
   ColumnStore cs(&worker);
 
   const std::string table_name("Test");

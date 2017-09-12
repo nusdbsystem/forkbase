@@ -21,7 +21,7 @@ const char key_vmap[] = "key_vmap";
 const char branch_vmap[] = "branch_vmap";
 
 ustore::Worker& worker_vmap() {
-  static ustore::Worker* worker = new ustore::Worker(2017, false);
+  static ustore::Worker* worker = new ustore::Worker(2017, nullptr, false);
   return *worker;
 }
 
