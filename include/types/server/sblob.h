@@ -23,11 +23,11 @@ class SBlob : public UBlob {
 
  protected:
   // Load exsiting SBlob
-  SBlob(const Hash& root_hash,
-        std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept;
+  SBlob(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+        const Hash& root_hash) noexcept;
   // Create new SBlob
-  SBlob(const Slice& slice,
-        std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept;
+  SBlob(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+        const Slice& slice) noexcept;
 
  private:
   ChunkWriter* chunk_writer_;

@@ -25,11 +25,11 @@ class SList : public UList {
 
  protected:
   // Load existing SList
-  SList(const Hash& root_hash,
-        std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept;
+  SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+        const Hash& root_hash) noexcept;
   // create new SList
-  SList(const std::vector<Slice>& elements,
-        std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept;
+  SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+        const std::vector<Slice>& elements) noexcept;
 
  private:
   ChunkWriter* chunk_writer_;

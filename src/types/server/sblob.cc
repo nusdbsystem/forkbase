@@ -7,13 +7,13 @@
 
 namespace ustore {
 
-SBlob::SBlob(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader,
-    ChunkWriter* writer) noexcept : UBlob(loader), chunk_writer_(writer) {
+SBlob::SBlob(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+    const Hash& root_hash) noexcept : UBlob(loader), chunk_writer_(writer) {
   SetNodeForHash(root_hash);
 }
 
-SBlob::SBlob(const Slice& data, std::shared_ptr<ChunkLoader> loader,
-    ChunkWriter* writer) noexcept : UBlob(loader), chunk_writer_(writer) {
+SBlob::SBlob(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+    const Slice& data) noexcept : UBlob(loader), chunk_writer_(writer) {
   if (data.empty()) {
     ChunkInfo chunk_info = BlobChunker::Instance()->Make({});
     chunk_writer_->Write(chunk_info.chunk.hash(), chunk_info.chunk);

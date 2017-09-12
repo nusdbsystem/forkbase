@@ -25,12 +25,12 @@ class SMap : public UMap {
 
  protected:
   // Load existing SMap
-  SMap(const Hash& root_hash,
-       std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept;
+  SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+       const Hash& root_hash) noexcept;
   // Create new SMap
   // kv_items must be sorted in strict ascending order based on key
-  SMap(const std::vector<Slice>& keys, const std::vector<Slice>& vals,
-       std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept;
+  SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+       const std::vector<Slice>& keys, const std::vector<Slice>& vals) noexcept;
 
  private:
   ChunkWriter* chunk_writer_;

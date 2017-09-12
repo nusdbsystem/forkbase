@@ -38,7 +38,8 @@ inline void CheckIdenticalItems(
 
 TEST(SMap, Empty) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SMap smap = factory.CreateMap({}, {});
+  ustore::SMap smap = factory.Create<ustore::SMap>(
+      std::vector<ustore::Slice>{}, std::vector<ustore::Slice>{});
   ASSERT_EQ(size_t(0), smap.numElements());
 
   const ustore::Slice k1("k1", 2);
@@ -48,14 +49,15 @@ TEST(SMap, Empty) {
   ASSERT_TRUE(smap.Get(k1).empty());
 
   // Set a kv pair
-  ustore::SMap new_smap1 = factory.LoadMap(smap.Set(k1, expected_v1));
+  ustore::SMap new_smap1 =
+    factory.Load<ustore::SMap>(smap.Set(k1, expected_v1));
   ASSERT_EQ(size_t(1), new_smap1.numElements());
 
   ustore::Slice actual_v1 = new_smap1.Get(k1);
   ASSERT_TRUE(expected_v1 == actual_v1);
 
   // remove a kv pair to result an empty map
-  ustore::SMap new_smap2 = factory.LoadMap(new_smap1.Remove(k1));
+  ustore::SMap new_smap2 = factory.Load<ustore::SMap>(new_smap1.Remove(k1));
   ASSERT_TRUE(new_smap2.Get(k1).empty());
   ASSERT_EQ(size_t(0), new_smap2.numElements());
 
@@ -117,7 +119,9 @@ TEST(SMap, Small) {
   const ustore::Slice v4("v4444", 5);
 
   // Internally, key slices will be sorted in ascending order
-  ustore::SMap smap = factory.CreateMap({k1, k3, k2}, {v1, v3, v2});
+  ustore::SMap smap = factory.Create<ustore::SMap>(
+      std::vector<ustore::Slice>{k1, k3, k2},
+      std::vector<ustore::Slice>{v1, v3, v2});
 
   // Get Value by Key
   const ustore::Slice actual_v1 = smap.Get(k1);
@@ -135,7 +139,7 @@ TEST(SMap, Small) {
   EXPECT_TRUE(it.end());
 
   // Set with an non-existent key
-  ustore::SMap new_smap1 = factory.LoadMap(smap.Set(k4, v4));
+  ustore::SMap new_smap1 = factory.Load<ustore::SMap>(smap.Set(k4, v4));
   EXPECT_EQ(v4.len(), new_smap1.Get(k4).len());
   EXPECT_EQ(0,
             std::memcmp(v4.data(),
@@ -148,7 +152,7 @@ TEST(SMap, Small) {
 
   // Set with an existent key
   // Set v3 with v4
-  ustore::SMap new_smap2 = factory.LoadMap(new_smap1.Set(k3, v4));
+  ustore::SMap new_smap2 = factory.Load<ustore::SMap>(new_smap1.Set(k3, v4));
   EXPECT_EQ(v4.len(), new_smap2.Get(k3).len());
   EXPECT_EQ(0,
             std::memcmp(v4.data(),
@@ -160,13 +164,13 @@ TEST(SMap, Small) {
                       &it2);
 
   // Remove an existent key
-  ustore::SMap new_smap3 = factory.LoadMap(new_smap2.Remove(k1));
+  ustore::SMap new_smap3 = factory.Load<ustore::SMap>(new_smap2.Remove(k1));
   auto it3 = new_smap3.Scan();
   CheckIdenticalItems({k2, k3, k4}, {v2, v4, v4},
                       &it3);
 
   // Remove an non-existent key
-  ustore::SMap new_smap4 = factory.LoadMap(smap.Remove(k4));
+  ustore::SMap new_smap4 = factory.Load<ustore::SMap>(smap.Remove(k4));
   auto it4 = new_smap4.Scan();
   CheckIdenticalItems({k1, k2, k3}, {v1, v2, v3},
                       &it4);
@@ -284,7 +288,7 @@ class SMapHugeEnv : public ::testing::Test {
 
 TEST_F(SMapHugeEnv, Basic) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SMap smap = factory.CreateMap(keys_, vals_);
+  ustore::SMap smap = factory.Create<ustore::SMap>(keys_, vals_);
   auto it = smap.Scan();
   CheckIdenticalItems(keys_, vals_, &it);
 
@@ -294,14 +298,15 @@ TEST_F(SMapHugeEnv, Basic) {
   EXPECT_EQ(0, std::memcmp(vals_[23].data(), actual_val23.data(), entry_size_));
 
   // Remove key[35]
-  ustore::SMap smap1 = factory.LoadMap(smap.Remove(keys_[35]));
+  ustore::SMap smap1 = factory.Load<ustore::SMap>(smap.Remove(keys_[35]));
   keys_.erase(keys_.begin() + 35);
   vals_.erase(vals_.begin() + 35);
   auto it1 = smap1.Scan();
   CheckIdenticalItems(keys_, vals_, &it1);
 
   // Set the value of key55 with val56
-  ustore::SMap smap2 = factory.LoadMap(smap.Set(keys_[55], vals_[56]));
+  ustore::SMap smap2 =
+    factory.Load<ustore::SMap>(smap.Set(keys_[55], vals_[56]));
 
   auto actual_val55 = smap.Get(keys_[55]);
   EXPECT_EQ(entry_size_, actual_val55.len());
@@ -310,7 +315,7 @@ TEST_F(SMapHugeEnv, Basic) {
 
 TEST_F(SMapHugeEnv, Compare) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SMap lhs = factory.CreateMap(keys_, vals_);
+  ustore::SMap lhs = factory.Create<ustore::SMap>(keys_, vals_);
 
   /* rhs map is constructed from lhs by removing
   * k[100] to k[199]
@@ -319,12 +324,12 @@ TEST_F(SMapHugeEnv, Compare) {
   */
   ustore::Hash rhs_hash = lhs.hash();
   for (uint32_t i = 100; i < 200; ++i) {
-    ustore::SMap rhs = factory.LoadMap(rhs_hash);
+    ustore::SMap rhs = factory.Load<ustore::SMap>(rhs_hash);
     rhs_hash = rhs.Remove(keys_[i]);
   }
 
   for (uint32_t i = 200; i < 300; ++i) {
-    ustore::SMap rhs = factory.LoadMap(rhs_hash);
+    ustore::SMap rhs = factory.Load<ustore::SMap>(rhs_hash);
     rhs_hash = rhs.Set(keys_[i], vals_[i + 1]);
   }
 
@@ -344,14 +349,14 @@ TEST_F(SMapHugeEnv, Compare) {
     ustore::Slice k(key, entry_size_);
     ustore::Slice v(val, entry_size_);
 
-    ustore::SMap rhs = factory.LoadMap(rhs_hash);
+    ustore::SMap rhs = factory.Load<ustore::SMap>(rhs_hash);
     rhs_hash = rhs.Set(k, v);
 
     new_keys.push_back(k);
     new_vals.push_back(v);
   }
 
-  ustore::SMap rhs = factory.LoadMap(rhs_hash);
+  ustore::SMap rhs = factory.Load<ustore::SMap>(rhs_hash);
 
 // Check for rhs correctness
   std::vector<ustore::Slice> expected_rhs_keys;

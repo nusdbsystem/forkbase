@@ -70,7 +70,7 @@ class SBlobEnv : public ::testing::Test {
 
     ustore::ChunkableTypeFactory factory;
     ustore::Slice data(data_, data_bytes_);
-    const ustore::SBlob sblob_ = factory.CreateBlob(data);
+    const ustore::SBlob sblob_ = factory.Create<ustore::SBlob>(data);
     blob_hash_ = sblob_.hash().Clone();
   }
 
@@ -90,7 +90,7 @@ class SBlobEnv : public ::testing::Test {
 
 TEST_F(SBlobEnv, Iterator) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
   auto it = sblob.Scan();
 
   const ustore::byte_t* data_ptr = data_;
@@ -160,11 +160,11 @@ TEST_F(SBlobEnv, Iterator) {
 
 TEST_F(SBlobEnv, Splice) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
 
   size_t splice_idx = 666;
   size_t num_delete = 777;
-  ustore::SBlob new_sblob = factory.LoadBlob(
+  ustore::SBlob new_sblob = factory.Load<ustore::SBlob>(
       sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ - num_delete + append_data_bytes_;
@@ -187,13 +187,13 @@ TEST_F(SBlobEnv, Splice) {
 // Number of elements to delete exceeds the blob end
 TEST_F(SBlobEnv, SpliceOverflow) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
 
   size_t num_delete = 777;
   size_t real_delete = 400;
   size_t splice_idx = data_bytes_ - real_delete;
 
-  ustore::SBlob new_sblob = factory.LoadBlob(
+  ustore::SBlob new_sblob = factory.Load<ustore::SBlob>(
       sblob.Splice(splice_idx, num_delete, append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ - real_delete + append_data_bytes_;
@@ -215,10 +215,10 @@ TEST_F(SBlobEnv, SpliceOverflow) {
 
 TEST_F(SBlobEnv, Insert) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
 
   size_t insert_idx = 888;
-  ustore::SBlob new_sblob = factory.LoadBlob(
+  ustore::SBlob new_sblob = factory.Load<ustore::SBlob>(
       sblob.Insert(insert_idx, append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
@@ -239,11 +239,11 @@ TEST_F(SBlobEnv, Insert) {
 
 TEST_F(SBlobEnv, Delete) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
 
   size_t delete_idx = 999;
   size_t num_delete = 500;
-  ustore::SBlob new_sblob = factory.LoadBlob(
+  ustore::SBlob new_sblob = factory.Load<ustore::SBlob>(
       sblob.Delete(delete_idx, num_delete));
 
   size_t expected_len = data_bytes_ - num_delete;
@@ -265,13 +265,13 @@ TEST_F(SBlobEnv, Delete) {
 // Number of elements to delete exceeds the blob end
 TEST_F(SBlobEnv, DeleteOverflow) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
 
   size_t num_delete = 500;
   size_t real_delete = 300;
   size_t delete_idx = data_bytes_ - real_delete;
 
-  ustore::SBlob new_sblob = factory.LoadBlob(
+  ustore::SBlob new_sblob = factory.Load<ustore::SBlob>(
       sblob.Delete(delete_idx, num_delete));
 
   size_t expected_len = data_bytes_ - real_delete;
@@ -292,9 +292,9 @@ TEST_F(SBlobEnv, DeleteOverflow) {
 
 TEST_F(SBlobEnv, Append) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
 
-  ustore::SBlob new_sblob = factory.LoadBlob(
+  ustore::SBlob new_sblob = factory.Load<ustore::SBlob>(
       sblob.Append(append_data_, append_data_bytes_));
 
   size_t expected_len = data_bytes_ + append_data_bytes_;
@@ -315,7 +315,7 @@ TEST_F(SBlobEnv, Append) {
 
 TEST_F(SBlobEnv, Read) {
   ustore::ChunkableTypeFactory factory;
-  const ustore::SBlob sblob = factory.LoadBlob(blob_hash_);
+  const ustore::SBlob sblob = factory.Load<ustore::SBlob>(blob_hash_);
   EXPECT_EQ(sblob.size(), data_bytes_);
 
   // Read from Middle
@@ -361,7 +361,7 @@ TEST(SimpleSBlob, Load) {
   ustore::store::GetChunkStore()->Put(chunk.hash(), chunk);
   ///////////////////////////////////////
 
-  ustore::SBlob sblob = factory.LoadBlob(chunk.hash());
+  ustore::SBlob sblob = factory.Load<ustore::SBlob>(chunk.hash());
 
   // size()
   EXPECT_EQ(len, sblob.size());
@@ -407,17 +407,17 @@ TEST(SimpleSBlob, Load) {
 TEST(SBlob, Empty) {
   ustore::ChunkableTypeFactory factory;
   ustore::Slice empty;
-  ustore::SBlob sblob = factory.CreateBlob(empty);
+  ustore::SBlob sblob = factory.Create<ustore::SBlob>(empty);
 
   ASSERT_EQ(size_t(0), sblob.numElements());
 
   // Append 3 elements
   ustore::byte_t d[] = "abc";
-  ustore::SBlob s1 = factory.LoadBlob(sblob.Append(d, 3));
+  ustore::SBlob s1 = factory.Load<ustore::SBlob>(sblob.Append(d, 3));
   ASSERT_EQ(size_t(3), s1.numElements());
 
   // Remove the only 3 elements
-  ustore::SBlob s2 = factory.LoadBlob(s1.Delete(0, 3));
+  ustore::SBlob s2 = factory.Load<ustore::SBlob>(s1.Delete(0, 3));
   ASSERT_EQ(size_t(0), s2.numElements());
 
   // Test on normal iterator

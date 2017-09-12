@@ -4,7 +4,7 @@
 #define USTORE_TYPES_SERVER_FACTORY_H_
 
 #include <memory>
-#include <vector>
+#include <utility>
 
 #include "cluster/partitioner.h"
 #include "types/server/sblob.h"
@@ -19,25 +19,29 @@ class ChunkableTypeFactory : private Noncopyable {
   // local chunkable types
   ChunkableTypeFactory() : ChunkableTypeFactory(nullptr) {}
   // distributed chunkable types
-  explicit ChunkableTypeFactory(const Partitioner* ptt);
+  explicit ChunkableTypeFactory(const Partitioner* ptt) : ptt_(ptt) {}
   ~ChunkableTypeFactory() = default;
 
-  // Load exsiting SBlob
-  SBlob LoadBlob(const Hash& root_hash);
-  // Create new SBlob
-  SBlob CreateBlob(const Slice& slice);
+  // Load exsiting SObject
+  template<typename T>
+  T Load(const Hash& root_hash) {
+    return T(loader(), writer(), root_hash);
+  }
 
-  // Load existing SList
-  SList LoadList(const Hash& root_hash);
-  // create new SList
-  SList CreateList(const std::vector<Slice>& elements);
+  // Create new SObject
+  template<typename T, typename... Args>
+  T Create(Args&&... args) {
+    return T(loader(), writer(), std::forward<Args>(args)...);
+  }
 
-  // Load existing SMap
-  SMap LoadMap(const Hash& root_hash);
-  // Create new SMap
-  // kv_items must be sorted in strict ascending order based on key
-  SMap CreateMap(const std::vector<Slice>& keys,
-                 const std::vector<Slice>& vals);
+  inline std::shared_ptr<ChunkLoader> loader() {
+    return std::make_shared<LocalChunkLoader>();
+  }
+
+  inline ChunkWriter* writer() {
+    if (!writer_) writer_.reset(new LocalChunkWriter());
+    return writer_.get();
+  }
 
  private:
   const Partitioner* ptt_;

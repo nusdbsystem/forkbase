@@ -212,33 +212,33 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
   EXPECT_EQ(size_t(2), latest.size());
 
   UCell value;
-  SBlob blob = factory.CreateBlob(Slice());
+  SBlob blob = factory.Create<SBlob>(Slice());
   std::unique_ptr<byte_t[]> buf;
 
   worker().Get(key[1], ver[5], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = factory.LoadBlob(value.dataHash());
+  blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[5], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[6], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = factory.LoadBlob(value.dataHash());
+  blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[6], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[7], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = factory.LoadBlob(value.dataHash());
+  blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[7], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[8], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = factory.LoadBlob(value.dataHash());
+  blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[8], Slice(buf.get(), blob.size()));
@@ -264,19 +264,19 @@ TEST(Worker, UnnamedBranch_Merge) {
   EXPECT_EQ(size_t(1), latest.size());
 
   UCell value;
-  SBlob blob = factory.CreateBlob(Slice());
+  SBlob blob = factory.Create<SBlob>(Slice());
   std::unique_ptr<byte_t[]> buf;
 
   worker().Get(key[1], ver[9], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = factory.LoadBlob(value.dataHash());
+  blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[9], Slice(buf.get(), blob.size()));
 
   worker().Get(key[1], ver[10], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  blob = factory.LoadBlob(value.dataHash());
+  blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[10], Slice(buf.get(), blob.size()));
@@ -313,7 +313,7 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
 
   ec = worker().GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SList list1 = factory.LoadList(ucell.dataHash());
+  const SList list1 = factory.Load<SList>(ucell.dataHash());
   auto itr_list1 = list1.Scan();
   EXPECT_EQ(vals[0], itr_list1.value());
   EXPECT_TRUE(itr_list1.next());
@@ -341,7 +341,7 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
 
   ec = worker().GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SList list2 = factory.LoadList(ucell.dataHash());
+  const SList list2 = factory.Load<SList>(ucell.dataHash());
   EXPECT_EQ(size_t(3), list2.numElements());
   EXPECT_EQ(vals[0], list2.Get(0));
   EXPECT_EQ(vals[3], list2.Get(1));
@@ -362,7 +362,7 @@ TEST(Worker, NamedBranch_GetPutList_Value) {
   // diff on two lists
   ec = worker().GetForType(UType::kList, key[3], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SList list3 = factory.LoadList(ucell.dataHash());
+  const SList list3 = factory.Load<SList>(ucell.dataHash());
   EXPECT_EQ(size_t(5), list3.numElements());
   auto itr_diff = UList::DuallyDiff(list1, list3);
   EXPECT_EQ(size_t(1), itr_diff.index());
@@ -418,7 +418,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
 
   ec = worker().GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SMap map1 = factory.LoadMap(ucell.dataHash());
+  const SMap map1 = factory.Load<SMap>(ucell.dataHash());
   EXPECT_EQ(vals[5], map1.Get(vals[0]));
   EXPECT_EQ(vals[6], map1.Get(vals[1]));
 
@@ -441,7 +441,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
 
   ec = worker().GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SMap map2 = factory.LoadMap(ucell.dataHash());
+  const SMap map2 = factory.Load<SMap>(ucell.dataHash());
   EXPECT_EQ(size_t(3), map2.numElements());
   EXPECT_EQ(vals[7], map2.Get(vals[2]));
 
@@ -458,7 +458,7 @@ TEST(Worker, NamedBranch_GetPutMap_Value) {
 
   ec = worker().GetForType(UType::kMap, key[4], branch[0], &ucell);
   EXPECT_EQ(ErrorCode::kOK, ec);
-  const SMap map3 = factory.LoadMap(ucell.dataHash());
+  const SMap map3 = factory.Load<SMap>(ucell.dataHash());
   EXPECT_EQ(size_t(2), map3.numElements());
   size_t n_diffs = 0;
   for (auto itr_diff = UMap::DuallyDiff(map1, map3);

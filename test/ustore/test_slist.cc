@@ -29,7 +29,7 @@ inline void CheckIdenticalElements(
 TEST(SList, Empty) {
   ustore::ChunkableTypeFactory factory;
   std::vector<ustore::Slice> e;
-  ustore::SList slist = factory.CreateList(e);
+  ustore::SList slist = factory.Create<ustore::SList>(e);
 
   ASSERT_EQ(size_t(0), slist.numElements());
   ASSERT_TRUE(slist.Get(0).empty());
@@ -37,14 +37,15 @@ TEST(SList, Empty) {
   const ustore::Slice expected_e1("e1", 2);
 
   // Insert a new element
-  ustore::SList new_slist1 = factory.LoadList(
+  ustore::SList new_slist1 = factory.Load<ustore::SList>(
       slist.Splice(0 , 0, {expected_e1}));
   ASSERT_EQ(size_t(1), new_slist1.numElements());
   ustore::Slice actual_e1 = new_slist1.Get(0);
   EXPECT_TRUE(expected_e1 == actual_e1);
 
   // Remove the only element
-  ustore::SList new_slist2 = factory.LoadList(new_slist1.Delete(0 , 1));
+  ustore::SList new_slist2 =
+    factory.Load<ustore::SList>(new_slist1.Delete(0, 1));
   ASSERT_EQ(size_t(0), new_slist2.numElements());
 
   auto it = new_slist2.Scan();
@@ -101,7 +102,8 @@ TEST(SList, Small) {
   const ustore::Slice e5("e55555", 6);
 
   // e3 and e4 to be spliced later
-  ustore::SList slist = factory.CreateList({e1, e2, e5});
+  ustore::SList slist =
+    factory.Create<ustore::SList>(std::vector<ustore::Slice>{e1, e2, e5});
 
   // Get Value by Index
   const ustore::Slice actual_e2 = slist.Get(1);
@@ -118,13 +120,15 @@ TEST(SList, Small) {
   CheckIdenticalElements({0, 1, 2}, {e1, e2, e5}, &it);
 
   // Splice in middle
-  ustore::SList new_slist1 = factory.LoadList(slist.Splice(1, 1, {e3, e4}));
+  ustore::SList new_slist1 =
+    factory.Load<ustore::SList>(slist.Splice(1, 1, {e3, e4}));
   auto it1 = new_slist1.Scan();
   CheckIdenticalElements({0, 1, 2, 3},
                          {e1, e3, e4, e5}, &it1);
 
   // Splice to the end
-  ustore::SList new_slist2 = factory.LoadList(new_slist1.Splice(3, 2, {e2}));
+  ustore::SList new_slist2 =
+    factory.Load<ustore::SList>(new_slist1.Splice(3, 2, {e2}));
   auto it2 = new_slist2.Scan();
   CheckIdenticalElements({0, 1, 2, 3},
                          {e1, e3, e4, e2}, &it2);
@@ -243,7 +247,7 @@ class SListHugeEnv : public ::testing::Test {
 
 TEST_F(SListHugeEnv, Access) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SList slist = factory.CreateList(elements_);
+  ustore::SList slist = factory.Create<ustore::SList>(elements_);
   auto it = slist.Scan();
   CheckIdenticalElements(idxs(elements_.size()),
                          elements_, &it);
@@ -258,10 +262,11 @@ TEST_F(SListHugeEnv, Access) {
 
 TEST_F(SListHugeEnv, Splice) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SList slist = factory.CreateList(elements_);
+  ustore::SList slist = factory.Create<ustore::SList>(elements_);
   // Slice 3 elements after 35th one on slist
   //   Insert element 40 at 35 place
-  ustore::SList slist1 = factory.LoadList(slist.Splice(35, 3, {elements_[40]}));
+  ustore::SList slist1 =
+    factory.Load<ustore::SList>(slist.Splice(35, 3, {elements_[40]}));
 
   auto new_element35 = slist1.Get(35);
   EXPECT_EQ(element_size_, new_element35.len());
@@ -293,9 +298,9 @@ TEST_F(SListHugeEnv, Splice) {
 
 TEST_F(SListHugeEnv, Remove) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SList slist = factory.CreateList(elements_);
+  ustore::SList slist = factory.Create<ustore::SList>(elements_);
   // Remove 10 elements after 50th element on slist
-  ustore::SList slist2 = factory.LoadList(slist.Delete(50, 10));
+  ustore::SList slist2 = factory.Load<ustore::SList>(slist.Delete(50, 10));
 
   std::vector<ustore::Slice> expected_slist2;
   expected_slist2.insert(expected_slist2.end(),
@@ -313,7 +318,7 @@ TEST_F(SListHugeEnv, Remove) {
 
 TEST_F(SListHugeEnv, Insert) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SList slist = factory.CreateList(elements_);
+  ustore::SList slist = factory.Create<ustore::SList>(elements_);
 
   // Insert e[100] to e[119] (20 elements) at 500th position
   std::vector<ustore::Slice> inserted_elements;
@@ -321,7 +326,8 @@ TEST_F(SListHugeEnv, Insert) {
                            elements_.begin() + 100,
                            elements_.begin() + 120);
 
-  ustore::SList slist3 = factory.LoadList(slist.Insert(500, inserted_elements));
+  ustore::SList slist3 =
+    factory.Load<ustore::SList>(slist.Insert(500, inserted_elements));
 
   std::vector<ustore::Slice> expected_slist3;
   expected_slist3.insert(expected_slist3.end(),
@@ -343,7 +349,7 @@ TEST_F(SListHugeEnv, Insert) {
 
 TEST_F(SListHugeEnv, Append) {
   ustore::ChunkableTypeFactory factory;
-  ustore::SList slist = factory.CreateList(elements_);
+  ustore::SList slist = factory.Create<ustore::SList>(elements_);
 
   // Append e[500] to e[599] (20 elements) at list end
   std::vector<ustore::Slice> appended_elements;
@@ -351,7 +357,8 @@ TEST_F(SListHugeEnv, Append) {
                            elements_.begin() + 500,
                            elements_.begin() + 600);
 
-  ustore::SList slist4 = factory.LoadList(slist.Append(appended_elements));
+  ustore::SList slist4 =
+    factory.Load<ustore::SList>(slist.Append(appended_elements));
 
   std::vector<ustore::Slice> expected_slist4;
   expected_slist4.insert(expected_slist4.end(),
@@ -395,8 +402,8 @@ TEST_F(SListHugeEnv, Compare) {
                       elements_.begin(),
                       elements_.begin() + 10);
 
-  ustore::SList lhs = factory.CreateList(elements_);
-  ustore::SList rhs = factory.CreateList(rhs_elements);
+  ustore::SList lhs = factory.Create<ustore::SList>(elements_);
+  ustore::SList rhs = factory.Create<ustore::SList>(rhs_elements);
 
 // For diff operation
   std::vector<uint64_t> diff_idx;

@@ -7,13 +7,13 @@
 
 namespace ustore {
 
-SList::SList(const Hash& root_hash, std::shared_ptr<ChunkLoader> loader,
-    ChunkWriter* writer) noexcept : UList(loader), chunk_writer_(writer) {
+SList::SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+    const Hash& root_hash) noexcept : UList(loader), chunk_writer_(writer) {
   SetNodeForHash(root_hash);
 }
 
-SList::SList(const std::vector<Slice>& elements,
-    std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer) noexcept
+SList::SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
+    const std::vector<Slice>& elements) noexcept
     : UList(loader), chunk_writer_(writer) {
   CHECK_GE(elements.size(), size_t(0));
   if (elements.size() == 0) {
