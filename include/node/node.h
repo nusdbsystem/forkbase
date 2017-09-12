@@ -9,6 +9,7 @@
 #include "chunk/chunk.h"
 #include "chunk/chunker.h"
 #include "chunk/chunk_loader.h"
+#include "chunk/segment.h"
 #include "node/orderedkey.h"
 #include "types/type.h"
 #include "utils/singleton.h"
@@ -189,6 +190,9 @@ class LeafNode : public SeqNode {
   // Buffer capacity shall be large enough.
   // return the number of bytes actually read
   virtual size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const = 0;
+
+  // Retrieve a segment from the start-th element to start + num_elements
+  virtual std::unique_ptr<const Segment> GetSegment(size_t start, size_t num_elements) const = 0;
 
 };
 

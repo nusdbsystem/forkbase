@@ -27,19 +27,26 @@ ChunkInfo MapChunker::Make(const std::vector<const Segment*>& segments) const {
   OrderedKey preKey;
   bool firstKey = true;
 
+  size_t seg_idx = 0;
   for (const auto& seg : segments) {
   // Ensure the key is in strictly increasing order
     for (size_t idx = 0; idx < seg->numEntries(); idx++) {
       const OrderedKey currKey = MapNode::orderedKey(seg->entry(idx));
+      // DLOG(INFO) << "Current OrderedKey: " << currKey.ToSlice().ToString()
+      //           << " At Segment " << seg_idx
+      //           << " Entry Idx " << idx;
       if (firstKey) {
         firstKey = false;
       } else {
-        CHECK(preKey < currKey);
+        CHECK(preKey < currKey) << " Fail at "
+           << "Segment " << seg_idx
+           << " Entry Idx: " << idx;
       }
       preKey = currKey;
     }  // end for
     seg->AppendForChunk(chunk.m_data() + seg_offset);
     seg_offset += seg->numBytes();
+    ++seg_idx;
   }
 
   size_t me_num_bytes;
@@ -208,5 +215,49 @@ size_t MapNode::Copy(size_t start, size_t num_bytes, byte_t* buffer) const {
 size_t MapNode::GetLength(size_t start, size_t end) const {
   LOG(FATAL) << "Not Supported Yet";
   return 0;
+}
+
+std::unique_ptr<const Segment> MapNode::GetSegment(
+    size_t start, size_t num_elements) const {
+  CHECK_LT(start, numEntries());
+  if (num_elements == 0) {
+    // return an empty segment
+    std::unique_ptr<const Segment> seg(
+        new VarSegment(data(start)));
+    return seg;
+  }
+
+  CHECK_LE(start + num_elements, numEntries());
+
+  std::vector<size_t> offsets;
+
+  size_t num_bytes = 0;
+
+  for (size_t i = start; i < start + num_elements; ++i) {
+    offsets.push_back(num_bytes);
+    num_bytes += len(i);
+  }
+
+  std::unique_ptr<const Segment> seg(
+      new VarSegment(data(start), num_bytes, std::move(offsets)));
+#ifdef DEBUG
+  DLOG(INFO) << "Get Segment from " << start
+             << " for # elements " << num_elements;
+
+  for (size_t i = 0; i < seg->numEntries(); ++i) {
+    size_t key_len, val_len;
+    const byte_t* key_data = MapNode::key(seg->entry(i), &key_len);
+    Slice key(key_data, key_len);
+
+    const byte_t* val_data = MapNode::value(seg->entry(i), &val_len);
+    Slice val(val_data, val_len);
+
+    // DLOG(INFO) << "Key: " << key.ToString()
+    //            << " Val: " << val.ToString();
+  }
+
+
+#endif
+  return seg;
 }
 }  // namespace ustore

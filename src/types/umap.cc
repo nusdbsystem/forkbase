@@ -3,6 +3,7 @@
 #include "node/cursor.h"
 #include "node/orderedkey.h"
 #include "node/node_comparator.h"
+#include "node/node_merger.h"
 #include "types/umap.h"
 #include "utils/logging.h"
 #include "utils/debug.h"
@@ -52,7 +53,7 @@ UMap::Iterator UMap::Diff(const UMap& rhs) const {
   } else if (rhs.numElements() == 0) {
     return UMap::Iterator(hash(), {{0, numElements()}}, chunk_loader_.get());
   } else {
-    KeyDiffer differ(rhs.hash(), chunk_loader_);
+    KeyDiffer differ(rhs.hash(), chunk_loader_.get());
     return UMap::Iterator(hash(), differ.Compare(hash()), chunk_loader_.get());
   }
 }
@@ -62,10 +63,16 @@ UMap::Iterator UMap::Intersect(const UMap& rhs) const {
   if (this->numElements() == 0 || rhs.numElements() == 0) {
     return UMap::Iterator(hash(), {}, chunk_loader_.get());
   } else {
-    KeyIntersector intersector(rhs.hash(), chunk_loader_);
+    KeyIntersector intersector(rhs.hash(), chunk_loader_.get());
     return UMap::Iterator(hash(), intersector.Compare(hash()),
                           chunk_loader_.get());
   }
+}
+
+Hash UMap::Merge(const UMap& node1, const UMap& node2) const {
+  KeyMerger merger(hash(), chunk_loader_.get());
+  return merger.Merge(node1.hash(), node2.hash(),
+                      *MapChunker::Instance(), false);
 }
 
 bool UMap::SetNodeForHash(const Hash& root_hash) {

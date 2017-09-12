@@ -60,22 +60,28 @@ struct OrderedKeyTrait {
   }
 };
 
-// THe following traits specify two procedures during two prolly tree comparing and traversing.
+// THe following traits specify
+//   two procedures during two prolly tree comparing and traversing.
 //   The first procedure is performed when encountering the same hashes
 //   The second procedure is performed either side reaches the leaf node
 template <class KeyTrait>
 struct Intersector {
-/*Intersector is used to find the index ranges of lhs elements that occur in rhs*/
+/*Intersector is used to find the index ranges
+    of lhs elements that occur in rhs*/
   typedef std::vector<IndexRange> ResultType;
   // Both lhs and rhs share the same elements due to the identical hashes
   //   Return the entire index range of lhs side
-  static ResultType IdenticalHashes(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx) {
+  static ResultType IdenticalHashes(
+      const SeqNode* lhs, uint64_t lhs_start_idx,
+      const SeqNode* rhs, uint64_t rhs_start_idx) {
     std::vector<IndexRange> result;
     result.push_back({lhs_start_idx, lhs->numElements()});
     return result;
   }
 
-  static ResultType IterateLeaves(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
+  static ResultType IterateLeaves(
+      const SeqNode* lhs, uint64_t lhs_start_idx,
+      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
     std::vector<IndexRange> results;
 
     NodeCursor lhs_cursor(lhs->hash(), 0, loader);
@@ -144,17 +150,22 @@ struct Intersector {
 
 template <class KeyTrait>
 struct Differ {
-/*Differ is used to find the index ranges of lhs elements that DOES NOT occur in rhs*/
+/*Differ is used to find the index ranges of
+lhs elements that DOES NOT occur in rhs*/
   typedef std::vector<IndexRange> ResultType;
-  // Due to the identical hash, all lhs elements is contained in rhs. Return empty index range
-  static ResultType IdenticalHashes(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx) {
+  // Due to the identical hash, all lhs elements is contained in rhs.
+  //   Return empty index range
+  static ResultType IdenticalHashes(
+      const SeqNode* lhs, uint64_t lhs_start_idx,
+      const SeqNode* rhs, uint64_t rhs_start_idx) {
     // Return empty result
       std::vector<IndexRange> result;
       return result;
   }
 
-  static ResultType IterateLeaves(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader*loader) {
-
+  static ResultType IterateLeaves(
+      const SeqNode* lhs, uint64_t lhs_start_idx,
+      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader*loader) {
     // DLOG(INFO) << "Iterate Diff: \n"
     //            << "LHS: " << lhs << " Start_Idx: " << lhs_start_idx << "\n"
     //            << "RHS: " << rhs << " Start_Idx: " << rhs_start_idx;
@@ -257,7 +268,9 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
   typedef std::vector<std::pair<IndexRange, IndexRange>> ResultType;
   // Both lhs and rhs share the same elements due to the identical hashes
   //   Map the entire lhs index range to the entire rhs index range
-  static ResultType IdenticalHashes(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx) {
+  static ResultType IdenticalHashes(
+      const SeqNode* lhs, uint64_t lhs_start_idx,
+      const SeqNode* rhs, uint64_t rhs_start_idx) {
     ResultType result;
 
     IndexRange lhs_range{lhs_start_idx, lhs->numElements()};
@@ -267,7 +280,9 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
     return result;
   }
 
-  static ResultType IterateLeaves(const SeqNode* lhs, uint64_t lhs_start_idx, const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
+  static ResultType IterateLeaves(
+      const SeqNode* lhs, uint64_t lhs_start_idx,
+      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
     ResultType results;
 
     NodeCursor lhs_cursor(lhs->hash(), 0, loader);
@@ -287,7 +302,7 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
 
       if (lhs_key > rhs_key) {
         if (lhs_range.num_subsequent != 0) {
-          DCHECK(rhs_range.num_subsequent != 0);
+          DCHECK_NE(size_t(0), rhs_range.num_subsequent);
           DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
           results.push_back({lhs_range, rhs_range});
           // Mark both ranges as invalid
@@ -307,20 +322,20 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
                         lhs_len) == 0) {
         // Identical elements
           if (lhs_range.num_subsequent == 0) {
-            DCHECK(rhs_range.num_subsequent == 0);
+            DCHECK_EQ(size_t(0), rhs_range.num_subsequent);
             lhs_range.start_idx = lhs_idx;
             lhs_range.num_subsequent = 1;
 
             rhs_range.start_idx = rhs_idx;
             rhs_range.num_subsequent = 1;
           } else {
-            DCHECK(lhs_range.num_subsequent != 0);
+            DCHECK_NE(size_t(0), lhs_range.num_subsequent);
             ++lhs_range.num_subsequent;
             ++rhs_range.num_subsequent;
           }
         } else {
           if (lhs_range.num_subsequent != 0) {
-            DCHECK(rhs_range.num_subsequent != 0);
+            DCHECK_NE(size_t(0), rhs_range.num_subsequent);
             DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
             results.push_back({lhs_range, rhs_range});
             // Mark both ranges as invalid
@@ -335,7 +350,7 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
         rhs_cursor.Advance(true);
       } else {
         if (lhs_range.num_subsequent != 0) {
-          DCHECK(rhs_range.num_subsequent != 0);
+          DCHECK_NE(size_t(0), rhs_range.num_subsequent);
           DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
           results.push_back({lhs_range, rhs_range});
           // Mark both ranges as invalid
@@ -348,7 +363,7 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
     }  // end while
 
     if (lhs_range.num_subsequent != 0) {
-      DCHECK(rhs_range.num_subsequent != 0);
+      DCHECK_NE(size_t(0), rhs_range.num_subsequent);
       DCHECK(rhs_range.num_subsequent == lhs_range.num_subsequent);
 
       results.push_back({lhs_range, rhs_range});
@@ -385,7 +400,7 @@ KeyTrait specifies the key for traversing, either can be prolly index or ordered
   using ReturnType = typename Traverser<KeyTrait>::ResultType;
 // loader is used for both lhs and rhs
   NodeComparator(const Hash& rhs,
-                 std::shared_ptr<ChunkLoader> loader) noexcept;
+                 ChunkLoader* loader) noexcept;
 
   virtual ~NodeComparator() = default;
 
@@ -401,26 +416,25 @@ KeyTrait specifies the key for traversing, either can be prolly index or ordered
   // Compare the lhs tree with rhs in preorder format
   ReturnType Compare(
       const SeqNode* lhs, uint64_t lhs_start_idx, const OrderedKey& lhs_min_key,
-      std::shared_ptr<const SeqNode> rhs_root_node, uint64_t rhs_start_idx) const;
+      std::shared_ptr<const SeqNode> rhs_root_node,
+      uint64_t rhs_start_idx) const;
 
   // loader for both lhs and rhs
-  mutable std::shared_ptr<ChunkLoader> loader_;
+  mutable ChunkLoader* loader_;
 
   std::shared_ptr<const SeqNode> rhs_root_;
 };
 
 template <class KeyTrait, template<class> class Traverser>
 NodeComparator<KeyTrait, Traverser>::NodeComparator(const Hash& rhs,
-                               std::shared_ptr<ChunkLoader>
-                                   loader) noexcept :
-    loader_(loader) {
+    ChunkLoader* loader) noexcept : loader_(loader) {
   const Chunk* chunk = loader_->Load(rhs);
   rhs_root_ = SeqNode::CreateFromChunk(chunk);
 }
 
 template <class KeyTrait, template<class> class Traverser>
-typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait, Traverser>
-    ::Compare(const Hash& lhs) const {
+typename NodeComparator<KeyTrait, Traverser>::ReturnType
+  NodeComparator<KeyTrait, Traverser> ::Compare(const Hash& lhs) const {
   std::unique_ptr<const SeqNode> lhs_root =
         SeqNode::CreateFromChunk(loader_->Load(lhs));
 
@@ -435,11 +449,13 @@ typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait
 }
 
 template <class KeyTrait, template<class> class Traverser>
-typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait, Traverser>::Compare(
+typename NodeComparator<KeyTrait, Traverser>::ReturnType
+  NodeComparator<KeyTrait, Traverser>::Compare(
     const SeqNode* lhs, uint64_t lhs_start_idx, const OrderedKey& lhs_min_key,
-    const std::shared_ptr<const SeqNode> rhs_node, uint64_t rhs_start_idx) const {
+    const std::shared_ptr<const SeqNode> rhs_node,
+    uint64_t rhs_start_idx) const {
   // rhs_root_node is guaranteed to contain all the elements rooted in lhs
-   ReturnType results;
+  ReturnType results;
 
   // DLOG(INFO) << "Start Comparing LHS and RHS: \n"
   //            << "LHS Hash: " << lhs->hash().ToBase32()
@@ -472,7 +488,7 @@ typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait
     return Traverser<KeyTrait>::IterateLeaves(lhs, lhs_start_idx,
                                               rhs_deepest_node.get(),
                                               deepest_start_idx,
-                                              loader_.get());
+                                              loader_);
   }  // end if
 
   // Preorder Traversal
@@ -503,10 +519,11 @@ typename NodeComparator<KeyTrait, Traverser>::ReturnType NodeComparator<KeyTrait
     lhs_child_start_idx += lhs_me.numElements();
   }
   return results;
-};
+}
 
 template <class KeyTrait, template<class> class Traverser>
-std::shared_ptr<const SeqNode> NodeComparator<KeyTrait, Traverser>::SmallestOverlap(
+std::shared_ptr<const SeqNode>
+NodeComparator<KeyTrait, Traverser>::SmallestOverlap(
                                             const OrderedKey& lhs_lower,
                                             const OrderedKey& lhs_upper,
                                             std::shared_ptr<const SeqNode>

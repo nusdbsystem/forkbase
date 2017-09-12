@@ -80,7 +80,7 @@ UList::Iterator UList::Diff(const UList& rhs) const {
   } else if (rhs.numElements() == 0) {
     return UList::Iterator(hash(), {{0, numElements()}}, chunk_loader_.get());
   } else {
-    IndexDiffer differ(rhs.hash(), chunk_loader_);
+    IndexDiffer differ(rhs.hash(), chunk_loader_.get());
     return UList::Iterator(hash(), differ.Compare(hash()), chunk_loader_.get());
   }
 
@@ -92,7 +92,7 @@ UList::Iterator UList::Intersect(const UList& rhs) const {
   if (this->numElements() == 0 || rhs.numElements() == 0) {
     return UList::Iterator(hash(), {}, chunk_loader_.get());
   } else {
-    IndexIntersector intersector(rhs.hash(), chunk_loader_);
+    IndexIntersector intersector(rhs.hash(), chunk_loader_.get());
     return UList::Iterator(hash(), intersector.Compare(hash()),
                           chunk_loader_.get());
   }

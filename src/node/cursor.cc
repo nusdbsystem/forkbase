@@ -64,7 +64,6 @@ std::vector<std::pair<IndexRange, IndexRange>> IndexRange::Compact(
       cur_rhs_range = rhs_range;
     } else if (pre_lhs_upper == lhs_range.start_idx &&
                pre_rhs_upper == rhs_range.start_idx) {
-
       cur_lhs_range.num_subsequent += lhs_range.num_subsequent;
       cur_rhs_range.num_subsequent += rhs_range.num_subsequent;
     } else {
@@ -189,7 +188,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
   //  Hence, add extra test on idx_ == -1
   if (idx_ == -1 || idx_ < int32_t(seq_node_->numEntries())) ++idx_;
   if (idx_ < int32_t(seq_node_->numEntries())) return true;
-  DCHECK_EQ(idx_, seq_node_->numEntries());
+  DCHECK_EQ(size_t(idx_), seq_node_->numEntries());
   // not allow to cross boundary,
   //   remain idx = numEntries()
   if (!cross_boundary) return false;
@@ -200,7 +199,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
     seq_node_ = SeqNode::CreateFromChunk(chunk);
-    DCHECK_GT(seq_node_->numEntries(), 0);
+    DCHECK_GT(seq_node_->numEntries(), size_t(0));
     idx_ = 0;  // point the first element
     return true;
   } else {
@@ -214,7 +213,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
 bool NodeCursor::Retreat(bool cross_boundary) {
   if (idx_ >= 0) --idx_;
   if (idx_ >= 0) return true;
-  DCHECK_EQ(idx_, -1);
+  DCHECK_EQ(idx_, size_t(-1));
   // not allow to cross boundary,
   //   remain idx = -1
   if (!cross_boundary) return false;
@@ -224,7 +223,7 @@ bool NodeCursor::Retreat(bool cross_boundary) {
     MetaEntry me(parent_cr_->current());
     const Chunk* chunk = chunk_loader_->Load(me.targetHash());
     seq_node_ = SeqNode::CreateFromChunk(chunk);
-    DCHECK_GT(seq_node_->numEntries(), 0);
+    DCHECK_GT(seq_node_->numEntries(), size_t(0));
     idx_ = seq_node_->numEntries() - 1;  // point to the last element
     return true;
   } else {
@@ -413,7 +412,7 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
   // Load this cursor seqnode from the entry pointed by parent cursor
   MetaEntry me(parent_cr_->current());
   seq_node_ = SeqNode::CreateFromChunk(chunk_loader_->Load(me.targetHash()));
-  DCHECK_GT(seq_node_->numEntries(), 0);
+  DCHECK_GT(seq_node_->numEntries(), size_t(0));
 
   if (headParent) {
     // Place this cursor to seq head

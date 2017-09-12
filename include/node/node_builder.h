@@ -142,6 +142,8 @@ To work on an existing prolly tree:
   }
 
   // segs can be empty.
+  // NOTE: The segments in the argument list should be alive
+  //   until commit is called.
   AdvancedNodeBuilder& Splice(uint64_t start_idx, uint64_t num_delete,
                               const std::vector<const Segment*>& segs);
 
@@ -201,6 +203,7 @@ To work on an existing prolly tree:
 
   // A vector to collect and own segs created by this nodebuilder
   std::vector<std::unique_ptr<const Segment>> created_segs_;
+  size_t num_created_entries_ = 0;
 };
 }  // namespace ustore
 

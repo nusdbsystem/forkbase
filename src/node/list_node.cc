@@ -133,4 +133,29 @@ size_t ListNode::GetLength(size_t start, size_t end) const {
   LOG(FATAL) << "Not Supported Yet";
   return 0;
 }
+
+std::unique_ptr<const Segment> ListNode::GetSegment(size_t start, size_t num_elements) const {
+  CHECK_LT(start, numEntries());
+  if (num_elements == 0) {
+    // return an empty segment
+    std::unique_ptr<const Segment> seg(
+        new VarSegment(data(start)));
+    return seg;
+  }
+
+  CHECK_LE(start + num_elements, numEntries());
+
+  std::vector<size_t> offsets;
+
+  size_t num_bytes = 0;
+
+  for (size_t i = start; i < start + num_elements; ++i) {
+    offsets.push_back(num_bytes);
+    num_bytes += len(i);
+  }
+
+  std::unique_ptr<const Segment> seg(
+      new VarSegment(data(start), num_bytes, std::move(offsets)));
+  return seg;
+}
 }  // namespace ustore

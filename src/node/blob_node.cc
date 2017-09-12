@@ -50,4 +50,11 @@ size_t BlobNode::Copy(size_t start, size_t num_bytes, byte_t* buffer) const {
   return len;
 }
 
+std::unique_ptr<const Segment> BlobNode::GetSegment(size_t start, size_t num_elements) const {
+  CHECK_LE(start + num_elements, numEntries());
+  std::unique_ptr<const Segment> seg(
+      new FixedSegment(data(start), num_elements, 1));
+  return seg;
+}
+
 }  // namespace ustore

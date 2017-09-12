@@ -59,6 +59,10 @@ class UMap : public ChunkableType {
   // Return an iterator that scan elements that both exist in this UMap and rhs
   UMap::Iterator Intersect(const UMap& rhs) const;
 
+  // Use this map as base to perform three-way merging
+  //   return empty hash when merging fails
+  Hash Merge(const UMap& node1, const UMap& node2) const;
+
   friend std::ostream& operator<<(std::ostream& os, const UMap& obj);
 
  protected:

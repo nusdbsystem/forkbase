@@ -20,8 +20,8 @@ class IndexComparatorSmallEnv : public ::testing::Test {
     nb.SpliceElements(0, &seg);
     rhs_root_ = nb.Commit();
 
-    rhs_intersector_ = new ustore::IndexIntersector(rhs_root_, loader_);
-    rhs_differ_ = new ustore::IndexDiffer(rhs_root_, loader_);
+    rhs_intersector_ = new ustore::IndexIntersector(rhs_root_, loader_.get());
+    rhs_differ_ = new ustore::IndexDiffer(rhs_root_, loader_.get());
   }
 
   virtual void TearDown() {
@@ -186,8 +186,8 @@ class IndexComparatorBigEnv : public ::testing::Test {
     nb.SpliceElements(0, &seg);
     rhs_root_ = nb.Commit();
 
-    rhs_intersector_ = new ustore::IndexIntersector(rhs_root_, loader_);
-    rhs_differ_ = new ustore::IndexDiffer(rhs_root_, loader_);
+    rhs_intersector_ = new ustore::IndexIntersector(rhs_root_, loader_.get());
+    rhs_differ_ = new ustore::IndexDiffer(rhs_root_, loader_.get());
   }
 
   virtual void TearDown() {
@@ -287,9 +287,9 @@ class KeyComparatorSmallEnv : public ::testing::Test {
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
 
-    rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_);
-    rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_);
-    rhs_mapper_ = new ustore::KeyMapper(rhs_root_, loader_);
+    rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_.get());
+    rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_.get());
+    rhs_mapper_ = new ustore::KeyMapper(rhs_root_, loader_.get());
   }
 
   uint64_t numElements(const ustore::Hash& root) {
@@ -477,9 +477,9 @@ class KeyComparatorBigEnv : public ::testing::Test {
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
 
-    rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_);
-    rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_);
-    rhs_mapper_ = new ustore::KeyMapper(rhs_root_, loader_);
+    rhs_differ_ = new ustore::KeyDiffer(rhs_root_, loader_.get());
+    rhs_intersector_ = new ustore::KeyIntersector(rhs_root_, loader_.get());
+    rhs_mapper_ = new ustore::KeyMapper(rhs_root_, loader_.get());
   }
 
   uint64_t numElements(const ustore::Hash& root) {
