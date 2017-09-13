@@ -161,7 +161,8 @@ OrderedKey MapNode::key(size_t idx) const {
   return MapNode::orderedKey(data(idx));
 }
 
-size_t MapNode::GetIdxForKey(const OrderedKey& key) const {
+uint64_t MapNode::FindIndexForKey(const OrderedKey& key,
+                                  ChunkLoader* loader) const {
   size_t idx = 0;
   for (const size_t offset : offsets_) {
     size_t keyNumBytes = 0;

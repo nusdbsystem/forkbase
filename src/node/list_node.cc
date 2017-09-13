@@ -119,7 +119,8 @@ OrderedKey ListNode::key(size_t idx) const {
   return OrderedKey();
 }
 
-size_t ListNode::GetIdxForKey(const OrderedKey& key) const {
+uint64_t ListNode::FindIndexForKey(const OrderedKey& key,
+                                   ChunkLoader* loader) const {
   LOG(FATAL) << "Not Supported Yet";
   return 0;
 }

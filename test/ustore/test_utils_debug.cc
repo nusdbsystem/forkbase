@@ -68,3 +68,64 @@ TEST(UtilsDebug, SpliceBytes) {
   }
   delete[] result7;
 }
+
+TEST(UtilsDebug, MultiSplice) {
+  const ustore::byte_t data[] = "abcde";
+  const ustore::byte_t append1[] = "12";
+  const ustore::byte_t append2[] = "345";
+
+  size_t data_num_bytes = 5;
+  size_t append1_num_bytes = 2;
+  size_t append2_num_bytes = 3;
+
+
+
+  // splice on head and middle
+  size_t result1_num_bytes = 0;
+
+  const ustore::byte_t* result1 =
+      ustore::MultiSplice(data, data_num_bytes,
+                          {0, 2}, {0, 1},
+                          {append1, append2},
+                          {append1_num_bytes,
+                           append2_num_bytes},
+                           &result1_num_bytes);
+
+  size_t expected_result1_num_bytes =
+      data_num_bytes + append1_num_bytes
+      + append2_num_bytes - 1;
+
+  ASSERT_EQ(expected_result1_num_bytes,
+            result1_num_bytes);
+
+  const ustore::byte_t expected_result1[] =
+      "12ab345de";
+  for (size_t i = 0; i < result1_num_bytes; ++i) {
+    ASSERT_EQ(*(expected_result1 + i), *(result1 + i));
+  }
+
+  // splice on middle and end
+  size_t result2_num_bytes = 0;
+
+  const ustore::byte_t* result2 =
+      ustore::MultiSplice(data, data_num_bytes,
+                          {2, 5}, {2, 0},
+                          {append1, append2},
+                          {append1_num_bytes,
+                           append2_num_bytes},
+                           &result2_num_bytes);
+
+  size_t expected_result2_num_bytes =
+      data_num_bytes + append1_num_bytes
+      + append2_num_bytes - 2;
+
+  ASSERT_EQ(expected_result2_num_bytes,
+            result2_num_bytes);
+
+  const ustore::byte_t expected_result2[] =
+      "ab12e345";
+  for (size_t i = 0; i < result2_num_bytes; ++i) {
+    ASSERT_EQ(*(expected_result2 + i), *(result2 + i))
+      << "Error at index " << i << " size " << result2_num_bytes;
+  }
+}

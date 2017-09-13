@@ -84,6 +84,12 @@ class NodeCursor {
   // return the number of bytes of pointed element
   size_t numCurrentBytes() const;
 
+  // two cursor are equal if the following condition are ALL met:
+  //   same idx
+  //   point to the same seqnode
+  //   same parent cursor
+  bool operator==(const NodeCursor& rhs) const;
+
   // cursor places at seq end
   inline bool isEnd() const { return idx_ == int32_t(seq_node_->numEntries()); }
   // cursor places at seq start

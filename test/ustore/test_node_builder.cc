@@ -428,4 +428,589 @@ TEST_F(NodeBuilderComplex, Special) {
   Test_Splice(special_root_->hash(), special_num_bytes_);
 }
 
+// a prolly tree with single root node
+class AdvancedNodeBuilderEmpty : public NodeBuilderEnv {
+ protected:
+  virtual void SetUp() {
+    NodeBuilderEnv::SetUp();
+    verbose = false;
+
+    ustore::AdvancedNodeBuilder builder;
+    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
+  }
+
+  virtual void TearDown() {
+    NodeBuilderEnv::TearDown();
+  }
+
+  ustore::Hash root_hash_;
+};
+
+TEST_F(AdvancedNodeBuilderEmpty, Init) {
+  const ustore::Chunk* chunk = loader_->Load(root_hash_);
+  auto node = ustore::SeqNode::CreateFromChunk(chunk);
+
+  ASSERT_EQ(size_t(0), node->numEntries());
+}
+
+TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
+  // First insert into empty tree
+  const ustore::byte_t inserted_data[] = "123";
+  const size_t num_bytes_inserted = 3;
+
+  ustore::AdvancedNodeBuilder builder1(root_hash_, loader_);
+
+  ustore::FixedSegment inserted_seg(inserted_data,
+                                    num_bytes_inserted,
+                                    num_bytes_inserted);
+
+  builder1.Insert(0, inserted_seg);
+
+  const ustore::Hash hash1 =
+      builder1.Commit(*ustore::BlobChunker::Instance(), true);
+
+  Test_Tree_Integrity(hash1, loader_);
+  Test_Same_Content(hash1, loader_, inserted_data);
+
+  // Then remove all 3 characters and append '4567'
+  const ustore::byte_t spliced_data[] = "4567";
+  const size_t num_bytes_spliced = 4;
+  const size_t num_bytes_removed = 3;
+
+  ustore::AdvancedNodeBuilder builder2(hash1, loader_);
+
+  ustore::FixedSegment spliced_seg(spliced_data,
+                                   num_bytes_spliced,
+                                   num_bytes_spliced);
+
+  builder2.Splice(0, num_bytes_removed, spliced_seg);
+
+  const ustore::Hash hash2 =
+      builder2.Commit(*ustore::BlobChunker::Instance(), true);
+
+  Test_Tree_Integrity(hash2, loader_);
+  Test_Same_Content(hash2, loader_, spliced_data);
+
+  ustore::AdvancedNodeBuilder builder3(hash2, loader_);
+
+  builder3.Remove(0, 4);
+
+  const ustore::Hash hash3 =
+      builder3.Commit(*ustore::BlobChunker::Instance(), true);
+
+  const ustore::Chunk* chunk = loader_->Load(hash3);
+  auto node = ustore::SeqNode::CreateFromChunk(chunk);
+
+  ASSERT_EQ(size_t(0), node->numEntries());
+}
+
+// a prolly tree with single root node
+class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
+ protected:
+  virtual void SetUp() {
+    NodeBuilderEnv::SetUp();
+    verbose = false;
+    const ustore::byte_t raw_data[] = "abcdefghijklmn";
+
+    num_original_bytes_ = sizeof(raw_data) - 1;
+    original_content_ = new ustore::byte_t[num_original_bytes_];
+    std::memcpy(original_content_, raw_data, num_original_bytes_);
+
+    ustore::AdvancedNodeBuilder builder;
+    ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
+    builder.Splice(0, 0, seg);
+    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
+  }
+
+  virtual void TearDown() {
+    delete[] original_content_;
+    NodeBuilderEnv::TearDown();
+  }
+
+  // test on a single splice operation
+  // at the given idx
+  void TestSingleSplice(size_t idx, bool isVerbose = false) {
+    // idx must be in valid range
+    ASSERT_LE(idx, num_original_bytes_);
+    verbose = isVerbose;
+
+    const ustore::byte_t inserted_data[] = "123";
+    const size_t num_bytes_inserted = 3;
+    const size_t num_bytes_removed = 1;
+
+    size_t expected_num_bytes = 0;
+    const ustore::byte_t* expected_result =
+        ustore::MultiSplice(original_content_,
+                            num_original_bytes_,
+                            {idx}, {num_bytes_removed},
+                            {inserted_data},
+                            {num_bytes_inserted},
+                            &expected_num_bytes);
+
+
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+
+    ustore::FixedSegment seg(inserted_data,
+                             num_bytes_inserted,
+                             num_bytes_inserted);
+
+    builder.Splice(idx, num_bytes_removed, seg);
+
+    const ustore::Hash result_hash =
+        builder.Commit(*ustore::BlobChunker::Instance(), true);
+
+    std::string expected_str(
+        reinterpret_cast<const char*>(expected_result),
+        expected_num_bytes);
+    DLOG(INFO) << "Expected Bytes in string: " <<  expected_str;
+
+    Test_Tree_Integrity(result_hash, loader_);
+    Test_Same_Content(result_hash, loader_, expected_result);
+
+    delete[] expected_result;
+  }
+
+  void TestDoubleSplice(size_t idx1, size_t idx2,
+                        bool isVerbose = false) {
+
+
+    DLOG(INFO) << "\n\n Test on Double Splice.";
+    verbose = isVerbose;
+
+    const ustore::byte_t inserted_data1[] = "123";
+    const size_t num_bytes_inserted1 = 3;
+    const size_t num_bytes_removed1 = 1;
+
+    const ustore::byte_t inserted_data2[] = "45";
+    const size_t num_bytes_inserted2 = 2;
+    const size_t num_bytes_removed2 = 2;
+
+    // idx must be in valid range
+    ASSERT_LE(size_t(0), idx1);
+    ASSERT_LT(idx1 + num_bytes_removed1, idx2);
+    ASSERT_LE(idx2, num_original_bytes_);
+
+
+    size_t expected_num_bytes = 0;
+    const ustore::byte_t* expected_result =
+        ustore::MultiSplice(original_content_,
+                            num_original_bytes_,
+                            {idx1, idx2},
+                            {num_bytes_removed1, num_bytes_removed2},
+                            {inserted_data1, inserted_data2},
+                            {num_bytes_inserted1, num_bytes_inserted2},
+                            &expected_num_bytes);
+
+
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+
+    ustore::FixedSegment seg1(inserted_data1,
+                              num_bytes_inserted1,
+                              num_bytes_inserted1);
+
+    builder.Splice(idx1, num_bytes_removed1, seg1);
+
+    ustore::FixedSegment seg2(inserted_data2,
+                              num_bytes_inserted2,
+                              num_bytes_inserted2);
+
+    builder.Splice(idx2, num_bytes_removed2, seg2);
+
+    const ustore::Hash result_hash =
+        builder.Commit(*ustore::BlobChunker::Instance(), true);
+
+    std::string expected_str(
+        reinterpret_cast<const char*>(expected_result),
+        expected_num_bytes);
+    DLOG(INFO) << "Expected Bytes in string: " <<  expected_str;
+
+    Test_Tree_Integrity(result_hash, loader_);
+    Test_Same_Content(result_hash, loader_, expected_result);
+
+    delete[] expected_result;
+  }
+
+  ustore::Hash root_hash_;
+
+  size_t num_original_bytes_;
+  ustore::byte_t* original_content_;
+};
+
+TEST_F(AdvancedNodeBuilderSimple, Init) {
+  Test_Tree_Integrity(root_hash_, loader_);
+  Test_Same_Content(root_hash_, loader_, original_content_);
+}
+
+TEST_F(AdvancedNodeBuilderSimple, SpliceHead) {
+  TestSingleSplice(0);
+}
+
+TEST_F(AdvancedNodeBuilderSimple, SpliceMiddle) {
+  TestSingleSplice(10);
+}
+
+TEST_F(AdvancedNodeBuilderSimple, SpliceEnd) {
+  TestSingleSplice(num_original_bytes_);
+}
+
+
+TEST_F(AdvancedNodeBuilderSimple, SpliceHeadMiddle) {
+  TestDoubleSplice(0, 10);
+}
+
+TEST_F(AdvancedNodeBuilderSimple, SpliceHeadEnd) {
+  TestDoubleSplice(0, num_original_bytes_);
+}
+
+TEST_F(AdvancedNodeBuilderSimple, SpliceMiddleEnd) {
+  TestDoubleSplice(10, num_original_bytes_);
+}
+
+
+class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
+ protected:
+  virtual void SetUp() {
+    NodeBuilderEnv::SetUp();
+    verbose = false;
+    const ustore::byte_t raw_data[] = {
+        "SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
+        "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
+        "this "
+        "a holiday? what! know you not, Being mechanical, you ought not walk "
+        "Upon a labouring day without the sign Of your profession? Speak, what "
+        "trade art thou?  First Commoner Why, sir, a carpenter.  MARULLUS "
+        "Where "
+        "is thy leather apron and thy rule?  What dost thou with thy best "
+        "apparel on?  You, sir, what trade are you?  Second Commoner Truly, "
+        "sir, "
+        "in respect of a fine workman, I am but, as you would say, a cobbler.  "
+        "MARULLUS But what trade art thou? answer me directly.  Second "
+        "Commoner "
+        "I am, indeed, sir, a surgeon to old shoes; when they are in great "
+        "danger, I recover them. As proper men as ever trod upon neat's "
+        "leather "
+        "have gone upon my handiwork.  FLAVIUS But wherefore art not in thy "
+        "shop "
+        "today?  Why dost thou lead these men about the streets?  Second "
+        "Commoner Truly, sir, to wear out their shoes, to get myself into more "
+        "work. But, indeed, sir, we make holiday, to see Caesar and to rejoice "
+        "in his triumph.  MARULLUS Wherefore rejoice? What conquest brings he "
+        "home?  What tributaries follow him to Rome, To grace in captive bonds "
+        "his chariot-wheels?  You blocks, you stones, you worse than senseless "
+        "things!  O you hard hearts, you cruel men of Rome, Knew you not "
+        "Pompey? "
+        "Many a time and oft Have you climb'd up to walls and battlements, To "
+        "towers and windows, yea, to chimney-tops, Your infants in your arms, "
+        "Caesar's trophies. I'll about, And drive away the vulgar from the "
+        "streets: So do you too, where you perceive them thick.  These growing "
+        "feathers pluck'd from Caesar's wing Will make him fly an ordinary "
+        "pitch, Who else would soar above the view of men And keep us all in "
+        "servile fearfulness. Exeunt"};
+
+    num_original_bytes_ = sizeof(raw_data) - 1;
+    original_content_ = new ustore::byte_t[num_original_bytes_];
+    std::memcpy(original_content_, raw_data, num_original_bytes_);
+
+    ustore::AdvancedNodeBuilder builder;
+    ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
+    builder.Splice(0, 0, seg);
+    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
+  }
+
+  virtual void TearDown() {
+    delete[] original_content_;
+    NodeBuilderEnv::TearDown();
+  }
+
+  void TestTripleRemove(size_t idx1, size_t idx2, size_t idx3,
+                      bool isVerbose = false) {
+    verbose = isVerbose;
+
+    const size_t num_bytes_removed1 = 1;
+    const size_t num_bytes_removed2 = 2;
+    const size_t num_bytes_removed3 = 4;
+
+    // Testing for validity
+    ASSERT_LE(size_t(0), idx1);
+    ASSERT_LE(idx1 + num_bytes_removed1, idx2);
+    ASSERT_LE(idx2 + num_bytes_removed2, idx3);
+    ASSERT_LE(idx3, num_original_bytes_);
+
+    size_t expected_num_bytes = 0;
+    const ustore::byte_t* expected_result =
+        ustore::MultiSplice(original_content_,
+                            num_original_bytes_,
+                            {idx1, idx2, idx3},
+
+                            {num_bytes_removed1,
+                             num_bytes_removed2,
+                             num_bytes_removed3},
+
+                            {nullptr, nullptr, nullptr},
+                            {0, 0, 0},
+                            &expected_num_bytes);
+
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+
+    const ustore::Hash result_hash =
+        builder.Remove(idx1, num_bytes_removed1)
+               .Remove(idx2, num_bytes_removed2)
+               .Remove(idx3, num_bytes_removed3)
+               .Commit(*ustore::BlobChunker::Instance(), true);
+
+    Test_Same_Content(result_hash, loader_, expected_result);
+    Test_Tree_Integrity(result_hash, loader_);
+
+    delete[] expected_result;
+  }
+
+  // Test on splicing on idx1, idx2, id3
+  // requirement on idxs
+  // idx1 + 1 < idx2 and idx2 + 2 < idx3
+  void TestTripleSplice(size_t idx1, size_t idx2, size_t idx3,
+                        bool isVerbose = false) {
+    verbose = isVerbose;
+
+    const ustore::byte_t inserted_data1[] =
+        ", indeed, sir, a surgeon to old shoes; when they are in";
+    const size_t num_bytes_inserted1 = sizeof(inserted_data1) - 1;
+    const size_t num_bytes_removed1 = 1;
+
+    const ustore::byte_t inserted_data2[] =
+        {"is thy leather apron and thy rule?  What dost thou with thy best"
+        "apparel on?  You, sir, what trade are you?  Second Commoner Truly, "};
+    const size_t num_bytes_inserted2 = sizeof(inserted_data2) - 1;
+    const size_t num_bytes_removed2 = 2;
+
+    const ustore::byte_t inserted_data3[] =
+        {"SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
+        "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
+        "this "};
+
+    const size_t num_bytes_inserted3 = sizeof(inserted_data3) - 1;
+    const size_t num_bytes_removed3 = 4;
+
+    // Testing for validity
+    ASSERT_LE(size_t(0), idx1);
+    ASSERT_LE(idx1 + num_bytes_removed1, idx2);
+    ASSERT_LE(idx2 + num_bytes_removed2, idx3);
+    ASSERT_LE(idx3, num_original_bytes_);
+
+    size_t expected_num_bytes = 0;
+    const ustore::byte_t* expected_result =
+        ustore::MultiSplice(original_content_,
+                            num_original_bytes_,
+                            {idx1, idx2, idx3},
+
+                            {num_bytes_removed1,
+                             num_bytes_removed2,
+                             num_bytes_removed3},
+
+                            {inserted_data1,
+                             inserted_data2,
+                             inserted_data3},
+
+                            {num_bytes_inserted1,
+                             num_bytes_inserted2,
+                             num_bytes_inserted3},
+
+                            &expected_num_bytes);
+
+
+
+    ustore::FixedSegment seg1(inserted_data1,
+                              num_bytes_inserted1,
+                              1);
+
+    ustore::FixedSegment seg2(inserted_data2,
+                              num_bytes_inserted2,
+                              1);
+
+
+    ustore::FixedSegment seg3(inserted_data3,
+                              num_bytes_inserted3,
+                              1);
+
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+
+    const ustore::Hash result_hash =
+        builder.Splice(idx1, num_bytes_removed1, seg1)
+               .Splice(idx2, num_bytes_removed2, seg2)
+               .Splice(idx3, num_bytes_removed3, seg3)
+               .Commit(*ustore::BlobChunker::Instance(), true);
+
+    Test_Same_Content(result_hash, loader_, expected_result);
+    Test_Tree_Integrity(result_hash, loader_);
+
+    delete[] expected_result;
+  }
+
+
+  void TestTripleInsert(size_t idx1, size_t idx2, size_t idx3,
+                        bool isVerbose = false) {
+    verbose = isVerbose;
+
+    const ustore::byte_t inserted_data1[] =
+        ", indeed, sir, a surgeon to old shoes; when they are in";
+    const size_t num_bytes_inserted1 = sizeof(inserted_data1) - 1;
+    const size_t num_bytes_removed1 = 0;
+
+    const ustore::byte_t inserted_data2[] =
+        {"is thy leather apron and thy rule?  What dost thou with thy best"
+        "apparel on?  You, sir, what trade are you?  Second Commoner Truly, "};
+    const size_t num_bytes_inserted2 = sizeof(inserted_data2) - 1;
+    const size_t num_bytes_removed2 = 0;
+
+    const ustore::byte_t inserted_data3[] =
+        {"SCENE I. Rome. A street.  Enter FLAVIUS, MARULLUS, and certain "
+        "Commoners FLAVIUS Hence! home, you idle creatures get you home: Is "
+        "this "};
+
+    const size_t num_bytes_inserted3 = sizeof(inserted_data3) - 1;
+    const size_t num_bytes_removed3 = 0;
+
+    // Testing for validity
+    ASSERT_LE(size_t(0), idx1);
+    ASSERT_LE(idx1 + num_bytes_removed1, idx2);
+    ASSERT_LE(idx2 + num_bytes_removed2, idx3);
+    ASSERT_LE(idx3, num_original_bytes_);
+
+    size_t expected_num_bytes = 0;
+    const ustore::byte_t* expected_result =
+        ustore::MultiSplice(original_content_,
+                            num_original_bytes_,
+                            {idx1, idx2, idx3},
+
+                            {num_bytes_removed1,
+                             num_bytes_removed2,
+                             num_bytes_removed3},
+
+                            {inserted_data1,
+                             inserted_data2,
+                             inserted_data3},
+
+                            {num_bytes_inserted1,
+                             num_bytes_inserted2,
+                             num_bytes_inserted3},
+
+                            &expected_num_bytes);
+
+    ustore::FixedSegment seg1(inserted_data1,
+                              num_bytes_inserted1,
+                              1);
+
+    ustore::FixedSegment seg2(inserted_data2,
+                              num_bytes_inserted2,
+                              1);
+
+
+    ustore::FixedSegment seg3(inserted_data3,
+                              num_bytes_inserted3,
+                              1);
+
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+
+    const ustore::Hash result_hash =
+        builder.Insert(idx1, seg1)
+               .Insert(idx2, seg2)
+               .Insert(idx3, seg3)
+               .Commit(*ustore::BlobChunker::Instance(), true);
+
+
+    Test_Same_Content(result_hash, loader_, expected_result);
+    Test_Tree_Integrity(result_hash, loader_);
+
+    delete[] expected_result;
+  }
+
+  ustore::Hash root_hash_;
+  size_t num_original_bytes_;
+  ustore::byte_t* original_content_;
+};
+
+TEST_F(AdvancedNodeBuilderComplex, Init) {
+  Test_Tree_Integrity(root_hash_, loader_);
+  Test_Same_Content(root_hash_, loader_, original_content_);
+}
+
+/* Setup a normal Prolley tree as followed:
+                    2                       (# of Entry in MetaChunk)
+|---------------------------------------|
+  2                   8                     (# of Entry in MetaChunk)
+|--- |  |-------------------------------|
+67  38  193  183  512  320  53  55  74  256 (# of Byte in BlobChunk) */
+
+TEST_F(AdvancedNodeBuilderComplex, Case1) {
+/* Case 1:
+   The first two operation on first chunk
+   The third on chunk far away
+*/
+  TestTripleSplice(0, 10, 150);
+  TestTripleRemove(0, 10, 150);
+  TestTripleInsert(0, 10, 150);
+}
+
+TEST_F(AdvancedNodeBuilderComplex, Case2) {
+/* Case 2:
+  Three operation on the first three chunks
+*/
+  TestTripleSplice(10, 100, 150);
+  TestTripleRemove(10, 100, 150);
+  TestTripleInsert(10, 100, 150);
+}
+
+TEST_F(AdvancedNodeBuilderComplex, Case3) {
+/* Case 3:
+  Three operation on the same chunk
+*/
+  TestTripleSplice(310, 330, 350);
+  TestTripleRemove(310, 330, 350);
+  TestTripleInsert(310, 330, 350);
+}
+
+TEST_F(AdvancedNodeBuilderComplex, Case4) {
+/* Case 4:
+  First and second operation on the same chunk
+  Third operation on seq end
+*/
+  TestTripleSplice(310, 330, num_original_bytes_);
+  TestTripleRemove(310, 330, num_original_bytes_);
+  TestTripleInsert(310, 330, num_original_bytes_);
+}
+
+TEST_F(AdvancedNodeBuilderComplex, Case5) {
+/* Case 5:
+  Three operation on the first entry of thre continuous chunk
+*/
+  TestTripleSplice(67, 105, 293);
+  TestTripleRemove(67, 105, 293);
+  TestTripleInsert(67, 105, 293);
+}
+
+TEST_F(AdvancedNodeBuilderComplex, Case6) {
+/* Case 6:
+  Three operation on the last entry of thre continuous chunk
+*/
+  TestTripleSplice(66, 104, 292);
+  TestTripleRemove(66, 104, 292);
+  TestTripleInsert(66, 104, 292);
+}
+
+TEST_F(AdvancedNodeBuilderComplex, Case7) {
+/* Case 7:
+  Three operation on pure random
+*/
+  TestTripleSplice(166, 304, 492);
+  TestTripleRemove(266, 504, 522);
+  TestTripleInsert(626, 704, 892);
+}
+
+TEST_F(AdvancedNodeBuilderComplex, Case8) {
+/* Case 8:
+  Three operation continuously
+*/
+  TestTripleSplice(166, 167, 169);
+  TestTripleRemove(266, 267, 269);
+}
+
 #endif  // TEST_NODEBUILDER

@@ -34,7 +34,7 @@ OrderedKey BlobNode::key(size_t idx) const {
   return OrderedKey();
 }
 
-size_t BlobNode::GetIdxForKey(const OrderedKey& key) const {
+uint64_t BlobNode::FindIndexForKey(const OrderedKey& key,                                   ChunkLoader* loader) const {
   LOG(FATAL) << "Not Supported to Get Blob Elemeny by Key. ";
   return 0;
 }

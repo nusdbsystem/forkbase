@@ -3,6 +3,7 @@
 #ifndef USTORE_NODE_NODE_BUILDER_H_
 #define USTORE_NODE_NODE_BUILDER_H_
 
+#include <list>
 #include <memory>
 #include <vector>
 
@@ -105,6 +106,101 @@ class NodeBuilder : private Noncopyable {
   // whether the built entry is fixed length
   // type blob: true
   const bool isFixedEntryLen_;
+};
+
+class AdvancedNodeBuilder : Noncopyable  {
+/* A node builder that can support multiple operation in a single transaction
+To construct a new prolly tree:
+  AdvancedNodeBuilder nb;
+  const Hash hash = nb.Insert(0, segment).Commit();
+To work on an existing prolly tree:
+  AdvancedNodeBuilder nb(root, loader);
+  const Hash hash = nb.Insert(0, segment)
+                      .Splice(1, 4, segment)
+                      .Remove(4, 6)
+                      .Commit();
+*/
+ public:
+  AdvancedNodeBuilder(const Hash& root, ChunkLoader* loader_);
+
+  // ctor to create a prolly tree from start
+  AdvancedNodeBuilder();
+
+  inline AdvancedNodeBuilder& Insert(uint64_t start_idx,
+                                     const std::vector<const Segment*>& segs) {
+    return Splice(start_idx, 0, segs);
+  }
+
+  inline AdvancedNodeBuilder& Insert(uint64_t start_idx,
+                                     const Segment& seg) {
+    return Splice(start_idx, 0, {&seg});
+  }
+
+  inline AdvancedNodeBuilder& Remove(uint64_t start_idx,
+                                     uint64_t num_delete) {
+    return Splice(start_idx, num_delete, {});
+  }
+
+  // segs can be empty.
+  AdvancedNodeBuilder& Splice(uint64_t start_idx, uint64_t num_delete,
+                              const std::vector<const Segment*>& segs);
+
+  AdvancedNodeBuilder& Splice(uint64_t start_idx, uint64_t num_delete,
+                              const Segment& seg) {
+    return  Splice(start_idx, num_delete, {&seg});
+  }
+
+  Hash Commit(const Chunker& chunker, bool isFixedEntryLen);
+
+ private:
+  // relevant information to perform one spliced operation
+  struct SpliceOperand {
+    uint64_t start_idx;
+    // the cursor points to the position for splicing
+    std::unique_ptr<NodeCursor> cursor;
+    // the number of entries to delete
+    size_t num_delete;
+    // a vector of segments to append
+    // can be empty
+    std::vector<const Segment*> appended_segs;
+  };
+
+  explicit AdvancedNodeBuilder(size_t level);
+
+  AdvancedNodeBuilder(size_t level, const Hash& root, ChunkLoader* loader_);
+
+  // return the parent builder,
+  //   create one if not exists
+  AdvancedNodeBuilder* parent();
+
+  // Create the segment from chunk start until cursor (exclusive)
+  // Place this segment into created_segs
+  const Segment* InitPreCursorSeg(bool isFixedEntryLen,
+                                  const NodeCursor& cursor);
+
+  // Create an empty segment from the element pointed by the cursor
+  // Place this segment into created_segs
+  Segment* InitCursorSeg(bool isFixedEntryLen, const NodeCursor& cursor);
+
+  // Make chunks based on the entries in the segments
+  // Write the created chunk to chunk store
+  // Reset the rolling hasher
+  // return the created chunkinfo
+  ChunkInfo HandleBoundary(const Chunker& chunker,
+      const std::vector<const Segment*>& segments);
+
+  // private members
+  size_t level_;
+
+  const Hash root_;
+  ChunkLoader* loader_;
+
+  std::unique_ptr<RollingHasher> rhasher_;
+  std::unique_ptr<AdvancedNodeBuilder> parent_builder_;
+  std::list<SpliceOperand> operands_;
+
+  // A vector to collect and own segs created by this nodebuilder
+  std::vector<std::unique_ptr<const Segment>> created_segs_;
 };
 }  // namespace ustore
 

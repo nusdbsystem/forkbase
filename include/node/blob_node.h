@@ -43,7 +43,8 @@ class BlobNode : public LeafNode {
   }
   OrderedKey key(size_t idx) const override;
   size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const override;
-  size_t GetIdxForKey(const OrderedKey& key) const override;
+  uint64_t FindIndexForKey(const OrderedKey& key,
+                           ChunkLoader* loader) const override;
 };
 
 }  // namespace ustore

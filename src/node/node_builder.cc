@@ -367,4 +367,596 @@ Segment* NodeBuilder::SegAtCursor() {
   created_segs_.emplace_back(seg);
   return seg;
 }
+
+/////////////////////////////////////////////////////////
+// Advanced Node Builder
+AdvancedNodeBuilder::AdvancedNodeBuilder(const Hash& root,
+                                         ChunkLoader* loader) :
+    AdvancedNodeBuilder(0, root, loader) {}
+
+AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level,
+                                         const Hash& root,
+                                         ChunkLoader* loader) :
+    level_(level),
+    root_(root), loader_(loader),
+#ifdef TEST_NODEBUILDER
+    rhasher_(RollingHasher::TestHasher()),
+#else
+    rhasher_(new RollingHasher()),
+#endif
+    parent_builder_(),  // init with empty
+    operands_(),  // init with empty list
+    created_segs_() {}  // init with empty created segs
+
+AdvancedNodeBuilder::AdvancedNodeBuilder() :
+    AdvancedNodeBuilder(0) {}
+
+AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level) :
+    AdvancedNodeBuilder(level, Hash(), nullptr) {}
+
+AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
+    uint64_t start_idx, uint64_t num_delete,
+    const std::vector<const Segment*>& segs) {
+
+  std::unique_ptr<NodeCursor> cr;
+  uint64_t total_num_elements = 0;
+
+  do {
+    if (root_.empty()) {
+      if (start_idx > 0 || num_delete > 0) {
+        LOG(WARNING) << " Can not splice on an empty tree "
+                     << " from index " << start_idx
+                     << " to remove " << num_delete << " elements."
+                     << "\n"
+                     << " Operation Failed. ";
+        break;
+      }
+    } else {
+      NodeCursor* tmp_cr = new NodeCursor(root_, start_idx, loader_);
+
+      if (tmp_cr->empty()) {
+        LOG(WARNING) << "Start_idx exceeds the total number of elements."
+                     << "Or, the tree with root hash "
+                     << root_.ToBase32() << " does not exist. "
+                     << "\n"
+                     << " Operation Failed. ";
+        break;
+      }
+
+      cr.reset(tmp_cr);
+      total_num_elements =
+          SeqNode::CreateFromChunk(loader_->Load(root_))->numElements();
+    }
+
+    std::vector<const Segment*> operand_segs;
+
+    for (const Segment* seg : segs) {
+      if (!seg->empty()) operand_segs.push_back(seg);
+    }
+
+    SpliceOperand operand{start_idx,
+                          std::move(cr),
+                          num_delete,
+                          std::move(operand_segs)};
+
+    bool inserted = false;
+    uint64_t pre_start_idx = 0;
+    uint64_t pre_num_delete = 0;
+
+    // Insert the created operand into operand list based on start_idx order
+    auto it = operands_.begin();
+    for (; it != operands_.end(); ++it) {
+      if (it->start_idx < start_idx) {
+        // do nothing
+      } else if (it->start_idx == start_idx) {
+        LOG(WARNING) << "Previous Operation has already worked "
+                     << " on element with index "
+                     << start_idx << ".\n"
+                     << "Operation Failed.";
+        } else {
+      // for the case (it->start_idx > start_idx) {
+        if (pre_start_idx + pre_num_delete > start_idx) {
+          LOG(WARNING) << "Start_idx elements may already "
+                       << " be removed by previous splice operation. \n"
+                       << "Operation Failed.";
+
+          // actually NOT inserted
+          // make inserted true to exit the do-while loop
+          inserted = true;
+          break;
+        }
+        operands_.insert(it, std::move(operand));
+        inserted = true;
+      }
+      pre_start_idx = it->start_idx;
+      pre_num_delete = it->num_delete;
+    }
+
+    // insert at the end
+    if (!inserted) {
+      CHECK(it == operands_.end());
+      if (start_idx + num_delete > total_num_elements) {
+         LOG(WARNING) << "The index of elements to remove exceeds "
+                      << " the total number of elements. \n";
+      }
+      operands_.insert(it, std::move(operand));
+    }
+  } while (0);
+  return *this;
+}
+
+// Return the root hash of the updated tree
+//   the hash owns its internal data
+Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
+                                 bool isFixedEntryLen) {
+  DLOG(INFO) << "\n\nStart to Commit Level " << level_;
+  if (operands_.size() == 0) {
+    if (root_.empty()) {
+      // Create a single node with empty contents
+      ChunkInfo chunk_info = HandleBoundary(chunker, {});
+      return chunk_info.chunk.hash().Clone();
+    } else {
+      LOG(WARNING) << "No Operation to Commit.";
+      return root_;
+    }
+  }
+
+#ifdef DEBUG
+  uint64_t pre_start_idx = 0;
+  for (const auto& operand : operands_) {
+    if (!operand.cursor && level_ == 0) {
+      // operation works on a fresh new tree
+      DCHECK(root_.empty());
+      DCHECK_EQ(0, operand.start_idx);
+      DCHECK_EQ(0, operand.num_delete);
+      // must have segments to append
+      DCHECK_LT(0, operand.appended_segs.size());
+      DCHECK_EQ(1, operands_.size());
+    }
+    // start_idx of operands are in strict ascending order
+    DCHECK(operand.start_idx == 0 || pre_start_idx < operand.start_idx);
+
+    pre_start_idx = operand.start_idx;
+  }
+#endif
+
+  /* for each operand, the tree update consists of the following three phases:
+  Phase 1: * Create the segment from chunk start until cursor (exclusive)
+           * Only Execute this phase if new_round = true
+  Phase 2: * Phase 2.1: Remove elements by skipping cursor
+             * During the traversing, if reaching the element pointed by the cursor
+               in the next operand, go to phase 2 directly for next operand. new_round is set to false
+           * Phase 2.2: Traverse and append the appended segments
+             * Detect Boundary pattern and create operands for parent builder
+  Phase 3: * Traverse the original subsequent elements until a boundary is detected
+             or the sequence reaches the end
+           * During the traversing, if reaching the element pointed by the cursor
+             in the next operand, go to phase 2 directly for next operand. new_round is set to false
+  */
+
+  bool new_round = true;
+  rhasher_->ClearLastBoundary();
+
+  // a vector of segments to make chunk
+  std::vector<const Segment*> chunk_segs;
+
+  // curent segment to work on for phase 2
+  const Segment* p2_work_seg = nullptr;
+  Chunk last_created_chunk;
+
+// operands to be constructed for parent node builder
+  uint64_t parent_operand_start_idx = 0;
+  // number of entries to remove by parent builder
+  //   equal to the number of boundary crossed in current builder
+  uint64_t parent_num_delete = 0;
+  std::unique_ptr<NodeCursor> parent_cr;
+  std::vector<const Segment*> parent_appended_segs;
+
+  for (auto operand_it = operands_.begin();
+       operand_it != operands_.end();
+       ++operand_it) {
+    DLOG(INFO) << "\n===========NEW Iteration=============\n"
+               << "New Operand at starting index: "
+               << operand_it->start_idx
+               << " to remove " << operand_it->num_delete
+               << " elements and append " << operand_it->appended_segs.size()
+               << " segments.";
+    bool next_cr_encountered = false;
+
+    // construct iterator to next operand
+    ++operand_it;
+    std::list<SpliceOperand>::iterator next_operand_it(operand_it);
+    --operand_it;
+
+#ifdef DEBUG
+    if (next_operand_it == operands_.end()) {
+      DLOG(INFO) << "Next Operand: End ";
+    }
+#endif
+
+    // Point to the next seg in operand appended segs
+    //   to handle after p2_work_seg
+    size_t segIdx = 0;
+
+    // the operand has nonempty cursor
+    if (operand_it->cursor &&
+        operand_it->cursor->node()->numEntries()) {
+      if (new_round) {
+        // Phase 1
+        DLOG(INFO) << "\nPhase 1: \tStarting New Round.";
+
+        // Initialize the operand for parent builder
+        parent_operand_start_idx = operand_it->start_idx;
+        parent_num_delete = 0;
+        parent_appended_segs.clear();
+
+        auto parent_cursor = operand_it->cursor->parent();
+        if (parent_cursor) {
+          parent_cr.reset(new NodeCursor(*parent_cursor));
+        }
+
+        DCHECK(chunk_segs.empty());
+        chunk_segs.clear();
+
+        p2_work_seg = InitPreCursorSeg(isFixedEntryLen, *operand_it->cursor);
+      } else {
+        // If NOT new round,
+        // p2_work_seg = p3_work_seg in previous operand iteration
+        // No need to create precursor seg
+        if (!p2_work_seg) {
+          if (operand_it->appended_segs.size() > 0) {
+            p2_work_seg = operand_it->appended_segs[0];
+            segIdx = 1;
+          }
+        }  // if !p2_work_sg
+      }  // end if (operand_it->cursor)
+
+      // Phase 2.1: Remove elements by traversing cursor
+      //
+      //   if encountering the cursor in the next operand
+      //     put current operand appended segs into
+      //     the head of appended segs in the next operand
+      DLOG(INFO) << "\nPhase 2.1 Skipping Entries At Cursor Entry Index "
+                 << operand_it->cursor->idx()
+                 << " Total Entries: "
+                 << operand_it->cursor->node()->numEntries();
+
+      for (uint64_t i = 1; i <= operand_it->num_delete; ++i) {
+        operand_it->cursor->Advance(false);
+        if (operand_it->cursor->isEnd()) {
+          // cursor is at chunk end.
+          // When crossing a chunk boundary,
+          //   one more parent entry needs to remove
+          ++parent_num_delete;
+          bool isSeqEnd = !operand_it->cursor->Advance(true);
+
+          if (isSeqEnd && i < operand_it->num_delete) {
+            DLOG(INFO) << "Only Remove " << i << " entries to reach seq end."
+                       << " out of " << operand_it->num_delete
+                       << " required.";
+            break;
+          }
+        }  // end if chunkEnd
+
+        next_cr_encountered =
+          next_operand_it != operands_.end() &&
+          next_operand_it->cursor &&
+          *next_operand_it->cursor == *operand_it->cursor;
+
+        if (next_cr_encountered) {
+          DLOG(INFO) << "\tNext Cursor Encountered " << i
+                     << " elements after current cursor";
+
+          next_operand_it->appended_segs.insert(
+            next_operand_it->appended_segs.begin(),
+            operand_it->appended_segs.begin(),
+            operand_it->appended_segs.end());
+           new_round = false;
+           break;  // will restart for a new iteration
+        }
+      }  // end for num_delete
+    } else {
+      // if no cursor at level 0,
+      //   the prolley tree is built from scratch
+      // must have a single segment to append
+      DCHECK(level_ != 0 || operands_.size() == 1);
+      DCHECK_LT(0, operands_.size());
+      p2_work_seg = operand_it->appended_segs[0];
+      segIdx = 1;
+    }  // if operand_it->cursor
+
+    // start from for loop start
+    if (next_cr_encountered) {continue; }
+
+    // Phase 2.2: Append for appended segs in the operand
+    DLOG(INFO) << "\nPhase 2.2 Appending Segments.";
+    while (p2_work_seg) {
+      bool hasBoundary = false;
+      DLOG(INFO) << "\t# of entries in p2_work_seg: "
+                 << p2_work_seg->numEntries();
+      // DLOG(INFO) << "\t# of entries in p2_work_seg: " << num_entries;
+
+      size_t boundary_pos =
+          rhasher_->TryHashBytes(p2_work_seg->data(),
+                                 p2_work_seg->numBytes());
+      size_t entryIdx = p2_work_seg->PosToIdx(boundary_pos);
+
+      if (rhasher_->CrossedBoundary()) {
+        // Start to handle chunking
+        hasBoundary = true;
+
+        auto splitted_segs = p2_work_seg->Split(entryIdx + 1);
+        chunk_segs.push_back(splitted_segs.first.get());
+
+        ChunkInfo chunk_info = HandleBoundary(chunker, chunk_segs);
+        last_created_chunk = std::move(chunk_info.chunk);
+
+        parent_appended_segs.push_back(chunk_info.meta_seg.get());
+        created_segs_.push_back(std::move(chunk_info.meta_seg));
+
+        chunk_segs.clear();
+
+        p2_work_seg = splitted_segs.second.get();
+        created_segs_.push_back(std::move(splitted_segs.first));
+        created_segs_.push_back(std::move(splitted_segs.second));
+
+      }
+
+      // Detect boundary at segment middle
+      //   Start from loop head to handle the leftover segment after splitting
+      if (hasBoundary && !p2_work_seg->empty()) continue;
+
+      // No boundary at this segment
+      //   append into chunk_segs
+      if (!p2_work_seg->empty()) {
+        chunk_segs.push_back(p2_work_seg);
+      }
+
+      if (segIdx < operand_it->appended_segs.size()) {
+        p2_work_seg = operand_it->appended_segs[segIdx];
+        ++segIdx;
+      } else {
+        p2_work_seg = nullptr;
+      }  // end of if
+    }  // end of while (true)
+
+    // Phase 3: Concat subsequent elements,
+    //   Detect Boundary and Create chunk accordingly
+    DLOG(INFO) << "\nPhase 3: Concat Subsequent Entries";
+    Segment* p3_work_seg = nullptr;
+
+    if (operand_it->cursor && !operand_it->cursor->isEnd()) {
+      DLOG(INFO) << "\tCurrent operand cursor entry idx: "
+                 << operand_it->cursor->idx();
+      p3_work_seg = InitCursorSeg(isFixedEntryLen, *operand_it->cursor);
+      bool advanced = false;
+      bool isSeqEnd = false;
+      do {
+        bool advanced2NextChunk = advanced && operand_it->cursor->idx() == 0;
+        bool justHandleBoundary = rhasher_->byte_hashed() == 0;
+
+        if (justHandleBoundary) {
+          // if boundary is just handled in previous phase
+          //   the first p3_work_seg is init with current cursor, not nullptr.
+          CHECK(!advanced || p3_work_seg == nullptr);
+
+          if (advanced2NextChunk) {
+            ++parent_num_delete;
+            break;  // break the do-while loop to end phase 3
+          }
+          if (advanced) {
+            p3_work_seg = InitCursorSeg(isFixedEntryLen, *operand_it->cursor);
+          }
+        } else {
+          if (advanced2NextChunk) {
+            ++parent_num_delete;
+            CHECK(!p3_work_seg->empty());
+            chunk_segs.push_back(p3_work_seg);
+
+            p3_work_seg = InitCursorSeg(isFixedEntryLen, *operand_it->cursor);
+          }  // end if advanced2NextChunk
+        }  // end if justHandleBoundary
+
+      // Detecting identical cursor
+        next_cr_encountered =
+          next_operand_it != operands_.end() &&
+          next_operand_it->cursor &&
+          *next_operand_it->cursor == *operand_it->cursor;
+
+        // if encountering the next cursor
+        //   Copy the p2_work_seg from p3_work_seg
+        //   to for phase 2 in next iteration
+        if (next_cr_encountered) {
+          DLOG(INFO) << "\tNext Cursor Encountered at entry idx"
+                     << operand_it->cursor->idx();
+
+          chunk_segs.push_back(p3_work_seg);
+          p2_work_seg = nullptr;
+          new_round = false;
+          break;
+        }
+
+        size_t entry_num_bytes = operand_it->cursor->numCurrentBytes();
+        p3_work_seg->prolong(entry_num_bytes);
+        rhasher_->HashBytes(operand_it->cursor->current(), entry_num_bytes);
+
+        // Create Chunk and append metaentries to upper builders
+        //   if detecing boundary
+        if (rhasher_->CrossedBoundary()) {
+          // Create chunk seg
+          CHECK(!p3_work_seg->empty());
+          chunk_segs.push_back(p3_work_seg);
+
+          ChunkInfo chunk_info = HandleBoundary(chunker, chunk_segs);
+          last_created_chunk = std::move(chunk_info.chunk);
+
+          parent_appended_segs.push_back(chunk_info.meta_seg.get());
+          created_segs_.push_back(std::move(chunk_info.meta_seg));
+
+          chunk_segs.clear();
+
+          p3_work_seg = nullptr;  // To be Init next iteration
+        }  // end if rhasher crossed boundary
+
+        advanced = true;
+        isSeqEnd = !operand_it->cursor->Advance(true);
+        // DLOG(INFO) << "||Current cursor entry idx: "
+        //            << operand_it->cursor->idx() << "||";
+
+        // iteration continues until both cursor and operand_it
+        //   have reached the end
+      } while (!(isSeqEnd && next_operand_it == operands_.end()));
+
+      if (next_cr_encountered) {continue; }  // start from for loop
+    }  // end if (operand_it->cursor && !operand_it->cursor->isEnd())
+
+    if (p3_work_seg != nullptr && !p3_work_seg->empty()) {
+      chunk_segs.push_back(p3_work_seg);
+    }
+
+    if (last_created_chunk.empty() || chunk_segs.size() > 0) {
+      DLOG(INFO) << "Detecting Implicit Boundary at seq end.";
+      // this could happen if the last entry of sequence
+      // cannot form a boundary, we still need to make a implicit chunk
+      // and append a metaentry to upper builder
+      DCHECK(!operand_it->cursor ||
+            (operand_it->cursor->isEnd() &&
+             !operand_it->cursor->Advance(true)));
+
+      // this operand must be the last one
+      DCHECK(next_operand_it == operands_.end());
+
+      // remove the last chunk
+      ++parent_num_delete;
+
+      ChunkInfo chunk_info = HandleBoundary(chunker, chunk_segs);
+      last_created_chunk = std::move(chunk_info.chunk);
+      parent_appended_segs.push_back(chunk_info.meta_seg.get());
+      created_segs_.push_back(std::move(chunk_info.meta_seg));
+    }
+
+    DLOG(INFO) << "\n Final Phase: ";
+    DLOG(INFO) << "\tPush operand for parent: "
+               << " start_idx: " << parent_operand_start_idx
+               << " num_delete: " << parent_num_delete
+               << " # appended segs: " << parent_appended_segs.size();
+
+    parent()->operands_.push_back({parent_operand_start_idx,
+                                  std::move(parent_cr),
+                                  parent_num_delete,
+                                  parent_appended_segs});
+    new_round = true;
+    rhasher_->ClearLastBoundary();
+  }   // end for operands
+
+
+  operands_.clear();
+  CHECK(!last_created_chunk.empty());
+
+  // upper node builder would build a tree node with a single metaentry
+  //   This node will be excluded from final prolley tree
+  // DLOG(INFO) << "Finish one level commiting.\n";
+  Hash root_key(last_created_chunk.hash().Clone());
+
+  bool valid_parent_builder = false;
+
+  // invalid parent builder must satisfy ALL the following conditions :
+  // * It contain exactly one operand
+  // * This operand contains only one segment
+  // * This operand cursor is nullptr
+  do {
+    if (parent()->operands_.size() > 1) {
+      valid_parent_builder = true;
+      break;
+    }
+    if (parent_builder_->operands_.begin()->cursor) {
+      valid_parent_builder = true;
+      break;
+    }
+
+    if (parent_builder_->operands_.begin()->appended_segs.size() > 1) {
+      valid_parent_builder = true;
+      break;
+    }
+  } while (0);
+
+  if (valid_parent_builder) {
+    root_key = parent()->Commit(*MetaChunker::Instance(), false);
+  }
+  return root_key;
+}
+
+AdvancedNodeBuilder* AdvancedNodeBuilder::parent() {
+  if (!parent_builder_) {
+    parent_builder_.reset(new AdvancedNodeBuilder(level_ + 1, root_, loader_));
+  }
+  return parent_builder_.get();
+}
+
+Segment* AdvancedNodeBuilder::InitCursorSeg(bool isFixedEntryLen,
+                                            const NodeCursor& cursor) {
+  Segment* seg = nullptr;
+  if (isFixedEntryLen) {
+    seg = new FixedSegment(cursor.current(),
+                           cursor.numCurrentBytes());
+  } else {
+    seg = new VarSegment(cursor.current());
+  }
+  created_segs_.push_back(std::unique_ptr<const Segment>(seg));
+  return seg;
+}
+
+const Segment* AdvancedNodeBuilder::InitPreCursorSeg(
+    bool isFixedEntryLen, const NodeCursor& cursor) {
+  DLOG(INFO) << "Init Precursor";
+  NodeCursor cr(cursor);
+  int32_t original_idx = cr.idx();
+
+  cr.seek(0);  // place the cr at start of SeqNode
+  Segment* pre_cr_seg = InitCursorSeg(isFixedEntryLen, cr);
+
+  if (isFixedEntryLen) {
+    // if the entry is fixed length, no need to prolong each previous
+    // entry one by one, we can prolong the segment from the head of the chunk
+    // to the original_idx directly.
+    const byte_t* addr = cr.current();
+    cr.seek(original_idx);
+    pre_cr_seg->prolong(cr.current() - addr);
+  } else {
+    while (cr.idx() != original_idx) {
+      pre_cr_seg->prolong(cr.numCurrentBytes());
+      cr.Advance(false);
+    }
+  }
+
+  return pre_cr_seg;
+}
+
+
+ChunkInfo AdvancedNodeBuilder::HandleBoundary(
+    const Chunker& chunker, const std::vector<const Segment*>& segments) {
+  // DLOG(INFO) << "Start Handing Boundary. ";
+  ChunkInfo chunk_info = chunker.Make(segments);
+  rhasher_->ClearLastBoundary();
+  // Dump chunk into storage here
+  store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
+
+#ifdef DEBUG
+  size_t total_entries = 0;
+  for (const auto& seg : segments) {
+    total_entries += seg->numEntries();
+  }
+
+  DLOG(INFO) << "Handle Boundary For "
+             << segments.size() << " segments with total "
+             << total_entries << " entries. ";
+
+  for (size_t s = 0; s < segments.size(); s++) {
+    DLOG(INFO) << "\tSeg " << s << ": "
+               << segments[s]->numEntries();
+  }
+#endif
+  return chunk_info;
+}
+
 }  // namespace ustore

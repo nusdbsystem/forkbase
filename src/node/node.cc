@@ -132,6 +132,24 @@ size_t MetaNode::len(size_t idx) const {
   return entry.numBytes();
 }
 
+
+uint64_t MetaNode::FindIndexForKey(const OrderedKey& key,
+                                   ChunkLoader* loader) const {
+  uint64_t num_elements_sum = 0;
+  for (const size_t offset : offsets_) {
+    MetaEntry entry(chunk_->data() + offset);
+
+    if (key <= entry.orderedKey()) {
+       const Chunk* chunk = loader->Load(entry.targetHash());
+       auto seq_node = SeqNode::CreateFromChunk(chunk);
+       return num_elements_sum + seq_node->FindIndexForKey(key, loader);
+    }
+
+     num_elements_sum += entry.numElements();
+  }
+  return num_elements_sum;
+ }
+
 uint64_t MetaNode::entryOffset(size_t idx) const {
   // make sure 0 <= idx < numElements()
   CHECK_GE(idx, size_t(0));

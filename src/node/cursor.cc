@@ -151,7 +151,7 @@ NodeCursor::NodeCursor(const Hash& hash, const OrderedKey& key,
   //   make cursor point to the end of leaf
   //   entry_idx = numEntries()
   const LeafNode* lnode = dynamic_cast<const LeafNode*>(seq_node.get());
-  entry_idx = lnode->GetIdxForKey(key);
+  entry_idx = lnode->FindIndexForKey(key, ch_loader);
 
   seq_node_ = seq_node;
   idx_ = entry_idx;
@@ -474,6 +474,27 @@ size_t NodeCursor::numCurrentBytes() const {
     return 0;
   }
   return seq_node_->len(idx_);
+}
+
+// two cursor are equal if the following condition are ALL met:
+//   same idx
+//   point to the same seqnode
+//   same parent cursor
+bool NodeCursor::operator==(const NodeCursor& rhs) const {
+  bool equal = this->idx_ == rhs.idx_ &&
+               this->seq_node_->hash() ==
+               rhs.seq_node_->hash();
+  if (!equal) return false;
+
+  if (this->parent_cr_ == nullptr &&
+      rhs.parent_cr_ == nullptr) {
+    return true;
+  } else if (this->parent_cr_ == nullptr ||
+             rhs.parent_cr_ == nullptr) {
+    return false;
+  } else {
+    return *this->parent_cr_ == *rhs.parent_cr_;
+  }
 }
 
 }  // namespace ustore

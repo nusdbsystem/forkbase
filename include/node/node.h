@@ -8,6 +8,7 @@
 
 #include "chunk/chunk.h"
 #include "chunk/chunker.h"
+#include "chunk/chunk_loader.h"
 #include "node/orderedkey.h"
 #include "types/type.h"
 #include "utils/singleton.h"
@@ -53,6 +54,9 @@ class SeqNode : public UNode {
   virtual OrderedKey key(size_t idx) const = 0;
   // return the byte len of the idx-th entry
   virtual size_t len(size_t idx) const = 0;
+
+  virtual uint64_t FindIndexForKey(const OrderedKey& key,
+                                   ChunkLoader* loader) const = 0;
 };
 
 class MetaNode : public SeqNode {
@@ -85,6 +89,9 @@ class MetaNode : public SeqNode {
 
   // return the byte len of the idx-th entry
   size_t len(size_t idx) const override;
+
+  uint64_t FindIndexForKey(const OrderedKey& key,
+                           ChunkLoader* loader) const override;
 
   // Retreive the ChildHash in the MetaEntry
   // which contains the idx-th element rooted at this metanode
@@ -183,11 +190,6 @@ class LeafNode : public SeqNode {
   // return the number of bytes actually read
   virtual size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const = 0;
 
-  // get the idx of element with the smallest key
-  //   no smaller than the parameter key
-  // If key of all elements < parameter key,
-  //  return the number of entries.
-  virtual size_t GetIdxForKey(const OrderedKey& key) const = 0;
 };
 
 }  // namespace ustore
