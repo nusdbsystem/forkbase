@@ -48,7 +48,7 @@ class UCell : private Moveable {
   }
   inline Hash dataHash() const {
     if (type() == UType::kBlob || type() == UType::kList
-        || type() == UType::kMap)
+        || type() == UType::kMap || type() == UType::kSet)
       return Hash(node_->data());
     LOG(WARNING) << "The Ucell does not have data hash";
     return Hash();

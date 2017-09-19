@@ -10,6 +10,7 @@
 #include "types/client/vblob.h"
 #include "types/client/vlist.h"
 #include "types/client/vmap.h"
+#include "types/client/vset.h"
 #include "types/client/vstring.h"
 #include "utils/noncopyable.h"
 
@@ -30,6 +31,7 @@ class VMeta : private Moveable {
   VString String() const;
   VList List() const;
   VMap Map() const;
+  VSet Set() const;
 
   friend std::ostream& operator<<(std::ostream& os, const VMeta& obj);
 

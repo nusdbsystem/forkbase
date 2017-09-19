@@ -6,6 +6,7 @@
 #include "hash/hash.h"
 #include "node/blob_node.h"
 #include "node/map_node.h"
+#include "node/set_node.h"
 #include "node/list_node.h"
 #include "node/orderedkey.h"
 #include "utils/logging.h"
@@ -22,6 +23,8 @@ std::unique_ptr<const SeqNode>
       return std::unique_ptr<SeqNode>(new BlobNode(chunk));
     case ChunkType::kMap:
       return std::unique_ptr<SeqNode>(new MapNode(chunk));
+    case ChunkType::kSet:
+      return std::unique_ptr<SeqNode>(new SetNode(chunk));
     case ChunkType::kList:
       return std::unique_ptr<SeqNode>(new ListNode(chunk));
     default:

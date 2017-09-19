@@ -319,6 +319,9 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
   ErrorCode WriteMap(const Slice& key, const Value& val,
                      const Hash& prev_ver1, const Hash& prev_ver2,
                      Hash* ver);
+  ErrorCode WriteSet(const Slice& key, const Value& val,
+                     const Hash& prev_ver1, const Hash& prev_ver2,
+                     Hash* ver);
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
   inline void UpdateLatestVersion(const UCell& ucell) {

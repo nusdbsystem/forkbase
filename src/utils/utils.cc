@@ -55,11 +55,13 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kFailedCreateSString, "failed to create SString"},
   {ErrorCode::kFailedCreateSList, "failed to create SList"},
   {ErrorCode::kFailedCreateSMap, "failed to create SMap"},
+  {ErrorCode::kFailedCreateSSet, "failed to create SSet"},
   {ErrorCode::kInconsistentKey, "inconsistent values of key"},
   {ErrorCode::kInvalidValue, "invalid value"},
   {ErrorCode::kFailedModifySBlob, "failed to modify SBlob"},
   {ErrorCode::kFailedModifySList, "failed to modify SList"},
   {ErrorCode::kFailedModifySMap, "failed to modify SMap"},
+  {ErrorCode::kFailedModifySSet, "failed to modify SSet"},
   {ErrorCode::kIndexOutOfRange, "index out of range"},
   {ErrorCode::kTypeMismatch, "data types mismatch"},
   {ErrorCode::kKeyNotExists, "key does not exist"},
@@ -211,6 +213,31 @@ void Utils::Print(const UMap& map, const std::string& lsymbol,
   os << rsymbol;
 }
 
+void Utils::Print(const USet& set, const std::string& lsymbol,
+                  const std::string& rsymbol, const std::string& sep,
+                  const std::string& lentry, const std::string& rentry,
+                  bool elem_in_quote, size_t limit, std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = set.Scan();
+  auto f_print_it = [&]() {
+    os << lentry << quote << it.key() << quote << rentry;
+  };
+  os << lsymbol;
+  if (!it.end()) {
+    f_print_it();
+    size_t cnt(1);
+    for (it.next(); !it.end() && cnt++ < limit; it.next()) {
+      os << sep;
+      f_print_it();
+    }
+    size_t set_size = set.numElements();
+    if (set_size > limit) {
+      os << sep << "...(and " << (set_size - limit) << " more)";
+    }
+  }
+  os << rsymbol;
+}
+
 void Utils::PrintKeys(const UMap& map, const std::string& lsymbol,
                       const std::string& rsymbol, const std::string& sep,
                       bool elem_in_quote, std::ostream& os) {
@@ -226,6 +253,20 @@ void Utils::PrintKeys(const UMap& map, const std::string& lsymbol,
   os << rsymbol;
 }
 
+void Utils::PrintKeys(const USet& set, const std::string& lsymbol,
+                      const std::string& rsymbol, const std::string& sep,
+                      bool elem_in_quote, std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = set.Scan();
+  os << lsymbol;
+  if (!it.end()) {
+    os << quote << it.key() << quote;
+    for (it.next(); !it.end(); it.next()) {
+      os << sep << quote << it.key() << quote;
+    }
+  }
+  os << rsymbol;
+}
 // TODO(ruanpc): make it_diff.key() of DuallyDiffIndexIterator refer to
 //               it_diff.index() so that the following print function for
 //               diff of UList be the template function of PrintDiff.

@@ -91,3 +91,12 @@ meta -k basic -b no-master -F "Branch not exist"
 meta -k basic -b named-merge
 meta -k basic -v HZ5ZUKAD2OVCIP6QAGUYZRMPCIZFNIZW
 meta -k basic -v AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB -F "Version not exist"
+
+# Set type
+put -k basic -b master -x [b1,aaa] -p set
+insert -k basic -b master -e "insert example"
+delete -k basic -b master -e aaa
+get -k basic -b master
+insert -k basic -b master -e b1 -F "Can not insert the same key"
+delete -k basic -b master -e ccc -F "Key not exist"
+get -k basic -b master

@@ -19,6 +19,7 @@
 #include "types/type.h"
 #include "types/server/slist.h"
 #include "types/server/smap.h"
+#include "types/server/sset.h"
 
 namespace ustore {
 
@@ -234,6 +235,14 @@ class Utils {
                     bool elem_in_quote = false, size_t limit = max_size_t,
                     std::ostream& os = std::cout);
 
+  static void Print(const USet& set, const std::string& lsymbol = "[",
+                    const std::string& rsymbol = "]",
+                    const std::string& sep = ", ",
+                    const std::string& lentry = "(",
+                    const std::string& rentry = ")",
+                    bool elem_in_quote = false, size_t limit = max_size_t,
+                    std::ostream& os = std::cout);
+
   template<typename T>
   static void Print(
     const std::vector<T> elems, const std::string& lsymbol = "[",
@@ -242,6 +251,12 @@ class Utils {
     std::ostream& os = std::cout);
 
   static void PrintKeys(const UMap& map, const std::string& lsymbol = "[",
+                        const std::string& rsymbol = "]",
+                        const std::string& sep = ", ",
+                        bool elem_in_quote = false,
+                        std::ostream& os = std::cout);
+
+  static void PrintKeys(const USet& set, const std::string& lsymbol = "[",
                         const std::string& rsymbol = "]",
                         const std::string& sep = ", ",
                         bool elem_in_quote = false,
@@ -475,6 +490,12 @@ inline std::ostream& operator<<(std::ostream& os, const UList& obj) {
 inline std::ostream& operator<<(std::ostream& os, const UMap& obj) {
   Utils::Print(
     obj, "[", "]", ", ", "(", ")", "->", false, Utils::max_size_t, os);
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const USet& obj) {
+  Utils::Print(
+    obj, "[", "]", ", ", "(", ")", false, Utils::max_size_t, os);
   return os;
 }
 

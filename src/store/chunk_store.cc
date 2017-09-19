@@ -25,6 +25,7 @@ std::unordered_map<ChunkType, std::string> chunkTypeNames = {
   {ChunkType::kMeta, "Meta"},
   {ChunkType::kBlob, "Blob"},
   {ChunkType::kMap, "Map"},
+  {ChunkType::kSet, "Set"},
   {ChunkType::kList, "List"}
 };
 

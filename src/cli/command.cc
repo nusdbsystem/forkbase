@@ -506,6 +506,7 @@ ErrorCode Command::ExecGet() {
       std::cout << BOLD_GREEN("[SUCCESS: GET] ")
                 << "Value" << "<" << type << ">: ";
     }
+
     switch (type) {
       case UType::kString:
       case UType::kBlob:
@@ -529,6 +530,17 @@ ErrorCode Command::ExecGet() {
         } else {
           Utils::Print(
             meta.Map(), "[", "]", ", ", "(", ")", ",", true, limit_print_elems);
+        }
+        break;
+      }
+      case UType::kSet: {
+        auto set = meta.Set();
+        if (Config::is_vert_list) {
+          for (auto it = set.Scan(); !it.end(); it.next())
+            std::cout << it.key() << std::endl;
+        } else {
+          Utils::Print(
+            meta.Set(), "[", "]", ", ", "(", ")", true, limit_print_elems);
         }
         break;
       }
@@ -652,6 +664,9 @@ ErrorCode Command::ExecPut() {
     case UType::kMap:
       ec = ExecPutMap();
       break;
+    case UType::kSet:
+      ec = ExecPutSet();
+      break;
     default:
       std::cout << BOLD_RED("[FAILED: PUT] ")
                 << "The operation is not supported for data type \""
@@ -697,6 +712,16 @@ ErrorCode Command::ExecPutMap() {
     vals.emplace_back(*it++);
   }
   return ExecPut("PUT", VMap(keys, vals));
+}
+
+ErrorCode Command::ExecPutSet() {
+  const auto& val = Config::value;
+  auto elems = Utils::Tokenize(val, "{}[]()|,; ");
+  std::vector<Slice> keys;
+  for (auto it = elems.begin(); it != elems.end();) {
+    keys.emplace_back(*it++);
+  }
+  return ExecPut("PUT", VSet(keys));
 }
 
 ErrorCode Command::ExecAppend() {
@@ -873,6 +898,7 @@ ErrorCode Command::ExecUpdate(VMap& map) {
   return ExecPut("UPDATE", map);
 }
 
+
 ErrorCode Command::ExecInsert() {
   // redirection
   if (!Config::table.empty() && Config::key.empty()) {
@@ -896,6 +922,11 @@ ErrorCode Command::ExecInsert() {
       case UType::kMap: {
         auto map = meta.Map();
         ec = ExecInsert(map);
+        break;
+      }
+      case UType::kSet: {
+        auto set = meta.Set();
+        ec = ExecInsert(set);
         break;
       }
       default:
@@ -987,6 +1018,24 @@ ErrorCode Command::ExecInsert(VMap& map) {
   return ExecPut("INSERT", map);
 }
 
+ErrorCode Command::ExecInsert(VSet& set) {
+  const auto& mkey = Config::map_key;
+  // conditional execution
+  if (mkey.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+              << "Data key of Set entry is not provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (!set.Get(Slice(mkey)).empty()) {
+    std::cerr << BOLD_RED("[FAILED: INSERT] ")
+              << "Set entry with Key \"" << mkey << "\" already exists"
+              << std::endl;
+    return ErrorCode::kMapKeyExists;
+  }
+  set.Set(Slice(mkey));
+  return ExecPut("INSERT", set);
+}
+
 ErrorCode Command::ExecDelete() {
   // redirection
   if (!Config::table.empty() && Config::key.empty()) {
@@ -1013,6 +1062,11 @@ ErrorCode Command::ExecDelete() {
       case UType::kMap: {
         auto map = meta.Map();
         ec = ExecDelete(map);
+        break;
+      }
+      case UType::kSet: {
+        auto set = meta.Set();
+        ec = ExecDelete(set);
         break;
       }
       default:
@@ -1071,6 +1125,24 @@ ErrorCode Command::ExecDelete(VMap& map) {
   }
   map.Remove(Slice(mkey));
   return ExecPut("DELETE", map);
+}
+
+ErrorCode Command::ExecDelete(VSet& set) {
+  const auto& mkey = Config::map_key;
+  // conditional execution
+  if (mkey.empty()) {
+    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
+              << "Data key of Set entry is not provided" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (set.Get(Slice(mkey)).empty()) {
+    std::cerr << BOLD_RED("[FAILED: DELETE] ")
+              << "Set entry with Key \"" << mkey << "\" does not exist"
+              << std::endl;
+    return ErrorCode::kMapKeyNotExists;
+  }
+  set.Remove(Slice(mkey));
+  return ExecPut("DELETE", set);
 }
 
 ErrorCode Command::ExecMerge() {

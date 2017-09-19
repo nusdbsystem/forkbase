@@ -116,6 +116,7 @@ class Command {
   ErrorCode ExecPutBlob();
   ErrorCode ExecPutList();
   ErrorCode ExecPutMap();
+  ErrorCode ExecPutSet();
   ErrorCode ExecAppend(VBlob& blob);
   ErrorCode ExecAppend(VList& list);
   ErrorCode ExecUpdate(VBlob& blob);
@@ -124,9 +125,11 @@ class Command {
   ErrorCode ExecInsert(VBlob& blob);
   ErrorCode ExecInsert(VList& list);
   ErrorCode ExecInsert(VMap& map);
+  ErrorCode ExecInsert(VSet& set);
   ErrorCode ExecDelete(VBlob& blob);
   ErrorCode ExecDelete(VList& list);
   ErrorCode ExecDelete(VMap& map);
+  ErrorCode ExecDelete(VSet& set);
 
   ErrorCode ParseRowString(const std::string& row_str, Row* row);
 

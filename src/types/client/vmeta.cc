@@ -40,6 +40,15 @@ VMap VMeta::Map() const {
   return VMap();
 }
 
+VSet VMeta::Set() const {
+  if (!cell_.empty() && cell_.type() == UType::kSet) {
+    return VSet(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
+                cell_.dataHash());
+  }
+  LOG(WARNING) << "Get empty VSet, actual type: " << cell_.type();
+  return VSet();
+}
+
 std::ostream& operator<<(std::ostream& os, const VMeta& obj) {
   switch (obj.cell_.type()) {
     case UType::kBlob:
@@ -53,6 +62,9 @@ std::ostream& operator<<(std::ostream& os, const VMeta& obj) {
       break;
     case UType::kMap:
       os << obj.Map();
+      break;
+    case UType::kSet:
+      os << obj.Set();
       break;
     default:
       os << "<unknown>";

@@ -7,6 +7,7 @@
 #include "types/server/sblob.h"
 #include "types/server/slist.h"
 #include "types/server/smap.h"
+#include "types/server/sset.h"
 #include "types/server/sstring.h"
 #include "utils/env.h"
 #include "utils/logging.h"
@@ -138,6 +139,9 @@ ErrorCode Worker::Write(const Slice& key, const Value& val,
     case UType::kMap:
       ec = WriteMap(key, val, prev_ver1, prev_ver2, ver);
       break;
+    case UType::kSet:
+      ec = WriteSet(key, val, prev_ver1, prev_ver2, ver);
+      break;
     default:
       LOG(WARNING) << "Unsupported data type: " << static_cast<int>(val.type);
   }
@@ -237,6 +241,33 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
     }
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
     return CreateUCell(key, UType::kMap, data_hash, prev_ver1, prev_ver2, ver);
+  }
+}
+
+ErrorCode Worker::WriteSet(const Slice& key, const Value& val,
+                           const Hash& prev_ver1, const Hash& prev_ver2,
+                           Hash* ver) {
+  DCHECK(val.type == UType::kSet);
+  if (val.base.empty()) {  // new insertion
+    SSet set = factory_.Create<SSet>(val.keys);
+    if (set.empty()) {
+      LOG(ERROR) << "Failed to create SSet for Key \"" << key << "\"";
+      return ErrorCode::kFailedCreateSSet;
+    }
+    return CreateUCell(key, UType::kSet, set.hash(), prev_ver1, prev_ver2,
+                       ver);
+  } else {
+    auto mkey = val.keys.front();
+    SSet set = factory_.Load<SSet>(val.base);
+    Hash data_hash;
+    if (val.dels && val.vals.empty()) {
+      data_hash = set.Remove(mkey);
+    } else {
+      DCHECK_EQ(val.vals.size(), 1);
+      data_hash = set.Set(mkey);
+    }
+    if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySSet;
+    return CreateUCell(key, UType::kSet, data_hash, prev_ver1, prev_ver2, ver);
   }
 }
 

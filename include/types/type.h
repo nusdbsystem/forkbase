@@ -47,9 +47,10 @@ enum class ChunkType : byte_t {
   kBlob = 3,
   kMap = 4,
   kList = 5,
+  kSet = 6,
 
   First = kCell,
-  Last = kList,
+  Last = kSet,
 
   // Indicate the validity
   kInvalid = 99
@@ -61,6 +62,7 @@ static inline bool IsChunkValid(ChunkType type) noexcept {
          || type == ChunkType::kMeta
          || type == ChunkType::kBlob
          || type == ChunkType::kMap
+         || type == ChunkType::kSet
          || type == ChunkType::kList
          || type == ChunkType::kInvalid;
 }
@@ -89,10 +91,12 @@ enum class ErrorCode : byte_t {
   kFailedCreateSString = 25,
   kFailedCreateSList = 26,
   kFailedCreateSMap = 27,
-  kFailedModifySBlob = 28,
-  kFailedModifySList = 29,
-  kFailedModifySMap = 30,
-  kIndexOutOfRange = 31,
+  kFailedCreateSSet = 28,
+  kFailedModifySBlob = 29,
+  kFailedModifySList = 30,
+  kFailedModifySMap = 31,
+  kFailedModifySSet = 32,
+  kIndexOutOfRange = 33,
   // chunk
   kChunkNotExists = 40,
   kFailedCreateChunk = 41,
