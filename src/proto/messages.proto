@@ -30,6 +30,8 @@ message UMessage {
     GET_CHUNK_REQUEST = 30;
     GET_INFO_REQUEST = 31;
     RESPONSE = 40;
+    PUT_CHUNK_REQUEST = 41;
+    EXISTS_CHUNK_REQUEST = 43;
   }
 
   required Type type = 1;
@@ -54,7 +56,7 @@ message RequestPayload {
 
 // Value payload is to simulate spec/value class
 message ValuePayload {
-  required int32 type = 1;
+  optional int32 type = 1;
   optional bytes base = 2;
   optional int32 pos = 3;
   optional int32 dels = 4;

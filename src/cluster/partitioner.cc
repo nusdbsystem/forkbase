@@ -1,15 +1,15 @@
 // Copyright (c) 2017 The Ustore Authors
 
 #include <fstream>
+#include <stdlib.h>
 #include "cluster/partitioner.h"
 #include "utils/env.h"
 
 namespace ustore {
 
-Partitioner::Partitioner(const std::string& self_addr) {
+Partitioner::Partitioner(const std::string& hostfile, const std::string& self_addr) {
   // load worker file
-  std::ifstream fin(Env::Instance()->config().worker_file(), std::ifstream::in);
-  CHECK(fin);
+  std::ifstream fin(hostfile);
   std::string worker_addr;
   for (int id = 0; fin >> worker_addr; ++id) {
     worker_list_.push_back(worker_addr);
@@ -20,7 +20,7 @@ Partitioner::Partitioner(const std::string& self_addr) {
 
 int Partitioner::GetWorkerId(const Hash& hash) const {
   uint64_t idx = *reinterpret_cast<const int64_t*>(hash.value() + 9);
-  // size_t idx = MurmurHash(key.data(), key.len()) % workers_.size();
+  // uint64_t idx = 0;
   return idx % worker_list_.size();
 }
 

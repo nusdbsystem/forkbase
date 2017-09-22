@@ -8,8 +8,11 @@
 #include "cluster/clientdb.h"
 #include "cluster/partitioner.h"
 #include "net/net.h"
+#include "utils/env.h"
 
 namespace ustore {
+
+
 /**
  * Service that handle remote client requests to the database.
  * Multiple clients/threads share the same service, thus avoiding
@@ -29,7 +32,7 @@ class RemoteClientService {
                                const node_id_t& source);
 
   explicit RemoteClientService(const node_id_t& master)
-      : master_(master), is_running_(false), nclients_(0), ptt_("") {}
+      : master_(master), is_running_(false), nclients_(0), ptt_(Env::Instance()->config().worker_file(),"") {}
   ~RemoteClientService() = default;
 
   // initialize the network, register callback
@@ -57,14 +60,14 @@ class RemoteClientService {
    */
   virtual ClientDb CreateClientDb();
 
- private:
+ protected:
   node_id_t master_;  // master node
   volatile bool is_running_;  // volatile to avoid caching old value
   int nclients_;  // how many RequestHandler thread it uses
   std::vector<std::unique_ptr<ResponseBlob>> responses_;  // the response queue
   std::unique_ptr<Net> net_;
   std::unique_ptr<CallBack> cb_;
-  const Partitioner ptt_;
+  Partitioner ptt_;
 };
 
 }  // namespace ustore

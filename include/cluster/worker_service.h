@@ -13,6 +13,7 @@
 #include "spec/value.h"
 #include "types/ucell.h"
 #include "worker/worker.h"
+#include "utils/env.h"
 
 namespace ustore {
 
@@ -30,11 +31,11 @@ class WorkerService {
                                 const node_id_t& source);
 
     WorkerService(const node_id_t& addr, const node_id_t& master, bool persist)
-      : node_addr_(addr), master_(master), ptt_(addr),
+      : node_addr_(addr), master_(master), ptt_(Env::Instance()->config().worker_file(), addr), 
+      worker_(ptt_.id(), &ptt_, persist) {}
       // TODO(anh): pass real partitioner to worker when partitioned
       //            chunk loader/writer is done
       // worker_(ptt_.id(), &ptt_, persist) {}
-        worker_(ptt_.id(), nullptr, persist) {}
     virtual ~WorkerService() = default;
 
     // initialize the network, the worker and register callback
@@ -76,13 +77,14 @@ class WorkerService {
     void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* response);
     void HandleGetInfoRequest(const UMessage& umsg, UMessage* response);
 
+  protected:
     node_id_t node_addr_;  // this node's address
     node_id_t master_;  // master node
     std::vector<node_id_t> addresses_;  // worker addresses
     std::unique_ptr<Net> net_;
     std::unique_ptr<CallBack> cb_;
     std::mutex lock_;
-    const Partitioner ptt_;
+    Partitioner ptt_;
     Worker worker_;  // where the logic happens
 };
 }  // namespace ustore

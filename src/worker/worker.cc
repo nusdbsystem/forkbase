@@ -26,12 +26,14 @@ Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool persist)
   std::string data_file = pattern + "_" + std::to_string(id_);
   // init chunk store before using it
   store::InitChunkStore(dir, data_file, persist);
+
   if (persist_) {
     // load head file
     std::string head_path = dir + "/" + data_file + ".head";
     if (fs::exists(fs::path(head_path))) head_ver_.LoadBranchVersion(head_path);
     // load latest versions
     auto store = store::GetChunkStore();
+
     for (auto it = store->begin(); it != store->end(); ++it) {
       Chunk chunk = *it;
       if (chunk.type() == ChunkType::kCell)

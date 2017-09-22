@@ -122,12 +122,13 @@ class ClientDb : public DB {
 
   inline int id() const noexcept { return id_; }
 
- private:
+ protected:
+  std::unique_ptr<UMessage> WaitForResponse() const;
+
   // send request to a node. Return false if there are
   // errors with network communication.
   bool Send(const Message& msg, const node_id_t& node_id) const;
   // wait for response, and take ownership of the message.
-  std::unique_ptr<UMessage> WaitForResponse() const;
   // sync the worker list, whenever the storage APIs return error
   bool SyncWithMaster();
   // helper methods for creating messages

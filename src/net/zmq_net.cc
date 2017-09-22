@@ -71,7 +71,7 @@ void ZmqNet::Dispatch(const node_id_t& source, const void *msg, int size) {
     return;
   }
   */
-  (*this->cb_)(msg, size, source);
+  (*cb_)(msg, size, source);
   // recv_lock_.unlock();
 }
 

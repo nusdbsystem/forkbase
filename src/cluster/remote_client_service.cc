@@ -33,6 +33,7 @@ void RemoteClientService::Start() {
   net_->CreateNetContexts(ptt_.workerAddrs());
   cb_.reset(new CSCallBack(this));
   net_->RegisterRecv(cb_.get());
+
   // zh: make the start behavior consistent with the worker service
   is_running_ = true;
   net_->Start();
