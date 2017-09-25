@@ -4,9 +4,9 @@
 #include "utils/env.h"
 namespace ustore {
 
-class CSCallBack : public CallBack {
+class ChunkSCallBack : public CallBack {
  public:
-  explicit CSCallBack(void *handler) : CallBack(handler) {}
+  explicit ChunkSCallBack(void *handler) : CallBack(handler) {}
   void operator()(const void *msg, int size, const node_id_t &source) override {
     (reinterpret_cast<ChunkService *>(handler_))
         ->HandleRequest(msg, size, source);
@@ -17,7 +17,7 @@ void ChunkService::Start() {
   store_ = store::GetChunkStore();
 
   net_->CreateNetContexts(addresses_);
-  cb_.reset(new CSCallBack(this));
+  cb_.reset(new ChunkSCallBack(this));
   net_->RegisterRecv(cb_.get());
   net_->Start();
 }
