@@ -58,6 +58,10 @@ class SeqNode : public UNode {
 
   virtual uint64_t FindIndexForKey(const OrderedKey& key,
                                    ChunkLoader* loader) const = 0;
+
+    // Retrieve a segment from the start-th element to start + num_elements
+  virtual std::unique_ptr<const Segment> GetSegment(size_t start,
+      size_t num_elements) const = 0;
 };
 
 class MetaNode : public SeqNode {
@@ -108,6 +112,9 @@ class MetaNode : public SeqNode {
   // has the smallest OrderedKey that is no smaller than the compared key
   // Return empty hash and entry_idx=numEntries if such MetaEntry not exist.
   Hash GetChildHashByKey(const OrderedKey& key, size_t* entry_idx) const;
+
+  std::unique_ptr<const Segment> GetSegment(size_t start,
+      size_t num_elements) const override;
 
  private:
   size_t entryOffset(size_t idx) const;
@@ -190,10 +197,6 @@ class LeafNode : public SeqNode {
   // Buffer capacity shall be large enough.
   // return the number of bytes actually read
   virtual size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const = 0;
-
-  // Retrieve a segment from the start-th element to start + num_elements
-  virtual std::unique_ptr<const Segment> GetSegment(size_t start, size_t num_elements) const = 0;
-
 };
 
 }  // namespace ustore

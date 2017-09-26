@@ -272,68 +272,83 @@ Hash NodeBuilder::Commit() {
 
   // Second, combining original entries pointed by current cursor
   //   to make chunk
-  Segment* work_seg = nullptr;
   if (cursor_ != nullptr && !cursor_->isEnd()) {
-    work_seg = SegAtCursor();
-    bool advanced = false;
-    do {
-      bool advanced2NextChunk = advanced && cursor_->idx() == 0;
-      bool justHandleBoundary = rhasher_->byte_hashed() == 0;
+    CHECK_GE(cursor_->idx(), 0);
+    // Get segment from node that spans from cursor pointed to node end
+    const SeqNode* cursor_node = cursor_->node();
+    size_t num_left_entries = cursor_node->numEntries()
+                              - static_cast<size_t>(cursor_->idx());
 
-      if (justHandleBoundary) {
-        // if boundary is just handled in previous phase
-        //   the first work_seg is init with current cursor, not nullptr.
-        CHECK(!advanced || work_seg == nullptr);
+    std::unique_ptr<const Segment> node_seg =
+        cursor_node->GetSegment(cursor_->idx(), num_left_entries);
+    DCHECK(!node_seg->empty());
 
-        if (advanced2NextChunk) {
+    while (true) {
+      size_t boundary_pos =
+          rhasher_->TryHashBytes(node_seg->data(), node_seg->numBytes());
+
+      if (boundary_pos == node_seg->numBytes()) {
+        CHECK(!rhasher_->CrossedBoundary());
+        // No boundary detected in this segment
+        parent_builder()->SkipEntries(1);
+        // DLOG(INFO) << "Skip Parent During Concat."
+        //           << " Cur Seg Bytes: " << work_seg->numBytes();
+        const Segment* node_seg_raw = node_seg.release();
+        created_segs_.emplace_back(node_seg_raw);
+        chunk_segs.push_back(node_seg_raw);
+
+        // try to move cursor to the first element of next chunk
+        num_left_entries = cursor_->node()->numEntries()
+                            - static_cast<size_t>(cursor_->idx());
+        // for (size_t i = 0; i < num_left_entries; ++i) {
+        //   cursor_->Advance(true);
+        // }
+        cursor_->AdvanceEntry(num_left_entries);
+        if (!cursor_->isEnd()) {
+          DCHECK_EQ(0, cursor_->idx()) << cursor_->idx();
+          // Prepare node_seq for next iteration
+          cursor_node = cursor_->node();
+          node_seg = cursor_node->GetSegment(cursor_->idx(),
+                                             cursor_node->numEntries());
+          DCHECK(!node_seg->empty());
+          continue;
+        } else {
+          // cursor reaches the sequence end
           break;
-        }
-        if (advanced) {
-          work_seg = SegAtCursor();
-        }
+        }  // end if cursor is end
+      }  // end if (boundary_pos == node_seg->numBytes()) {
+
+      // In the following case, a boundary is detected at segment middle
+      DCHECK(rhasher_->CrossedBoundary());
+      size_t entryIdx = node_seg->PosToIdx(boundary_pos);
+      CHECK_LT(entryIdx, node_seg->numEntries());
+
+      auto splitted_segs = node_seg->Split(entryIdx + 1);
+      chunk_segs.push_back(splitted_segs.first.get());
+      last_created_chunk = HandleBoundary(chunk_segs);
+      chunk_segs.clear();
+
+      size_t numEntry = node_seg->numEntries();
+      created_segs_.push_back(std::move(node_seg));
+      created_segs_.push_back(std::move(splitted_segs.first));
+
+      node_seg = std::move(splitted_segs.second);
+      // A boundary is detected at the last element in the segment
+      if (entryIdx == numEntry - 1) {
+        DCHECK(node_seg->empty());
+        break;
       } else {
-        if (advanced2NextChunk) {
-          parent_builder()->SkipEntries(1);
-          // DLOG(INFO) << "Skip Parent During Concat."
-          //           << " Cur Seg Bytes: " << work_seg->numBytes();
-          CHECK(!work_seg->empty());
-          chunk_segs.push_back(work_seg);
-
-          work_seg = SegAtCursor();
-        }  // end if advanced2NextChunk
-      }    // end if justHandleBoundary
-
-      size_t entry_num_bytes = cursor_->numCurrentBytes();
-      work_seg->prolong(entry_num_bytes);
-      rhasher_->HashBytes(cursor_->current(), entry_num_bytes);
-
-      // Create Chunk and append metaentries to upper builders
-      //   if detecing boundary
-      if (rhasher_->CrossedBoundary()) {
-        // Create chunk seg
-        CHECK(!work_seg->empty());
-        chunk_segs.push_back(work_seg);
-        last_created_chunk = HandleBoundary(chunk_segs);
-        chunk_segs.clear();
-
-        work_seg = nullptr;  // To be Init next iteration
-      }                      // end if
-      advanced = true;
-    } while (cursor_->Advance(true));
+        DCHECK(!node_seg->empty());
+      }
+    }  // end while
   }  // end if
 
-  if (chunk_segs.size() > 0 || (work_seg != nullptr)) {
+  if (chunk_segs.size() > 0) {
     // this could happen if the last entry of sequence
     // cannot form a boundary, we still need to make a explicit chunk
     // and append a metaentry to upper builder
     CHECK(cursor_ == nullptr ||
           (cursor_ != nullptr && cursor_->isEnd() && !cursor_->Advance(true)));
-
-    if (work_seg != nullptr) {
-      if (!work_seg->empty()) {
-        chunk_segs.push_back(work_seg);
-      }
-    }
 
     last_created_chunk = HandleBoundary(chunk_segs);
     chunk_segs.clear();

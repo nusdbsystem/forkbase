@@ -215,6 +215,33 @@ Hash MetaNode::GetChildHashByKey(const OrderedKey& key,
   return Hash();
 }
 
+
+std::unique_ptr<const Segment> MetaNode::GetSegment(size_t start,
+    size_t num_elements) const {
+  CHECK_LT(start, numEntries());
+  if (num_elements == 0) {
+    // return an empty segment
+    std::unique_ptr<const Segment> seg(
+        new VarSegment(data(start)));
+    return seg;
+  }
+
+  CHECK_LE(start + num_elements, numEntries());
+
+  std::vector<size_t> offsets;
+
+  size_t num_bytes = 0;
+
+  for (size_t i = start; i < start + num_elements; ++i) {
+    offsets.push_back(num_bytes);
+    num_bytes += len(i);
+  }
+
+  std::unique_ptr<const Segment> seg(
+      new VarSegment(data(start), num_bytes, std::move(offsets)));
+  return seg;
+}
+
 const byte_t* MetaEntry::Encode(uint32_t num_leaves, uint64_t num_elements,
                                 const Hash& data_hash, const OrderedKey& key,
                                 size_t* encode_len) {

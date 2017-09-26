@@ -68,6 +68,11 @@ class NodeCursor {
   //   element
   bool Retreat(bool cross_boundary);
 
+  // Advance entries in this cursor pointed node
+  //   May bypass to the next chunk
+  // Return the actual number of entries advanced
+  size_t AdvanceEntry(size_t num_entry);
+
   inline OrderedKey currentKey() const { return seq_node_->key(idx_); }
   // Advance skip multiple elements.
   // Possible to cross boundary for advancement

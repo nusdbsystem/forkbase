@@ -213,7 +213,7 @@ bool NodeCursor::Advance(bool cross_boundary) {
 bool NodeCursor::Retreat(bool cross_boundary) {
   if (idx_ >= 0) --idx_;
   if (idx_ >= 0) return true;
-  DCHECK_EQ(idx_, size_t(-1));
+  DCHECK_EQ(idx_, int32_t(-1));
   // not allow to cross boundary,
   //   remain idx = -1
   if (!cross_boundary) return false;
@@ -232,6 +232,33 @@ bool NodeCursor::Retreat(bool cross_boundary) {
     parent_cr_->Advance(false);
     return false;
   }
+}
+
+size_t NodeCursor::AdvanceEntry(size_t num_advanced_entry) {
+  size_t node_num_entry = this->node()->numEntries();
+  size_t node_remain_entry = static_cast<size_t>(
+      static_cast<int32_t>(node_num_entry) - this->idx_);
+
+  // Accumulate entries advanced
+  size_t remain_advanced_entry = num_advanced_entry;
+  bool isSeqEnd = false;
+  do {
+    if (node_remain_entry <= remain_advanced_entry) {
+      this->idx_ += static_cast<int32_t>(node_remain_entry) - 1;
+      isSeqEnd = !this->Advance(true);
+      remain_advanced_entry -= node_remain_entry;
+      if (!isSeqEnd) {
+        CHECK_EQ(0, this->idx_);
+        node_num_entry = this->node()->numEntries();
+        node_remain_entry = node_num_entry;
+      }
+    } else {
+      this->idx_ += static_cast<int32_t>(remain_advanced_entry);
+      CHECK_LT(this->idx_, static_cast<int32_t>(this->node()->numEntries()));
+      remain_advanced_entry = 0;
+    }
+  } while (!isSeqEnd && remain_advanced_entry > 0);
+  return num_advanced_entry - remain_advanced_entry;
 }
 
 uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
@@ -304,7 +331,7 @@ uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
   // Load this cursor seqnode from the entry pointed by parent cursor
   MetaEntry me(parent_cr_->current());
   seq_node_ = SeqNode::CreateFromChunk(chunk_loader_->Load(me.targetHash()));
-  DCHECK_GT(seq_node_->numEntries(), 0);
+  DCHECK_GT(seq_node_->numEntries(), size_t(0));
 
   if (endParent) {
     // Place this cursor to seq end
