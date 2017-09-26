@@ -171,11 +171,9 @@ TEST(TestMessage, TestClient1Thread) {
   string worker_addr;
   vector<WorkerService*> workers;
   while (fin >> worker_addr)
-    workers.push_back(new WorkerService(worker_addr, "", false));
+    workers.push_back(new WorkerService(worker_addr, false));
 
   vector<thread> worker_threads;
-  for (size_t i = 0; i < workers.size(); i++)
-    workers[i]->Init();
 
   for (size_t i = 0; i < workers.size(); i++)
     worker_threads.push_back(thread(&WorkerService::Start, workers[i]));

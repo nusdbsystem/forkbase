@@ -74,7 +74,7 @@ ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) const {
   *ucell = UCell::Load(ver);
   if (ucell->empty()) {
     LOG(WARNING) << "Data version \"" << ver << "\" does not exists!";
-    return ErrorCode::kUCellNotfound;
+    return ErrorCode::kUCellNotExists;
   }
   if (ucell->key() != key) {
     LOG(ERROR) << "Inconsistent data key: [Expected] " << key

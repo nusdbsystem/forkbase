@@ -245,11 +245,10 @@ TEST(HttpTest, BasicOps) {
   string worker_addr;
   std::vector<ustore::WorkerService*> workers;
   while (fin >> worker_addr)
-    workers.push_back(new ustore::WorkerService(worker_addr, "", false));
+    workers.push_back(new ustore::WorkerService(worker_addr, false));
 
   std::vector<std::thread> worker_threads;
   for (size_t i = 0; i < workers.size(); i++)
-    workers[i]->Init();
   for (size_t i = 0; i < workers.size(); i++)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
 

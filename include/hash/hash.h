@@ -29,6 +29,10 @@ class Hash {
   // if do so, must allocate own value
   static Hash ComputeFrom(const byte_t* data, size_t len);
   static Hash ComputeFrom(const std::string& data);
+  // reuse data stored in std::String
+  static inline Hash Convert(const std::string& request) {
+    return Hash(reinterpret_cast<const byte_t*>(request.data()));
+  }
 
   Hash() = default;
   // movable
@@ -47,17 +51,17 @@ class Hash {
   }
 
   friend inline bool operator<(const Hash& lhs, const Hash& rhs) noexcept {
-    if(!lhs.value_ || !rhs.value_ ) return lhs.value_ < rhs.value_;
+    if (!lhs.value_ || !rhs.value_) return lhs.value_ < rhs.value_;
     return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) < 0;
   }
 
   friend inline bool operator>(const Hash& lhs, const Hash& rhs) noexcept {
-    if(!lhs.value_ || !rhs.value_ ) return lhs.value_ > rhs.value_;
+    if (!lhs.value_ || !rhs.value_) return lhs.value_ > rhs.value_;
     return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) > 0;
   }
 
   friend inline bool operator==(const Hash& lhs, const Hash& rhs) noexcept {
-    if(!lhs.value_ || !rhs.value_ ) return lhs.value_ == rhs.value_;
+    if (!lhs.value_ || !rhs.value_) return lhs.value_ == rhs.value_;
     return std::memcmp(lhs.value_, rhs.value_, Hash::kByteLength) == 0;
   }
 

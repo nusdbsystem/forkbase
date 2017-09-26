@@ -83,19 +83,17 @@ void RequestThread(int starting_idx, int size, ChunkDb* chunkdb) {
 vector<ChunkService*> ChunkServiceInit(string test_file) {
   vector<ChunkService*> servers;
   Env::Instance()->m_config().set_chunk_server_file(test_file);
-  
+
   ifstream fin(Env::Instance()->config().chunk_server_file());
   string server_addr;
   while (fin >> server_addr) {
-    servers.push_back(new ChunkService(server_addr, "", false)); 
+    servers.push_back(new ChunkService(server_addr));
   }
   return servers;
 }
 
 TEST(TestChunkService, ChunkService1Service) {
   vector<ChunkService*> services = ChunkServiceInit("conf/chunk_server_test");
-  for (auto cs : services)
-    cs->Init();
 
   vector<thread> service_threads;
   for (auto cs : services)
@@ -109,10 +107,10 @@ TEST(TestChunkService, ChunkService1Service) {
 
   ChunkDb chunkdb = clientservice.CreateChunkDb();
   usleep(kSleepTime);
-  
+
   Hash hash = put_chunk(raw_data, &chunkdb);
   usleep(kSleepTime);
-  
+
   Chunk result;
   EXPECT_EQ(chunkdb.Get(hash, &result), ErrorCode::kOK);
   EXPECT_TRUE(check_raw_data(result.data(), raw_data, result.capacity()));
@@ -130,8 +128,6 @@ TEST(TestChunkService, ChunkService1Service) {
 
 TEST(TestChunkService, ChunkService2Services) {
   vector<ChunkService*> services = ChunkServiceInit("conf/chunk_server_test2");
-  for (auto cs : services)
-    cs->Init();
 
   vector<thread> service_threads;
   for (auto cs : services)
@@ -145,7 +141,7 @@ TEST(TestChunkService, ChunkService2Services) {
 
   ChunkDb chunkdb = clientservice.CreateChunkDb();
   usleep(kSleepTime);
-  
+
   vector<Hash> hashes;
   for (int i = 0; i < kValues; i++) {
     hashes.push_back(put_chunk(reinterpret_cast<const byte_t*>(values[i].c_str()), &chunkdb));
@@ -171,8 +167,6 @@ TEST(TestChunkService, ChunkService2Services) {
 
 TEST(TestChunkService, ChunkService2Services2ClientThreads) {
   vector<ChunkService*> services = ChunkServiceInit("conf/chunk_server_test2");
-  for (auto cs : services)
-    cs->Init();
 
   vector<thread> service_threads;
   for (auto cs : services)
@@ -187,7 +181,7 @@ TEST(TestChunkService, ChunkService2Services2ClientThreads) {
   ChunkDb chunkdb1 = clientservice.CreateChunkDb();
   ChunkDb chunkdb2 = clientservice.CreateChunkDb();
   usleep(kSleepTime);
-  
+
   vector<thread> threads;
   threads.push_back(thread(&RequestThread, 0, kValues/2, &chunkdb1));
   threads.push_back(thread(&RequestThread, 5, kValues/2, &chunkdb2));
