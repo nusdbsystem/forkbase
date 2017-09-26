@@ -12,7 +12,7 @@
 #include "types/ucell.h"
 #include "utils/env.h"
 #include "cluster/worker_service.h"
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"
@@ -21,7 +21,7 @@
 
 using ustore::byte_t;
 using ustore::WorkerService;
-using ustore::RemoteClientService;
+using ustore::WorkerClientService;
 using ustore::Config;
 using ustore::Slice;
 using ustore::Hash;
@@ -179,11 +179,8 @@ TEST(TestMessage, TestClient1Thread) {
     worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
 
   // launch clients
-  RemoteClientService service("");
-
-  service.Init();
-  // service->Start();
-  thread client_service_thread(&RemoteClientService::Start, &service);
+  WorkerClientService service;
+  thread client_service_thread(&WorkerClientService::Start, &service);
   usleep(kSleepTime);
 
   // 1 thread
@@ -226,11 +223,11 @@ TEST(TestMessage, TestClient2Threads) {
   ifstream fin_client(Env::Instance()->config().clientservice_file());
   string clientservice_addr;
   fin_client >> clientservice_addr;
-  RemoteClientService *service
-    = new RemoteClientService(clientservice_addr, "");
+  WorkerClientService *service
+    = new WorkerClientService(clientservice_addr, "");
   service->Init();
   // service->Start();
-  thread client_service_thread(&RemoteClientService::Start, service);
+  thread client_service_thread(&WorkerClientService::Start, service);
   sleep(1);
 
   // 2 clients thread

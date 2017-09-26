@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <limits>
 #include <thread>
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "utils/logging.h"
 #include "utils/service_context.h"
 #include "utils/sync_task_line.h"

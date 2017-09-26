@@ -8,7 +8,7 @@
 #include <vector>
 #include "benchmark/benchmark.h"
 #include "benchmark/bench_config.h"
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "cluster/worker_service.h"
 #include "spec/object_db.h"
 #include "utils/env.h"
@@ -39,10 +39,9 @@ void BenchmarkClient() {
   std::vector<std::thread> worker_threads;
   for (size_t i = 0; i < workers.size(); ++i)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
-// create client service
-  RemoteClientService service("");
-  service.Init();
-  std::thread client_service_thread(&RemoteClientService::Start, &service);
+  // create client service
+  WorkerClientService service;
+  std::thread client_service_thread(&ClientService::Start, &service);
   sleep(1);
 
   // create client

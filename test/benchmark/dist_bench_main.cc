@@ -5,7 +5,7 @@
 #include <thread>
 #include "benchmark/benchmark.h"
 #include "benchmark/bench_config.h"
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "spec/object_db.h"
 #include "utils/env.h"
 
@@ -15,9 +15,8 @@ constexpr int kSleepTime = 100000;
 
 void BenchmarkClient() {
   // create client service
-  RemoteClientService service("");
-  service.Init();
-  std::thread client_service_thread(&RemoteClientService::Start, &service);
+  WorkerClientService service;
+  std::thread client_service_thread(&WorkerClientService::Start, &service);
   sleep(1);
 
   // create client

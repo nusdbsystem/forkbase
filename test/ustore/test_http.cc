@@ -6,7 +6,7 @@
 #include <vector>
 #include "gtest/gtest.h"
 #include "cluster/worker_service.h"
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "utils/env.h"
 #include "utils/logging.h"
 #include "http/server.h"
@@ -30,7 +30,8 @@ const string kHeaders = "HTTP/1.1\r\n"
     "Accept-Encoding: gzip, deflate\r\n"
     "Connection: keep-alive\r\n\r\n";
 
-string PutB(const string& key, const string& value, const string& branch, ClientSocket& cs) {
+string PutB(const string& key, const string& value, const string& branch,
+            ClientSocket& cs) {
   string post_content = "POST /put " + kHeaders +
       "key=" + key + "&branch=" + branch + "&value=" + value;
   cs.Send(post_content.c_str(), post_content.length());
@@ -253,10 +254,9 @@ TEST(HttpTest, BasicOps) {
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
 
   // launch clients
-  ustore::RemoteClientService service("");
-  service.Init();
+  ustore::WorkerClientService service;
   // service->Start();
-  std::thread client_service_thread(&RemoteClientService::Start, &service);
+  std::thread client_service_thread(&WorkerClientService::Start, &service);
   usleep(kSleepTime);
   // 1 thread
   ClientDb client = service.CreateClientDb();

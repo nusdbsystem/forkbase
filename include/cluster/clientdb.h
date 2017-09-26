@@ -3,12 +3,11 @@
 #ifndef USTORE_CLUSTER_CLIENTDB_H_
 #define USTORE_CLUSTER_CLIENTDB_H_
 
-#include <condition_variable>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 #include "cluster/partitioner.h"
+#include "cluster/response_blob.h"
 #include "net/net.h"
 #include "proto/messages.pb.h"
 #include "spec/db.h"
@@ -16,25 +15,6 @@
 #include "hash/hash.h"
 
 namespace ustore {
-
-using google::protobuf::Message;
-
-/**
- * A unit on the response queue. Each client request thread
- * waits on one of this object. The thread goes to sleep waiting for has_msg
- * condition to hold true. The has_msg variable will be set by the registered
- * callback method of the network thread
- *
- * This object is used under the assumption that the client issues requests in
- * a synchronous manner. As a result, the msg must be cleared before another
- * response is set.
- */
-struct ResponseBlob {
-  std::mutex lock;
-  std::condition_variable condition;
-  bool has_msg;
-  Message* message = nullptr;
-};
 
 /**
  * ClientDb object is created from RemoteClientService.
@@ -62,9 +42,8 @@ struct ResponseBlob {
 
 class ClientDb : public DB {
  public:
-  ClientDb(const node_id_t& master, int id, Net* net, ResponseBlob* blob,
-           const Partitioner* ptt)
-    : master_(master), id_(id), net_(net), res_blob_(blob), ptt_(ptt) {}
+  ClientDb(ResponseBlob* blob, const Partitioner* ptt)
+    : id_(blob->id), net_(blob->net), res_blob_(blob), ptt_(ptt) {}
 
   ~ClientDb() = default;
 
@@ -152,7 +131,6 @@ class ClientDb : public DB {
     return Hash(reinterpret_cast<const byte_t*>(request.data()));
   }
 
-  node_id_t master_;  // address of the master node
   int id_ = 0;  // thread identity, in order to identify the waiting thread
   Net* net_ = nullptr;  // for network communication
   ResponseBlob* res_blob_ = nullptr;  // response blob

@@ -4,10 +4,8 @@
 #include <cassert>
 #include "utils/env.h"
 #include "cluster/worker_service.h"
-#include "cluster/remote_client_service.h"
 
 using ustore::WorkerService;
-using ustore::RemoteClientService;
 using ustore::INFO;
 
 DEFINE_string(node_id, "", "ip address of this node (ib0 interface)");

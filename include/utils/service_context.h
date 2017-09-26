@@ -5,15 +5,14 @@
 
 #include <memory>
 #include <thread>
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
 
 class ServiceContext : private Noncopyable {
  public:
-  explicit ServiceContext(const node_id_t& master) : svc_(master) { Start(); }
-  ServiceContext() : ServiceContext("") {}
+  ServiceContext() { Start(); }
   ~ServiceContext() { Stop(); }
 
   void Start();
@@ -22,8 +21,7 @@ class ServiceContext : private Noncopyable {
   inline ClientDb GetClientDb() { return svc_.CreateClientDb(); }
 
  private:
-  static const int kInitForMs;
-  RemoteClientService svc_;
+  WorkerClientService svc_;
   std::unique_ptr<std::thread> svc_thread_;
 };
 

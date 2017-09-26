@@ -10,8 +10,7 @@ void ServiceContext::Start() {
   if (svc_thread_) {
     LOG(WARNING) << "UStore service has been already started";
   } else {
-    svc_.Init();
-    svc_thread_.reset(new std::thread(&RemoteClientService::Start, &svc_));
+    svc_thread_.reset(new std::thread(&WorkerClientService::Start, &svc_));
   }
 }
 

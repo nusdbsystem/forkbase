@@ -5,11 +5,11 @@
 #include "utils/env.h"
 #include "utils/logging.h"
 #include "http/server.h"
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "cluster/clientdb.h"
 
 namespace ustore {
-namespace http{
+namespace http {
 
 int main(int argc, char* argv[]) {
   int port = Env::Instance()->config().http_port();
@@ -45,9 +45,8 @@ int main(int argc, char* argv[]) {
       port, bind_addr.c_str(), threads, elsize);
 
   // launch clients
-  RemoteClientService service("");
-  service.Init();
-  std::thread ct(&RemoteClientService::Start, &service);
+  WorkerClientService service;
+  std::thread ct(&WorkerClientService::Start, &service);
   sleep(1);
 
   ClientDb client = service.CreateClientDb();

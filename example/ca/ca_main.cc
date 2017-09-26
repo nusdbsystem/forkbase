@@ -2,7 +2,7 @@
 #include <chrono>
 #include <thread>
 
-#include "cluster/remote_client_service.h"
+#include "cluster/worker_client_service.h"
 #include "spec/relational.h"
 
 #include "ca/analytics.h"
@@ -127,9 +127,8 @@ int main(int argc, char* argv[]) {
     }
   }
   // connect to UStore servcie
-  RemoteClientService ustore_svc("");
-  ustore_svc.Init();
-  std::thread ustore_svc_thread(&RemoteClientService::Start, &ustore_svc);
+  WorkerClientService ustore_svc;
+  std::thread ustore_svc_thread(&WorkerClientService::Start, &ustore_svc);
   std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
   ClientDb client_db = ustore_svc.CreateClientDb();
   cs = new ColumnStore(&client_db);

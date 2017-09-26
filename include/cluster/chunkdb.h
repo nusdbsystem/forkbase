@@ -16,8 +16,7 @@ namespace ustore {
 
 class ChunkDb : public ClientDb {
  public:
-  ChunkDb(const node_id_t& master, int id, Net* net, ResponseBlob* blob,
-           const Partitioner* ptt) : ClientDb(master, id, net, blob, ptt) {}
+  ChunkDb(ResponseBlob* blob, const Partitioner* ptt) : ClientDb(blob, ptt) {}
   ~ChunkDb() = default;
 
   ErrorCode Get(const Hash& hash, Chunk* chunk);

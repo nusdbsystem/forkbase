@@ -10,13 +10,13 @@
 #include "proto/messages.pb.h"
 #include "utils/env.h"
 #include "cluster/chunk_service.h"
-#include "cluster/remote_chunk_client_service.h"
+#include "cluster/chunk_client_service.h"
 #include "hash/hash.h"
 #include "utils/logging.h"
 
 using ustore::byte_t;
 using ustore::ChunkService;
-using ustore::RemoteChunkClientService;
+using ustore::ChunkClientService;
 using ustore::Config;
 using ustore::Slice;
 using ustore::Hash;
@@ -100,9 +100,8 @@ TEST(TestChunkService, ChunkService1Service) {
     service_threads.push_back(thread(&ChunkService::Start, cs));
 
   // clients
-  RemoteChunkClientService clientservice("");
-  clientservice.Init();
-  thread clientservice_thread(&RemoteChunkClientService::Start, &clientservice);
+  ChunkClientService clientservice;
+  thread clientservice_thread(&ChunkClientService::Start, &clientservice);
   usleep(kSleepTime);
 
   ChunkDb chunkdb = clientservice.CreateChunkDb();
@@ -134,9 +133,8 @@ TEST(TestChunkService, ChunkService2Services) {
     service_threads.push_back(thread(&ChunkService::Start, cs));
 
   // clients
-  RemoteChunkClientService clientservice("");
-  clientservice.Init();
-  thread clientservice_thread(&RemoteChunkClientService::Start, &clientservice);
+  ChunkClientService clientservice;
+  thread clientservice_thread(&ChunkClientService::Start, &clientservice);
   usleep(kSleepTime);
 
   ChunkDb chunkdb = clientservice.CreateChunkDb();
@@ -173,9 +171,8 @@ TEST(TestChunkService, ChunkService2Services2ClientThreads) {
     service_threads.push_back(thread(&ChunkService::Start, cs));
 
   // clients
-  RemoteChunkClientService clientservice("");
-  clientservice.Init();
-  thread clientservice_thread(&RemoteChunkClientService::Start, &clientservice);
+  ChunkClientService clientservice;
+  thread clientservice_thread(&ChunkClientService::Start, &clientservice);
   usleep(kSleepTime);
 
   ChunkDb chunkdb1 = clientservice.CreateChunkDb();
