@@ -171,7 +171,7 @@ class FlushTaskLine
  public:
   FlushTaskLine()
     : SyncTaskLine<DataType, ErrorCodeType>(),
-      db_(GetClientDb()), odb_(&db_) {}
+      db_(GetWorkerClient()), odb_(&db_) {}
 
   ~FlushTaskLine() = default;
 
@@ -204,12 +204,12 @@ class FlushTaskLine
   using DataType = std::vector<std::string>;
   using ErrorCodeType = ErrorCode;
 
-  static ClientDb GetClientDb() {
+  static WorkerClient GetWorkerClient() {
     static ServiceContext svc_ctx;
-    return svc_ctx.GetClientDb();
+    return svc_ctx.GetWorkerClient();
   }
 
-  ClientDb db_;
+  WorkerClient db_;
   ObjectDB odb_;
 
   std::string col_key_str_;

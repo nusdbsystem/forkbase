@@ -13,10 +13,10 @@ class ChunkClientServiceCallBack : public CallBack {
   }
 };
 
-ChunkDb ChunkClientService::CreateChunkDb() {
+ChunkClient ChunkClientService::CreateChunkClient() {
   // adding a new response blob
   ResponseBlob* resblob = CreateResponseBlob();
-  return ChunkDb(resblob, &ptt_);
+  return ChunkClient(resblob, &ptt_);
 }
 
 CallBack* ChunkClientService::RegisterCallBack() {

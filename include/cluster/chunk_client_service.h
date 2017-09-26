@@ -3,8 +3,9 @@
 #ifndef USTORE_CLUSTER_CHUNK_CLIENT_SERVICE_H_
 #define USTORE_CLUSTER_CHUNK_CLIENT_SERVICE_H_
 
+#include "cluster/chunk_client.h"
 #include "cluster/client_service.h"
-#include "cluster/chunkdb.h"
+#include "cluster/partitioner.h"
 #include "utils/env.h"
 
 namespace ustore {
@@ -16,7 +17,7 @@ class ChunkClientService : public ClientService {
       ptt_(Env::Instance()->config().chunk_server_file(), "") {}
   ~ChunkClientService() = default;
 
-  ChunkDb CreateChunkDb();
+  ChunkClient CreateChunkClient();
 
  protected:
   CallBack* RegisterCallBack() override;

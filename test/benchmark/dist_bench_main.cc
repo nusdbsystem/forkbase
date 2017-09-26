@@ -16,15 +16,16 @@ constexpr int kSleepTime = 100000;
 void BenchmarkClient() {
   // create client service
   WorkerClientService service;
+  service.Init();
   std::thread client_service_thread(&WorkerClientService::Start, &service);
   sleep(1);
 
   // create client
   size_t n_client = BenchmarkConfig::num_clients;
-  std::vector<ClientDb> clientdbs;
+  std::vector<WorkerClient> clientdbs;
   std::vector<ObjectDB*> dbs;
   for (size_t i = 0; i < n_client; ++i)
-    clientdbs.push_back(service.CreateClientDb());
+    clientdbs.push_back(service.CreateWorkerClient());
   for (auto& db : clientdbs)
     dbs.push_back(new ObjectDB(&db));
   Benchmark bm(dbs);

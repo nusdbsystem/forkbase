@@ -5,8 +5,8 @@
 #include "utils/env.h"
 #include "utils/logging.h"
 #include "http/server.h"
+#include "cluster/worker_client.h"
 #include "cluster/worker_client_service.h"
-#include "cluster/clientdb.h"
 
 namespace ustore {
 namespace http {
@@ -46,10 +46,11 @@ int main(int argc, char* argv[]) {
 
   // launch clients
   WorkerClientService service;
+  service.Init();
   std::thread ct(&WorkerClientService::Start, &service);
   sleep(1);
 
-  ClientDb client = service.CreateClientDb();
+  WorkerClient client = service.CreateWorkerClient();
   HttpServer server(&client, port, bind_addr);  // create the HttpServer
   // set the max concurrent connections to support
   server.SetEventLoopSize(elsize);

@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
 
   // start the worker
   WorkerService ws(FLAGS_node_id, true);
+  ws.Init();
   ws.Start();
 
   return 0;

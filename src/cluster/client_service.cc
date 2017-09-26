@@ -7,14 +7,17 @@
 
 namespace ustore {
 
-void ClientService::Start() {
+void ClientService::Init() {
   net_.reset(net::CreateClientNetwork(
              Env::Instance()->config().recv_threads()));
   net_->CreateNetContexts(ptt_->workerAddrs());
   cb_.reset(RegisterCallBack());
   net_->RegisterRecv(cb_.get());
-  net_->Start();
+}
+
+void ClientService::Start() {
   is_running_ = true;
+  net_->Start();
 }
 
 void ClientService::HandleResponse(const void *msg, int size,
@@ -30,8 +33,8 @@ void ClientService::HandleResponse(const void *msg, int size,
 }
 
 void ClientService::Stop() {
-  net_->Stop();
   is_running_ = false;
+  net_->Stop();
 }
 
 ResponseBlob* ClientService::CreateResponseBlob() {

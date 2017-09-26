@@ -21,6 +21,7 @@ class Service : private Noncopyable {
   explicit Service(const node_id_t& addr) : node_addr_(addr) {}
   virtual ~Service() = default;
 
+  void Init();
   void Start();
   void Stop();
 

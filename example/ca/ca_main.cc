@@ -128,9 +128,10 @@ int main(int argc, char* argv[]) {
   }
   // connect to UStore servcie
   WorkerClientService ustore_svc;
+  ustore_svc.Init();
   std::thread ustore_svc_thread(&WorkerClientService::Start, &ustore_svc);
   std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
-  ClientDb client_db = ustore_svc.CreateClientDb();
+  WorkerClient client_db = ustore_svc.CreateWorkerClient();
   cs = new ColumnStore(&client_db);
   // run analytics task
   auto ec = RunTask(Config::task_id);

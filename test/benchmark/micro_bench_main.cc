@@ -38,18 +38,20 @@ void BenchmarkClient() {
     workers.push_back(new WorkerService(worker_addr, false));
   std::vector<std::thread> worker_threads;
   for (size_t i = 0; i < workers.size(); ++i)
+    workers[i]->Init();
+  for (size_t i = 0; i < workers.size(); ++i)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
   // create client service
   WorkerClientService service;
+  service.Init();
   std::thread client_service_thread(&ClientService::Start, &service);
-  sleep(1);
 
   // create client
   size_t n_client = BenchmarkConfig::num_clients;
-  std::vector<ClientDb> clientdbs;
+  std::vector<WorkerClient> clientdbs;
   std::vector<ObjectDB*> dbs;
   for (size_t i = 0; i < n_client; ++i)
-    clientdbs.push_back(service.CreateClientDb());
+    clientdbs.push_back(service.CreateWorkerClient());
   for (auto& db : clientdbs)
     dbs.push_back(new ObjectDB(&db));
   Benchmark bm(dbs);

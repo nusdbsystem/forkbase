@@ -1,9 +1,9 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_CLUSTER_CHUNKDB_H_
-#define USTORE_CLUSTER_CHUNKDB_H_
+#ifndef USTORE_CLUSTER_CHUNK_CLIENT_H_
+#define USTORE_CLUSTER_CHUNK_CLIENT_H_
 
-#include "cluster/clientdb.h"
+#include "cluster/client.h"
 
 namespace ustore {
 
@@ -14,18 +14,22 @@ namespace ustore {
  * An extension of ClientDB
  */
 
-class ChunkDb : public ClientDb {
+class ChunkClient : public Client {
  public:
-  ChunkDb(ResponseBlob* blob, const Partitioner* ptt) : ClientDb(blob, ptt) {}
-  ~ChunkDb() = default;
+  ChunkClient(ResponseBlob* blob, const Partitioner* ptt)
+    : Client(blob), ptt_(ptt) {}
+  ~ChunkClient() = default;
 
   ErrorCode Get(const Hash& hash, Chunk* chunk);
   ErrorCode Put(const Hash& hash, const Chunk& chunk);
   ErrorCode Exists(const Hash& hash, bool* exist);
+
  private:
-  void CreateChunkRequest(const Hash& hash, UMessage *msg);
+  void CreateChunkMessage(const Hash& hash, UMessage *msg);
+
+  const Partitioner* const ptt_;
 };
 
 }  // namespace ustore
 
-#endif  // USTORE_CLUSTER_CHUNKDB_H_
+#endif  // USTORE_CLUSTER_CHUNK_CLIENT_H_

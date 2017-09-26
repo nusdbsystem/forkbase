@@ -18,7 +18,7 @@ class ServiceContext : private Noncopyable {
   void Start();
   void Stop();
 
-  inline ClientDb GetClientDb() { return svc_.CreateClientDb(); }
+  inline WorkerClient GetWorkerClient() { return svc_.CreateWorkerClient(); }
 
  private:
   WorkerClientService svc_;

@@ -13,10 +13,10 @@ class WorkerClientServiceCallBack : public CallBack {
   }
 };
 
-ClientDb WorkerClientService::CreateClientDb() {
+WorkerClient WorkerClientService::CreateWorkerClient() {
   // adding a new response blob
   ResponseBlob* resblob = CreateResponseBlob();
-  return ClientDb(resblob, &ptt_);
+  return WorkerClient(resblob, &ptt_);
 }
 
 CallBack* WorkerClientService::RegisterCallBack() {

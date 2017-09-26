@@ -3,8 +3,8 @@
 #ifndef USTORE_CLUSTER_WORKER_CLIENT_SERVICE_H_
 #define USTORE_CLUSTER_WORKER_CLIENT_SERVICE_H_
 
-#include "cluster/clientdb.h"
 #include "cluster/client_service.h"
+#include "cluster/worker_client.h"
 #include "cluster/partitioner.h"
 #include "utils/env.h"
 
@@ -32,7 +32,7 @@ class WorkerClientService : public ClientService {
    * Create a new ClientDb connecting to the database.
    * Interaction with the database is through this object.
    */
-  ClientDb CreateClientDb();
+  WorkerClient CreateWorkerClient();
 
  protected:
   CallBack* RegisterCallBack() override;

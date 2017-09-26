@@ -23,15 +23,13 @@ class ClientService : private Noncopyable {
     : is_running_(false), nclients_(0), ptt_(ptt) {}
   virtual ~ClientService() = default;
 
+  void Init();
   void Start();
   void Stop();
 
   void HandleResponse(const void *msg, int size, const node_id_t& source);
 
  protected:
-  inline void Send(const node_id_t& source, byte_t* ptr, int len) {
-    net_->GetNetContext(source)->Send(ptr, static_cast<size_t>(len));
-  }
   ResponseBlob* CreateResponseBlob();
 
   // allocate a net::CallBack instance

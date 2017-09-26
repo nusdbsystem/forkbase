@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
   SetStderrLogging(ERROR);
   // connect to UStore servcie
   ServiceContext svc_ctx;
-  auto db = svc_ctx.GetClientDb();
+  auto db = svc_ctx.GetWorkerClient();
   // conditional execution
   return static_cast<int>(
            argc == 1 ? Console(&db).Run() : Command(&db).Run(argc, argv));

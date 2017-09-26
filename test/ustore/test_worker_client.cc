@@ -27,7 +27,7 @@ using ustore::Slice;
 using ustore::Hash;
 using ustore::Env;
 using ustore::ErrorCode;
-using ustore::ClientDb;
+using ustore::WorkerClient;
 using ustore::Value;
 using ustore::UType;
 using ustore::UCell;
@@ -50,7 +50,7 @@ const int kSleepTime = 100000;
 
 // i^th thread issue requests from i*(nthreads/nreqs) to
 // (i+1)*(nthreads/nreqs)
-void TestClientRequest(ClientDb* client, int idx, int len) {
+void TestClientRequest(WorkerClient* client, int idx, int len) {
   int start_idx = idx;
   for (int k = 0; k < len; k++) {
     idx = (start_idx + k) % NREQUESTS;
@@ -164,7 +164,7 @@ void TestClientRequest(ClientDb* client, int idx, int len) {
   EXPECT_EQ(err, ErrorCode::kOK);
 }
 
-TEST(TestMessage, TestClient1Thread) {
+TEST(TestMessage, TestWorkerClient1Thread) {
   // launch workers
   Env::Instance()->m_config().set_worker_file("conf/worker_test");
   ifstream fin(Env::Instance()->config().worker_file());
@@ -176,15 +176,18 @@ TEST(TestMessage, TestClient1Thread) {
   vector<thread> worker_threads;
 
   for (size_t i = 0; i < workers.size(); i++)
+    workers[i]->Init();
+  for (size_t i = 0; i < workers.size(); i++)
     worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
 
   // launch clients
   WorkerClientService service;
+  service.Init();
   thread client_service_thread(&WorkerClientService::Start, &service);
   usleep(kSleepTime);
 
   // 1 thread
-  ClientDb client = service.CreateClientDb();
+  WorkerClient client = service.CreateWorkerClient();
   TestClientRequest(&client, 0, NREQUESTS);
 
   // stop the client service
@@ -232,7 +235,7 @@ TEST(TestMessage, TestClient2Threads) {
 
   // 2 clients thread
   for (int i = 0; i < 2; i++) {
-    ClientDb *client = service->CreateClientDb();
+    WorkerClient *client = service->CreateWorkerClient();
     client_threads.push_back(thread(
                         &TestClientRequest, client, i*2, NREQUESTS/2));
   }

@@ -250,16 +250,17 @@ TEST(HttpTest, BasicOps) {
 
   std::vector<std::thread> worker_threads;
   for (size_t i = 0; i < workers.size(); i++)
+    workers[i]->Init();
   for (size_t i = 0; i < workers.size(); i++)
     worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
 
   // launch clients
   ustore::WorkerClientService service;
-  // service->Start();
+  service.Init();
   std::thread client_service_thread(&WorkerClientService::Start, &service);
   usleep(kSleepTime);
   // 1 thread
-  ClientDb client = service.CreateClientDb();
+  WorkerClient client = service.CreateWorkerClient();
 
   // start the http server
   HttpServer server(&client, port);
