@@ -17,21 +17,20 @@ class ChunkService : public WorkerService {
     ChunkService(const node_id_t& addr, const node_id_t& master, bool persist)
       : WorkerService(addr, master, persist) {
       ptt_ = Partitioner(Env::Instance()->config().chunk_server_file(), addr);
-      
     }
 
     ~ChunkService() = default;
 
     void Start() override;
-
     void HandleRequest(const void *msg, int size,
-                               const node_id_t& source) override;
+                       const node_id_t& source) override;
 
  private:
     ChunkStore *store_;
     void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* reponse);
     void HandlePutChunkRequest(const UMessage& umsg, ResponsePayload* response);
-    void HandleExistChunkRequest(const UMessage& umsg, ResponsePayload* response);
+    void HandleExistChunkRequest(const UMessage& umsg,
+        ResponsePayload* response);
     bool persist_;
 };
 }  // namespace ustore

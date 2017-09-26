@@ -1,13 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors
 
 #include <fstream>
-#include <stdlib.h>
 #include "cluster/partitioner.h"
 #include "utils/env.h"
 
 namespace ustore {
 
-Partitioner::Partitioner(const std::string& hostfile, const std::string& self_addr) {
+Partitioner::Partitioner(const std::string& hostfile,
+                         const std::string& self_addr) {
   // load worker file
   std::ifstream fin(hostfile);
   std::string worker_addr;

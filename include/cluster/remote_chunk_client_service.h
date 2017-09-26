@@ -11,11 +11,11 @@ namespace ustore {
 /**
  * Extension of RemoteClientService, for handling Chunk requests.
  */
-class RemoteChunkClientService : public RemoteClientService{
+class RemoteChunkClientService : public RemoteClientService {
  public:
-  explicit RemoteChunkClientService(const node_id_t& master): RemoteClientService(master) {
+  explicit RemoteChunkClientService(const node_id_t& master)
+      : RemoteClientService(master) {
     ptt_ = Partitioner(Env::Instance()->config().chunk_server_file(), "");
-
   }
   ~RemoteChunkClientService() = default;
 

@@ -32,7 +32,8 @@ class RemoteClientService {
                                const node_id_t& source);
 
   explicit RemoteClientService(const node_id_t& master)
-      : master_(master), is_running_(false), nclients_(0), ptt_(Env::Instance()->config().worker_file(),"") {}
+      : master_(master), is_running_(false), nclients_(0),
+        ptt_(Env::Instance()->config().worker_file(), "") {}
   ~RemoteClientService() = default;
 
   // initialize the network, register callback

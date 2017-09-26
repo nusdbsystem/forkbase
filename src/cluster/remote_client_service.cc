@@ -11,9 +11,9 @@ namespace ustore {
 
 using std::thread;
 
-class CSCallBack : public CallBack {
+class ClientServiceCallBack : public CallBack {
  public:
-  explicit CSCallBack(void* handler) : CallBack(handler) {}
+  explicit ClientServiceCallBack(void* handler) : CallBack(handler) {}
   void operator()(const void *msg, int size, const node_id_t& source) override {
     (reinterpret_cast<RemoteClientService *>(handler_))->HandleResponse(
                                         msg, size, source);
@@ -31,18 +31,11 @@ void RemoteClientService::Init() {
 
 void RemoteClientService::Start() {
   net_->CreateNetContexts(ptt_.workerAddrs());
-  cb_.reset(new CSCallBack(this));
+  cb_.reset(new ClientServiceCallBack(this));
   net_->RegisterRecv(cb_.get());
 
-  // zh: make the start behavior consistent with the worker service
   is_running_ = true;
   net_->Start();
-// #ifdef USE_RDMA
-//   new thread(&RdmaNet::Start, reinterpret_cast<RdmaNet *>(net_));
-//   sleep(1.0);
-// #else
-//   new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
-// #endif
 }
 
 void RemoteClientService::HandleResponse(const void *msg, int size,
@@ -60,7 +53,6 @@ void RemoteClientService::HandleResponse(const void *msg, int size,
 void RemoteClientService::Stop() {
   is_running_ = false;
   net_->Stop();
-  // net_thread_->join();
 }
 
 ClientDb RemoteClientService::CreateClientDb() {

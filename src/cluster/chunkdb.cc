@@ -18,7 +18,7 @@ ErrorCode ChunkDb::Get(const Hash& hash, Chunk* chunk) {
   UMessage msg;
   msg.set_type(UMessage::GET_CHUNK_REQUEST);
   CreateChunkRequest(hash, &msg);
-  
+
   Send(msg, ptt_->GetWorkerAddr(hash));
 
   auto response = (WaitForResponse())->response_payload();
@@ -53,6 +53,6 @@ ErrorCode ChunkDb::Exists(const Hash& hash, bool* exist) {
   // send
   Send(msg, ptt_->GetWorkerAddr(hash));
   return GetBoolResponse(exist);
-
 }
+
 }  // namespace ustore

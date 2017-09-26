@@ -4,9 +4,9 @@
 
 namespace ustore {
 
-class CCallBack : public CallBack {
+class ChunkClientCallBack : public CallBack {
  public:
-  explicit CCallBack(void* handler) : CallBack(handler) {}
+  explicit ChunkClientCallBack(void* handler) : CallBack(handler) {}
   void operator()(const void *msg, int size, const node_id_t& source) override {
     (reinterpret_cast<RemoteChunkClientService *>(handler_))->HandleResponse(
                                         msg, size, source);
@@ -15,18 +15,11 @@ class CCallBack : public CallBack {
 
 void RemoteChunkClientService::Start() {
   net_->CreateNetContexts(ptt_.workerAddrs());
-  cb_.reset(new CCallBack(this));
+  cb_.reset(new ChunkClientCallBack(this));
   net_->RegisterRecv(cb_.get());
 
-  // zh: make the start behavior consistent with the worker service
   is_running_ = true;
   net_->Start();
-// #ifdef USE_RDMA
-//   new thread(&RdmaNet::Start, reinterpret_cast<RdmaNet *>(net_));
-//   sleep(1.0);
-// #else
-//   new thread(&ZmqNet::Start, reinterpret_cast<ZmqNet *>(net_));
-// #endif
 }
 
 ChunkDb RemoteChunkClientService::CreateChunkDb() {

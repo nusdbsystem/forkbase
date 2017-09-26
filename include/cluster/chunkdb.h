@@ -10,7 +10,7 @@ namespace ustore {
 
 /**
  * The client part of chunk service, providing APIs for fetching, writing and checking
- * certain chunk hash. 
+ * certain chunk hash.
  * An extension of ClientDB
  */
 

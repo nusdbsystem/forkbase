@@ -17,7 +17,8 @@ namespace ustore {
  */
 class Partitioner {
  public:
-  explicit Partitioner(const std::string& hostfile, const std::string& self_addr);
+  explicit Partitioner(const std::string& hostfile,
+                       const std::string& self_addr);
   ~Partitioner() = default;
 
   // get worker id of a specific hash (For Chunked data types)
