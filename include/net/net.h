@@ -134,6 +134,13 @@ class NetContext {
   node_id_t src_id_, dest_id_;
 };
 
+namespace net {
+
+  // create network instance, caller is responsible for the allocated instance
+  Net* CreateServerNetwork(const node_id_t& id, int n_threads = 1);
+  Net* CreateClientNetwork(int n_threads = 1);
+
+}  // namespace net
 }  // namespace ustore
 
 #endif  // USTORE_NET_NET_H_

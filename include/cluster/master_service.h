@@ -18,30 +18,30 @@ class Master;
  * the ranges.
  * Basically a simplified version of WorkerService.
  */
-class MasterService: public WorkerService {
+class MasterService : public WorkerService {
  public:
-    // Dispatch requests (RangeInfo, etc.) from the network.
-    // Basically call this->HandleRequest that invoke Master methods.
-    static void ResponseDispatch(const void *msg, int size, void *handler,
-                                 const node_id_t& source);
+  // Dispatch requests (RangeInfo, etc.) from the network.
+  // Basically call this->HandleRequest that invoke Master methods.
+  static void ResponseDispatch(const void *msg, int size, void *handler,
+                               const node_id_t& source);
 
-    explicit MasterService(const node_id_t& id, const string& config_path)
-        : WorkerService(id), config_path_(config_path) {}
-    ~MasterService();
+  explicit MasterService(const node_id_t& id, const string& config_path)
+      : WorkerService(id), config_path_(config_path) {}
+  ~MasterService();
 
-    // initialize the network, the worker and register callback
-    void Init();
-    /**
-     * Handle requests:
-     * 1. It parse msg into a message (RangeRequest, e.g)
-     * 2. Invoke the processing logic from Master.
-     * 3. Construct a response (RangeResponse, e.g.) and send back.
-     */
-    void HandleRequest(const void *msg, int size, const node_id_t& source);
+  // initialize the network, the worker and register callback
+  void Init();
+  /**
+   * Handle requests:
+   * 1. It parse msg into a message (RangeRequest, e.g)
+   * 2. Invoke the processing logic from Master.
+   * 3. Construct a response (RangeResponse, e.g.) and send back.
+   */
+  void HandleRequest(const void *msg, int size, const node_id_t& source);
 
  private:
-    string config_path_;  // the master may read from a global config file
-    Master* master_;  // where the logic happens
+  string config_path_;  // the master may read from a global config file
+  Master* master_;  // where the logic happens
 };
 }  // namespace ustore
 

@@ -4,6 +4,11 @@
 
 #include <set>
 #include <vector>
+#ifdef USE_RDMA
+#include "net/rdma_net.h"
+#else
+#include "net/zmq_net.h"
+#endif  // USE_RDMA
 
 namespace ustore {
 
@@ -32,4 +37,27 @@ void Net::CreateNetContexts(const std::vector<node_id_t>& nodes) {
 
 void Net::DeleteNetContext(NetContext* ctx) { delete ctx; }
 
+namespace net {
+
+Net* CreateServerNetwork(const node_id_t& id, int n_threads) {
+#ifdef USE_RDMA
+  return new RdmaNet(id, n_threads);
+#else
+  return new ServerZmqNet(id, n_threads);
+#endif
+  LOG(FATAL) << "Failed to create network instance";
+  return nullptr;
+}
+
+Net* CreateClientNetwork(int n_threads) {
+#ifdef USE_RDMA
+  return new RdmaNet("", n_threads);
+#else
+  return new ClientZmqNet(n_threads);
+#endif
+  LOG(FATAL) << "Failed to create network instance";
+  return nullptr;
+}
+
+}  // namespace net
 }  // namespace ustore

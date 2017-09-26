@@ -6,15 +6,12 @@
 
 namespace ustore {
 
-const int ServiceContext::kInitForMs = 75;
-
 void ServiceContext::Start() {
   if (svc_thread_) {
     LOG(WARNING) << "UStore service has been already started";
   } else {
     svc_.Init();
     svc_thread_.reset(new std::thread(&RemoteClientService::Start, &svc_));
-    std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
   }
 }
 

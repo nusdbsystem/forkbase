@@ -1,8 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors
 
 #include <thread>
-#include "net/rdma_net.h"
-#include "net/zmq_net.h"
+#include "net/net.h"
 #include "utils/env.h"
 #include "utils/logging.h"
 #include "cluster/remote_client_service.h"
@@ -20,13 +19,9 @@ class ClientServiceCallBack : public CallBack {
   }
 };
 
-// for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void RemoteClientService::Init() {
-#ifdef USE_RDMA
-  net_.reset(new RdmaNet("", Env::Instance()->config().recv_threads()));
-#else
-  net_.reset(new ClientZmqNet(Env::Instance()->config().recv_threads()));
-#endif
+  net_.reset(net::CreateClientNetwork(
+             Env::Instance()->config().recv_threads()));
 }
 
 void RemoteClientService::Start() {

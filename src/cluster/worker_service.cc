@@ -5,8 +5,7 @@
 #include "utils/env.h"
 #include "spec/slice.h"
 #include "hash/hash.h"
-#include "net/zmq_net.h"
-#include "net/rdma_net.h"
+#include "net/net.h"
 #include "worker/worker.h"
 #include "utils/logging.h"
 
@@ -24,20 +23,9 @@ class WSCallBack : public CallBack {
   }
 };
 
-// for now, reads configuration from WORKER_FILE and CLIENTSERVICE_FILE
 void WorkerService::Init() {
-// TODO(zhanghao): define a static function in net.cc to create net instance,
-// instead of directly use USE_RDMA flag everywhere
-#ifdef USE_RDMA
-  // net_ = new RdmaNet(node_addr_, Env::Instance()->config().recv_threads());
-  net_.reset(new RdmaNet(node_addr_, Env::Instance()->config().recv_threads()));
-#else
-  // net_ = new ZmqNet(node_addr_, Env::Instance()->config()->recv_threads());
-  // net_ = new ServerZmqNet(node_addr_,
-  // Env::Instance()->config().recv_threads());
-  net_.reset(new ServerZmqNet(node_addr_,
+  net_.reset(net::CreateServerNetwork(node_addr_,
              Env::Instance()->config().recv_threads()));
-#endif
 }
 
 void WorkerService::Start() {
