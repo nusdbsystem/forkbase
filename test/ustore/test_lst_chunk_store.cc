@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <iostream>
 #include "gtest/gtest.h"
 #include "store/lst_store.h"
 #include "store/iterator.h"
@@ -57,8 +58,8 @@ StoreIterator end() {
   std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
   chunk.forceHash();
   auto it = FindChunk<Iterator>(chunk);
-  if (chunk.hash() == (*it).hash()) return ++it;
-  else return it;
+  if (it != LSTStore::Instance()->end<Iterator>() && chunk.hash() == (*it).hash()) ++it;
+  return it;
 }
 
 TEST(LSTStore, Put) {
