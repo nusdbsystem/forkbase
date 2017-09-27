@@ -16,7 +16,7 @@ namespace ustore {
 class ChunkService : public Service {
  public:
   explicit ChunkService(const node_id_t& addr)
-    : Service(addr), store_(store::GetChunkStore()) {}
+    : Service(addr, true), store_(store::GetChunkStore()) {}
   ~ChunkService() = default;
 
   void HandleRequest(const void *msg, int size, const node_id_t& source)

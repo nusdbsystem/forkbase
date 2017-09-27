@@ -19,7 +19,7 @@ Chunk LocalChunkLoader::GetChunk(const Hash& key) {
 }
 
 Chunk PartitionedChunkLoader::GetChunk(const Hash& key) {
-  int id = ptt_->GetWorkerId(key);
+  int id = ptt_->GetDestId(key);
   if (id == ptt_->id()) {
     return cs_->Get(key);
   } else {

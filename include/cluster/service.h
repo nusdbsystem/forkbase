@@ -18,7 +18,10 @@ namespace ustore {
  */
 class Service : private Noncopyable {
  public:
-  explicit Service(const node_id_t& addr) : node_addr_(addr) {}
+  // use another port if xor_port = true
+  explicit Service(const node_id_t& addr, bool xor_port) : node_addr_(addr) {
+    if (xor_port) node_addr_.back() ^= 1;
+  }
   virtual ~Service() = default;
 
   void Init();
@@ -41,7 +44,7 @@ class Service : private Noncopyable {
 
   // allocate a net::CallBack instance
   virtual CallBack* RegisterCallBack() = 0;
-  const node_id_t node_addr_;
+  node_id_t node_addr_;
 
  private:
   std::unique_ptr<CallBack> cb_;

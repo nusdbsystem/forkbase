@@ -81,9 +81,9 @@ void RequestThread(int starting_idx, int size, ChunkClient* chunkdb) {
 
 vector<ChunkService*> ChunkServiceInit(string test_file) {
   vector<ChunkService*> servers;
-  Env::Instance()->m_config().set_chunk_server_file(test_file);
-
-  ifstream fin(Env::Instance()->config().chunk_server_file());
+  Env::Instance()->m_config().set_worker_file(test_file);
+  ifstream fin(Env::Instance()->config().worker_file());
+  CHECK(fin) << "Failed to open: " << test_file;
   string server_addr;
   while (fin >> server_addr) {
     servers.push_back(new ChunkService(server_addr));
@@ -92,7 +92,7 @@ vector<ChunkService*> ChunkServiceInit(string test_file) {
 }
 
 TEST(TestChunkService, ChunkService1Service) {
-  vector<ChunkService*> services = ChunkServiceInit("conf/chunk_server_test");
+  vector<ChunkService*> services = ChunkServiceInit("conf/test_single_worker.lst");
   for (auto cs : services)
     cs -> Init();
 
@@ -128,7 +128,7 @@ TEST(TestChunkService, ChunkService1Service) {
 }
 
 TEST(TestChunkService, ChunkService2Services) {
-  vector<ChunkService*> services = ChunkServiceInit("conf/chunk_server_test2");
+  vector<ChunkService*> services = ChunkServiceInit("conf/test_multi_worker.lst");
   for (auto cs : services)
     cs -> Init();
 
@@ -169,7 +169,7 @@ TEST(TestChunkService, ChunkService2Services) {
 }
 
 TEST(TestChunkService, ChunkService2Services2ClientThreads) {
-  vector<ChunkService*> services = ChunkServiceInit("conf/chunk_server_test2");
+  vector<ChunkService*> services = ChunkServiceInit("conf/test_multi_worker.lst");
   for (auto cs : services)
     cs -> Init();
 

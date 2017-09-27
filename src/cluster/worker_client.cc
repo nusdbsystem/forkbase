@@ -36,7 +36,7 @@ ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
   auto request = msg.mutable_request_payload();
   request->set_version(pre_version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -48,7 +48,7 @@ ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
   auto request = msg.mutable_request_payload();
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -68,7 +68,7 @@ ErrorCode WorkerClient::Get(const Slice& key, const Slice& branch, UCell* meta)
   auto request = msg.mutable_request_payload();
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetUCellResponse(meta);
 }
 
@@ -80,7 +80,7 @@ ErrorCode WorkerClient::Get(const Slice& key, const Hash& version, UCell* meta)
   auto request = msg.mutable_request_payload();
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetUCellResponse(meta);
 }
 
@@ -94,7 +94,7 @@ ErrorCode WorkerClient::GetChunk(const Slice& key, const Hash& version,
   request->set_key(key.data(), key.len());
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetChunkResponse(chunk);
 }
 
@@ -103,7 +103,7 @@ ErrorCode WorkerClient::GetStorageInfo(std::vector<StoreInfo>* info) const {
   // header
   msg.set_type(UMessage::GET_INFO_REQUEST);
   // go through all workers to retrieve keys
-  for (const auto& dest : ptt_->workerAddrs()) {
+  for (const auto& dest : ptt_->destAddrs()) {
     Send(&msg, dest);
     ErrorCode err = GetInfoResponse(info);
     if (err != ErrorCode::kOK) return err;
@@ -129,7 +129,7 @@ ErrorCode WorkerClient::Branch(const Slice& key, const Slice& old_branch,
   auto request = msg.mutable_request_payload();
   request->set_ref_branch(old_branch.data(), old_branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetEmptyResponse();
 }
 
@@ -141,7 +141,7 @@ ErrorCode WorkerClient::Branch(const Slice& key, const Hash& version,
   auto request = msg.mutable_request_payload();
   request->set_ref_version(version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetEmptyResponse();
 }
 
@@ -156,7 +156,7 @@ ErrorCode WorkerClient::Rename(const Slice& key, const Slice& old_branch,
   request->set_ref_branch(old_branch.data(), old_branch.len());
   request->set_branch(new_branch.data(), new_branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetEmptyResponse();
 }
 
@@ -189,7 +189,7 @@ ErrorCode WorkerClient::Merge(const Slice& key, const Value& value,
   request->set_branch(tgt_branch.data(), tgt_branch.len());
   request->set_ref_branch(ref_branch.data(), ref_branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -203,7 +203,7 @@ ErrorCode WorkerClient::Merge(const Slice& key, const Value& value,
   request->set_branch(tgt_branch.data(), tgt_branch.len());
   request->set_ref_version(ref_version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -216,7 +216,7 @@ ErrorCode WorkerClient::Merge(const Slice& key, const Value& value,
   request->set_version(ref_version1.value(), Hash::kByteLength);
   request->set_ref_version(ref_version2.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -225,7 +225,7 @@ ErrorCode WorkerClient::ListKeys(std::vector<std::string>* keys) const {
   // header
   msg.set_type(UMessage::LIST_REQUEST);
   // go through all workers to retrieve keys
-  for (const auto& dest : ptt_->workerAddrs()) {
+  for (const auto& dest : ptt_->destAddrs()) {
     Send(&msg, dest);
     ErrorCode err = GetStringListResponse(keys);
     if (err != ErrorCode::kOK) return err;
@@ -242,7 +242,7 @@ ErrorCode WorkerClient::ListBranches(const Slice& key,
   auto request = msg.mutable_request_payload();
   request->set_key(key.data(), key.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetStringListResponse(branches);
 }
 
@@ -254,7 +254,7 @@ ErrorCode WorkerClient::Exists(const Slice& key, bool* exist) const {
   auto request = msg.mutable_request_payload();
   request->set_key(key.data(), key.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetBoolResponse(exist);
 }
 
@@ -268,7 +268,7 @@ ErrorCode WorkerClient::Exists(const Slice& key, const Slice& branch,
   request->set_key(key.data(), key.len());
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetBoolResponse(exist);
 }
 
@@ -282,7 +282,7 @@ ErrorCode WorkerClient::GetBranchHead(const Slice& key, const Slice& branch,
   request->set_key(key.data(), key.len());
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionResponse(version);
 }
 
@@ -297,7 +297,7 @@ ErrorCode WorkerClient::IsBranchHead(const Slice& key, const Slice& branch,
   request->set_branch(branch.data(), branch.len());
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetBoolResponse(isHead);
 }
 
@@ -310,7 +310,7 @@ ErrorCode WorkerClient::GetLatestVersions(const Slice& key,
   auto request = msg.mutable_request_payload();
   request->set_key(key.data(), key.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionListResponse(versions);
 }
 
@@ -324,7 +324,7 @@ ErrorCode WorkerClient::IsLatestVersion(const Slice& key, const Hash& version,
   request->set_key(key.data(), key.len());
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetBoolResponse(isLatest);
 }
 
@@ -337,7 +337,7 @@ ErrorCode WorkerClient::Delete(const Slice& key, const Slice& branch) {
   request->set_key(key.data(), key.len());
   request->set_branch(branch.data(), branch.len());
   // send
-  Send(&msg, ptt_->GetWorkerAddr(key));
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetEmptyResponse();
 }
 

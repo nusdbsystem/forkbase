@@ -26,6 +26,16 @@ if [ -z $USTORE_CONF ]; then
   USTORE_CONF=$USTORE_HOME/conf
 fi
 
+# set USTORE_CONF_FILE
+if [ -z $USTORE_CONF_FILE ]; then
+  USTORE_CONF_FILE=$USTORE_CONF/config.cfg
+fi
+
+# set USTORE_CONF_HOST_FILE
+if [ -z $USTORE_CONF_HOST_FILE ]; then
+  USTORE_CONF_HOST_FILE=`grep "worker_file:" $USTORE_CONF_FILE | cut -d '"' -f 2`
+fi
+
 # set USTORE_LOG
 if [ -z $USTORE_LOG ]; then
   USTORE_LOG=$USTORE_HOME/log
@@ -50,7 +60,7 @@ wait_and_fkill() {
                 $fkill > /dev/null 2>&1
             fi
         else
-           return 
+           return
         fi
     done
 }

@@ -14,7 +14,7 @@ namespace ustore {
 // configuration file passed from the commandline
 DEFINE_string(config, Env::kDefaultConfigFile, "");
 
-const char* Env::kDefaultConfigFile = "conf/config";
+const char* Env::kDefaultConfigFile = "conf/config.cfg";
 
 Env::Env() {
   int fd = open(FLAGS_config.c_str(), O_RDONLY);

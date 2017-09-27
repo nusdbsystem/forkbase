@@ -7,21 +7,17 @@
 namespace ustore {
 
 Partitioner::Partitioner(const std::string& hostfile,
-                         const std::string& self_addr) {
+                         const std::string& self_addr, bool xor_port) {
   // load worker file
   std::ifstream fin(hostfile);
-  std::string worker_addr;
-  for (int id = 0; fin >> worker_addr; ++id) {
-    worker_list_.push_back(worker_addr);
-    if (worker_addr == self_addr) id_ = id;
+  std::string dest_addr;
+  for (int id = 0; fin >> dest_addr; ++id) {
+    if (dest_addr == self_addr) id_ = id;
+    // chunk service use XOR-ed port
+    if (xor_port) dest_addr.back() ^= 1;
+    dest_list_.push_back(dest_addr);
   }
   fin.close();
-}
-
-int Partitioner::GetWorkerId(const Hash& hash) const {
-  uint64_t idx = *reinterpret_cast<const int64_t*>(hash.value() + 9);
-  // uint64_t idx = 0;
-  return idx % worker_list_.size();
 }
 
 }  // namespace ustore

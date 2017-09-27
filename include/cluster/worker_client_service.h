@@ -38,7 +38,7 @@ class WorkerClientService : public ClientService {
   CallBack* RegisterCallBack() override;
 
  private:
-  const Partitioner ptt_;
+  const WorkerPartitioner ptt_;
 };
 
 }  // namespace ustore

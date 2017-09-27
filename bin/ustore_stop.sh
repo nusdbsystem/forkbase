@@ -14,14 +14,13 @@ httpc_kill="killall -q -w -s SIGTERM -r ustore_http"
 httpc_fkill="killall -q -s SIGKILL -r ustore_http"
 
 # kill ustore worker processes
-host_file=$USTORE_CONF/workers
-hosts=`cat $host_file | cut -d ':' -f 1`
+hosts=`cat $USTORE_CONF_HOST_FILE | cut -d ':' -f 1`
 for i in ${hosts[@]}; do
   echo Stop ustore @ $i ...
   if [ $i == localhost ]; then
     ./bin/ustore_stop_worker.sh
   else
-    ssh $ssh_options $i $USTORE_HOME/bin/ustore_stop_worker.sh 
+    ssh $ssh_options $i $USTORE_HOME/bin/ustore_stop_worker.sh
   fi
 done
 

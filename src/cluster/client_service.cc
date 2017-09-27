@@ -10,7 +10,7 @@ namespace ustore {
 void ClientService::Init() {
   net_.reset(net::CreateClientNetwork(
              Env::Instance()->config().recv_threads()));
-  net_->CreateNetContexts(ptt_->workerAddrs());
+  net_->CreateNetContexts(ptt_->destAddrs());
   cb_.reset(RegisterCallBack());
   net_->RegisterRecv(cb_.get());
 }

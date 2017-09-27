@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
               << "Found invalid command-line option" << std::endl;
     return -1;
   }
-  Env::Instance()->m_config().set_worker_file("conf/worker_test");
+  Env::Instance()->m_config().set_worker_file("conf/test_single_worker.lst");
   BenchmarkWorker();
   BenchmarkClient();
   return 0;

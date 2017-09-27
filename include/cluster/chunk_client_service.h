@@ -14,7 +14,7 @@ class ChunkClientService : public ClientService {
  public:
   ChunkClientService()
     : ClientService(&ptt_),
-      ptt_(Env::Instance()->config().chunk_server_file(), "") {}
+      ptt_(Env::Instance()->config().worker_file(), "") {}
   ~ChunkClientService() = default;
 
   ChunkClient CreateChunkClient();
@@ -23,7 +23,7 @@ class ChunkClientService : public ClientService {
   CallBack* RegisterCallBack() override;
 
  private:
-  const Partitioner ptt_;
+  const ChunkPartitioner ptt_;
 };
 
 }  // namespace ustore

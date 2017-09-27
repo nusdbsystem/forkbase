@@ -16,8 +16,7 @@ ssh_options="-oStrictHostKeyChecking=no \
              -oLogLevel=quiet"
 
 # clean ustore data
-host_file=$USTORE_CONF/workers
-hosts=`cat $host_file | cut -d ':' -f 1`
+hosts=`cat $USTORE_CONF_HOST_FILE | cut -d ':' -f 1`
 for i in ${hosts[@]}; do
   echo Clean ustore @ $i ...
   if [ $i == localhost ]; then

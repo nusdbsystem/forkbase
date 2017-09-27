@@ -10,7 +10,7 @@ bool LocalChunkWriter::Write(const Hash& key, const Chunk& chunk) {
 }
 
 bool PartitionedChunkWriter::Write(const Hash& key, const Chunk& chunk) {
-  int id = ptt_->GetWorkerId(key);
+  int id = ptt_->GetDestId(key);
   if (id == ptt_->id()) {
     return cs_->Put(key, chunk);
   } else {

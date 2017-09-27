@@ -19,7 +19,7 @@ namespace ustore {
 class WorkerService : public Service {
  public:
   WorkerService(const node_id_t& addr, bool persist)
-    : Service(addr), ptt_(Env::Instance()->config().worker_file(), addr),
+    : Service(addr, false), ptt_(Env::Instance()->config().worker_file(), addr),
       // TODO(wangsh): pass real partitioner to worker when partitioned
       worker_(ptt_.id(), nullptr, persist) {}
   ~WorkerService() = default;
@@ -51,7 +51,7 @@ class WorkerService : public Service {
   void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* response);
   void HandleGetInfoRequest(const UMessage& umsg, UMessage* response);
 
-  const Partitioner ptt_;
+  const ChunkPartitioner ptt_;
   Worker worker_;  // where the logic happens
   std::mutex lock_;
 };

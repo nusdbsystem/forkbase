@@ -35,11 +35,8 @@ ssh_options="-oStrictHostKeyChecking=no \
 ustore_sshrun="cd $USTORE_HOME; $ustore_run"
 
 # start all the workers
-host_file=$USTORE_CONF/workers
-# old_IFS=$IFS
-# IFS=$'\n'
 echo "------------- Starting workers -------------"
-for i in `cat $host_file` ; do
+for i in `cat $USTORE_CONF_HOST_FILE` ; do
   host=`echo $i | cut -d ':' -f 1`
   port=`echo $i | cut -d ':' -f 2`
   if [ $host = localhost ] ; then

@@ -16,8 +16,7 @@ message Config {
 
   /* cluster related */
   // file containing worker list in format of hostname:port
-  optional string worker_file = 10 [default = "conf/workers"];
-  optional string chunk_server_file = 11 [default = "conf/chunk_servers"];
+  optional string worker_file = 10 [default = "conf/workers.lst"];
 
   /* clientdb related */
   optional int32 recv_threads = 21 [default = 2]; // number of receiving threads
