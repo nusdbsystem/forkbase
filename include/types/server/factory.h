@@ -19,7 +19,12 @@ class ChunkableTypeFactory : private Noncopyable {
   // local chunkable types
   ChunkableTypeFactory() : ChunkableTypeFactory(nullptr) {}
   // distributed chunkable types
-  explicit ChunkableTypeFactory(const Partitioner* ptt) : ptt_(ptt) {}
+  explicit ChunkableTypeFactory(const Partitioner* ptt) : ptt_(ptt) {
+    if (ptt_)
+      writer_.reset(new PartitionedChunkWriter(ptt));
+    else
+      writer_.reset(new LocalChunkWriter());
+  }
   ~ChunkableTypeFactory() = default;
 
   // Load exsiting SObject
@@ -41,15 +46,7 @@ class ChunkableTypeFactory : private Noncopyable {
       return std::make_shared<LocalChunkLoader>();
   }
 
-  inline ChunkWriter* writer() {
-    if (!writer_) {
-      if (ptt_)
-        writer_.reset(new PartitionedChunkWriter(ptt_));
-      else
-        writer_.reset(new LocalChunkWriter());
-    }
-    return writer_.get();
-  }
+  inline ChunkWriter* writer() { return writer_.get(); }
 
  private:
   const Partitioner* const ptt_;

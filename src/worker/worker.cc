@@ -15,25 +15,15 @@ namespace ustore {
 
 namespace fs = boost::filesystem;
 
-Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool persist)
-  : id_(id), factory_(ptt), persist_(persist) {
-  // create data/log dir
-  auto dir = Env::Instance()->config().data_dir();
-  auto pattern = Env::Instance()->config().data_file_pattern();
-  // create data/log dir
-  fs::create_directory(fs::path(dir));
-  // set data path
-  std::string data_file = pattern + "_" + std::to_string(id_);
-  // init chunk store before using it
-  store::InitChunkStore(dir, data_file, persist);
-
-  if (persist_) {
+Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool pst)
+  : StoreInitializer(id, pst), id_(id), factory_(ptt) {
+  if (persist()) {
     // load head file
-    std::string head_path = dir + "/" + data_file + ".head";
+    std::string head_path = dataPath() + ".head";
     if (fs::exists(fs::path(head_path))) head_ver_.LoadBranchVersion(head_path);
+
     // load latest versions
     auto store = store::GetChunkStore();
-
     for (auto it = store->begin(); it != store->end(); ++it) {
       Chunk chunk = *it;
       if (chunk.type() == ChunkType::kCell)
@@ -44,11 +34,8 @@ Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool persist)
 
 Worker::~Worker() {
   // dump head file
-  if (persist_) {
-    auto dir = Env::Instance()->config().data_dir();
-    auto pattern = Env::Instance()->config().data_file_pattern();
-    std::string data_file = pattern + "_" + std::to_string(id_);
-    std::string head_path = dir + "/" + data_file + ".head";
+  if (persist()) {
+    std::string head_path = dataPath() + ".head";
     head_ver_.DumpBranchVersion(head_path);
   }
 }

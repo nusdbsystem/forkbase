@@ -9,6 +9,7 @@
 #include <vector>
 #include "spec/db.h"
 #include "store/chunk_store.h"
+#include "store/store_initializer.h"
 #include "types/server/factory.h"
 #include "types/ucell.h"
 #include "utils/noncopyable.h"
@@ -21,7 +22,7 @@ using WorkerID = uint32_t;
 /**
  * @brief Worker node management.
  */
-class Worker : public DB, private Noncopyable {
+class Worker : public DB, private StoreInitializer, private Noncopyable {
  public:
   Worker(const WorkerID& id, const Partitioner* ptt, bool persist);
   ~Worker();
@@ -329,7 +330,6 @@ class Worker : public DB, private Noncopyable {
 
   const WorkerID id_;
   ChunkableTypeFactory factory_;
-  bool persist_;
 };
 
 }  // namespace ustore
