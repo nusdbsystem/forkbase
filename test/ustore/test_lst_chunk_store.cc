@@ -4,7 +4,6 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include <iostream>
 #include "gtest/gtest.h"
 #include "store/lst_store.h"
 #include "store/iterator.h"
