@@ -4,51 +4,43 @@
 #define USTORE_CLUSTER_SERVICE_H_
 
 #include <memory>
-#include <string>
+#include <thread>
 #include "net/net.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
 
 /**
- * Service is an abstracted class to handle request from server side.
- * A Service receives requests from Client and invokes corresponding
- * classes to process the message.
- * Derived class from Service should provide impl for handling requests.
+ * Service Run() calls Start() in a background thread
  */
 class Service : private Noncopyable {
  public:
-  // use another port if xor_port = true
-  explicit Service(const node_id_t& addr, bool xor_port) : node_addr_(addr) {
-    if (xor_port) node_addr_.back() ^= 1;
-  }
-  virtual ~Service() = default;
+  Service() = default;
+  virtual ~Service() { Stop(); }
 
-  void Init();
+  // Init network before start
+  virtual void Init() = 0;
+  // Start in current thread (blocking)
   void Start();
+  // Run in another thread (non-blocking)
+  void Run();
+  // Stop service
   void Stop();
-
-  /**
-   * Handle requests:
-   * 1. It parse msg into a UStoreMessage
-   * 2. Invoke the processing logic correspondingly.
-   * 3. Construct a response and send back to source.
-   */
-  virtual void HandleRequest(const void *msg, int size,
-                             const node_id_t& source) = 0;
+  // check status
+  inline bool IsRunning() { return is_running_; }
 
  protected:
-  inline void Send(const node_id_t& source, byte_t* ptr, int len) {
-    net_->GetNetContext(source)->Send(ptr, static_cast<size_t>(len));
-  }
+  // Need to be called in Init()
+  void Init(std::unique_ptr<Net> net, std::unique_ptr<CallBack> callback);
 
-  // allocate a net::CallBack instance
-  virtual CallBack* RegisterCallBack() = 0;
-  node_id_t node_addr_;
-
- private:
   std::unique_ptr<CallBack> cb_;
   std::unique_ptr<Net> net_;
+
+ private:
+  // thread run in background
+  std::unique_ptr<std::thread> thread_;
+  volatile bool is_running_ = false;
+  volatile bool is_init_ = false;
 };
 }  // namespace ustore
 

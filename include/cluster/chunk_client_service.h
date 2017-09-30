@@ -17,10 +17,8 @@ class ChunkClientService : public ClientService {
       ptt_(Env::Instance()->config().worker_file(), "") {}
   ~ChunkClientService() = default;
 
+  void Init() override;
   ChunkClient CreateChunkClient();
-
- protected:
-  CallBack* RegisterCallBack() override;
 
  private:
   const ChunkPartitioner ptt_;

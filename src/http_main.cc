@@ -46,9 +46,7 @@ int main(int argc, char* argv[]) {
 
   // launch clients
   WorkerClientService service;
-  service.Init();
-  std::thread ct(&WorkerClientService::Start, &service);
-  sleep(1);
+  service.Run();
 
   WorkerClient client = service.CreateWorkerClient();
   HttpServer server(&client, port, bind_addr);  // create the HttpServer
@@ -61,7 +59,6 @@ int main(int argc, char* argv[]) {
 
   // exit and cleanup
   service.Stop();
-  ct.join();
   return 0;
 }
 

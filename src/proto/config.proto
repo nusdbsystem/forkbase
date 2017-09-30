@@ -13,12 +13,14 @@ message Config {
   optional string data_file_pattern = 2 [default = "ustore"];
   // maximum number of data segments allocated by chunk store
   optional int32 max_segments = 3 [default = 64];
+  // distributed chunk store maintain data globally without duplication
+  optional bool enable_dist_store = 4 [default = false];
 
   /* cluster related */
   // file containing worker list in format of hostname:port
   optional string worker_file = 10 [default = "conf/workers.lst"];
 
-  /* clientdb related */
+  /* service related */
   optional int32 recv_threads = 21 [default = 2]; // number of receiving threads
   // optional int32 service_threads = 22 [default = 1]; // number of server threads
 

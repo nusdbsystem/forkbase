@@ -7,8 +7,8 @@
 #include <vector>
 #include "cluster/partitioner.h"
 #include "cluster/response_blob.h"
+#include "cluster/service.h"
 #include "net/net.h"
-#include "utils/noncopyable.h"
 
 namespace ustore {
 
@@ -17,31 +17,22 @@ namespace ustore {
  * A ClientService receives responses from Server and invokes corresponding
  * classes to process the message.
  */
-class ClientService : private Noncopyable {
+class ClientService : public Service {
  public:
   explicit ClientService(const Partitioner* ptt)
-    : is_running_(false), nclients_(0), ptt_(ptt) {}
+    : nclients_(0), ptt_(ptt) {}
   virtual ~ClientService() = default;
 
-  void Init();
-  void Start();
-  void Stop();
-
+  void Init(std::unique_ptr<CallBack> callback);
   void HandleResponse(const void *msg, int size, const node_id_t& source);
 
  protected:
   ResponseBlob* CreateResponseBlob();
 
-  // allocate a net::CallBack instance
-  virtual CallBack* RegisterCallBack() = 0;
-
  private:
-  volatile bool is_running_;  // volatile to avoid caching old value
   int nclients_;  // how many RequestHandler thread it uses
-  std::vector<std::unique_ptr<ResponseBlob>> responses_;  // the response queue
-  std::unique_ptr<CallBack> cb_;
-  std::unique_ptr<Net> net_;
   const Partitioner* const ptt_;
+  std::vector<std::unique_ptr<ResponseBlob>> responses_;  // the response queue
 };
 }  // namespace ustore
 

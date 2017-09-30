@@ -3,7 +3,7 @@
 #ifndef USTORE_CLUSTER_CHUNK_SERVICE_H_
 #define USTORE_CLUSTER_CHUNK_SERVICE_H_
 
-#include "cluster/service.h"
+#include "cluster/host_service.h"
 #include "proto/messages.pb.h"
 #include "store/chunk_store.h"
 #include "utils/env.h"
@@ -13,17 +13,21 @@ namespace ustore {
 /**
  * The server side of chunk service, serving requests for ChunkDb requests.
  */
-class ChunkService : public Service {
+class ChunkService : public HostService {
  public:
+  static node_id_t GetXorAddr(const node_id_t& addr) {
+    node_id_t ret = addr;
+    ret.back() ^= 1;
+    return ret;
+  }
+
   explicit ChunkService(const node_id_t& addr)
-    : Service(addr, true), store_(store::GetChunkStore()) {}
+    : HostService(GetXorAddr(addr)), store_(store::GetChunkStore()) {}
   ~ChunkService() = default;
 
+  void Init() override;
   void HandleRequest(const void *msg, int size, const node_id_t& source)
     override;
-
- protected:
-  CallBack* RegisterCallBack() override;
 
  private:
   void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* reponse);

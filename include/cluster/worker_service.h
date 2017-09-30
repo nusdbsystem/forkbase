@@ -5,7 +5,7 @@
 
 #include <mutex>
 #include "cluster/partitioner.h"
-#include "cluster/service.h"
+#include "cluster/host_service.h"
 #include "proto/messages.pb.h"
 #include "utils/env.h"
 #include "worker/worker.h"
@@ -13,22 +13,21 @@
 namespace ustore {
 
 /**
- * The WorkerService receives requests from ClientService and invokes
+ * The WorkerService receives requests from WorkerClientService and invokes
  * the Worker to process the message.
  */
-class WorkerService : public Service {
+class WorkerService : public HostService {
  public:
   WorkerService(const node_id_t& addr, bool persist)
-    : Service(addr, false), ptt_(Env::Instance()->config().worker_file(), addr),
-      // TODO(wangsh): pass real partitioner to worker when partitioned
-      worker_(ptt_.id(), nullptr, persist) {}
+    : HostService(addr), ptt_(Env::Instance()->config().worker_file(), addr),
+      worker_(ptt_.id(),
+              Env::Instance()->config().enable_dist_store() ? &ptt_ : nullptr,
+              persist) {}
   ~WorkerService() = default;
 
+  void Init() override;
   void HandleRequest(const void *msg, int size, const node_id_t& source)
     override;
-
- protected:
-  CallBack* RegisterCallBack() override;
 
  private:
   Value ValueFromRequest(const ValuePayload& payload);

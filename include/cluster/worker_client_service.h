@@ -28,14 +28,12 @@ class WorkerClientService : public ClientService {
     : ClientService(&ptt_), ptt_(Env::Instance()->config().worker_file(), "") {}
   ~WorkerClientService() = default;
 
+  void Init() override;
   /**
    * Create a new ClientDb connecting to the database.
    * Interaction with the database is through this object.
    */
   WorkerClient CreateWorkerClient();
-
- protected:
-  CallBack* RegisterCallBack() override;
 
  private:
   const WorkerPartitioner ptt_;

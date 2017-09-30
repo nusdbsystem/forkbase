@@ -8,7 +8,6 @@
 #include <thread>
 #include "cluster/worker_client_service.h"
 #include "utils/logging.h"
-#include "utils/service_context.h"
 #include "utils/sync_task_line.h"
 #include "utils/timer.h"
 #include "spec/relational.h"
@@ -205,8 +204,9 @@ class FlushTaskLine
   using ErrorCodeType = ErrorCode;
 
   static WorkerClient GetWorkerClient() {
-    static ServiceContext svc_ctx;
-    return svc_ctx.GetWorkerClient();
+    static WorkerClientService svc;
+    if (!svc.IsRunning()) svc.Run();
+    return svc.CreateWorkerClient();
   }
 
   WorkerClient db_;

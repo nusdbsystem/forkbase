@@ -13,8 +13,6 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-
-constexpr int kInitForMs = 75;
 ColumnStore* cs = nullptr;
 
 int RunSample() {
@@ -128,9 +126,7 @@ int main(int argc, char* argv[]) {
   }
   // connect to UStore servcie
   WorkerClientService ustore_svc;
-  ustore_svc.Init();
-  std::thread ustore_svc_thread(&WorkerClientService::Start, &ustore_svc);
-  std::this_thread::sleep_for(std::chrono::milliseconds(kInitForMs));
+  ustore_svc.Run();
   WorkerClient client_db = ustore_svc.CreateWorkerClient();
   cs = new ColumnStore(&client_db);
   // run analytics task
@@ -140,7 +136,6 @@ int main(int argc, char* argv[]) {
   }
   // disconnect with UStore service
   ustore_svc.Stop();
-  ustore_svc_thread.join();
   delete cs;
   return ec;
 }

@@ -248,17 +248,11 @@ TEST(HttpTest, BasicOps) {
   while (fin >> worker_addr)
     workers.push_back(new ustore::WorkerService(worker_addr, false));
 
-  std::vector<std::thread> worker_threads;
-  for (size_t i = 0; i < workers.size(); i++)
-    workers[i]->Init();
-  for (size_t i = 0; i < workers.size(); i++)
-    worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
+  for (auto& worker : workers) worker->Run();
 
   // launch clients
   ustore::WorkerClientService service;
-  service.Init();
-  std::thread client_service_thread(&WorkerClientService::Start, &service);
-  usleep(kSleepTime);
+  service.Run();
   // 1 thread
   WorkerClient client = service.CreateWorkerClient();
 
@@ -412,13 +406,6 @@ TEST(HttpTest, BasicOps) {
 
   // stop the client service
   service.Stop();
-  client_service_thread.join();
-  usleep(kSleepTime);
   // stop workers
-  for (size_t i = 0; i < worker_threads.size(); i++) {
-    workers[i]->Stop();
-    worker_threads[i].join();
-    delete workers[i];
-    usleep(kSleepTime);
-  }
+  for (auto& p : workers) delete p;
 }

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include <thread>
 #include <vector>
 #include <set>
 #include <string>
@@ -32,7 +31,6 @@ using ustore::Value;
 using ustore::UType;
 using ustore::UCell;
 using ustore::StoreInfo;
-using std::thread;
 using std::vector;
 using std::set;
 using std::ifstream;
@@ -45,8 +43,6 @@ const string values[] = {"where is the wisdome in knowledge",
                          "where is the knowledge in information",
                          "the brown fox",
                          "jump over"};
-
-const int kSleepTime = 100000;
 
 // i^th thread issue requests from i*(nthreads/nreqs) to
 // (i+1)*(nthreads/nreqs)
@@ -173,18 +169,11 @@ TEST(TestMessage, TestWorkerClient1Thread) {
   while (fin >> worker_addr)
     workers.push_back(new WorkerService(worker_addr, false));
 
-  vector<thread> worker_threads;
-
-  for (size_t i = 0; i < workers.size(); i++)
-    workers[i]->Init();
-  for (size_t i = 0; i < workers.size(); i++)
-    worker_threads.push_back(thread(&WorkerService::Start, workers[i]));
+  for (auto& worker : workers) worker->Run();
 
   // launch clients
   WorkerClientService service;
-  service.Init();
-  thread client_service_thread(&WorkerClientService::Start, &service);
-  usleep(kSleepTime);
+  service.Run();
 
   // 1 thread
   WorkerClient client = service.CreateWorkerClient();
@@ -192,16 +181,8 @@ TEST(TestMessage, TestWorkerClient1Thread) {
 
   // stop the client service
   service.Stop();
-  client_service_thread.join();
-  usleep(kSleepTime);
-
   // stop workers
-  for (size_t i = 0; i < worker_threads.size(); i++) {
-    workers[i]->Stop();
-    worker_threads[i].join();
-    delete workers[i];
-    usleep(kSleepTime);
-  }
+  for (auto& worker : workers) delete worker;
 }
 
 /*

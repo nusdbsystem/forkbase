@@ -47,8 +47,6 @@ const string values[] = {"where is the wisdome in knowledge",
                          "the dead are using Twitter which amuses as it bites"};
 const byte_t raw_data[] = "where is the wisdom in knowledge";
 
-const int kSleepTime = 100000;
-
 bool check_raw_data(const byte_t *data1, const byte_t *data2, int size) {
   for (int i = 0; i<size; i++)
     if (data1[i] != data2[i]) return false;
@@ -67,7 +65,6 @@ void RequestThread(int starting_idx, int size, ChunkClient* chunkdb) {
   for (int i = 0; i < size; i++) {
     hashes.push_back(put_chunk(reinterpret_cast<const byte_t*>
                           (values[i+starting_idx].c_str()), chunkdb));
-    usleep(kSleepTime);
   }
 
   for (int i = 0; i < size; i++) {
@@ -93,62 +90,35 @@ vector<ChunkService*> ChunkServiceInit(string test_file) {
 
 TEST(TestChunkService, ChunkService1Service) {
   vector<ChunkService*> services = ChunkServiceInit("conf/test_single_worker.lst");
-  for (auto cs : services)
-    cs -> Init();
-
-  vector<thread> service_threads;
-  for (auto cs : services)
-    service_threads.push_back(thread(&ChunkService::Start, cs));
+  for (auto& cs : services) cs->Run();
 
   // clients
   ChunkClientService clientservice;
-  clientservice.Init();
-  thread clientservice_thread(&ChunkClientService::Start, &clientservice);
-  usleep(kSleepTime);
-
+  clientservice.Run();
   ChunkClient chunkdb = clientservice.CreateChunkClient();
-  usleep(kSleepTime);
 
   Hash hash = put_chunk(raw_data, &chunkdb);
-  usleep(kSleepTime);
 
   Chunk result;
   EXPECT_EQ(chunkdb.Get(hash, &result), ErrorCode::kOK);
   EXPECT_TRUE(check_raw_data(result.data(), raw_data, result.capacity()));
 
   clientservice.Stop();
-  clientservice_thread.join();
-  usleep(kSleepTime);
-  for (size_t i = 0; i < services.size(); i++) {
-    services[i]->Stop();
-    service_threads[i].join();
-    delete services[i];
-    usleep(kSleepTime);
-  }
+  for (auto& cs : services) delete cs;
 }
 
 TEST(TestChunkService, ChunkService2Services) {
   vector<ChunkService*> services = ChunkServiceInit("conf/test_multi_worker.lst");
-  for (auto cs : services)
-    cs -> Init();
-
-  vector<thread> service_threads;
-  for (auto cs : services)
-    service_threads.push_back(thread(&ChunkService::Start, cs));
+  for (auto& cs : services) cs->Run();
 
   // clients
   ChunkClientService clientservice;
-  clientservice.Init();
-  thread clientservice_thread(&ChunkClientService::Start, &clientservice);
-  usleep(kSleepTime);
-
+  clientservice.Run();
   ChunkClient chunkdb = clientservice.CreateChunkClient();
-  usleep(kSleepTime);
 
   vector<Hash> hashes;
   for (int i = 0; i < kValues; i++) {
     hashes.push_back(put_chunk(reinterpret_cast<const byte_t*>(values[i].c_str()), &chunkdb));
-    usleep(kSleepTime);
   }
 
   for (int i = 0; i < kValues; i++) {
@@ -158,34 +128,19 @@ TEST(TestChunkService, ChunkService2Services) {
               reinterpret_cast<const byte_t*>(values[i].c_str()), result.capacity()));
   }
   clientservice.Stop();
-  clientservice_thread.join();
-  usleep(kSleepTime);
-  for (size_t i = 0; i < services.size(); i++) {
-    services[i]->Stop();
-    service_threads[i].join();
-    delete services[i];
-    usleep(kSleepTime);
-  }
+  for (auto& cs : services) delete cs;
 }
 
 TEST(TestChunkService, ChunkService2Services2ClientThreads) {
   vector<ChunkService*> services = ChunkServiceInit("conf/test_multi_worker.lst");
-  for (auto cs : services)
-    cs -> Init();
-
-  vector<thread> service_threads;
-  for (auto cs : services)
-    service_threads.push_back(thread(&ChunkService::Start, cs));
+  for (auto& cs : services) cs->Run();
 
   // clients
   ChunkClientService clientservice;
-  clientservice.Init();
-  thread clientservice_thread(&ChunkClientService::Start, &clientservice);
-  usleep(kSleepTime);
+  clientservice.Run();
 
   ChunkClient chunkdb1 = clientservice.CreateChunkClient();
   ChunkClient chunkdb2 = clientservice.CreateChunkClient();
-  usleep(kSleepTime);
 
   vector<thread> threads;
   threads.push_back(thread(&RequestThread, 0, kValues/2, &chunkdb1));
@@ -195,13 +150,6 @@ TEST(TestChunkService, ChunkService2Services2ClientThreads) {
   threads[1].join();
 
   clientservice.Stop();
-  clientservice_thread.join();
-  usleep(kSleepTime);
-  for (size_t i = 0; i < services.size(); i++) {
-    services[i]->Stop();
-    service_threads[i].join();
-    delete services[i];
-    usleep(kSleepTime);
-  }
+  for (auto& cs : services) delete cs;
 }
 

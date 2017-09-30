@@ -16,9 +16,7 @@ constexpr int kSleepTime = 100000;
 void BenchmarkClient() {
   // create client service
   WorkerClientService service;
-  service.Init();
-  std::thread client_service_thread(&WorkerClientService::Start, &service);
-  sleep(1);
+  service.Run();
 
   // create client
   size_t n_client = BenchmarkConfig::num_clients;
@@ -35,9 +33,7 @@ void BenchmarkClient() {
   bm.Run();
 
   service.Stop();
-  client_service_thread.join();
   for (auto& p : dbs) delete p;
-  usleep(kSleepTime);
 }
 
 int main(int argc, char* argv[]) {

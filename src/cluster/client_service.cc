@@ -7,17 +7,12 @@
 
 namespace ustore {
 
-void ClientService::Init() {
-  net_.reset(net::CreateClientNetwork(
-             Env::Instance()->config().recv_threads()));
+void ClientService::Init(std::unique_ptr<CallBack> callback) {
+  Net* net = net::CreateClientNetwork(Env::Instance()->config().recv_threads());
+  Service::Init(std::unique_ptr<Net>(net), std::move(callback));
+  // NOTE(wangsh):
+  // client service need to init context before connect to host service
   net_->CreateNetContexts(ptt_->destAddrs());
-  cb_.reset(RegisterCallBack());
-  net_->RegisterRecv(cb_.get());
-}
-
-void ClientService::Start() {
-  is_running_ = true;
-  net_->Start();
 }
 
 void ClientService::HandleResponse(const void *msg, int size,
@@ -30,11 +25,6 @@ void ClientService::HandleResponse(const void *msg, int size,
   res_blob->message = ustore_msg;
   res_blob->has_msg = true;
   res_blob->condition.notify_all();
-}
-
-void ClientService::Stop() {
-  is_running_ = false;
-  net_->Stop();
 }
 
 ResponseBlob* ClientService::CreateResponseBlob() {

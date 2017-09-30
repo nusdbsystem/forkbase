@@ -36,15 +36,10 @@ void BenchmarkClient() {
   std::vector<WorkerService*> workers;
   while (fin_worker >> worker_addr)
     workers.push_back(new WorkerService(worker_addr, false));
-  std::vector<std::thread> worker_threads;
-  for (size_t i = 0; i < workers.size(); ++i)
-    workers[i]->Init();
-  for (size_t i = 0; i < workers.size(); ++i)
-    worker_threads.push_back(std::thread(&WorkerService::Start, workers[i]));
+  for (auto& worker : workers) worker->Run();
   // create client service
   WorkerClientService service;
-  service.Init();
-  std::thread client_service_thread(&ClientService::Start, &service);
+  service.Run();
 
   // create client
   size_t n_client = BenchmarkConfig::num_clients;
@@ -61,16 +56,8 @@ void BenchmarkClient() {
   bm.Run();
 
   service.Stop();
-  client_service_thread.join();
   for (auto& p : dbs) delete p;
-  usleep(kSleepTime);
-
-  for (size_t i = 0; i < worker_threads.size(); ++i) {
-    workers[i]->Stop();
-    worker_threads[i].join();
-    delete workers[i];
-    usleep(kSleepTime);
-  }
+  for (auto& worker : workers) delete worker;
 }
 
 int main(int argc, char* argv[]) {

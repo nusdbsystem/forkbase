@@ -18,8 +18,9 @@ class WorkerServiceCallBack : public CallBack {
   }
 };
 
-CallBack* WorkerService::RegisterCallBack() {
-  return new WorkerServiceCallBack(this);
+void WorkerService::Init() {
+  CallBack* callback = new WorkerServiceCallBack(this);
+  HostService::Init(std::unique_ptr<CallBack>(callback));
 }
 
 void WorkerService::HandleRequest(const void *msg, int size,

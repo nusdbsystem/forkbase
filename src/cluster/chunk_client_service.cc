@@ -13,14 +13,15 @@ class ChunkClientServiceCallBack : public CallBack {
   }
 };
 
+void ChunkClientService::Init() {
+  CallBack* callback = new ChunkClientServiceCallBack(this);
+  ClientService::Init(std::unique_ptr<CallBack>(callback));
+}
+
 ChunkClient ChunkClientService::CreateChunkClient() {
   // adding a new response blob
   ResponseBlob* resblob = CreateResponseBlob();
   return ChunkClient(resblob, &ptt_);
-}
-
-CallBack* ChunkClientService::RegisterCallBack() {
-  return new ChunkClientServiceCallBack(this);
 }
 
 }  // namespace ustore

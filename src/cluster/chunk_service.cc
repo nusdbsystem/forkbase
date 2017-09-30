@@ -13,8 +13,9 @@ class ChunkServiceCallBack : public CallBack {
   }
 };
 
-CallBack* ChunkService::RegisterCallBack() {
-  return new ChunkServiceCallBack(this);
+void ChunkService::Init() {
+  CallBack* callback = new ChunkServiceCallBack(this);
+  HostService::Init(std::unique_ptr<CallBack>(callback));
 }
 
 void ChunkService::HandleRequest(const void *msg, int size,
