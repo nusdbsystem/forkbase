@@ -4,8 +4,9 @@
 #define USTORE_CLUSTER_WORKER_SERVICE_H_
 
 #include <mutex>
-#include "cluster/partitioner.h"
 #include "cluster/host_service.h"
+#include "cluster/partitioner.h"
+#include "cluster/port_helper.h"
 #include "proto/messages.pb.h"
 #include "utils/env.h"
 #include "worker/worker.h"
@@ -19,7 +20,8 @@ namespace ustore {
 class WorkerService : public HostService {
  public:
   WorkerService(const node_id_t& addr, bool persist)
-    : HostService(addr), ptt_(Env::Instance()->config().worker_file(), addr),
+    : HostService(PortHelper::WorkerPort(addr)),
+      ptt_(Env::Instance()->config().worker_file(), addr),
       worker_(ptt_.id(),
               Env::Instance()->config().enable_dist_store() ? &ptt_ : nullptr,
               persist) {}

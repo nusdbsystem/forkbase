@@ -4,6 +4,7 @@
 #define USTORE_CLUSTER_CHUNK_SERVICE_H_
 
 #include "cluster/host_service.h"
+#include "cluster/port_helper.h"
 #include "proto/messages.pb.h"
 #include "store/chunk_store.h"
 #include "utils/env.h"
@@ -15,14 +16,9 @@ namespace ustore {
  */
 class ChunkService : public HostService {
  public:
-  static node_id_t GetXorAddr(const node_id_t& addr) {
-    node_id_t ret = addr;
-    ret.back() ^= 1;
-    return ret;
-  }
-
   explicit ChunkService(const node_id_t& addr)
-    : HostService(GetXorAddr(addr)), store_(store::GetChunkStore()) {}
+    : HostService(PortHelper::ChunkPort(addr)),
+      store_(store::GetChunkStore()) {}
   ~ChunkService() = default;
 
   void Init() override;

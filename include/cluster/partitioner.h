@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include "cluster/port_helper.h"
 #include "hash/hash.h"
 #include "spec/slice.h"
 
@@ -49,10 +50,9 @@ class Partitioner {
   }
 
  protected:
-  // worker service use original ports from worker file (excl_or = false)
-  // chunk service use XORed ports from worker file (excl_or = true)
+  // Partitioner need to know the rule for getting final port
   Partitioner(const std::string& hostfile, const std::string& self_addr,
-              bool xor_port);
+              std::function<std::string(std::string)> f_port);
 
  private:
   int id_ = -1;
@@ -62,14 +62,14 @@ class Partitioner {
 class WorkerPartitioner : public Partitioner {
  public:
   WorkerPartitioner(const std::string& hostfile, const std::string& self_addr)
-      : Partitioner(hostfile, self_addr, false) {}
+      : Partitioner(hostfile, self_addr, PortHelper::WorkerPort) {}
   ~WorkerPartitioner() = default;
 };
 
 class ChunkPartitioner : public Partitioner {
  public:
   ChunkPartitioner(const std::string& hostfile, const std::string& self_addr)
-      : Partitioner(hostfile, self_addr, true) {}
+      : Partitioner(hostfile, self_addr, PortHelper::ChunkPort) {}
   ~ChunkPartitioner() = default;
 };
 
