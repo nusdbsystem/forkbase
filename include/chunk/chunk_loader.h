@@ -13,6 +13,7 @@
 
 namespace ustore {
 
+class ChunkClient;
 class DB;
 class Partitioner;
 
@@ -46,8 +47,8 @@ class LocalChunkLoader : public ChunkLoader {
 // Partitioned chunk loader load chunks based on hash-based partitions
 class PartitionedChunkLoader : public ChunkLoader {
  public:
-  explicit PartitionedChunkLoader(const Partitioner* ptt)
-    : cs_(store::GetChunkStore()), ptt_(ptt) {}
+  explicit PartitionedChunkLoader(const Partitioner* ptt, ChunkClient* client)
+    : cs_(store::GetChunkStore()), ptt_(ptt), client_(client) {}
   ~PartitionedChunkLoader() = default;
 
  protected:
@@ -56,6 +57,7 @@ class PartitionedChunkLoader : public ChunkLoader {
  private:
   ChunkStore* const cs_;
   const Partitioner* const ptt_;
+  ChunkClient* client_;
 };
 
 // Client chunk loader load chunks via client/worker service

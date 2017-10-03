@@ -10,6 +10,7 @@
 
 namespace ustore {
 
+class ChunkClient;
 class Partitioner;
 
 // ChunkWriter is responsible to persist chunks into storage
@@ -38,8 +39,8 @@ class LocalChunkWriter : public ChunkWriter {
 // Partitioned chunk loader write chunks based on hash-based partitions
 class PartitionedChunkWriter : public ChunkWriter {
  public:
-  explicit PartitionedChunkWriter(const Partitioner* ptt)
-    : cs_(store::GetChunkStore()), ptt_(ptt) {}
+  explicit PartitionedChunkWriter(const Partitioner* ptt, ChunkClient* client)
+    : cs_(store::GetChunkStore()), ptt_(ptt), client_(client) {}
   ~PartitionedChunkWriter() = default;
 
   bool Write(const Hash& key, const Chunk& chunk) override;
@@ -47,6 +48,7 @@ class PartitionedChunkWriter : public ChunkWriter {
  private:
   ChunkStore* const cs_;
   const Partitioner* ptt_;
+  ChunkClient* client_;
 };
 
 }  // namespace ustore

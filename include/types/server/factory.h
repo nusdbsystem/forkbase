@@ -5,7 +5,9 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
+#include "cluster/chunk_client_service.h"
 #include "cluster/partitioner.h"
 #include "types/server/sblob.h"
 #include "types/server/slist.h"
@@ -20,10 +22,14 @@ class ChunkableTypeFactory : private Noncopyable {
   ChunkableTypeFactory() : ChunkableTypeFactory(nullptr) {}
   // distributed chunkable types
   explicit ChunkableTypeFactory(const Partitioner* ptt) : ptt_(ptt) {
-    if (ptt_)
-      writer_.reset(new PartitionedChunkWriter(ptt));
-    else
+    if (ptt_) {
+      // start chunk client service
+      client_svc_.Run();
+      cli_.push_back(client_svc_.CreateChunkClient());
+      writer_.reset(new PartitionedChunkWriter(ptt, &cli_[0]));
+    } else {
       writer_.reset(new LocalChunkWriter());
+    }
   }
   ~ChunkableTypeFactory() = default;
 
@@ -41,7 +47,7 @@ class ChunkableTypeFactory : private Noncopyable {
 
   inline std::shared_ptr<ChunkLoader> loader() {
     if (ptt_)
-      return std::make_shared<PartitionedChunkLoader>(ptt_);
+      return std::make_shared<PartitionedChunkLoader>(ptt_, &cli_[0]);
     else
       return std::make_shared<LocalChunkLoader>();
   }
@@ -51,6 +57,8 @@ class ChunkableTypeFactory : private Noncopyable {
  private:
   const Partitioner* const ptt_;
   std::unique_ptr<ChunkWriter> writer_;  // chunk writer is shared
+  ChunkClientService client_svc_;
+  std::vector<ChunkClient> cli_;
 };
 
 }  // namespace ustore

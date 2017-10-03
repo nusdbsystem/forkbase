@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include "chunk/chunk_loader.h"
+#include "cluster/chunk_client.h"
 #include "cluster/partitioner.h"
 #include "spec/db.h"
 
@@ -23,7 +24,10 @@ Chunk PartitionedChunkLoader::GetChunk(const Hash& key) {
   if (id == ptt_->id()) {
     return cs_->Get(key);
   } else {
-    // TODO(anh): need to fetch that chunk from remote node
+    Chunk c;
+    auto stat = client_->Get(key, &c);
+    CHECK(stat == ErrorCode::kOK) << "Failed to load remote chunk";
+    return c;
   }
   LOG(FATAL) << "Failed to load chunk";
   return Chunk();
