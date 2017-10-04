@@ -46,6 +46,7 @@ TEST(VSet, CreateFromEmpty) {
   v = get.value.Set();
 
   ustore::Slice actual_val = v.Get(Slice(delta_key));
+  EXPECT_TRUE(delta_key == actual_val);
   ASSERT_EQ(size_t(1), v.numElements());
 
   // remove the only key
