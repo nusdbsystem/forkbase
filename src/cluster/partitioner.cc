@@ -17,6 +17,7 @@ Partitioner::Partitioner(const std::string& hostfile,
     dest_list_.push_back(f_port(dest_addr));
   }
   fin.close();
+  CHECK(dest_list_.size()) << "IP:PORT list cannot be empty";
 }
 
 }  // namespace ustore

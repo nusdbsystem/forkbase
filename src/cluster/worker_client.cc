@@ -2,6 +2,7 @@
 
 #include "cluster/worker_client.h"
 #include "proto/messages.pb.h"
+#include "utils/env.h"
 #include "utils/logging.h"
 
 namespace ustore {
@@ -86,6 +87,10 @@ ErrorCode WorkerClient::Get(const Slice& key, const Hash& version, UCell* meta)
 
 ErrorCode WorkerClient::GetChunk(const Slice& key, const Hash& version,
                                  Chunk* chunk) const {
+  // NOT(wangsh):
+  // With local chunk store - ask worker computed from key
+  // With partitioned chunk store - ask worker computed from version
+  static bool dist_store = Env::Instance()->config().enable_dist_store();
   UMessage msg;
   // header
   msg.set_type(UMessage::GET_CHUNK_REQUEST);
@@ -94,7 +99,7 @@ ErrorCode WorkerClient::GetChunk(const Slice& key, const Hash& version,
   request->set_key(key.data(), key.len());
   request->set_version(version.value(), Hash::kByteLength);
   // send
-  Send(&msg, ptt_->GetDestAddr(key));
+  Send(&msg, dist_store ? ptt_->GetDestAddr(version) : ptt_->GetDestAddr(key));
   return GetChunkResponse(chunk);
 }
 

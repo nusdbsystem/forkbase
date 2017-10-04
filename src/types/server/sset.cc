@@ -45,10 +45,10 @@ Hash SSet::Set(const Slice& key) const {
   bool foundKey = (!cursor.isEnd() && orderedKey == cursor.currentKey());
 
   if (foundKey) {
-    LOG(WARNING) << "Try to add a existent key "
-                 << "(" << byte2str(orderedKey.data(),
-                                    orderedKey.numBytes()) << ")"
-                 << " From Set " << hash().ToBase32();
+    DLOG(WARNING) << "Try to add a existent key "
+                  << "(" << byte2str(orderedKey.data(),
+                                     orderedKey.numBytes()) << ")"
+                  << " From Set " << hash().ToBase32();
     return hash();
   }
 

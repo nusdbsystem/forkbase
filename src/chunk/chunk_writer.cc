@@ -16,12 +16,14 @@ bool PartitionedChunkWriter::Write(const Hash& key, const Chunk& chunk) {
     return cs_->Put(key, chunk);
   } else {
     // check if already exist
-    bool exists;
-    auto stat = client_->Exists(key, &exists);
-    CHECK(stat == ErrorCode::kOK) << "Failed to check remote chunk";
-    if (exists) return true;
+    // TODO(wangsh): net overhead is high now, not worth checking existence
+    // bool exists;
+    // auto stat = client_->Exists(key, &exists);
+    // CHECK(stat == ErrorCode::kOK) << "Failed to check remote chunk";
+    // if (exists) return true;
+
     // send chunk
-    stat = client_->Put(key, chunk);
+    auto stat = client_->Put(key, chunk);
     CHECK(stat == ErrorCode::kOK) << "Failed to put remote chunk";
     return true;
   }

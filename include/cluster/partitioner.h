@@ -21,6 +21,8 @@ class Partitioner {
 
   // get dest id of a specific hash (For Chunked data types)
   inline int GetDestId(const Hash& hash) const {
+    // no need to compute when having a single server
+    if (dest_list_.size() == 1) return 0;
     uint64_t idx = *reinterpret_cast<const int64_t*>(hash.value() + 9);
     return idx % dest_list_.size();
   }
