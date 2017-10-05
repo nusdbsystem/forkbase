@@ -45,7 +45,8 @@ class BlobNode : public LeafNode {
   size_t Copy(size_t start, size_t num_bytes, byte_t* buffer) const override;
   uint64_t FindIndexForKey(const OrderedKey& key,
                            ChunkLoader* loader) const override;
-  std::unique_ptr<const Segment> GetSegment(size_t start, size_t num_elements) const override;
+  std::unique_ptr<const Segment> GetSegment(
+      size_t start, size_t num_elements) const override;
 };
 
 }  // namespace ustore

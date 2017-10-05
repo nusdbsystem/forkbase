@@ -50,4 +50,23 @@ TEST_F(ListNodeEnv, ListNode) {
             std::memcmp(element2.data(),
                         actual_element2.data(),
                         element2.len()));
+
+  auto seg = lnode.GetSegment(1, 2);
+  EXPECT_EQ(size_t(2), seg->numEntries());
+
+  const ustore::Slice actual_seg_element2 =
+      ustore::ListNode::Decode(seg->entry(0));
+  EXPECT_EQ(element2.len(), actual_seg_element2.len());
+  EXPECT_EQ(0,
+            std::memcmp(element2.data(),
+                        actual_seg_element2.data(),
+                        element2.len()));
+
+  const ustore::Slice actual_seg_element3 =
+      ustore::ListNode::Decode(seg->entry(1));
+  EXPECT_EQ(element3.len(), actual_seg_element3.len());
+  EXPECT_EQ(0,
+            std::memcmp(element3.data(),
+                        actual_seg_element3.data(),
+                        element3.len()));
 }

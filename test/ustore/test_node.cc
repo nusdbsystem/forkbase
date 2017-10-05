@@ -152,6 +152,17 @@ TEST(MetaNode, Basic) {
   EXPECT_EQ(num_elements1 + num_elements2 + num_elements3, me.numElements());
   EXPECT_EQ(me.orderedKey(), key3);
 
+
+  // Test on GetSegment
+  auto seg = mnode.GetSegment(1, 2);
+  EXPECT_EQ(size_t(2), seg->numEntries());
+
+  EXPECT_EQ(encode_len2, seg->entryNumBytes(0));
+  EXPECT_EQ(0, std::memcmp(me_bytes2, seg->entry(0), encode_len2));
+
+  EXPECT_EQ(encode_len3, seg->entryNumBytes(1));
+  EXPECT_EQ(0, std::memcmp(me_bytes3, seg->entry(1), encode_len3));
+
   delete[] me_bytes1;
   delete[] me_bytes2;
   delete[] me_bytes3;

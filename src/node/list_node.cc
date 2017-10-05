@@ -134,7 +134,8 @@ size_t ListNode::GetLength(size_t start, size_t end) const {
   return 0;
 }
 
-std::unique_ptr<const Segment> ListNode::GetSegment(size_t start, size_t num_elements) const {
+std::unique_ptr<const Segment> ListNode::GetSegment(
+    size_t start, size_t num_elements) const {
   CHECK_LT(start, numEntries());
   if (num_elements == 0) {
     // return an empty segment

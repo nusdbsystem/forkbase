@@ -34,7 +34,8 @@ OrderedKey BlobNode::key(size_t idx) const {
   return OrderedKey();
 }
 
-uint64_t BlobNode::FindIndexForKey(const OrderedKey& key,                                   ChunkLoader* loader) const {
+uint64_t BlobNode::FindIndexForKey(
+    const OrderedKey& key, ChunkLoader* loader) const {
   LOG(FATAL) << "Not Supported to Get Blob Elemeny by Key. ";
   return 0;
 }
@@ -50,7 +51,8 @@ size_t BlobNode::Copy(size_t start, size_t num_bytes, byte_t* buffer) const {
   return len;
 }
 
-std::unique_ptr<const Segment> BlobNode::GetSegment(size_t start, size_t num_elements) const {
+std::unique_ptr<const Segment> BlobNode::GetSegment(
+    size_t start, size_t num_elements) const {
   CHECK_LE(start + num_elements, numEntries());
   std::unique_ptr<const Segment> seg(
       new FixedSegment(data(start), num_elements, 1));

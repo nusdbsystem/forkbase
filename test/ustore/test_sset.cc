@@ -271,3 +271,78 @@ TEST_F(SsetHugeEnv, Compare) {
 
   for (const auto& key : new_keys) {delete[] key.data(); }
 }
+
+TEST(SSetMerge, SmallNormal) {
+  const ustore::Slice k0("k0", 2);
+
+  const ustore::Slice k11("k11", 3);
+  const ustore::Slice k1("k1", 2);
+
+  const ustore::Slice k2("k2", 2);
+
+  const ustore::Slice k3("k3", 2);
+  const ustore::Slice k33("k33", 3);
+
+  const ustore::Slice k4("k4", 2);
+
+  const ustore::Slice k5("k5", 2);
+
+  const ustore::Slice k6("k6", 2);
+
+  const ustore::Slice k7("k7", 2);
+
+  const ustore::Slice k8("k8", 2);
+
+  ustore::ChunkableTypeFactory factory;
+  // Base Set: k0, k1, k2, k3, k5, k7
+  ustore::SSet base = factory.Create<ustore::SSet>(
+      std::vector<ustore::Slice>{k0, k1, k2, k3, k5, k7});
+
+  // Remove k0, edit k1 add k4, add k6
+  // Node 1 Set: k1', k2, k3, k4, k5, k6, k7
+  ustore::SSet node1 = factory.Create<ustore::SSet>
+      (std::vector<ustore::Slice>{k11, k2, k3, k4, k5, k6, k7});
+
+  // Edit k3, add k6, add k8
+  // Node 2 Set: k0, k1, k2, k3', k5, k6, k7, k8
+  ustore::SSet node2 = factory.Create<ustore::SSet>
+      (std::vector<ustore::Slice>{k0, k1, k2, k33, k5, k6, k7, k8});
+
+  // Result Set: k1', k2, k3' k4, k5, k6, k7, k8
+  std::vector<ustore::Slice> merged_keys{k11, k2, k33, k4, k5, k6, k7, k8};
+
+  ustore::SSet expected_merge =
+      factory.Create<ustore::SSet>(merged_keys);
+
+  ustore::SSet actual_merge =
+      factory.Load<ustore::SSet>(base.Merge(node1, node2));
+
+  auto it = actual_merge.Scan();
+  CheckIdenticalItems(merged_keys, &it);
+
+  ASSERT_TRUE(expected_merge.hash() == actual_merge.hash());
+}
+
+TEST(SSetMerge, SmallConflict) {
+  ustore::ChunkableTypeFactory factory;
+  const ustore::Slice k00("k00", 3);
+  const ustore::Slice k0("k0", 2);
+
+  const ustore::Slice k11("k11", 3);
+  const ustore::Slice k1("k1", 2);
+
+  const ustore::Slice k22("k22", 3);
+  const ustore::Slice k2("k2", 2);
+
+  ustore::SSet base = factory.Create<ustore::SSet>
+      (std::vector<ustore::Slice>{k0, k1, k2});
+
+  ustore::SSet node1 = factory.Create<ustore::SSet>
+      (std::vector<ustore::Slice>{k00, k11, k2});
+
+  ustore::SSet node2 = factory.Create<ustore::SSet>
+      (std::vector<ustore::Slice>{k0, k11, k22});
+
+  ustore::Hash result = base.Merge(node1, node2);
+  ASSERT_TRUE(result.empty());
+}

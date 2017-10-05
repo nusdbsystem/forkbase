@@ -185,6 +185,28 @@ TEST(NodeCursor, Tree) {
   ///////////////////////////////////////////////////////////////
   ustore::LocalChunkLoader loader;
 
+  ///////////////////////////////////////////////////
+  // Test on Advance Entry
+  ustore::NodeCursor entry_cursor(cm.hash(), 0, &loader);
+
+  // Advance one entry
+  size_t actual_steps = entry_cursor.AdvanceEntry(1);
+  EXPECT_EQ(size_t(1), actual_steps);
+  EXPECT_EQ(size_t(1), entry_cursor.numCurrentBytes());
+  EXPECT_EQ('b', *entry_cursor.current());
+
+  // Advance two entries
+  actual_steps = entry_cursor.AdvanceEntry(2);
+  EXPECT_EQ(size_t(2), actual_steps);
+  EXPECT_EQ(size_t(1), entry_cursor.numCurrentBytes());
+  EXPECT_EQ('d', *entry_cursor.current());
+
+  // Advance three entries to sequence end
+  actual_steps = entry_cursor.AdvanceEntry(3);
+  EXPECT_EQ(size_t(2), actual_steps);
+  EXPECT_TRUE(entry_cursor.isEnd());
+
+  ///////////////////////////////////////////////////////////////
   ustore::NodeCursor leaf_cursor(cm.hash(), 1, &loader);
 
   ASSERT_FALSE(leaf_cursor.empty());

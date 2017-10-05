@@ -124,4 +124,24 @@ TEST(SetNode, Basic) {
   constexpr ustore::byte_t k4[] = "k4";
   ustore::OrderedKey key4(false, k4, 2);
   EXPECT_EQ(size_t(3), mnode.FindIndexForKey(key4, nullptr));
+
+  auto seg = mnode.GetSegment(1, 2);
+  EXPECT_EQ(size_t(2), seg->numEntries());
+
+  size_t s;
+  const ustore::Slice actual_k2 =
+      ustore::SetNode::item(seg->entry(0), &s);
+  EXPECT_EQ(kv2.len(), actual_k2.len());
+  EXPECT_EQ(0,
+            std::memcmp(kv2.data(),
+                        actual_k2.data(),
+                        kv2.len()));
+
+  const ustore::Slice actual_k3 =
+      ustore::SetNode::item(seg->entry(1), &s);
+  EXPECT_EQ(kv3.len(), actual_k3.len());
+  EXPECT_EQ(0,
+            std::memcmp(kv3.data(),
+                        actual_k3.data(),
+                        kv3.len()));
 }

@@ -556,14 +556,14 @@ TEST(SMapMerge, BigNormal) {
 
   ustore::SMap base = factory.Create<ustore::SMap>(keys_, vals_);
 
-  // node edits the items from 100 to 400
+  // node 1 edits the items from 100 to 400
   ustore::Hash node1_hash = base.hash();
   for (uint32_t j = 100; j < 200; j++) {
     ustore::SMap node1 = factory.Load<ustore::SMap>(node1_hash);
     node1_hash = node1.Set(keys_[j], vals_[j + 100]);
   }
 
-  // node edits the items from 500 to 800
+  // node 2 edits the items from 500 to 800
   ustore::Hash node2_hash = base.hash();
   for (uint32_t j = 500; j < 600; j++) {
     ustore::SMap node2 = factory.Load<ustore::SMap>(node2_hash);

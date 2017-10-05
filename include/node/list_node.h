@@ -57,7 +57,8 @@ class ListNode : public LeafNode {
 
   OrderedKey key(size_t idx) const override;
 
-  std::unique_ptr<const Segment> GetSegment(size_t start, size_t num_elements) const override;
+  std::unique_ptr<const Segment> GetSegment(
+      size_t start, size_t num_elements) const override;
 
  private:
   void PrecomputeOffsets();

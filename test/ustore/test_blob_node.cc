@@ -15,6 +15,11 @@ TEST(BlobNode, Basic) {
 
   ustore::BlobNode bnode(&chunk);
 
+  auto seg = bnode.GetSegment(1, 2);
+  EXPECT_EQ(size_t(2), seg->numEntries());
+  EXPECT_EQ(0, std::memcmp("h", seg->entry(0), 1));
+  EXPECT_EQ(0, std::memcmp("e", seg->entry(1), 1));
+
   EXPECT_TRUE(bnode.isLeaf());
   EXPECT_EQ(sizeof(raw_data), bnode.numEntries());
   EXPECT_EQ(sizeof(raw_data), bnode.numElements());
@@ -54,4 +59,5 @@ TEST(BlobChunker, Basic) {
   EXPECT_EQ(chunk_info.meta_seg->numBytes(), me.numBytes());
   EXPECT_EQ(size_t(5), me.numElements());
   EXPECT_EQ(size_t(1), me.numLeaves());
+
 }

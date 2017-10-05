@@ -92,7 +92,8 @@ TEST(MapNode, Basic) {
   ustore::ChunkInfo chunk_info = ustore::MapChunker::Instance()->Make(segs);
 
   // First 4 bytes of chunk encode number of items
-  EXPECT_EQ(uint32_t(3), *reinterpret_cast<const uint32_t*>(chunk_info.chunk.data()));
+  EXPECT_EQ(uint32_t(3),
+            *reinterpret_cast<const uint32_t*>(chunk_info.chunk.data()));
   // Subsquent chunk data shall concat 2 kv items
   EXPECT_EQ(0,
             memcmp(chunk_info.chunk.data() + sizeof(uint32_t),
@@ -147,4 +148,39 @@ TEST(MapNode, Basic) {
   constexpr ustore::byte_t k4[] = "k4";
   ustore::OrderedKey key4(false, k4, 2);
   EXPECT_EQ(size_t(3), mnode.FindIndexForKey(key4, nullptr));
+
+
+  // Test on GetSegment
+  auto seg = mnode.GetSegment(1, 2);
+  EXPECT_EQ(size_t(2), seg->numEntries());
+
+  size_t s;
+  const ustore::KVItem actual_kv2 =
+      ustore::MapNode::kvitem(seg->entry(0), &s);
+  EXPECT_EQ(kv2.key.len(), actual_kv2.key.len());
+  EXPECT_EQ(0,
+            std::memcmp(kv2.key.data(),
+                        actual_kv2.key.data(),
+                        kv2.key.len()));
+
+  EXPECT_EQ(kv2.val.len(), actual_kv2.val.len());
+  EXPECT_EQ(0,
+            std::memcmp(kv2.val.data(),
+                        actual_kv2.val.data(),
+                        kv2.val.len()));
+
+
+  const ustore::KVItem actual_kv3 =
+      ustore::MapNode::kvitem(seg->entry(1), &s);
+  EXPECT_EQ(kv3.key.len(), actual_kv3.key.len());
+  EXPECT_EQ(0,
+            std::memcmp(kv3.key.data(),
+                        actual_kv3.key.data(),
+                        kv3.key.len()));
+
+  EXPECT_EQ(kv3.val.len(), actual_kv3.val.len());
+  EXPECT_EQ(0,
+            std::memcmp(kv3.val.data(),
+                        actual_kv3.val.data(),
+                        kv3.val.len()));
 }
