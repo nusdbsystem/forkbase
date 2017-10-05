@@ -11,16 +11,19 @@
 
 #include "node/blob_node.h"
 #include "node/node_builder.h"
+#include "types/server/factory.h"
 
 #include "utils/debug.h"
 // #include "utils/logging.h"
 
 class NodeBuilderEnv : public ::testing::Test {
  protected:
-  virtual void SetUp() { loader_ = new ustore::ServerChunkLoader(); }
+  virtual void SetUp() {
+  }
 
   virtual void TearDown() {
     delete loader_;
+    delete writer_;
     delete rhasher_;
   }
 
@@ -135,7 +138,9 @@ class NodeBuilderEnv : public ::testing::Test {
   }
 
   ustore::RollingHasher* rhasher_ = nullptr;
-  ustore::ChunkLoader* loader_ = nullptr;
+  ustore::ChunkableTypeFactory factory;
+  ustore::ChunkLoader* loader_ = new ustore::LocalChunkLoader();
+  ustore::ChunkWriter* writer_ = new ustore::LocalChunkWriter();
   bool verbose = false;
 };
 
@@ -152,7 +157,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
     const ustore::BlobChunker* chunker = ustore::BlobChunker::Instance();
-    ustore::NodeBuilder builder(chunker, true);
+    ustore::NodeBuilder builder(writer_, chunker, true);
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.SpliceElements(0, &seg);
     root_chunk = loader_->Load(builder.Commit());
@@ -162,7 +167,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
                    size_t num_insert_bytes, size_t num_delete_bytes,
                    bool isVerbose = false) {
     verbose = isVerbose;
-    ustore::NodeBuilder b(root_chunk->hash(), splice_idx, loader_,
+    ustore::NodeBuilder b(root_chunk->hash(), splice_idx, loader_, writer_,
                           ustore::BlobChunker::Instance(), true);
 
     ustore::FixedSegment seg(insert_bytes, num_insert_bytes, 1);
@@ -303,7 +308,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, original_num_bytes_);
 
     const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
-    ustore::NodeBuilder builder(chunker, true);
+    ustore::NodeBuilder builder(writer_, chunker, true);
 
     ustore::FixedSegment seg(original_content_, original_num_bytes_, 1);
 
@@ -321,7 +326,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     std::memcpy(special_content_, original_content_, special_num_bytes_);
 
     ustore::FixedSegment sseg(special_content_, special_num_bytes_, 1);
-    ustore::NodeBuilder abuilder(chunker, true);
+    ustore::NodeBuilder abuilder(writer_, chunker, true);
 
     abuilder.SpliceElements(0, &sseg);
     special_root_ = loader_->Load(abuilder.Commit());
@@ -333,7 +338,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
 
     ustore::NodeBuilder b(
-        root_hash, splice_idx, loader_, chunker, true);
+        root_hash, splice_idx, loader_, writer_, chunker, true);
 
     ustore::FixedSegment seg(append_data, append_num_bytes, 1);
 
@@ -435,7 +440,7 @@ class AdvancedNodeBuilderEmpty : public NodeBuilderEnv {
     NodeBuilderEnv::SetUp();
     verbose = false;
 
-    ustore::AdvancedNodeBuilder builder;
+    ustore::AdvancedNodeBuilder builder(writer_);
     root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
   }
 
@@ -458,7 +463,7 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
   const ustore::byte_t inserted_data[] = "123";
   const size_t num_bytes_inserted = 3;
 
-  ustore::AdvancedNodeBuilder builder1(root_hash_, loader_);
+  ustore::AdvancedNodeBuilder builder1(root_hash_, loader_, writer_);
 
   ustore::FixedSegment inserted_seg(inserted_data,
                                     num_bytes_inserted,
@@ -477,7 +482,7 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
   const size_t num_bytes_spliced = 4;
   const size_t num_bytes_removed = 3;
 
-  ustore::AdvancedNodeBuilder builder2(hash1, loader_);
+  ustore::AdvancedNodeBuilder builder2(hash1, loader_, writer_);
 
   ustore::FixedSegment spliced_seg(spliced_data,
                                    num_bytes_spliced,
@@ -491,7 +496,7 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
   Test_Tree_Integrity(hash2, loader_);
   Test_Same_Content(hash2, loader_, spliced_data);
 
-  ustore::AdvancedNodeBuilder builder3(hash2, loader_);
+  ustore::AdvancedNodeBuilder builder3(hash2, loader_, writer_);
 
   builder3.Remove(0, 4);
 
@@ -516,7 +521,7 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
     original_content_ = new ustore::byte_t[num_original_bytes_];
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
-    ustore::AdvancedNodeBuilder builder;
+    ustore::AdvancedNodeBuilder builder(writer_);
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.Splice(0, 0, seg);
     root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
@@ -548,7 +553,7 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
                             &expected_num_bytes);
 
 
-    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
     ustore::FixedSegment seg(inserted_data,
                              num_bytes_inserted,
@@ -602,7 +607,7 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
                             &expected_num_bytes);
 
 
-    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
     ustore::FixedSegment seg1(inserted_data1,
                               num_bytes_inserted1,
@@ -711,7 +716,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
     original_content_ = new ustore::byte_t[num_original_bytes_];
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
-    ustore::AdvancedNodeBuilder builder;
+    ustore::AdvancedNodeBuilder builder(writer_);
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.Splice(0, 0, seg);
     root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
@@ -750,7 +755,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
                             {0, 0, 0},
                             &expected_num_bytes);
 
-    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
     const ustore::Hash result_hash =
         builder.Remove(idx1, num_bytes_removed1)
@@ -831,7 +836,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
                               num_bytes_inserted3,
                               1);
 
-    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
     const ustore::Hash result_hash =
         builder.Splice(idx1, num_bytes_removed1, seg1)
@@ -908,7 +913,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
                               num_bytes_inserted3,
                               1);
 
-    ustore::AdvancedNodeBuilder builder(root_hash_, loader_);
+    ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
     const ustore::Hash result_hash =
         builder.Insert(idx1, seg1)

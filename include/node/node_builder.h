@@ -121,10 +121,11 @@ To work on an existing prolly tree:
                       .Commit();
 */
  public:
-  AdvancedNodeBuilder(const Hash& root, ChunkLoader* loader_);
+  AdvancedNodeBuilder(const Hash& root, ChunkLoader* loader_,
+                      ChunkWriter* writer);
 
   // ctor to create a prolly tree from start
-  AdvancedNodeBuilder();
+  explicit AdvancedNodeBuilder(ChunkWriter* writer);
 
   inline AdvancedNodeBuilder& Insert(uint64_t start_idx,
                                      const std::vector<const Segment*>& segs) {
@@ -167,9 +168,10 @@ To work on an existing prolly tree:
     std::vector<const Segment*> appended_segs;
   };
 
-  explicit AdvancedNodeBuilder(size_t level);
+  AdvancedNodeBuilder(size_t level, ChunkWriter* writer);
 
-  AdvancedNodeBuilder(size_t level, const Hash& root, ChunkLoader* loader_);
+  AdvancedNodeBuilder(size_t level, const Hash& root,
+                      ChunkLoader* loader_, ChunkWriter* writer);
 
   // return the parent builder,
   //   create one if not exists
@@ -196,6 +198,7 @@ To work on an existing prolly tree:
 
   const Hash root_;
   ChunkLoader* loader_;
+  ChunkWriter* writer_;
 
   std::unique_ptr<RollingHasher> rhasher_;
   std::unique_ptr<AdvancedNodeBuilder> parent_builder_;

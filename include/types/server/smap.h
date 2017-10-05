@@ -23,6 +23,10 @@ class SMap : public UMap {
   Hash Set(const Slice& key, const Slice& val) const override;
   Hash Remove(const Slice& key) const override;
 
+  // Use this map as base to perform three-way merging
+  //   return empty hash when merging fails
+  Hash Merge(const SMap& node1, const SMap& node2) const;
+
  protected:
   // Load existing SMap
   SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,

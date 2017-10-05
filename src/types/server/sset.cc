@@ -3,7 +3,9 @@
 #include "types/server/sset.h"
 
 #include "node/set_node.h"
+#include "node/node_comparator.h"
 #include "node/node_builder.h"
+#include "node/node_merger.h"
 #include "utils/debug.h"
 #include "utils/utils.h"
 
@@ -81,4 +83,9 @@ Hash SSet::Remove(const Slice& key) const {
   return nb.Commit();
 }
 
+Hash SSet::Merge(const SSet& node1, const SSet& node2) const {
+  KeyMerger merger(hash(), chunk_loader_.get(), chunk_writer_);
+  return merger.Merge(node1.hash(), node2.hash(),
+                      *SetChunker::Instance(), false);
+}
 }  // namespace ustore

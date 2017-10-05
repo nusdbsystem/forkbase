@@ -96,8 +96,9 @@ Usage:
 */
  public:
   // Node: loader is used for base, node1 and node2
-  NodeMerger(const Hash& base, ChunkLoader* loader) noexcept :
-    base_(base), loader_(loader) {}
+  NodeMerger(const Hash& base, ChunkLoader* loader,
+             ChunkWriter* writer) noexcept :
+    base_(base), loader_(loader), writer_(writer) {}
 
   virtual ~NodeMerger() = default;
 
@@ -124,6 +125,7 @@ Usage:
 
   const Hash base_;
   mutable ChunkLoader* loader_;
+  mutable ChunkWriter* writer_;
 };
 
 template <class Mapper>
@@ -146,8 +148,6 @@ RangeMaps NodeMerger<Mapper>::flip(const RangeMaps& range_maps,
   }
 
 #endif
-
-
 
   RangeMaps flipped_maps;
 
@@ -372,7 +372,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
   auto map_it2  = range_map2.begin();
 
 
-  ustore::AdvancedNodeBuilder builder(base_, loader_);
+  ustore::AdvancedNodeBuilder builder(base_, loader_, writer_);
   // the container to collect all created segments
   //   so that they can be deleted after commiting node builder
   std::vector<const Segment*> all_segs;

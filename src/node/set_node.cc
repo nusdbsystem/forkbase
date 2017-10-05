@@ -136,7 +136,8 @@ OrderedKey SetNode::key(size_t idx) const {
   return SetNode::orderedKey(data(idx));
 }
 
-size_t SetNode::GetIdxForKey(const OrderedKey& key) const {
+uint64_t SetNode::FindIndexForKey(const OrderedKey& key,
+                                  ChunkLoader* loader) const {
   size_t idx = 0;
   for (const size_t offset : offsets_) {
     size_t keyNumBytes = 0;
@@ -182,5 +183,42 @@ size_t SetNode::Copy(size_t start, size_t num_bytes, byte_t* buffer) const {
 size_t SetNode::GetLength(size_t start, size_t end) const {
   LOG(FATAL) << "Not Supported Yet";
   return 0;
+}
+std::unique_ptr<const Segment> SetNode::GetSegment(
+    size_t start, size_t num_elements) const {
+  CHECK_LT(start, numEntries());
+  if (num_elements == 0) {
+    // return an empty segment
+    std::unique_ptr<const Segment> seg(
+        new VarSegment(data(start)));
+    return seg;
+  }
+
+  CHECK_LE(start + num_elements, numEntries());
+
+  std::vector<size_t> offsets;
+
+  size_t num_bytes = 0;
+
+  for (size_t i = start; i < start + num_elements; ++i) {
+    offsets.push_back(num_bytes);
+    num_bytes += len(i);
+  }
+
+  std::unique_ptr<const Segment> seg(
+      new VarSegment(data(start), num_bytes, std::move(offsets)));
+#ifdef DEBUG
+  DLOG(INFO) << "Get Segment from " << start
+             << " for # elements " << num_elements;
+
+  for (size_t i = 0; i < seg->numEntries(); ++i) {
+    size_t key_len;
+    const byte_t* key_data = SetNode::key(seg->entry(i), &key_len);
+    Slice key(key_data, key_len);
+
+    // DLOG(INFO) << "Key: " << key.ToString();
+  }
+#endif
+  return seg;
 }
 }  // namespace ustore

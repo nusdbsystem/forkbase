@@ -4,6 +4,8 @@
 
 #include "node/map_node.h"
 #include "node/node_builder.h"
+#include "node/node_comparator.h"
+#include "node/node_merger.h"
 #include "utils/debug.h"
 #include "utils/utils.h"
 
@@ -76,6 +78,12 @@ Hash SMap::Remove(const Slice& key) const {
                  chunk_writer_, MapChunker::Instance(), false);
   nb.SpliceElements(1, &seg);
   return nb.Commit();
+}
+
+Hash SMap::Merge(const SMap& node1, const SMap& node2) const {
+  KeyMerger merger(hash(), chunk_loader_.get(), chunk_writer_);
+  return merger.Merge(node1.hash(), node2.hash(),
+                      *MapChunker::Instance(), false);
 }
 
 }  // namespace ustore

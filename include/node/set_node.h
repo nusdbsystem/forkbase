@@ -65,7 +65,8 @@ class SetNode : public LeafNode {
   // return the byte len of the idx-th entry
   size_t len(size_t idx) const override;
 
-  size_t GetIdxForKey(const OrderedKey& key) const override;
+  uint64_t FindIndexForKey(const OrderedKey& key,
+                           ChunkLoader* loader) const override;
 
   size_t numEntries() const override;
 
@@ -74,6 +75,9 @@ class SetNode : public LeafNode {
   size_t GetLength(size_t start, size_t end) const override;
 
   OrderedKey key(size_t idx) const override;
+
+  std::unique_ptr<const Segment> GetSegment(
+      size_t start, size_t num_elements) const override;
 
  private:
   void PrecomputeOffsets();

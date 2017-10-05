@@ -17,8 +17,9 @@ std::string byte2str(const byte_t* data, size_t num_bytes);
 // input buffer @arg append. This method will not rewrite the original
 // @arg src but copy the content of it. Caller of this method is responsible
 // for delete of the created buffer.
-const ustore::byte_t* SpliceBytes(const ustore::byte_t* src,
-      size_t src_size, size_t start, size_t num_delete, const ustore::byte_t* append, size_t append_size);
+const ustore::byte_t* SpliceBytes(const ustore::byte_t* src, size_t src_size,
+    size_t start, size_t num_delete,
+    const ustore::byte_t* append, size_t append_size);
 
 // Perform multiple splice operation on the original content
 // idxs is a vector of starting index of original content

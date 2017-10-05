@@ -23,6 +23,10 @@ class SSet : public USet {
   Hash Set(const Slice& key) const override;
   Hash Remove(const Slice& key) const override;
 
+  // Use this Set as base to perform three-way merging
+  //   return empty hash when merging fails
+  Hash Merge(const SSet& node1, const SSet& node2) const;
+
  protected:
   // Load existing SSet
   SSet(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,

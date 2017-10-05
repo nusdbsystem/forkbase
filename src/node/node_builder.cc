@@ -386,14 +386,16 @@ Segment* NodeBuilder::SegAtCursor() {
 /////////////////////////////////////////////////////////
 // Advanced Node Builder
 AdvancedNodeBuilder::AdvancedNodeBuilder(const Hash& root,
-                                         ChunkLoader* loader) :
-    AdvancedNodeBuilder(0, root, loader) {}
+                                         ChunkLoader* loader,
+                                         ChunkWriter* writer) :
+    AdvancedNodeBuilder(0, root, loader, writer) {}
 
 AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level,
                                          const Hash& root,
-                                         ChunkLoader* loader) :
+                                         ChunkLoader* loader,
+                                         ChunkWriter* writer) :
     level_(level),
-    root_(root), loader_(loader),
+    root_(root), loader_(loader), writer_(writer),
 #ifdef TEST_NODEBUILDER
     rhasher_(RollingHasher::TestHasher()),
 #else
@@ -403,11 +405,11 @@ AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level,
     operands_(),  // init with empty list
     created_segs_() {}  // init with empty created segs
 
-AdvancedNodeBuilder::AdvancedNodeBuilder() :
-    AdvancedNodeBuilder(0) {}
+AdvancedNodeBuilder::AdvancedNodeBuilder(ChunkWriter* writer) :
+    AdvancedNodeBuilder(0, writer) {}
 
-AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level) :
-    AdvancedNodeBuilder(level, Hash(), nullptr) {}
+AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level, ChunkWriter* writer) :
+    AdvancedNodeBuilder(level, Hash(), nullptr, writer) {}
 
 AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
     uint64_t start_idx, uint64_t num_delete,
@@ -957,7 +959,8 @@ Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
 
 AdvancedNodeBuilder* AdvancedNodeBuilder::parent() {
   if (!parent_builder_) {
-    parent_builder_.reset(new AdvancedNodeBuilder(level_ + 1, root_, loader_));
+    parent_builder_.reset(
+      new AdvancedNodeBuilder(level_ + 1, root_, loader_, writer_));
   }
   return parent_builder_.get();
 }
@@ -1012,7 +1015,7 @@ ChunkInfo AdvancedNodeBuilder::HandleBoundary(
     this->num_created_entries_ += seg->numEntries();
   }
   // Dump chunk into storage here
-  store::GetChunkStore()->Put(chunk_info.chunk.hash(), chunk_info.chunk);
+  writer_->Write(chunk_info.chunk.hash(), chunk_info.chunk);
 
 #ifdef DEBUG
   size_t total_entries = 0;

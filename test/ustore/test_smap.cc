@@ -470,27 +470,34 @@ TEST(SMapMerge, SmallNormal) {
   const ustore::Slice k8("k8", 2);
   const ustore::Slice v8("v8", 2);
 
+  ustore::ChunkableTypeFactory factory;
   // Base Map: kv0, kv1, kv2, kv3, kv5, kv7
-  ustore::SMap base({k0, k1, k2, k3, k5, k7},
-                    {v0, v1, v2, v3, v5, v7});
+  ustore::SMap base = factory.Create<ustore::SMap>(
+      std::vector<ustore::Slice>{k0, k1, k2, k3, k5, k7},
+      std::vector<ustore::Slice>{v0, v1, v2, v3, v5, v7});
+
 
   // Remove kv0, edit kv1 add kv4, add kv6
   // Node 1 Map: kv1', kv2, kv3, kv4, kv5, kv6, kv7
-  ustore::SMap node1({k11, k2, k3, k4, k5, k6, k7},
-                     {v1, v2, v3, v4, v5, v6, v7});
+  ustore::SMap node1 = factory.Create<ustore::SMap>
+      (std::vector<ustore::Slice>{k11, k2, k3, k4, k5, k6, k7},
+       std::vector<ustore::Slice>{v1, v2, v3, v4, v5, v6, v7});
 
   // edit kv3, add kv6, add kv8
   // Node 2 Map: kv0, kv1, kv2, kv3', kv5, kv6, kv7, kv8
-  ustore::SMap node2({k0, k1, k2, k3, k5, k6, k7, k8},
-                     {v0, v1, v2, v33, v5, v6, v7, v8});
+  ustore::SMap node2 = factory.Create<ustore::SMap>
+      (std::vector<ustore::Slice>{k0, k1, k2, k3, k5, k6, k7, k8},
+       std::vector<ustore::Slice>{v0, v1, v2, v33, v5, v6, v7, v8});
 
   // Result Map: kv1', kv2, kv3' kv4, kv5, kv6, kv7, kv8
   std::vector<ustore::Slice> merged_keys{k11, k2, k3, k4, k5, k6, k7, k8};
   std::vector<ustore::Slice> merged_vals{v1, v2, v33, v4, v5, v6, v7, v8};
 
-  ustore::SMap expected_merge(merged_keys, merged_vals);
+  ustore::SMap expected_merge =
+      factory.Create<ustore::SMap>(merged_keys, merged_vals);
 
-  ustore::SMap actual_merge(base.Merge(node1, node2));
+  ustore::SMap actual_merge =
+      factory.Load<ustore::SMap>(base.Merge(node1, node2));
 
   auto it = actual_merge.Scan();
   CheckIdenticalItems(merged_keys, merged_vals, &it);
@@ -499,6 +506,7 @@ TEST(SMapMerge, SmallNormal) {
 }
 
 TEST(SMapMerge, SmallConflict) {
+  ustore::ChunkableTypeFactory factory;
   const ustore::Slice k0("k0", 2);
   const ustore::Slice v0("v0", 2);
   const ustore::Slice v00("v00", 3);
@@ -511,20 +519,24 @@ TEST(SMapMerge, SmallConflict) {
   const ustore::Slice v2("v2", 2);
   const ustore::Slice v22("v22", 3);
 
-  ustore::SMap base({k0, k1, k2},
-                    {v0, v1, v2});
+  ustore::SMap base = factory.Create<ustore::SMap>
+      (std::vector<ustore::Slice>{k0, k1, k2},
+       std::vector<ustore::Slice>{v0, v1, v2});
 
-  ustore::SMap node1({k0, k11, k2},
-                     {v00, v1, v2});
+  ustore::SMap node1 = factory.Create<ustore::SMap>
+      (std::vector<ustore::Slice>{k0, k11, k2},
+       std::vector<ustore::Slice>{v00, v1, v2});
 
-  ustore::SMap node2({k0, k11, k2},
-                     {v0, v1, v22});
+  ustore::SMap node2 = factory.Create<ustore::SMap>
+      (std::vector<ustore::Slice>{k0, k11, k2},
+       std::vector<ustore::Slice>{v0, v1, v22});
 
   ustore::Hash result = base.Merge(node1, node2);
   ASSERT_TRUE(result.empty());
 }
 
 TEST(SMapMerge, BigNormal) {
+  ustore::ChunkableTypeFactory factory;
   std::vector<ustore::Slice> keys_;
   std::vector<ustore::Slice> vals_;
   for (uint32_t i = 0; i < 1 << 4; i++) {
@@ -542,32 +554,32 @@ TEST(SMapMerge, BigNormal) {
     }
   }
 
-  ustore::SMap base(keys_, vals_);
+  ustore::SMap base = factory.Create<ustore::SMap>(keys_, vals_);
 
   // node edits the items from 100 to 400
   ustore::Hash node1_hash = base.hash();
   for (uint32_t j = 100; j < 200; j++) {
-    ustore::SMap node1(node1_hash);
+    ustore::SMap node1 = factory.Load<ustore::SMap>(node1_hash);
     node1_hash = node1.Set(keys_[j], vals_[j + 100]);
   }
 
   // node edits the items from 500 to 800
   ustore::Hash node2_hash = base.hash();
   for (uint32_t j = 500; j < 600; j++) {
-    ustore::SMap node2(node2_hash);
+    ustore::SMap node2 = factory.Load<ustore::SMap>(node2_hash);
     node2_hash = node2.Set(keys_[j], vals_[j + 100]);
   }
 
   // both nodes edit the items from 900 to 1000
   for (uint32_t j = 900; j < 1000; j++) {
-    ustore::SMap node1(node1_hash);
-    ustore::SMap node2(node2_hash);
+    ustore::SMap node1 = factory.Load<ustore::SMap>(node1_hash);
+    ustore::SMap node2 = factory.Load<ustore::SMap>(node2_hash);
     node1_hash = node1.Set(keys_[j], vals_[j + 100]);
     node2_hash = node2.Set(keys_[j], vals_[j + 100]);
   }
 
-  ustore::SMap node1(node1_hash);
-  ustore::SMap node2(node2_hash);
+  ustore::SMap node1 = factory.Load<ustore::SMap>(node1_hash);
+  ustore::SMap node2 = factory.Load<ustore::SMap>(node2_hash);
 
   ustore::Hash merged_hash = base.Merge(node1, node2);
 
@@ -594,8 +606,9 @@ TEST(SMapMerge, BigNormal) {
   new_vals.insert(new_vals.end(),
                   vals_.begin() + 1000, vals_.end());
 
-  ustore::SMap expected_merge(keys_, new_vals);
-  ustore::SMap merge_node(merged_hash);
+
+  ustore::SMap expected_merge = factory.Create<ustore::SMap>(keys_, new_vals);
+  ustore::SMap merge_node = factory.Load<ustore::SMap>(merged_hash);
   auto it = merge_node.Scan();
 
   CheckIdenticalItems(keys_, new_vals, &it);
