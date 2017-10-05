@@ -466,9 +466,6 @@ Chunk LSTStore::Get(const Hash& key) {
 }
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
-  thread_local static Timer& timer = TimerPool::GetTimer("Write Chunk");
-  thread_local static size_t to_sync_chunks = 0;
-  thread_local static auto last_sync_time_point = std::chrono::steady_clock::now();
 
   const size_t len = key.kByteLength + chunk.numBytes();
 
@@ -479,11 +476,12 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
     return true;
   }
 
-  timer.Start();
+  write_timer_.Start();
   if (current_major_segment_ == nullptr || GetFreeSpaceMajor() < len) {
     AllocateMajor();
-    last_sync_time_point = std::chrono::steady_clock::now();
-    to_sync_chunks = 0;
+    sync_timer_.Reset();
+    sync_timer_.Start();
+    to_sync_chunks_ = 0;
   }
 
   byte_t* offset = reinterpret_cast<byte_t*>(current_major_segment_->segment_)
@@ -499,19 +497,17 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   chunk_map_mutex_.unlock();
 
   major_segment_offset_ += key.kByteLength + chunk.numBytes();
-  to_sync_chunks++;
   onNewChunk(&storeInfo, chunk.type(), chunk.numBytes());
-  if (to_sync_chunks >= kMaxPendingSyncChunks || last_sync_time_point
-      + std::chrono::milliseconds(kMaxSyncTimeoutMilliseconds)
-      < std::chrono::steady_clock::now()) {
-    // DLOG(INFO) << "LSTStore: sync " << to_sync_chunks
-    //   << " chunks to segment " << (segmentPtrToOffset(current_major_segment_)
-    //   - kMetaLogSize) / kSegmentSize;
+
+  ++to_sync_chunks_;
+  if (to_sync_chunks_ >= kMaxPendingSyncChunks ||
+      sync_timer_.ElapsedMilliseconds() >= kMaxSyncTimeoutMilliseconds) {
     SyncToDisk(current_major_segment_->segment_, kSegmentSize);
-    to_sync_chunks = 0;
-    last_sync_time_point = std::chrono::steady_clock::now();
+    to_sync_chunks_ = 0;
+    sync_timer_.Reset();
+    sync_timer_.Start();
   }
-  timer.Stop();
+  write_timer_.Stop();
   return true;
 }
 

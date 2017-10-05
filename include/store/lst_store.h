@@ -27,6 +27,7 @@
 #include "utils/noncopyable.h"
 #include "utils/singleton.h"
 #include "utils/shared_lock.h"
+#include "utils/timer.h"
 #include "utils/type_traits.h"
 
 namespace ustore {
@@ -46,7 +47,7 @@ struct LSTHash {
   bool operator==(const LSTHash& rhs) const {
     return std::memcmp(hash_, rhs.hash_, Hash::kByteLength) == 0;
   }
-  Hash ToHash() {
+  Hash ToHash() const noexcept {
     return Hash(const_cast<byte_t*>(hash_));
   }
 };
@@ -284,9 +285,11 @@ class LSTStore : public ChunkStore
 
   LSTStore() : LSTStore(".", "ustore_default", false) {}
   LSTStore(const std::string& dir, const std::string& file, bool persist)
-    : max_segments_(Env::Instance()->config().max_segments()),
-      max_log_size_(kSegmentSize * max_segments_ + kMetaLogSize),
-      thread_status_(ThreadStatus::kUnscheduled) {
+    : max_segments_(Env::Instance()->config().max_segments())
+      , max_log_size_(kSegmentSize * max_segments_ + kMetaLogSize)
+      , thread_status_(ThreadStatus::kUnscheduled)
+      , sync_timer_(TimerPool::GetTimer("Sync Store"))
+      , write_timer_(TimerPool::GetTimer("Write Chunk")) {
     MmapUstoreLogFile(dir, file, persist);
   }
   ~LSTStore() noexcept(false);
@@ -330,6 +333,11 @@ class LSTStore : public ChunkStore
 
   // for thread safety
   shared_mutex chunk_map_mutex_;
+
+  // for persistence
+  Timer& sync_timer_;
+  Timer& write_timer_;
+  int to_sync_chunks_ = 0;
 };
 
 }  // namespace lst_store
