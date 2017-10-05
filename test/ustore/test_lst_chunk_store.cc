@@ -8,6 +8,7 @@
 #include "store/lst_store.h"
 #include "store/iterator.h"
 #include "utils/enum.h"
+#include "utils/logging.h"
 #include "utils/type_traits.h"
 
 #define MAKE_TYPE_ITERATOR(type) \
@@ -18,15 +19,16 @@
   using type##Iterator = typename ustore::lst_store::LSTStore::unsafe_type_iterator \
         <ustore::ChunkType, ustore::ChunkType::k##type>;
 
-// const int NUMBER = 98342;
-const int NUMBER = 150000;
-const int LEN = 100;
+const int NUMBER = 98342;
+const int LEN = 28;
 ustore::byte_t raw_data[LEN];
-ustore::byte_t hash[NUMBER][ustore::Hash::kByteLength];
 
 using LSTStore = ustore::lst_store::LSTStore;
 using Chunk = ustore::Chunk;
 using StoreIterator = ustore::StoreIterator;
+using namespace ustore::logging;
+
+void Get();
 
 template <typename Iterator>
 StoreIterator FindChunk(const Chunk& chunk) {
@@ -42,8 +44,8 @@ StoreIterator FindChunk(const Chunk& chunk) {
 template <typename Iterator>
 StoreIterator begin() {
   std::memset(raw_data, 0, LEN);
-  ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
-  std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
+  ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
+  std::copy(raw_data, raw_data + LEN, chunk.m_data());
   chunk.forceHash();
   return FindChunk<Iterator>(chunk);
 }
@@ -53,8 +55,8 @@ StoreIterator end() {
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   *val = NUMBER - 1;
-  ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
-  std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
+  ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
+  std::copy(raw_data, raw_data + LEN, chunk.m_data());
   chunk.forceHash();
   auto it = FindChunk<Iterator>(chunk);
   if (it != LSTStore::Instance()->end<Iterator>() && chunk.hash() == (*it).hash()) ++it;
@@ -66,33 +68,16 @@ TEST(LSTStore, Put) {
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   for (int i = 0; i < NUMBER; ++i, (*val)++) {
-    ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
-    std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
+    ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
+    std::copy(raw_data, raw_data + LEN, chunk.m_data());
     lstStore->Put(chunk.hash(), chunk);
   }
   lstStore->Sync();
-  std::cout << lstStore->GetInfo();
+  LOG(INFO) << lstStore->GetInfo();
 }
 
 TEST(LSTStore, Get) {
-  std::memset(raw_data, 0, LEN);
-  uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
-  for (int i = 0; i < NUMBER; ++i, (*val)++) {
-    ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
-    std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
-    std::copy(chunk.hash().value(), chunk.hash().value()
-              + ustore::Hash::kByteLength, hash[i]);
-  }
-
-  LSTStore* lstStore = LSTStore::Instance();
-  for (int i = 0; i < NUMBER; ++i) {
-    // load from stroage
-    ustore::Chunk c =
-      lstStore->Get(ustore::Hash(hash[i]));
-      EXPECT_EQ(c.type(), ustore::ChunkType::kBlob);
-      EXPECT_EQ(c.numBytes(), LEN + ::ustore::Chunk::kMetaLength);
-      EXPECT_EQ(c.capacity(), size_t(LEN));
-  }
+  Get();
 }
 
 TEST(LSTStore, Iterator) {
@@ -100,12 +85,12 @@ TEST(LSTStore, Iterator) {
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   int cnt = 0;
-  ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
+  ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
   auto first = begin<Iterator>();
   auto last = end<Iterator>();
   for (auto it = first; it != last; ++it) {
     (*val) = cnt++;
-    std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
+    std::copy(raw_data, raw_data + LEN, chunk.m_data());
     const ustore::Chunk& ichunk = *it;
     EXPECT_EQ(ichunk.type(), chunk.type());
     EXPECT_EQ(ichunk.hash(), chunk.forceHash());
@@ -122,12 +107,12 @@ TEST(LSTStore, UnsafeIterator) {
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   int cnt = 0;
-  ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
+  ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
   auto first = begin<Iterator>();
   auto last = end<Iterator>();
   for (auto it = first; it != last; ++it) {
     (*val) = cnt++;
-    std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
+    std::copy(raw_data, raw_data + LEN, chunk.m_data());
     const ustore::Chunk& ichunk = *it;
     EXPECT_EQ(ichunk.type(), chunk.type());
     EXPECT_EQ(ichunk.hash(), chunk.forceHash());
@@ -154,12 +139,12 @@ TEST(LSTStore, TypeIterator) {
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   int cnt = 0;
-  ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
+  ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
   auto first = begin<BlobIterator>();
   auto last = end<BlobIterator>();
   for (auto it = first; it != last; ++it) {
     (*val) = cnt++;
-    std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
+    std::copy(raw_data, raw_data + LEN, chunk.m_data());
     const ustore::Chunk& ichunk = *it;
     EXPECT_EQ(ichunk.type(), chunk.type());
     EXPECT_EQ(ichunk.hash(), chunk.forceHash());
@@ -183,12 +168,12 @@ TEST(LSTStore, UnsafeTypeIterator) {
   std::memset(raw_data, 0, LEN);
   uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
   int cnt = 0;
-  ustore::Chunk chunk(ustore::ChunkType::kBlob, sizeof(raw_data));
+  ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
   auto first = begin<BlobIterator>();
   auto last = end<BlobIterator>();
   for (auto it = first; it != last; ++it) {
     (*val) = cnt++;
-    std::copy(raw_data, raw_data + sizeof(raw_data), chunk.m_data());
+    std::copy(raw_data, raw_data + LEN, chunk.m_data());
     const ustore::Chunk& ichunk = *it;
     EXPECT_EQ(ichunk.type(), chunk.type());
     EXPECT_EQ(ichunk.hash(), chunk.forceHash());
@@ -196,4 +181,48 @@ TEST(LSTStore, UnsafeTypeIterator) {
     EXPECT_EQ(ichunk.capacity(), chunk.capacity());
   }
   EXPECT_EQ(cnt, NUMBER);
+}
+
+void Get() {
+  ustore::byte_t raw_data[LEN];
+  std::memset(raw_data, 0, LEN);
+  LSTStore* lstStore = LSTStore::Instance();
+  uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
+  for (int i = 0; i < NUMBER; ++i, (*val)++) {
+    ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
+    std::copy(raw_data, raw_data + LEN, chunk.m_data());
+    // load from stroage
+    ustore::Chunk c =
+      lstStore->Get(chunk.hash());
+      EXPECT_EQ(c.type(), ustore::ChunkType::kBlob);
+      EXPECT_EQ(c.numBytes(), LEN + ::ustore::Chunk::kMetaLength);
+      EXPECT_EQ(c.capacity(), size_t(LEN));
+  }
+}
+
+void Put() {
+  LSTStore* lstStore = LSTStore::Instance();
+  ustore::byte_t raw_data[LEN];
+  std::memset(raw_data, 0, LEN);
+  uint64_t* val = reinterpret_cast<uint64_t*>(raw_data);
+  *val = NUMBER;
+  for (int i = 0; i < NUMBER; ++i, ++(*val)) {
+    ustore::Chunk chunk(ustore::ChunkType::kBlob, LEN);
+    std::copy(raw_data, raw_data + LEN, chunk.m_data());
+    lstStore->Put(chunk.hash(), chunk);
+  }
+  LOG(INFO) << "done for put";
+}
+
+TEST(LSTStore, MultiThread) {
+  LOG(INFO) << LSTStore::Instance()->GetInfo();
+  std::thread t1(Get);
+  std::thread t2(Get);
+  std::thread t3(Put);
+  std::thread t4(Put);
+  t1.join();
+  t2.join();
+  t3.join();
+  t4.join();
+  LOG(INFO) << LSTStore::Instance()->GetInfo();
 }

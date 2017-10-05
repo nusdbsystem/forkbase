@@ -9,7 +9,7 @@
 
 namespace ustore {
 
-// For thread safety, define USTORE_MULTI_THREADING and pass ClassLevelLockable
+// For thread safety, pass ClassLevelLockable
 // as the template parameter
 template <typename T,
       template<typename> class ThreadedPolicy = SingleThreaded>

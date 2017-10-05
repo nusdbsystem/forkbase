@@ -457,6 +457,7 @@ void LSTStore::Load(void* address) {
 
 Chunk LSTStore::Get(const Hash& key) {
   LSTHash hash(key.value());
+  shared_lock<shared_mutex> lock(chunk_map_mutex_);
   auto it = chunk_map_.find(hash);
   if (it != chunk_map_.end())
     return Chunk(it->second.chunk_, it->first.hash_);
@@ -465,14 +466,20 @@ Chunk LSTStore::Get(const Hash& key) {
 }
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
-  if (Exists(key)) return true;
-  static Timer& timer = TimerPool::GetTimer("Write Chunk");
+  thread_local static Timer& timer = TimerPool::GetTimer("Write Chunk");
+  thread_local static size_t to_sync_chunks = 0;
+  thread_local static auto last_sync_time_point = std::chrono::steady_clock::now();
+
+  const size_t len = key.kByteLength + chunk.numBytes();
+
+  // prevent concurrent threads from simultaneously modifying the underlying
+  // chunk store
+  Lock lock(this);
+  if (Exists(key)) {
+    return true;
+  }
+
   timer.Start();
-
-  static size_t to_sync_chunks = 0;
-  static auto last_sync_time_point = std::chrono::steady_clock::now();
-
-  size_t len = key.kByteLength + chunk.numBytes();
   if (current_major_segment_ == nullptr || GetFreeSpaceMajor() < len) {
     AllocateMajor();
     last_sync_time_point = std::chrono::steady_clock::now();
@@ -485,7 +492,12 @@ bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
   std::copy(chunk.head(), chunk.head() + chunk.numBytes(), offset);
   std::copy(key.value(), key.value() + key.kByteLength,
       offset + chunk.numBytes());
+
+  // prevent other concurrent threads from reading the map
+  chunk_map_mutex_.lock();
   this->chunk_map_.emplace(offset + chunk.numBytes(), offset);
+  chunk_map_mutex_.unlock();
+
   major_segment_offset_ += key.kByteLength + chunk.numBytes();
   to_sync_chunks++;
   onNewChunk(&storeInfo, chunk.type(), chunk.numBytes());

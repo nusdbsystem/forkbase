@@ -11,6 +11,7 @@
 #include <functional>
 #include <future>
 #include <limits>
+#include <mutex>
 #include <string>
 #include <stdexcept>
 #include <unordered_map>
@@ -25,6 +26,7 @@
 #include "utils/map_check_policy.h"
 #include "utils/noncopyable.h"
 #include "utils/singleton.h"
+#include "utils/shared_lock.h"
 #include "utils/type_traits.h"
 
 namespace ustore {
@@ -196,9 +198,13 @@ class LSTStoreTypeIterator : public LSTStoreIterator<MapType, CheckPolicy> {
   }
 };
 
-class LSTStore
-    : private Noncopyable, public Singleton<LSTStore>, public ChunkStore {
-  friend class Singleton<LSTStore>;
+class LSTStore : public ChunkStore
+                 , private Noncopyable
+                 , public Singleton<LSTStore, ClassLevelLockable>
+                 , public ObjectLevelLockable<LSTStore> {
+
+  friend class Singleton<LSTStore, ClassLevelLockable>;
+  using Lock = typename ObjectLevelLockable<LSTStore>::Lock;
 
  public:
   using MapType = std::unordered_map<LSTHash, LSTChunk>;
@@ -226,6 +232,7 @@ class LSTStore
   void Sync() const;
   Chunk Get(const Hash& key) override;
   bool Exists(const Hash& key) override {
+    shared_lock<shared_mutex> lock(chunk_map_mutex_);
     return chunk_map_.find(key.value()) != chunk_map_.end();
   }
   bool Put(const Hash& key, const Chunk& chunk) override;
@@ -320,6 +327,9 @@ class LSTStore
   SyncBlock sync_block_;
   std::future<void> async_future_;
   std::atomic<ThreadStatus> thread_status_;
+
+  // for thread safety
+  shared_mutex chunk_map_mutex_;
 };
 
 }  // namespace lst_store
