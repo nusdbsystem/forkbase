@@ -233,7 +233,7 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
     auto mkey = val.keys.front();
     SMap map = factory_.Load<SMap>(val.base);
     Hash data_hash;
-    if (val.vals.empty()) {
+    if (val.dels) {
       data_hash = map.Remove(mkey);
     } else {
       DCHECK_EQ(val.vals.size(), 1);
@@ -256,14 +256,18 @@ ErrorCode Worker::WriteSet(const Slice& key, const Value& val,
     }
     return CreateUCell(key, UType::kSet, set.hash(), prev_ver1, prev_ver2,
                        ver);
-  } else {
+  } else if (!val.dels && val.keys.empty()) {  // origin
+    return CreateUCell(key, UType::kSet, val.base, prev_ver1, prev_ver2, ver);
+  } else {  // update
+    if (val.keys.size() != 1)
+      return ErrorCode::kInvalidValue;
     auto mkey = val.keys.front();
     SSet set = factory_.Load<SSet>(val.base);
     Hash data_hash;
-    if (val.dels && val.vals.empty()) {
+    if (val.dels) {
       data_hash = set.Remove(mkey);
     } else {
-      DCHECK_EQ(val.vals.size(), 1);
+      DCHECK_EQ(val.keys.size(), 1);
       data_hash = set.Set(mkey);
     }
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySSet;
