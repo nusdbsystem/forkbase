@@ -37,8 +37,8 @@ using offset_t = uint64_t;
 
 constexpr offset_t kMetaLogSize = 4096;
 constexpr offset_t kSegmentSize = (1<<22);
-constexpr offset_t kMaxPendingSyncChunks = 1024;
 constexpr offset_t kMetaSegmentSize = 2 * sizeof(offset_t);
+constexpr size_t kMaxPendingSyncChunks = 1024;
 constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;
 
 struct LSTHash {
@@ -203,7 +203,6 @@ class LSTStore : public ChunkStore
                  , private Noncopyable
                  , public Singleton<LSTStore, ClassLevelLockable>
                  , public ObjectLevelLockable<LSTStore> {
-
   friend class Singleton<LSTStore, ClassLevelLockable>;
   using Lock = typename ObjectLevelLockable<LSTStore>::Lock;
 
@@ -337,7 +336,7 @@ class LSTStore : public ChunkStore
   // for persistence
   Timer& sync_timer_;
   Timer& write_timer_;
-  int to_sync_chunks_ = 0;
+  size_t to_sync_chunks_ = 0;
 };
 
 }  // namespace lst_store

@@ -466,9 +466,7 @@ Chunk LSTStore::Get(const Hash& key) {
 }
 
 bool LSTStore::Put(const Hash& key, const Chunk& chunk) {
-
   const size_t len = key.kByteLength + chunk.numBytes();
-
   // prevent concurrent threads from simultaneously modifying the underlying
   // chunk store
   Lock lock(this);
