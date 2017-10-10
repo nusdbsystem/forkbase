@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
   ustore::ChunkService cs(FLAGS_node_id);
 
   // Start chunk service if dist store is enabled
-  if (ustore::Env::Instance()->config().enable_dist_store()) cs.Run();
+  // if (ustore::Env::Instance()->config().enable_dist_store()) cs.Run();
   // start worker and blocking here
   ws.Start();
 

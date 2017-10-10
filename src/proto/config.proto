@@ -15,6 +15,8 @@ message Config {
   optional int32 max_segments = 3 [default = 64];
   // distributed chunk store maintain data globally without duplication
   optional bool enable_dist_store = 4 [default = false];
+  // client reads chunks via chunk service to bypass worker service
+  optional bool get_chunk_bypass_worker = 5 [default = true];
 
   /* cluster related */
   // file containing worker list in format of hostname:port

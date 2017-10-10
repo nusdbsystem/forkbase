@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include "cluster/chunk_client_service.h"
 #include "cluster/client.h"
 #include "cluster/partitioner.h"
 #include "cluster/response_blob.h"
@@ -39,8 +40,10 @@ namespace ustore {
 
 class WorkerClient : public Client, public DB {
  public:
-  WorkerClient(ResponseBlob* blob, const Partitioner* ptt)
-    : Client(blob), ptt_(ptt) {}
+  WorkerClient(ResponseBlob* blob, const Partitioner* ptt,
+      ChunkClientService* ck_svc) : Client(blob), ptt_(ptt) {
+    if (ck_svc) ck_cli_.push_back(ck_svc->CreateChunkClient());
+  }
 
   ~WorkerClient() = default;
 
@@ -106,6 +109,7 @@ class WorkerClient : public Client, public DB {
       const;
 
   const Partitioner* const ptt_;  // partitioner to route destination worker
+  std::vector<ChunkClient> ck_cli_;
 };
 
 }  // namespace ustore

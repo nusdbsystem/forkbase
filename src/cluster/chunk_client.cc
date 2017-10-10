@@ -6,14 +6,13 @@
 
 namespace ustore {
 
-void ChunkClient::CreateChunkMessage(const Hash& hash, UMessage *msg) {
-  // msg->set_source(id_);
+void ChunkClient::CreateChunkMessage(const Hash& hash, UMessage *msg) const {
   // request
   auto request = msg->mutable_request_payload();
   request->set_version(hash.value(), Hash::kByteLength);
 }
 
-ErrorCode ChunkClient::Get(const Hash& hash, Chunk* chunk) {
+ErrorCode ChunkClient::Get(const Hash& hash, Chunk* chunk) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::GET_CHUNK_REQUEST);
@@ -21,6 +20,18 @@ ErrorCode ChunkClient::Get(const Hash& hash, Chunk* chunk) {
   CreateChunkMessage(hash, &msg);
   // send
   Send(&msg, ptt_->GetDestAddr(hash));
+  return GetChunkResponse(chunk);
+}
+
+ErrorCode ChunkClient::Get(const Slice& key, const Hash& hash, Chunk* chunk)
+    const {
+  UMessage msg;
+  // header
+  msg.set_type(UMessage::GET_CHUNK_REQUEST);
+  // request
+  CreateChunkMessage(hash, &msg);
+  // send
+  Send(&msg, ptt_->GetDestAddr(key));
   return GetChunkResponse(chunk);
 }
 
@@ -37,7 +48,7 @@ ErrorCode ChunkClient::Put(const Hash& hash, const Chunk& chunk) {
   return GetEmptyResponse();
 }
 
-ErrorCode ChunkClient::Exists(const Hash& hash, bool* exist) {
+ErrorCode ChunkClient::Exists(const Hash& hash, bool* exist) const {
   UMessage msg;
   // header
   msg.set_type(UMessage::EXISTS_CHUNK_REQUEST);

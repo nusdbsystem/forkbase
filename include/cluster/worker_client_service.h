@@ -3,6 +3,9 @@
 #ifndef USTORE_CLUSTER_WORKER_CLIENT_SERVICE_H_
 #define USTORE_CLUSTER_WORKER_CLIENT_SERVICE_H_
 
+#include <memory>
+#include <vector>
+#include "cluster/chunk_client_service.h"
 #include "cluster/client_service.h"
 #include "cluster/worker_client.h"
 #include "cluster/partitioner.h"
@@ -25,7 +28,11 @@ namespace ustore {
 class WorkerClientService : public ClientService {
  public:
   WorkerClientService()
-    : ClientService(&ptt_), ptt_(Env::Instance()->config().worker_file(), "") {}
+    : ClientService(&ptt_), ptt_(Env::Instance()->config().worker_file(), "") {
+    // only need chunk client when want to get chunk bypass worker
+    if (Env::Instance()->config().get_chunk_bypass_worker())
+      ck_svc_.reset(new ChunkClientService());
+  }
   ~WorkerClientService() = default;
 
   void Init() override;
@@ -37,6 +44,7 @@ class WorkerClientService : public ClientService {
 
  private:
   const WorkerPartitioner ptt_;
+  std::unique_ptr<ChunkClientService> ck_svc_;
 };
 
 }  // namespace ustore

@@ -87,20 +87,29 @@ ErrorCode WorkerClient::Get(const Slice& key, const Hash& version, UCell* meta)
 
 ErrorCode WorkerClient::GetChunk(const Slice& key, const Hash& version,
                                  Chunk* chunk) const {
-  // NOT(wangsh):
+  // NOTE(wangsh):
   // With local chunk store - ask worker computed from key
   // With partitioned chunk store - ask worker computed from version
-  static bool dist_store = Env::Instance()->config().enable_dist_store();
-  UMessage msg;
-  // header
-  msg.set_type(UMessage::GET_CHUNK_REQUEST);
-  // request
-  auto request = msg.mutable_request_payload();
-  request->set_key(key.data(), key.len());
-  request->set_version(version.value(), Hash::kByteLength);
-  // send
-  Send(&msg, dist_store ? ptt_->GetDestAddr(version) : ptt_->GetDestAddr(key));
-  return GetChunkResponse(chunk);
+  static bool dist = Env::Instance()->config().enable_dist_store();
+  // NOTE(wangsh):
+  // Can bypass worker if chunk cli is available
+  static bool bypass = ck_cli_.size();
+
+  if (bypass) {  // Get via chunk service
+    if (dist) return ck_cli_[0].Get(version, chunk);
+    return ck_cli_[0].Get(key, version, chunk);
+  } else {  // Get via worker service
+    UMessage msg;
+    // header
+    msg.set_type(UMessage::GET_CHUNK_REQUEST);
+    // request
+    auto request = msg.mutable_request_payload();
+    request->set_key(key.data(), key.len());
+    request->set_version(version.value(), Hash::kByteLength);
+    // send
+    Send(&msg, dist ? ptt_->GetDestAddr(version) : ptt_->GetDestAddr(key));
+    return GetChunkResponse(chunk);
+  }
 }
 
 ErrorCode WorkerClient::GetStorageInfo(std::vector<StoreInfo>* info) const {

@@ -21,6 +21,8 @@ class WorkerServiceCallBack : public CallBack {
 void WorkerService::Init() {
   CallBack* callback = new WorkerServiceCallBack(this);
   HostService::Init(std::unique_ptr<CallBack>(callback));
+  // start chunk service as well
+  if (ck_svc_) ck_svc_->Run();
 }
 
 void WorkerService::HandleRequest(const void *msg, int size,

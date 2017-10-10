@@ -20,12 +20,15 @@ class ChunkClient : public Client {
     : Client(blob), ptt_(ptt) {}
   ~ChunkClient() = default;
 
-  ErrorCode Get(const Hash& hash, Chunk* chunk);
+  ErrorCode Get(const Hash& hash, Chunk* chunk) const;
   ErrorCode Put(const Hash& hash, const Chunk& chunk);
-  ErrorCode Exists(const Hash& hash, bool* exist);
+  ErrorCode Exists(const Hash& hash, bool* exist) const;
+
+  // only used by worker client while enable_dist_store = false
+  ErrorCode Get(const Slice& key, const Hash& hash, Chunk* chunk) const;
 
  private:
-  void CreateChunkMessage(const Hash& hash, UMessage *msg);
+  void CreateChunkMessage(const Hash& hash, UMessage *msg) const;
 
   const Partitioner* const ptt_;
 };

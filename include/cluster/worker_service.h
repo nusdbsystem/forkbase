@@ -3,7 +3,9 @@
 #ifndef USTORE_CLUSTER_WORKER_SERVICE_H_
 #define USTORE_CLUSTER_WORKER_SERVICE_H_
 
+#include <memory>
 #include <mutex>
+#include "cluster/chunk_service.h"
 #include "cluster/host_service.h"
 #include "cluster/partitioner.h"
 #include "cluster/port_helper.h"
@@ -24,7 +26,12 @@ class WorkerService : public HostService {
       ptt_(Env::Instance()->config().worker_file(), addr),
       worker_(ptt_.id(),
               Env::Instance()->config().enable_dist_store() ? &ptt_ : nullptr,
-              persist) {}
+              persist) {
+      auto& config = Env::Instance()->config();
+      // only need chunk service when other worker or client need it
+      if (config.enable_dist_store() || config.get_chunk_bypass_worker())
+        ck_svc_.reset(new ChunkService(addr));
+    }
   ~WorkerService() = default;
 
   void Init() override;
@@ -55,6 +62,7 @@ class WorkerService : public HostService {
   const ChunkPartitioner ptt_;
   Worker worker_;  // where the logic happens
   std::mutex lock_;
+  std::unique_ptr<ChunkService> ck_svc_;
 };
 }  // namespace ustore
 

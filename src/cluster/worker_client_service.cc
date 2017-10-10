@@ -16,12 +16,14 @@ class WorkerClientServiceCallBack : public CallBack {
 void WorkerClientService::Init() {
   CallBack* callback = new WorkerClientServiceCallBack(this);
   ClientService::Init(std::unique_ptr<CallBack>(callback));
+  // start chunk client service as well
+  if (ck_svc_) ck_svc_->Run();
 }
 
 WorkerClient WorkerClientService::CreateWorkerClient() {
   // adding a new response blob
   ResponseBlob* resblob = CreateResponseBlob();
-  return WorkerClient(resblob, &ptt_);
+  return WorkerClient(resblob, &ptt_, ck_svc_.get());
 }
 
 }  // namespace ustore
