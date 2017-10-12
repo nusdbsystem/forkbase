@@ -79,6 +79,7 @@ endif()
 
 SET(BOOST_COMPONENT "filesystem")
 LIST(APPEND BOOST_COMPONENT "program_options")
+LIST(APPEND BOOST_COMPONENT "thread")
 
 # ---[ Dependencies
 include(cmake/Dependencies.cmake)

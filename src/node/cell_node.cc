@@ -11,6 +11,9 @@ Chunk CellNode::NewChunk(const UType type, const Slice& key, const Slice& data,
     const Hash& preHash1, const Hash& preHash2) {
   // First hash can not be empty
   CHECK(!preHash1.empty());
+  // Data size can not be larger than 1<<16
+  CHECK(data.len() < 65536)
+    << "Data length ("<< data.len() << ") exceeds limit for a cell";
   size_t num_pre_hash = preHash2.empty() ? 1 : 2;
   size_t chunk_len = ComputeTotalLength(num_pre_hash, key.len(), data.len());
   Chunk chunk(ChunkType::kCell, chunk_len);
