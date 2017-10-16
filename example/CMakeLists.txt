@@ -25,3 +25,8 @@ TARGET_LINK_LIBRARIES(ustore_hbase ustore)
 ADD_EXECUTABLE(ustore_deduplication "huawei/deduplication.cc" ${example_huawei_source})
 ADD_DEPENDENCIES(ustore_deduplication ustore)
 TARGET_LINK_LIBRARIES(ustore_deduplication ustore)
+
+AUX_SOURCE_DIRECTORY(table_op example_table_op_source)
+ADD_EXECUTABLE(ustore_example_table_op "table_op/table_op_main.cc" ${example_table_op_source})
+ADD_DEPENDENCIES(ustore_example_table_op ustore)
+TARGET_LINK_LIBRARIES(ustore_example_table_op ustore)

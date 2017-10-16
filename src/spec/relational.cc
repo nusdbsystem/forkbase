@@ -18,17 +18,17 @@ const size_t kMinRefreshIntervalMs = 500;
 const char kOutputDelimiter[] = "|";
 
 ErrorCode ColumnStore::ExistsTable(const std::string& table_name,
-                                   bool* exist) {
+                                   bool* exists) {
   auto rst = odb_.ListBranches(Slice(table_name));
-  *exist = !rst.value.empty();
+  *exists = !rst.value.empty();
   return rst.stat;
 }
 
 ErrorCode ColumnStore::ExistsTable(const std::string& table_name,
                                    const std::string& branch_name,
-                                   bool* exist) {
+                                   bool* exists) {
   auto rst = odb_.Exists(Slice(table_name), Slice(branch_name));
-  *exist = rst.value;
+  *exists = rst.value;
   return rst.stat;
 }
 
@@ -488,20 +488,20 @@ ErrorCode ColumnStore::DeleteTable(const std::string& table_name,
 
 ErrorCode ColumnStore::ExistsColumn(const std::string& table_name,
                                     const std::string& col_name,
-                                    bool* exist) {
+                                    bool* exists) {
   auto col_key = GlobalKey(table_name, col_name);
   auto rst = odb_.ListBranches(Slice(col_key));
-  *exist = !rst.value.empty();
+  *exists = !rst.value.empty();
   return rst.stat;
 }
 
 ErrorCode ColumnStore::ExistsColumn(const std::string& table_name,
                                     const std::string& branch_name,
                                     const std::string& col_name,
-                                    bool* exist) {
+                                    bool* exists) {
   auto col_key = GlobalKey(table_name, col_name);
   auto rst = odb_.Exists(Slice(col_key), Slice(branch_name));
-  *exist = rst.value;
+  *exists = rst.value;
   return rst.stat;
 }
 

@@ -31,10 +31,10 @@ class ColumnStore {
   explicit ColumnStore(DB* db) noexcept : odb_(db) {}
   ~ColumnStore() = default;
 
-  ErrorCode ExistsTable(const std::string& table_name, bool* exist);
+  ErrorCode ExistsTable(const std::string& table_name, bool* exists);
 
   ErrorCode ExistsTable(const std::string& table_name,
-                        const std::string& branch_name, bool* exist);
+                        const std::string& branch_name, bool* exists);
 
   ErrorCode CreateTable(const std::string& table_name,
                         const std::string& branch_name);
@@ -80,11 +80,11 @@ class ColumnStore {
                         const std::string& branch_name);
 
   ErrorCode ExistsColumn(const std::string& table_name,
-                         const std::string& col_name, bool* exist);
+                         const std::string& col_name, bool* exists);
 
   ErrorCode ExistsColumn(const std::string& table_name,
                          const std::string& branch_name,
-                         const std::string& col_name, bool* exist);
+                         const std::string& col_name, bool* exists);
 
   ErrorCode GetColumn(const std::string& table_name,
                       const std::string& branch_name,
