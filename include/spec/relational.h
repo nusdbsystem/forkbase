@@ -54,6 +54,9 @@ class ColumnStore {
   ErrorCode GetTableSchema(const std::string& table_name,
                            const std::string& branch_name, Row* schema);
 
+  ErrorCode GetTableSize(const std::string& table_name,
+                         const std::string& branch_name, long* tab_sz);
+
   ErrorCode BranchTable(const std::string& table_name,
                         const std::string& old_branch_name,
                         const std::string& new_branch_name);
@@ -124,6 +127,12 @@ class ColumnStore {
                       const std::string& ref_col_name,
                       const std::string& ref_val, const Row& row,
                       size_t* n_rows_affected = nullptr);
+
+  ErrorCode UpdateConsecutiveRows(const std::string& table_name,
+                                  const std::string& branch_name,
+                                  const std::string& ref_col_name,
+                                  const std::string& ref_val, const Row& row,
+                                  size_t* n_rows_affected = nullptr);
 
   ErrorCode InsertRow(const std::string& table_name,
                       const std::string& branch_name, const Row& row);

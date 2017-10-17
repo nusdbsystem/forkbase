@@ -21,6 +21,10 @@ class Config {
  public:
   static bool is_help;
   static std::string file;
+  static std::string update_ref_col;
+  static std::string update_ref_val;
+  static std::string update_eff_col;
+  static std::string agg_col;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 

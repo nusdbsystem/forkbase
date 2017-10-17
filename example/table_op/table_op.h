@@ -20,9 +20,11 @@ class TableOp {
  private:
   ErrorCode Init();
   ErrorCode Load();
+  ErrorCode Update(const std::string& ref_val);
+  ErrorCode Diff(const std::string& lhs_branch, const std::string& rhs_branch);
+  ErrorCode Aggregate();
 
-  ErrorCode TimeComplete(const std::string& name,
-                         const std::function<ErrorCode()>& f_exec);
+  ErrorCode VerifyColumn(const std::string& col);
 
   ColumnStore cs_;
 };

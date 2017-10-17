@@ -8,7 +8,7 @@ namespace example {
 namespace table_op {
 
 int main(int argc, char* argv[]) {
-  SetStderrLogging(ERROR);
+  SetStderrLogging(WARNING);
   // connect to UStore servcie
   WorkerClientService svc;
   svc.Run();

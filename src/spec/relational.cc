@@ -529,6 +529,24 @@ ErrorCode ColumnStore::GetColumn(
   return ReadColumn(Slice(col_key), col_ver, col);
 }
 
+ErrorCode ColumnStore::GetTableSize(const std::string& table_name,
+                                    const std::string& branch_name,
+                                    long* tab_sz) {
+  *tab_sz = -1;
+  Table tab;
+  USTORE_GUARD(
+    ReadTable(Slice(table_name), Slice(branch_name), &tab));
+  auto it = tab.Scan();
+  auto col_name = it.key();
+  auto col_ver = SLICE_TO_HASH(it.value());
+  auto col_key = GlobalKey(table_name, col_name);
+  Column col;
+  USTORE_GUARD(
+    ReadColumn(Slice(col_key), col_ver, &col));
+  *tab_sz = col.numElements();
+  return ErrorCode::kOK;
+}
+
 ErrorCode ColumnStore::WriteColumn(const std::string& table_name,
                                    const std::string& branch_name,
                                    const std::string& col_name,
@@ -814,6 +832,65 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
   [](Column * col, size_t row_idx, const std::string & field_value) {
     col->Splice(row_idx, 1, {Slice(field_value)});
   }, n_rows_affected);
+}
+
+ErrorCode ColumnStore::UpdateConsecutiveRows(
+  const std::string& table_name, const std::string& branch_name,
+  const std::string& ref_col_name, const std::string& ref_val,
+  const Row& row, size_t* n_rows_affected) {
+  if (n_rows_affected != nullptr) *n_rows_affected = 0;
+  if (ref_col_name.empty()) {
+    LOG(ERROR) << "Referring column is not specified";
+    return ErrorCode::kInvalidParameter;
+  }
+  if (ref_val.empty()) {
+    LOG(ERROR) << "Referring value is missing";
+    return ErrorCode::kInvalidParameter;
+  }
+  // search for row indices
+  uint64_t start_idx = 0;
+  uint64_t num_to_delete = 0;
+  {
+    Column ref_col;
+    USTORE_GUARD(GetColumn(table_name, branch_name, ref_col_name, &ref_col));
+    auto it = ref_col.Scan();
+    while (!it.end() && it.value() != ref_val) { it.next(); }
+    if (!it.end()) {
+      start_idx = it.index();
+      num_to_delete = 1;
+      for (it.next(); !it.end() && it.value() == ref_val; it.next()) {
+        ++num_to_delete;
+      };
+    }
+  }
+  if (num_to_delete == 0) return ErrorCode::kRowNotExists;
+  // apply row updates
+  Slice table(table_name), branch(branch_name);
+  for (auto& field : row) {
+    auto& col_name = field.first;
+    auto field_value = Slice(field.second);
+    std::vector<Slice> entries;
+    for (size_t i = 0; i < num_to_delete; ++i) entries.push_back(field_value);
+    // retrieve the column
+    Table tab;
+    USTORE_GUARD(ReadTable(table, branch, &tab));
+    const auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
+    auto col_key_str = GlobalKey(table_name, col_name);
+    Slice col_key(col_key_str);
+    Column col;
+    USTORE_GUARD(ReadColumn(col_key, col_ver, &col));
+    // update consecutive values in the column
+    col.Splice(start_idx, num_to_delete, entries);
+    // write the new column into storage
+    auto col_rst = odb_.Put(col_key, col, branch);
+    USTORE_GUARD(col_rst.stat);
+    const auto col_ver_new = col_rst.value.Clone();
+    // update column entry in the table
+    tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver_new));
+    USTORE_GUARD(odb_.Put(table, tab, branch).stat);
+  }
+  if (n_rows_affected != nullptr) *n_rows_affected = num_to_delete;
+  return ErrorCode::kOK;
 }
 
 ErrorCode ColumnStore::DeleteRow(const std::string& table_name,
