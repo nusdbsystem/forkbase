@@ -205,6 +205,10 @@ NodeBuilder* NodeBuilder::parent_builder() {
 
 Chunk NodeBuilder::HandleBoundary(const std::vector<const Segment*>& segments) {
   // DLOG(INFO) << "Start Handing Boundary. ";
+  for (const Segment* seg : segments) {
+    this->num_created_entries_ += seg->numEntries();
+  }
+
   ChunkInfo chunk_info = chunker_->Make(segments);
 
   Chunk& chunk = chunk_info.chunk;
@@ -217,7 +221,7 @@ Chunk NodeBuilder::HandleBoundary(const std::vector<const Segment*>& segments) {
   return std::move(chunk);
 }
 
-Hash NodeBuilder::Commit() {
+Hash NodeBuilder::Commit(bool* is_canonical_root) {
   CHECK(!commited_);
   // As we are about to make new chunk,
   // parent metaentry that points the old chunk
@@ -385,8 +389,18 @@ Hash NodeBuilder::Commit() {
   //   This node will be excluded from final prolley tree
   // DLOG(INFO) << "Finish one level commiting.\n";
   Hash root_key(last_created_chunk.hash().Clone());
-  if (!parent_builder()->isInvalidNode()) {
-    root_key = parent_builder()->Commit();
+  bool is_parent_canonical_root = false;
+  if (parent_builder()->cursor_ != nullptr ||
+      parent_builder()->numAppendSegs() > 1) {
+    Hash parent_hash = parent_builder()->Commit(&is_parent_canonical_root);
+
+    if (is_parent_canonical_root) {
+      *is_canonical_root = true;
+      return parent_hash;
+    }
+  }  // end if parent_builder
+  if (!is_parent_canonical_root) {
+    *is_canonical_root = level_ > 0 && num_created_entries_ > 1;
   }
   return root_key;
 }

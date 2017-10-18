@@ -49,7 +49,10 @@ class NodeBuilder : private Noncopyable {
   // Commit the uncommited operation
   // Create and dump the chunk into storage
   // @return The hash (a.k.a. the key) of the newly commited root chunk.
-  Hash Commit();
+  inline Hash Commit() {
+    bool found_canonical_root;
+    return Commit(&found_canonical_root);
+  }
 
  private:
   // Internal constructor used to recursively construct Parent NodeBuilder
@@ -62,6 +65,12 @@ class NodeBuilder : private Noncopyable {
   NodeBuilder(size_t level, ChunkWriter* chunk_writer,
               const Chunker* chunker, const Chunker* parent_chunker,
               bool isFixedEntryLen) noexcept;
+
+  // Commit the uncommited operation
+  // Create and dump the chunk into storage
+  // @return The hash (a.k.a. the key) of the newly commited root chunk.
+  // Return from from argument whether the upper builder has found the canonical root
+  Hash Commit(bool* found_canonical_root);
 
   // Remove elements from cursor
   // Return the number of elements actually removed
@@ -117,6 +126,7 @@ class NodeBuilder : private Noncopyable {
   // whether the built entry is fixed length
   // type blob: true
   const bool isFixedEntryLen_;
+  size_t num_created_entries_ = 0;
 };
 
 
@@ -257,7 +267,6 @@ To work on an existing prolly tree:
   ChunkLoader* loader_;
   ChunkWriter* writer_;
   std::list<SpliceOperand> operands_;
-
 };
 }  // namespace ustore
 

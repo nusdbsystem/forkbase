@@ -60,6 +60,7 @@ class NodeBuilderEnv : public ::testing::Test {
       //   which now places at seq start of its level
       if (cursor->parent() == nullptr) {
         parent_cur = nullptr;
+        ASSERT_LT(1, cursor->node()->numEntries());
       } else {
         parent_cur = new ustore::NodeCursor(*(cursor->parent()));
       }
