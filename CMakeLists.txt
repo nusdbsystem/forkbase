@@ -28,13 +28,13 @@ OPTION(DYNAMIC_LIB "Generate dynamic library libustore.so,
        otherwise libustore.a" ON)
 # --- [ Options
 OPTION(USE_LEVELDB "Use LevelDB as chunk storage" OFF)
-OPTION(USE_CRYPTOPP "Use Crypto++ library to calculate chunk hash" ON)
+OPTION(USE_CRYPTOPP "Use Crypto++ library to calculate chunk hash" OFF)
 OPTION(USE_SHA256 "Choose SHA-256 hash to calculate chunk hash" ON)
 OPTION(USE_BLAKE2b "Choose BLAKE2b hash to calculate chunk hash,
                     need to turn USE_CRYPTOPP ON first" OFF)
 OPTION(ENABLE_TEST "Compile test module" ON)
-OPTION(TEST_NODEBUILDER "Test node builder" OFF)
-OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
+OPTION(TEST_NODEBUILDER "Test node builder" ON)
+OPTION(ENABLE_DEBUG "Enable debug mode" ON)
 OPTION(USE_RDMA "Use RDMA" OFF)
 OPTION(ENABLE_EXAMPLE "Compile example module" ON)
 

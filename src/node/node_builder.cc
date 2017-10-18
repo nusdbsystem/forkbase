@@ -177,6 +177,24 @@ void NodeBuilder::SpliceElements(size_t num_delete,
   AppendSegmentEntries(element_seg);
 }
 
+void NodeBuilder::SpliceElements(size_t num_delete,
+                                 std::vector<const Segment*> element_segs) {
+  if (!commited_) {
+    LOG(FATAL) << "There exists some uncommited operations. "
+               << " Commit them first before doing any operation. ";
+  }
+  commited_ = false;
+
+  size_t actual_delete = SkipEntries(num_delete);
+  if (actual_delete < num_delete) {
+    LOG(WARNING) << "Actual Remove " << actual_delete << " elements instead of "
+                 << num_delete;
+  }
+
+  appended_segs_.insert(appended_segs_.end(), element_segs.begin(),
+                        element_segs.end());
+}
+
 NodeBuilder* NodeBuilder::parent_builder() {
   if (parent_builder_ == nullptr) {
     parent_builder_.reset(new NodeBuilder(level_ + 1, chunk_writer_,
@@ -229,17 +247,12 @@ Hash NodeBuilder::Commit() {
   const Segment* cur_seg = pre_cursor_seg_;
   size_t segIdx = 0;  // point to the next seg to handle after cur_seg
 
-  if (cur_seg == nullptr) {
-    // The cursur must be nullptr
-    // if this builder is created by child recursively
-    // Must have been appended some entries by child
-    CHECK(!appended_segs_.empty());
+  if (cur_seg == nullptr && !appended_segs_.empty()) {
     cur_seg = appended_segs_[0];
     segIdx = 1;
   }
 
-  while (true) {
-    CHECK(cur_seg != nullptr);
+  while (cur_seg) {
     bool hasBoundary = false;
 
     size_t boundary_pos =
@@ -391,22 +404,15 @@ Segment* NodeBuilder::SegAtCursor() {
 
 /////////////////////////////////////////////////////////
 // Advanced Node Builder
-AdvancedNodeBuilder::AdvancedNodeBuilder(const Hash& root,
-                                         ChunkLoader* loader,
-                                         ChunkWriter* writer) :
-    AdvancedNodeBuilder(0, root, loader, writer) {}
 
-AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level,
-                                         const Hash& root,
+AdvancedNodeBuilder::AdvancedNodeBuilder(const Hash& root,
                                          ChunkLoader* loader,
                                          ChunkWriter* writer) :
     root_(root), loader_(loader), writer_(writer), operands_() {}
 
-AdvancedNodeBuilder::AdvancedNodeBuilder(ChunkWriter* writer) :
-    AdvancedNodeBuilder(0, writer) {}
 
-AdvancedNodeBuilder::AdvancedNodeBuilder(size_t level, ChunkWriter* writer) :
-    AdvancedNodeBuilder(level, Hash(), nullptr, writer) {}
+AdvancedNodeBuilder::AdvancedNodeBuilder(ChunkWriter* writer) :
+    AdvancedNodeBuilder(Hash(), nullptr, writer) {}
 
 AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
     uint64_t start_idx, uint64_t num_delete,
@@ -426,18 +432,6 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
         break;
       }
     } else {
-      NodeCursor* tmp_cr = new NodeCursor(root_, start_idx, loader_);
-
-      if (tmp_cr->empty()) {
-        LOG(WARNING) << "Start_idx exceeds the total number of elements."
-                     << "Or, the tree with root hash "
-                     << root_.ToBase32() << " does not exist. "
-                     << "\n"
-                     << " Operation Failed. ";
-        break;
-      }
-
-      cr.reset(tmp_cr);
       total_num_elements =
           SeqNode::CreateFromChunk(loader_->Load(root_))->numElements();
     }
@@ -449,7 +443,6 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
     }
 
     SpliceOperand operand{start_idx,
-                          std::move(cr),
                           num_delete,
                           std::move(operand_segs)};
 
@@ -503,7 +496,53 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
 //   the hash owns its internal data
 Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
                                  bool isFixedEntryLen) {
+  if (root_.empty()) {
+    if (operands_.size() == 0) {
+      // Create an empty object
 
+      NodeBuilder nb(writer_, &chunker,
+                     MetaChunker::Instance(),
+                     isFixedEntryLen);
+      nb.SpliceElements(0, {});
+      return nb.Commit();
+    } else if(operands_.size() == 1){
+      // Init the object with a single operand
+      NodeBuilder nb(writer_, &chunker,
+                     MetaChunker::Instance(),
+                     isFixedEntryLen);
+      nb.SpliceElements(operands_.begin()->num_delete,
+                        operands_.begin()->appended_segs);
+      return nb.Commit();
+    } else {
+      LOG(WARNING) << "No Multiple Operations on empty tree.";
+      return root_;
+    }  // end if operands.size() == 0
+  }  // end if root_.empty()
+
+  PersistentChunker persistentMetaChunker(MetaChunker::Instance());
+  PersistentChunker persistentLeafChunker(&chunker);
+
+  ChunkCacher chunk_cacher(loader_, writer_);
+
+  Hash base = root_;
+  for (auto operand_it = operands_.rbegin();
+       operand_it != operands_.rend();
+       operand_it++) {
+    // Traverse the list in reverse order
+    NodeBuilder nb(base, operand_it->start_idx,
+                   &chunk_cacher, &chunk_cacher,
+                   &persistentLeafChunker, &persistentMetaChunker,
+                   isFixedEntryLen);
+
+    nb.SpliceElements(operand_it->num_delete, operand_it->appended_segs);
+    base = nb.Commit();
+  }  // end for
+
+  if (!chunk_cacher.DumpUnreadCacheChunks()) {
+    LOG(FATAL) << "Fail to Dump Created Chunk.";
+  }
+
+  return base;
 }
 
 Chunk AdvancedNodeBuilder::ChunkCacher::GetChunk(const Hash& key) {
@@ -518,7 +557,7 @@ Chunk AdvancedNodeBuilder::ChunkCacher::GetChunk(const Hash& key) {
   return loader_->GetChunk(key);
 }
 
-bool AdvancedNodeBuilder::ChunkCacher::DumpUnreadCacheChunk() {
+bool AdvancedNodeBuilder::ChunkCacher::DumpUnreadCacheChunks() {
   bool all = true;
   for (const auto& kv : cache_) {
     auto has_read_it = has_read_.find(kv.first);

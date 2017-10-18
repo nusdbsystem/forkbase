@@ -157,7 +157,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
     const ustore::BlobChunker* chunker = ustore::BlobChunker::Instance();
-    ustore::NodeBuilder builder(writer_, chunker, MetaChunker::Instance(), true);
+    ustore::NodeBuilder builder(writer_, chunker, ustore::MetaChunker::Instance(), true);
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.SpliceElements(0, &seg);
     root_chunk = loader_->Load(builder.Commit());
@@ -168,7 +168,8 @@ class NodeBuilderSimple : public NodeBuilderEnv {
                    bool isVerbose = false) {
     verbose = isVerbose;
     ustore::NodeBuilder b(root_chunk->hash(), splice_idx, loader_, writer_,
-                          ustore::BlobChunker::Instance(), true);
+                          ustore::BlobChunker::Instance(),
+                          ustore::MetaChunker::Instance(), true);
 
     ustore::FixedSegment seg(insert_bytes, num_insert_bytes, 1);
 
@@ -308,7 +309,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, original_num_bytes_);
 
     const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
-    ustore::NodeBuilder builder(writer_, chunker, MetaChunker::Instance(), true);
+    ustore::NodeBuilder builder(writer_, chunker, ustore::MetaChunker::Instance(), true);
 
     ustore::FixedSegment seg(original_content_, original_num_bytes_, 1);
 
@@ -326,7 +327,8 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     std::memcpy(special_content_, original_content_, special_num_bytes_);
 
     ustore::FixedSegment sseg(special_content_, special_num_bytes_, 1);
-    ustore::NodeBuilder abuilder(writer_, chunker, true);
+    ustore::NodeBuilder abuilder(writer_, chunker,
+                                 ustore::MetaChunker::Instance(), true);
 
     abuilder.SpliceElements(0, &sseg);
     special_root_ = loader_->Load(abuilder.Commit());
@@ -338,7 +340,8 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
 
     ustore::NodeBuilder b(
-        root_hash, splice_idx, loader_, writer_, chunker, true);
+        root_hash, splice_idx, loader_, writer_,
+        chunker, ustore::MetaChunker::Instance(), true);
 
     ustore::FixedSegment seg(append_data, append_num_bytes, 1);
 

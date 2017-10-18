@@ -41,6 +41,11 @@ class NodeBuilder : private Noncopyable {
   // Append elements in Segment in byte array
   void SpliceElements(size_t num_delete, const Segment* element_seg);
 
+  // First delete num_delete elements from cursor and then
+  // Append elements in Segments in byte array
+  void SpliceElements(size_t num_delete,
+                      std::vector<const Segment*> element_segs);
+
   // Commit the uncommited operation
   // Create and dump the chunk into storage
   // @return The hash (a.k.a. the key) of the newly commited root chunk.
@@ -117,11 +122,24 @@ class NodeBuilder : private Noncopyable {
 
 class AdvancedNodeBuilder : Noncopyable  {
 /* A node builder that can support multiple operation in a single transaction
+
+AdvancedNodeBuilder applies NodeBuilder for multiple rounds for edition. However,
+it buffers the created chunks in the middle and provides access to these intermidiate chunks.
+At last, it dumps all the created chunks that only occur in the final prolly tree
+to Chunk Storage. Useless intermediate chunks will be discarded.
+
+NOTE: AdvancedNodeBuilder utilizes the NodeBuilder property that any chunks read by
+a NodeBuilder during commit will NOT be included in the built prolly tree from this NodeBuilder.
+
+In this way, any intermediate created chunks that are read by NodeBuilder
+in later around will NOT be dumped to final storage.
+
 To construct a new prolly tree:
-  AdvancedNodeBuilder nb;
+  AdvancedNodeBuilder nb(writer);
   const Hash hash = nb.Insert(0, segment).Commit();
+
 To work on an existing prolly tree:
-  AdvancedNodeBuilder nb(root, loader);
+  AdvancedNodeBuilder nb(root, loader, writer);
   const Hash hash = nb.Insert(0, segment)
                       .Splice(1, 4, segment)
                       .Remove(4, 6)
@@ -170,7 +188,7 @@ To work on an existing prolly tree:
     the created chunks points to these bytes.
   */
    public:
-    explicit PersistentChunker(Chunker* chunker) noexcept :
+    explicit PersistentChunker(const Chunker* chunker) noexcept :
       chunker_(chunker) {}
 
     inline ChunkInfo Make(const std::vector<const Segment*>& segments) const
@@ -178,7 +196,9 @@ To work on an existing prolly tree:
       ChunkInfo chunk_info = chunker_->Make(segments);
       created_chunks_.push_back(std::move(chunk_info.chunk));
 
-      return {Chunk(created_chunks_.rbegin()->data()),
+      Chunk new_chunk(created_chunks_.rbegin()->head());
+
+      return {std::move(new_chunk),
               std::move(chunk_info.meta_seg)};
     }
 
@@ -201,8 +221,9 @@ To work on an existing prolly tree:
       loader_(loader), writer_(writer) {}
 
     inline bool Write(const Hash& key, const Chunk& chunk) override {
-      cache_[key.Clone()] = chunk.data();
+      cache_[key.Clone()] = chunk.head();
       has_read_[key.Clone()] = false;
+
       return true;
     }
 
@@ -210,8 +231,7 @@ To work on an existing prolly tree:
     ~ChunkCacher() = default;
 
     // Return true if all unread cached chunks are dumpted to ChunkWriter
-    bool DumpUnreadCacheChunk();
-
+    bool DumpUnreadCacheChunks();
    protected:
     // First try to find chunk from the cache
     // If not found, find from ChunkLoader
@@ -226,19 +246,12 @@ To work on an existing prolly tree:
   // relevant information to perform one spliced operation
   struct SpliceOperand {
     uint64_t start_idx;
-    // the cursor points to the position for splicing
-    std::unique_ptr<NodeCursor> cursor;
     // the number of entries to delete
     size_t num_delete;
     // a vector of segments to append
     // can be empty
     std::vector<const Segment*> appended_segs;
   };
-
-  AdvancedNodeBuilder(size_t level, ChunkWriter* writer);
-
-  AdvancedNodeBuilder(size_t level, const Hash& root,
-                      ChunkLoader* loader_, ChunkWriter* writer);
 
   const Hash root_;
   ChunkLoader* loader_;
