@@ -1035,4 +1035,30 @@ ChunkInfo AdvancedNodeBuilder::HandleBoundary(
   return chunk_info;
 }
 
+Chunk AdvancedNodeBuilder::ChunkCacher::GetChunk(const Hash& key) {
+  auto cache_it = cache_.find(key);
+  auto has_read_it = has_read_.find(key);
+
+  if (cache_it != cache_.end()) {
+    CHECK(has_read_it != has_read_.end());
+    has_read_it->second = true;
+    return Chunk(cache_it->second);
+  }
+  return loader_->GetChunk(key);
+}
+
+bool AdvancedNodeBuilder::ChunkCacher::DumpUnreadCacheChunk() {
+  bool all = true;
+  for (const auto& kv : cache_) {
+    auto has_read_it = has_read_.find(kv.first);
+    CHECK(has_read_it != has_read_.end());
+
+    if (!has_read_it->second) {
+      bool result = writer_->Write(kv.first, Chunk(kv.second));
+      all = all && result;
+    }
+  }
+  return all;
+}
+
 }  // namespace ustore

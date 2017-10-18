@@ -24,9 +24,9 @@ class ChunkLoader : private Noncopyable {
 
   const Chunk* Load(const Hash& key);
 
+  virtual Chunk GetChunk(const Hash& key) = 0;
  protected:
   ChunkLoader() = default;
-  virtual Chunk GetChunk(const Hash& key) = 0;
 
   std::map<Hash, Chunk> cache_;
 };
@@ -37,7 +37,7 @@ class LocalChunkLoader : public ChunkLoader {
   LocalChunkLoader() : cs_(store::GetChunkStore()) {}
   ~LocalChunkLoader() = default;
 
- protected:
+ // protected:
   Chunk GetChunk(const Hash& key) override;
 
  private:
@@ -51,7 +51,7 @@ class PartitionedChunkLoader : public ChunkLoader {
     : cs_(store::GetChunkStore()), ptt_(ptt), client_(client) {}
   ~PartitionedChunkLoader() = default;
 
- protected:
+ // protected:
   Chunk GetChunk(const Hash& key) override;
 
  private:
@@ -69,7 +69,7 @@ class ClientChunkLoader : public ChunkLoader {
   // Delete all chunks
   ~ClientChunkLoader() = default;
 
- protected:
+ // protected:
   Chunk GetChunk(const Hash& key) override;
 
  private:

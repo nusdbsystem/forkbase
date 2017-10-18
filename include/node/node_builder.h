@@ -108,6 +108,7 @@ class NodeBuilder : private Noncopyable {
   const bool isFixedEntryLen_;
 };
 
+
 class AdvancedNodeBuilder : Noncopyable  {
 /* A node builder that can support multiple operation in a single transaction
 To construct a new prolly tree:
@@ -156,6 +157,66 @@ To work on an existing prolly tree:
   Hash Commit(const Chunker& chunker, bool isFixedEntryLen);
 
  private:
+  class PersistentChunker : public Chunker {
+  /* PersistentChunker is a wrapper for a normal chunker.
+
+  It persists the chunk internal bytes while
+    the created chunks points to these bytes.
+  */
+   public:
+    explicit PersistentChunker(Chunker* chunker) noexcept :
+      chunker_(chunker) {}
+
+    inline ChunkInfo Make(const std::vector<const Segment*>& segments) const
+        override {
+      ChunkInfo chunk_info = chunker_->Make(segments);
+      created_chunks_.push_back(std::move(chunk_info.chunk));
+
+      return {Chunk(created_chunks_.rbegin()->data()),
+              std::move(chunk_info.meta_seg)};
+    }
+
+    ~PersistentChunker() = default;
+
+   private:
+    const Chunker* chunker_;
+    // created_chunks_ own the actual data.
+    mutable std::list<Chunk> created_chunks_;
+  };
+
+  class ChunkCacher : public ChunkLoader, public ChunkWriter {
+  /*
+  ChunkCacher allows to cache the written chunks locally and provide priority access
+  to them if loaded.
+  */
+
+   public:
+    ChunkCacher(ChunkLoader* loader, ChunkWriter* writer) noexcept :
+      loader_(loader), writer_(writer) {}
+
+    inline bool Write(const Hash& key, const Chunk& chunk) override {
+      cache_[key.Clone()] = chunk.data();
+      has_read_[key.Clone()] = false;
+      return true;
+    }
+
+    // Delete the cached data
+    ~ChunkCacher() = default;
+
+    // Return true if all unread cached chunks are dumpted to ChunkWriter
+    bool DumpUnreadCacheChunk();
+
+   protected:
+    // First try to find chunk from the cache
+    // If not found, find from ChunkLoader
+    Chunk GetChunk(const Hash& key) override;
+
+   private:
+    ChunkLoader* loader_;
+    ChunkWriter* writer_;
+    std::map<Hash, const byte_t*> cache_;
+    std::map<Hash, bool> has_read_;
+  };
   // relevant information to perform one spliced operation
   struct SpliceOperand {
     uint64_t start_idx;
