@@ -25,7 +25,7 @@ SMap::SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     chunk_writer_->Write(chunk_info.chunk.hash(), chunk_info.chunk);
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
-    NodeBuilder nb(chunk_writer_, MapChunker::Instance(), false);
+    NodeBuilder nb(chunk_writer_, MapChunker::Instance(), MetaChunker::Instance(), false);
     std::vector<KVItem> kv_items;
 
     for (size_t i : Utils::SortIndexes<Slice>(keys)) {
@@ -41,7 +41,7 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
   CHECK(!empty());
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 chunk_writer_, MapChunker::Instance(), false);
+                 chunk_writer_, MapChunker::Instance(), MetaChunker::Instance(), false);
 
   // Try to find whether this key already exists
   NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
@@ -75,7 +75,7 @@ Hash SMap::Remove(const Slice& key) const {
   // Create an empty segment
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr), 0, {});
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 chunk_writer_, MapChunker::Instance(), false);
+                 chunk_writer_, MapChunker::Instance(), MetaChunker::Instance(), false);
   nb.SpliceElements(1, &seg);
   return nb.Commit();
 }

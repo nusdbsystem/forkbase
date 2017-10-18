@@ -472,7 +472,8 @@ TEST(NodeCursor, MultiStep) {
   std::memcpy(content, raw_data, num_bytes);
 
   ustore::LocalChunkWriter writer;
-  ustore::NodeBuilder builder(&writer, ustore::BlobChunker::Instance(), true);
+  ustore::NodeBuilder builder(&writer, ustore::BlobChunker::Instance(),
+                              ustore::MetaChunker::Instance(), true);
 
   ustore::FixedSegment seg(content, num_bytes, 1);
 

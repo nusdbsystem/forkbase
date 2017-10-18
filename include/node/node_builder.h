@@ -21,15 +21,18 @@ class NodeBuilder : private Noncopyable {
   // Perform operation at element with key at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, const OrderedKey& key,
               ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-              const Chunker* chunker, bool isFixedEntryLen) noexcept;
+              const Chunker* chunker, const Chunker* parent_chunker,
+              bool isFixedEntryLen) noexcept;
 
   // Perform operation at idx-th element at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, size_t idx,
               ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-              const Chunker* chunker, bool isFixedEntryLen) noexcept;
+              const Chunker* chunker, const Chunker* parent_chunker,
+              bool isFixedEntryLen) noexcept;
 
   // Construct a node builder to construct a fresh new Prolly Tree
   NodeBuilder(ChunkWriter* chunk_writer, const Chunker* chunker,
+              const Chunker* parent_chunker,
               bool isFixedEntryLen) noexcept;
 
   ~NodeBuilder() = default;
@@ -47,10 +50,12 @@ class NodeBuilder : private Noncopyable {
   // Internal constructor used to recursively construct Parent NodeBuilder
   // is_leaf shall set to FALSE
   NodeBuilder(std::unique_ptr<NodeCursor>&& cursor,
-              size_t level, ChunkWriter* chunk_writer, const Chunker* chunker,
+              size_t level, ChunkWriter* chunk_writer,
+              const Chunker* chunker, const Chunker* parent_chunker,
               bool isFixedEntryLen) noexcept;
 
-  NodeBuilder(size_t level, ChunkWriter* chunk_writer, const Chunker* chunker,
+  NodeBuilder(size_t level, ChunkWriter* chunk_writer,
+              const Chunker* chunker, const Chunker* parent_chunker,
               bool isFixedEntryLen) noexcept;
 
   // Remove elements from cursor
@@ -103,6 +108,7 @@ class NodeBuilder : private Noncopyable {
   size_t level_ = 0;
   ChunkWriter* const chunk_writer_;
   const Chunker* const chunker_;
+  const Chunker* const parent_chunker_;
   // whether the built entry is fixed length
   // type blob: true
   const bool isFixedEntryLen_;
@@ -234,40 +240,11 @@ To work on an existing prolly tree:
   AdvancedNodeBuilder(size_t level, const Hash& root,
                       ChunkLoader* loader_, ChunkWriter* writer);
 
-  // return the parent builder,
-  //   create one if not exists
-  AdvancedNodeBuilder* parent();
-
-  // Create the segment from chunk start until cursor (exclusive)
-  // Place this segment into created_segs
-  const Segment* InitPreCursorSeg(bool isFixedEntryLen,
-                                  const NodeCursor& cursor);
-
-  // Create an empty segment from the element pointed by the cursor
-  // Place this segment into created_segs
-  Segment* InitCursorSeg(bool isFixedEntryLen, const NodeCursor& cursor);
-
-  // Make chunks based on the entries in the segments
-  // Write the created chunk to chunk store
-  // Reset the rolling hasher
-  // return the created chunkinfo
-  ChunkInfo HandleBoundary(const Chunker& chunker,
-      const std::vector<const Segment*>& segments);
-
-  // private members
-  size_t level_;
-
   const Hash root_;
   ChunkLoader* loader_;
   ChunkWriter* writer_;
-
-  std::unique_ptr<RollingHasher> rhasher_;
-  std::unique_ptr<AdvancedNodeBuilder> parent_builder_;
   std::list<SpliceOperand> operands_;
 
-  // A vector to collect and own segs created by this nodebuilder
-  std::vector<std::unique_ptr<const Segment>> created_segs_;
-  size_t num_created_entries_ = 0;
 };
 }  // namespace ustore
 

@@ -24,7 +24,7 @@ SSet::SSet(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     chunk_writer_->Write(chunk_info.chunk.hash(), chunk_info.chunk);
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
-    NodeBuilder nb(chunk_writer_, SetChunker::Instance(), false);
+    NodeBuilder nb(chunk_writer_, SetChunker::Instance(), MetaChunker::Instance(), false);
     std::vector<Slice> items;
 
     for (size_t i : Utils::SortIndexes<Slice>(keys)) {
@@ -40,7 +40,7 @@ Hash SSet::Set(const Slice& key) const {
   CHECK(!empty());
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 chunk_writer_, SetChunker::Instance(), false);
+                 chunk_writer_, SetChunker::Instance(), MetaChunker::Instance(), false);
 
   // Try to find whether this key already exists
   NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
@@ -78,7 +78,8 @@ Hash SSet::Remove(const Slice& key) const {
   // Create an empty segment
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr), 0, {});
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 chunk_writer_, SetChunker::Instance(), false);
+                 chunk_writer_, SetChunker::Instance(),
+                 MetaChunker::Instance(), false);
   nb.SpliceElements(1, &seg);
   return nb.Commit();
 }
