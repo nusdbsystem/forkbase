@@ -1,8 +1,9 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_EXAMPLE_TABLE_OP_H_
-#define USTORE_EXAMPLE_TABLE_OP_H_
+#ifndef USTORE_EXAMPLE_TABLE_OP_TABLE_OP_H_
+#define USTORE_EXAMPLE_TABLE_OP_TABLE_OP_H_
 
+#include <string>
 #include "spec/relational.h"
 #include "utils/timer.h"
 
@@ -33,4 +34,4 @@ class TableOp {
 }  // namespace example
 }  // namespace ustore
 
-#endif  // USTORE_EXAMPLE_TABLE_OP_H_
+#endif  // USTORE_EXAMPLE_TABLE_OP_TABLE_OP_H_

@@ -860,7 +860,7 @@ ErrorCode ColumnStore::UpdateConsecutiveRows(
       num_to_delete = 1;
       for (it.next(); !it.end() && it.value() == ref_val; it.next()) {
         ++num_to_delete;
-      };
+      }
     }
   }
   if (num_to_delete == 0) return ErrorCode::kRowNotExists;

@@ -5,6 +5,7 @@
 
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <list>
 #include <string>
 #include <vector>
 #include "types/type.h"
