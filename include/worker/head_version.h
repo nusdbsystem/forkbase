@@ -4,6 +4,7 @@
 #define USTORE_WORKER_HEAD_VERSION_H_
 
 #include <boost/optional.hpp>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -69,8 +70,14 @@ class HeadVersion : private Noncopyable {
 
   std::vector<Slice> ListBranch(const Slice& key) const;
 
+  inline const std::unordered_map<PSlice, std::map<PSlice, Hash>>&
+      branchVersion() const {
+    return branch_ver_;
+  }
+
  private:
-  std::unordered_map<PSlice, std::unordered_map<PSlice, Hash>> branch_ver_;
+  // use std::map for branch to preserve branch order
+  std::unordered_map<PSlice, std::map<PSlice, Hash>> branch_ver_;
   std::unordered_map<PSlice, std::unordered_set<Hash>> latest_ver_;
 };
 

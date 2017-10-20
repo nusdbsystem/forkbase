@@ -3,6 +3,7 @@
 #ifndef USTORE_WORKER_WORKER_H_
 #define USTORE_WORKER_WORKER_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -294,6 +295,12 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
                                    bool* is_latest) const override {
     *is_latest = IsLatestVersion(key, ver);
     return ErrorCode::kOK;
+  }
+
+  const std::map<PSlice, Hash>* GetBranchRef(const Slice& key) const {
+    const auto& branch_it = head_ver_.branchVersion().find(key);
+    if (branch_it == head_ver_.branchVersion().end()) return nullptr;
+    return &(branch_it->second);
   }
 
  protected:

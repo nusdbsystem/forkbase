@@ -346,7 +346,8 @@ TEST(HttpTest, BasicOps) {
 
   // list the branches
   string branches = ListB(key, cs);
-  CHECK_EQ(branches, branch2 + CRLF + branch1 + CRLF);
+  // CHECK_EQ(branches, branch2 + CRLF + branch1 + CRLF);
+  CHECK_EQ(branches, branch1 + CRLF + branch2 + CRLF);
 
   // branch based on branch
   string branch3 = "mybranch3";

@@ -20,7 +20,7 @@ bool HeadVersion::LoadBranchVersion(const std::string& log_path) {
     size_t num_branches = key_version.branches_size();
 
     PSlice key = PSlice::Persist(Slice(key_version.key()));
-    branch_ver_.emplace(key, std::unordered_map<PSlice, Hash>());
+    branch_ver_.emplace(key, std::map<PSlice, Hash>());
     auto& branch_map = branch_ver_.find(key)->second;
 
     for (size_t branch_idx = 0; branch_idx < num_branches; ++branch_idx) {
@@ -88,7 +88,7 @@ void HeadVersion::PutBranch(const Slice& key, const Slice& branch,
   // create key if not exists
   if (key_it == branch_ver_.end()) {
     branch_ver_.emplace(PSlice::Persist(key),
-                        std::unordered_map<PSlice, Hash>());
+                        std::map<PSlice, Hash>());
     key_it = branch_ver_.find(key);
     DCHECK(key_it != branch_ver_.end())
         << "fail to insert new key into head table";

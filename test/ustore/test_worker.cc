@@ -475,3 +475,9 @@ TEST(Worker, DeleteBranch) {
   worker().Exists(key[0], branch[1], &exist);
   EXPECT_FALSE(exist);
 }
+
+TEST(Worker, GetBranchRef) {
+  auto p = worker().GetBranchRef(key[0]);
+  EXPECT_TRUE(p != nullptr);
+  EXPECT_EQ(p->size(), 2);
+}
