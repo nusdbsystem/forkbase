@@ -432,7 +432,6 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
     uint64_t start_idx, uint64_t num_delete,
     const std::vector<const Segment*>& segs) {
 
-  std::unique_ptr<NodeCursor> cr;
   uint64_t total_num_elements = 0;
 
   do {
@@ -456,42 +455,45 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
       if (!seg->empty()) operand_segs.push_back(seg);
     }
 
-    SpliceOperand operand{start_idx,
-                          num_delete,
-                          std::move(operand_segs)};
-
     bool inserted = false;
+    bool advanced = false;
     uint64_t pre_start_idx = 0;
     uint64_t pre_num_delete = 0;
 
     // Insert the created operand into operand list based on start_idx order
     auto it = operands_.begin();
+    auto pre_it = operands_.begin();
     for (; it != operands_.end(); ++it) {
-      if (it->start_idx < start_idx) {
-        // do nothing
-      } else if (it->start_idx == start_idx) {
-        LOG(WARNING) << "Previous Operation has already worked "
-                     << " on element with index "
-                     << start_idx << ".\n"
+      if (it->start_idx <= start_idx) {
+        advanced = true;
+        pre_start_idx = it->start_idx;
+        pre_num_delete = it->num_delete;
+        pre_it = it;
+      } else if (pre_start_idx + pre_num_delete > start_idx) {
+        LOG(WARNING) << "Start_idx elements may already "
+                     << " be removed by previous splice operation. \n"
                      << "Operation Failed.";
-        } else {
-      // for the case (it->start_idx > start_idx) {
-        if (pre_start_idx + pre_num_delete > start_idx) {
-          LOG(WARNING) << "Start_idx elements may already "
-                       << " be removed by previous splice operation. \n"
-                       << "Operation Failed.";
 
-          // actually NOT inserted
-          // make inserted true to exit the do-while loop
-          inserted = true;
-          break;
-        }
-        operands_.insert(it, std::move(operand));
+        // actually NOT inserted
+        // make inserted true to exit the do-while loop
         inserted = true;
-      }
-      pre_start_idx = it->start_idx;
-      pre_num_delete = it->num_delete;
-    }
+        break;
+      } else if (advanced && pre_start_idx == start_idx) {
+        // Two operands both insert at the same place
+        //   Concat second operand segments to first one
+        CHECK_EQ(uint64_t(0), pre_num_delete);
+        inserted = true;
+        pre_it->appended_segs.insert(pre_it->appended_segs.end(),
+                                     operand_segs.begin(),
+                                     operand_segs.end());
+        break;
+      } else {
+        operands_.insert(it, {start_idx, num_delete,
+                              std::move(operand_segs)});
+        inserted = true;
+        break;
+      }  // end if
+    }  // end for
 
     // insert at the end
     if (!inserted) {
@@ -500,8 +502,9 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
          LOG(WARNING) << "The index of elements to remove exceeds "
                       << " the total number of elements. \n";
       }
-      operands_.insert(it, std::move(operand));
-    }
+      operands_.insert(it, {start_idx, num_delete,
+                            std::move(operand_segs)});
+    }  // end if
   } while (0);
   return *this;
 }

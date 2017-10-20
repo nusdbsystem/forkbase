@@ -148,7 +148,7 @@ uint64_t MetaNode::FindIndexForKey(const OrderedKey& key,
      num_elements_sum += entry.numElements();
   }
   return num_elements_sum;
- }
+}
 
 uint64_t MetaNode::entryOffset(size_t idx) const {
   // make sure 0 <= idx < numElements()
