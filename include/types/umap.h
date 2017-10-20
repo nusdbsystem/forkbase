@@ -48,9 +48,11 @@ class UMap : public ChunkableType {
   // return empty slice if key not found
   Slice Get(const Slice& key) const;
   // Both Use chunk builder to do splice
-  // this kv_items must be sorted in descending order before
   virtual Hash Set(const Slice& key, const Slice& val) const = 0;
   virtual Hash Remove(const Slice& key) const = 0;
+  virtual Hash Set(const std::vector<Slice>& keys,
+                   const std::vector<Slice>& vals) const = 0;
+
   // Return an iterator that scan from List Start
   UMap::Iterator Scan() const;
   // Return an iterator that scan elements that exist in this UMap

@@ -315,6 +315,23 @@ TEST_F(SMapHugeEnv, Basic) {
   EXPECT_EQ(0, std::memcmp(vals_[55].data(), actual_val55.data(), entry_size_));
 }
 
+TEST_F(SMapHugeEnv, Multiset) {
+  // Fist Init with a single kv
+  ustore::ChunkableTypeFactory factory;
+
+  std::vector<ustore::Slice> init_keys{keys_[0]};
+  std::vector<ustore::Slice> init_vals{vals_[0]};
+
+  ustore::SMap smap = factory.Create<ustore::SMap>(init_keys, init_vals);
+
+  auto it = smap.Scan();
+  CheckIdenticalItems(init_keys, init_vals, &it);
+
+  ustore::SMap smap1 = factory.Load<ustore::SMap>(smap.Set(keys_, vals_));
+  auto it1 = smap1.Scan();
+  CheckIdenticalItems(keys_, vals_, &it1);
+}
+
 TEST_F(SMapHugeEnv, Compare) {
   ustore::ChunkableTypeFactory factory;
   ustore::SMap lhs = factory.Create<ustore::SMap>(keys_, vals_);

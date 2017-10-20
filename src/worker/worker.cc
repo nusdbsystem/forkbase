@@ -227,7 +227,14 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
                        ver);
   } else if (!val.dels && val.vals.empty()) {  // origin
     return CreateUCell(key, UType::kMap, val.base, prev_ver1, prev_ver2, ver);
-  } else {  // update
+  } else if (val.keys.size() > 1) {
+    if (val.keys.size() != val.vals.size() || val.dels)
+      return ErrorCode::kInvalidValue;
+    SMap map = factory_.Load<SMap>(val.base);
+    Hash data_hash = map.Set(val.keys, val.vals);
+    if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
+    return CreateUCell(key, UType::kMap, data_hash, prev_ver1, prev_ver2, ver);
+  } else {  // update single entry
     if (val.keys.size() != 1 || val.keys.size() < val.vals.size())
       return ErrorCode::kInvalidValue;
     auto mkey = val.keys.front();

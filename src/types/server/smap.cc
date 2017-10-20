@@ -25,7 +25,8 @@ SMap::SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     chunk_writer_->Write(chunk_info.chunk.hash(), chunk_info.chunk);
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
-    NodeBuilder nb(chunk_writer_, MapChunker::Instance(), MetaChunker::Instance(), false);
+    NodeBuilder nb(chunk_writer_, MapChunker::Instance(),
+                   MetaChunker::Instance(), false);
     std::vector<KVItem> kv_items;
 
     for (size_t i : Utils::SortIndexes<Slice>(keys)) {
@@ -41,7 +42,8 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
   CHECK(!empty());
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 chunk_writer_, MapChunker::Instance(), MetaChunker::Instance(), false);
+                 chunk_writer_, MapChunker::Instance(),
+                 MetaChunker::Instance(), false);
 
   // Try to find whether this key already exists
   NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
@@ -54,6 +56,36 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
   std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
   nb.SpliceElements(num_splice, seg.get());
   return nb.Commit();
+}
+
+Hash SMap::Set(const std::vector<Slice>& keys,
+               const std::vector<Slice>& vals) const {
+  CHECK(!empty());
+
+  AdvancedNodeBuilder nb(hash(), chunk_loader_.get(), chunk_writer_);
+
+  // Created_segs ensures the created segments does not vanish until
+  //   the node builder commits.
+  std::list<std::unique_ptr<const Segment>> created_segs;
+
+  for (size_t i : Utils::SortIndexes<Slice>(keys)) {
+    OrderedKey orderKey = OrderedKey::FromSlice(keys[i]);
+
+    NodeCursor cursor(hash(), orderKey, chunk_loader_.get());
+    bool foundKey = (!cursor.isEnd() && orderKey == cursor.currentKey());
+    size_t num_delete = foundKey? 1: 0;
+
+    uint64_t idxForKey =
+        root_node_->FindIndexForKey(orderKey, chunk_loader_.get());
+
+    KVItem kv_item = {keys[i], vals[i]};
+    std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
+
+    nb.Splice(idxForKey, num_delete, {seg.get()});
+    created_segs.push_back(std::move(seg));
+  }
+
+  return nb.Commit(*MapChunker::Instance(), false);
 }
 
 Hash SMap::Remove(const Slice& key) const {
@@ -75,7 +107,8 @@ Hash SMap::Remove(const Slice& key) const {
   // Create an empty segment
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr), 0, {});
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
-                 chunk_writer_, MapChunker::Instance(), MetaChunker::Instance(), false);
+                 chunk_writer_, MapChunker::Instance(),
+                 MetaChunker::Instance(), false);
   nb.SpliceElements(1, &seg);
   return nb.Commit();
 }

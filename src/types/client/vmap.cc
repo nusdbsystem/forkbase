@@ -25,4 +25,11 @@ Hash VMap::Remove(const Slice& key) const {
   return Hash::kNull;
 }
 
+
+Hash VMap::Set(const std::vector<Slice>& keys,
+               const std::vector<Slice>& vals) const {
+  buffer_ = {UType::kMap, root_node_->hash(), 0, 0, vals, keys};
+  return Hash::kNull;
+}
+
 }  // namespace ustore
