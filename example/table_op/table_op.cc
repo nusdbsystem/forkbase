@@ -4,7 +4,6 @@
 #include <fstream>
 #include <utility>
 #include <vector>
-#include "config.h"
 #include "table_op.h"
 #include "utils/logging.h"
 
@@ -18,7 +17,7 @@ std::string update_ref_col = "";
 std::vector<std::string> update_ref_vals;
 std::string update_eff_col = "";
 const std::string update_eff_val = "__updated__";
-std::string agg_col = "";
+std::string aggregate_col = "";
 std::string latest_branch = "";
 
 TableOp::TableOp(DB* db) noexcept : cs_(db) {}
@@ -38,12 +37,12 @@ ErrorCode TableOp::VerifyColumn(const std::string& col) {
 }
 
 ErrorCode TableOp::Run(int argc, char* argv[]) {
-  if (!Config::ParseCmdArgs(argc, argv)) {
+  if (!arg_.ParseCmdArgs(argc, argv)) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Found invalid command-line option" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (Config::is_help) return ErrorCode::kOK;
+  if (arg_.is_help) return ErrorCode::kOK;
   // execution
   USTORE_GUARD(Init());
   std::cout << std::endl;
@@ -63,14 +62,14 @@ ErrorCode TableOp::Run(int argc, char* argv[]) {
 
 ErrorCode TableOp::Init() {
   // load external parameters
-  update_ref_col = std::move(Config::update_ref_col);
+  update_ref_col = std::move(arg_.update_ref_col);
   if (update_ref_col.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing update-referring column" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
 
-  auto& file_update_ref_val = Config::update_ref_val;
+  auto& file_update_ref_val = arg_.update_ref_val;
   if (file_update_ref_val.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing update-referring-value file" << std::endl;
@@ -89,15 +88,15 @@ ErrorCode TableOp::Init() {
   }
   ifs.close();
 
-  update_eff_col = std::move(Config::update_eff_col);
+  update_eff_col = std::move(arg_.update_eff_col);
   if (update_eff_col.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing update-effecting column" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
 
-  agg_col = std::move(Config::agg_col);
-  if (agg_col.empty()) {
+  aggregate_col = std::move(arg_.aggregate_col);
+  if (aggregate_col.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing aggregating column" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
@@ -119,7 +118,7 @@ ErrorCode TableOp::Init() {
   std::cout << "Table: " << YELLOW(table)
             << ", Update-referring column: " << YELLOW(update_ref_col)
             << ", Update-effecting column: " << YELLOW(update_eff_col)
-            << ", Aggregating column: " << YELLOW(agg_col)
+            << ", Aggregating column: " << YELLOW(aggregate_col)
             << std::endl;
   return ErrorCode::kOK;
 }
@@ -130,7 +129,7 @@ ErrorCode TableOp::Load() {
   auto ec = ErrorCode::kUnknownOp;
   auto elapsed_ms = Timer::TimeMilliseconds([this, &ec] {
     // execution to be evaluated
-    ec = cs_.LoadCSV(Config::file, table, master_branch);
+    ec = cs_.LoadCSV(arg_.file, table, master_branch);
   });
   // screen printing
   if (ec == ErrorCode::kOK) {
@@ -229,7 +228,7 @@ ErrorCode TableOp::Diff(const std::string& lhs_branch,
 }
 
 ErrorCode TableOp::Aggregate() {
-  USTORE_GUARD(VerifyColumn(agg_col));
+  USTORE_GUARD(VerifyColumn(aggregate_col));
 
   auto ec = ErrorCode::kUnknownOp;
   int avg;
@@ -237,7 +236,7 @@ ErrorCode TableOp::Aggregate() {
   [this, &ec, &avg]() {
     // execution to be evaluated
     Column col;
-    ec = cs_.GetColumn(table, master_branch, agg_col, &col);
+    ec = cs_.GetColumn(table, master_branch, aggregate_col, &col);
     if (ec != ErrorCode::kOK) return;
     uint64_t sum = 0;
     for (auto it = col.Scan(); !it.end(); it.next()) {

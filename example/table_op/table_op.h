@@ -7,6 +7,8 @@
 #include "spec/relational.h"
 #include "utils/timer.h"
 
+#include "argument.h"
+
 namespace ustore {
 namespace example {
 namespace table_op {
@@ -28,6 +30,7 @@ class TableOp {
   ErrorCode VerifyColumn(const std::string& col);
 
   ColumnStore cs_;
+  Argument arg_;
 };
 
 }  // namespace table_op
