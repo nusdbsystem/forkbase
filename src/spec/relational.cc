@@ -977,4 +977,16 @@ ErrorCode ColumnStore::InsertRow(const Slice& table, const Slice& branch,
   return ErrorCode::kOK;
 }
 
+ErrorCode ColumnStore::GetStorageBytes(size_t* n_bytes) {
+  auto rst = odb_.GetStorageInfo();
+  USTORE_GUARD(rst.stat);
+  *n_bytes = 0;
+  for (auto& info : rst.value) {
+    for (auto& n_bytes_per_type : info.bytesPerType) {
+      *n_bytes += n_bytes_per_type.second;
+    }
+  }
+  return ErrorCode::kOK;
+}
+
 }  // namespace ustore

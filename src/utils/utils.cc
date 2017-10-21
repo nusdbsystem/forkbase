@@ -345,4 +345,33 @@ std::string Utils::TimeString(double ms) {
   return ss.str();
 }
 
+std::string Utils::StorageSizeString(size_t n_bytes) {
+  static const size_t bytes_per_kb = 0x400;
+  static const size_t bytes_per_mb = 0x100000;
+  static const size_t bytes_per_gb = 0x40000000;
+  static const size_t bytes_per_tb = 0x10000000000;
+  static const size_t bytes_per_pb = 0x4000000000000;
+
+  std::stringstream ss;
+  if (n_bytes < bytes_per_kb) {
+    ss << n_bytes << "B";
+  } else if (n_bytes < bytes_per_mb) {
+    ss << std::fixed << std::setprecision(1)
+       << (static_cast<double>(n_bytes) / bytes_per_kb) << "KB";
+  } else if (n_bytes < bytes_per_gb) {
+    ss << std::fixed << std::setprecision(2)
+       << (static_cast<double>(n_bytes) / bytes_per_mb) << "MB";
+  } else if (n_bytes < bytes_per_tb) {
+    ss << std::fixed << std::setprecision(3)
+       << (static_cast<double>(n_bytes) / bytes_per_gb) << "GB";
+  } else if (n_bytes < bytes_per_pb) {
+    ss << std::fixed << std::setprecision(3)
+       << (static_cast<double>(n_bytes) / bytes_per_tb) << "TB";
+  } else {
+    ss << std::fixed << std::setprecision(3)
+       << (static_cast<double>(n_bytes) / bytes_per_pb) << "PB";
+  }
+  return ss.str();
+}
+
 }  // namespace ustore

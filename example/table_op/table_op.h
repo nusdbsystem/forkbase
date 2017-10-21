@@ -7,7 +7,7 @@
 #include "spec/relational.h"
 #include "utils/timer.h"
 
-#include "argument.h"
+#include "arguments.h"
 
 namespace ustore {
 namespace example {
@@ -28,9 +28,12 @@ class TableOp {
   ErrorCode Aggregate();
 
   ErrorCode VerifyColumn(const std::string& col);
+  
+  ErrorCode MeasureByteIncrement(const std::function<ErrorCode()>& f,
+                                 size_t* bytes_inc);
 
   ColumnStore cs_;
-  Argument arg_;
+  Arguments args_;
 };
 
 }  // namespace table_op

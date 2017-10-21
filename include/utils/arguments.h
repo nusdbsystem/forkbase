@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_UTILS_ARGUMENT_H_
-#define USTORE_UTILS_ARGUMENT_H_
+#ifndef USTORE_UTILS_ARGUMENTS_H_
+#define USTORE_UTILS_ARGUMENTS_H_
 
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -14,12 +14,12 @@ namespace ustore {
 
 namespace po = boost::program_options;
 
-class Argument {
+class Arguments {
  public:
   bool is_help;
 
-  Argument() noexcept;
-  ~Argument() = default;
+  Arguments() noexcept;
+  ~Arguments() = default;
 
   bool ParseCmdArgs(int argc, char* argv[]);
 
@@ -29,47 +29,47 @@ class Argument {
   virtual bool CheckArgs() { return true; }
 
   template<typename T>
-  bool Check(const T& var, const bool expr, const std::string& title,
-             const std::string& expect);
+  static bool Check(const T& var, const bool expr, const std::string& title,
+                    const std::string& expect);
 
   template<typename T1, typename T2>
-  inline bool CheckEQ(const T1& var, const T2& expect,
-                      const std::string& title) {
+  static inline bool CheckEQ(const T1& var, const T2& expect,
+                             const std::string& title) {
     return Check(var, var == expect, title, "=" + Utils::ToString(expect));
   }
 
   template<typename T1, typename T2>
-  inline bool CheckNE(const T1& var, const T2& expect,
-                      const std::string& title) {
+  static inline bool CheckNE(const T1& var, const T2& expect,
+                             const std::string& title) {
     return Check(var, var != expect, title, "!=" + Utils::ToString(expect));
   }
 
   template<typename T1, typename T2>
-  inline bool CheckLE(const T1& var, const T2& expect,
-                      const std::string& title) {
+  static inline bool CheckLE(const T1& var, const T2& expect,
+                             const std::string& title) {
     return Check(var, var <= expect, title, "<=" + Utils::ToString(expect));
   }
 
   template<typename T1, typename T2>
-  inline bool CheckLT(const T1& var, const T2& expect,
-                      const std::string& title) {
+  static inline bool CheckLT(const T1& var, const T2& expect,
+                             const std::string& title) {
     return Check(var, var < expect, title, "<" + Utils::ToString(expect));
   }
 
   template<typename T1, typename T2>
-  inline bool CheckGE(const T1& var, const T2& expect,
-                      const std::string& title) {
+  static inline bool CheckGE(const T1& var, const T2& expect,
+                             const std::string& title) {
     return Check(var, var >= expect, title, ">=" + Utils::ToString(expect));
   }
 
   template<typename T1, typename T2>
-  inline bool CheckGT(const T1& var, const T2& expect,
-                      const std::string& title) {
+  static inline bool CheckGT(const T1& var, const T2& expect,
+                             const std::string& title) {
     return Check(var, var > expect, title, ">" + Utils::ToString(expect));
   }
 
   template<typename T1, typename T2>
-  inline bool CheckInRange(
+  static inline bool CheckInRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
     return Check(var, lbound <= var && var <= ubound, title, "range of" +
@@ -77,7 +77,7 @@ class Argument {
   }
 
   template<typename T1, typename T2>
-  inline bool CheckInLeftOpenRange(
+  static inline bool CheckInLeftOpenRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
     return Check(var, lbound < var && var <= ubound, title, "range of" +
@@ -85,7 +85,7 @@ class Argument {
   }
 
   template<typename T1, typename T2>
-  inline bool CheckInRightOpenInRange(
+  static inline bool CheckInRightOpenInRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
     return Check(var, lbound <= var && var < ubound, title, "range of" +
@@ -93,7 +93,7 @@ class Argument {
   }
 
   template<typename T1, typename T2>
-  inline bool CheckInOpenRange(
+  static inline bool CheckInOpenRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
     const std::string expect = "range of (" + Utils::ToString(lbound) +
@@ -125,12 +125,6 @@ class Argument {
     int64_args_.emplace_back(
       Meta<int64_t>({param_ptr, name_long, name_short, desc, deft_val}));
   }
-  inline void Add(size_t* param_ptr, const std::string& name_long,
-                  const std::string& name_short, const std::string& desc,
-                  const size_t& deft_val = 0) {
-    size_args_.emplace_back(
-      Meta<size_t>({param_ptr, name_long, name_short, desc, deft_val}));
-  }
   inline void Add(double* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc,
                   const double& deft_val = 0.0) {
@@ -155,7 +149,6 @@ class Argument {
   std::vector<Meta<bool>> bool_args_;
   std::vector<Meta<int>> int_args_;
   std::vector<Meta<int64_t>> int64_args_;
-  std::vector<Meta<size_t>> size_args_;
   std::vector<Meta<double>> double_args_;
 
   std::vector<std::string> pos_arg_names_;
@@ -184,12 +177,6 @@ class Argument {
       *(meta.param_ptr) = vm[meta.name_long].as<int64_t>();
     }
   }
-  inline void AssignArgs(const std::vector<Meta<size_t>>& args,
-                         const po::variables_map& vm) {
-    for (auto& meta : args) {
-      *(meta.param_ptr) = vm[meta.name_long].as<size_t>();
-    }
-  }
   inline void AssignArgs(const std::vector<Meta<double>>& args,
                          const po::variables_map& vm) {
     for (auto& meta : args) {
@@ -204,8 +191,8 @@ class Argument {
 };
 
 template<typename T>
-bool Argument::Check(const T& var, const bool expr,
-                     const std::string& title, const std::string& expect) {
+bool Arguments::Check(const T& var, const bool expr,
+                      const std::string& title, const std::string& expect) {
   if (expr) {
     LOG(INFO) << "[ARG] " << title << ": " << var;
   } else {
@@ -216,8 +203,8 @@ bool Argument::Check(const T& var, const bool expr,
 }
 
 template<typename T>
-void Argument::AddArgs(const std::vector<Meta<T>> args,
-                       po::options_description* od) {
+void Arguments::AddArgs(const std::vector<Meta<T>> args,
+                        po::options_description* od) {
   for (auto& meta : args) {
     auto& name_long = meta.name_long;
     auto& name_short = meta.name_short;
@@ -232,4 +219,4 @@ void Argument::AddArgs(const std::vector<Meta<T>> args,
 
 }  // namespace ustore
 
-#endif  // USTORE_UTILS_ARGUMENT_H_
+#endif  // USTORE_UTILS_ARGUMENTS_H_

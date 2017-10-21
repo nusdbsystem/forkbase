@@ -1,16 +1,16 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_EXAMPLE_TABLE_OP_ARGUMENT_H_
-#define USTORE_EXAMPLE_TABLE_OP_ARGUMENT_H_
+#ifndef USTORE_EXAMPLE_TABLE_OP_ARGUMENTS_H_
+#define USTORE_EXAMPLE_TABLE_OP_ARGUMENTS_H_
 
 #include <string>
-#include "utils/argument.h"
+#include "utils/arguments.h"
 
 namespace ustore {
 namespace example {
 namespace table_op {
 
-class Argument : public ::ustore::Argument {
+class Arguments : public ::ustore::Arguments {
  public:
   std::string file;
   std::string update_ref_col;
@@ -18,11 +18,10 @@ class Argument : public ::ustore::Argument {
   std::string update_eff_col;
   std::string aggregate_col;
 
-  double test_double;
-
-  Argument() {
+  Arguments() {
     Add(&file, "file", "f",
         "path of input file");
+    Positional("file");
     Add(&update_ref_col, "update-ref-col", "r",
         "name of update-referring column");
     Add(&update_ref_val, "update-ref-val", "v",
@@ -33,11 +32,11 @@ class Argument : public ::ustore::Argument {
         "name of aggregating column");
   }
 
-  ~Argument() = default;
+  ~Arguments() = default;
 };
 
 }  // namespace table_op
 }  // namespace example
 }  // namespace ustore
 
-#endif  // USTORE_EXAMPLE_TABLE_OP_ARGUMENT_H_
+#endif  // USTORE_EXAMPLE_TABLE_OP_ARGUMENTS_H_

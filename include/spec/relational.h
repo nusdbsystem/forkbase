@@ -161,6 +161,8 @@ class ColumnStore {
     return Utils::ToString(table_name) + "::" + Utils::ToString(col_name);
   }
 
+  ErrorCode GetStorageBytes(size_t* n_bytes);
+
  private:
   ErrorCode ReadTable(const Slice& table, const Slice& branch, Table* tab);
 

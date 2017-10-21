@@ -298,6 +298,7 @@ class Utils {
                               std::ostream& os = std::cout);
 
   static std::string TimeString(double ms);
+  static std::string StorageSizeString(size_t n_bytes);
 
  private:
   template<typename T>

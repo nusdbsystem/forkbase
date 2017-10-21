@@ -2,13 +2,13 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "utils/argument.h"
+#include "utils/arguments.h"
 
 namespace ustore {
 
-Argument::Argument() noexcept : is_help(false) {}
+Arguments::Arguments() noexcept : is_help(false) {}
 
-bool Argument::ParseCmdArgs(int argc, char* argv[]) {
+bool Arguments::ParseCmdArgs(int argc, char* argv[]) {
   po::variables_map vm;
   GUARD(ParseCmdArgs(argc, argv, &vm));
   try {
@@ -16,7 +16,6 @@ bool Argument::ParseCmdArgs(int argc, char* argv[]) {
     AssignArgs(bool_args_, vm);
     AssignArgs(int_args_, vm);
     AssignArgs(int64_args_, vm);
-    AssignArgs(size_args_, vm);
     AssignArgs(double_args_, vm);
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
@@ -25,14 +24,13 @@ bool Argument::ParseCmdArgs(int argc, char* argv[]) {
   return CheckArgs();
 }
 
-bool Argument::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
+bool Arguments::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   po::options_description od(BLUE_STR("Options"), 120);
   od.add_options()("help,?", "print usage message");
   AddArgs(args_, &od);
   AddArgs(bool_args_, &od);
   AddArgs(int_args_, &od);
   AddArgs(int64_args_, &od);
-  AddArgs(size_args_, &od);
   AddArgs(double_args_, &od);
 
   po::positional_options_description pos_od;
@@ -57,7 +55,7 @@ bool Argument::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   return true;
 }
 
-bool Argument::ParseCmdArgs(const std::vector<std::string>& args) {
+bool Arguments::ParseCmdArgs(const std::vector<std::string>& args) {
   size_t argc = args.size() + 1;
   static char dummy_cmd[] = "CMD";
   char* argv[argc];

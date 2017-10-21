@@ -22,27 +22,13 @@ std::string latest_branch = "";
 
 TableOp::TableOp(DB* db) noexcept : cs_(db) {}
 
-ErrorCode TableOp::VerifyColumn(const std::string& col) {
-  static Row schema;
-  if (schema.empty()) {
-    USTORE_GUARD(cs_.GetTableSchema(table, master_branch, &schema));
-  }
-  if (schema.find(col) == schema.end()) {
-    std::cerr << BOLD_RED("[ERROR] ")
-              << "Column \"" << col << "\" does not exist in table \""
-              << table << "\"" << std::endl;
-    return ErrorCode::kInvalidParameter;
-  }
-  return ErrorCode::kOK;
-}
-
 ErrorCode TableOp::Run(int argc, char* argv[]) {
-  if (!arg_.ParseCmdArgs(argc, argv)) {
+  if (!args_.ParseCmdArgs(argc, argv)) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Found invalid command-line option" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
-  if (arg_.is_help) return ErrorCode::kOK;
+  if (args_.is_help) return ErrorCode::kOK;
   // execution
   USTORE_GUARD(Init());
   std::cout << std::endl;
@@ -62,14 +48,14 @@ ErrorCode TableOp::Run(int argc, char* argv[]) {
 
 ErrorCode TableOp::Init() {
   // load external parameters
-  update_ref_col = std::move(arg_.update_ref_col);
+  update_ref_col = std::move(args_.update_ref_col);
   if (update_ref_col.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing update-referring column" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
 
-  auto& file_update_ref_val = arg_.update_ref_val;
+  auto& file_update_ref_val = args_.update_ref_val;
   if (file_update_ref_val.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing update-referring-value file" << std::endl;
@@ -88,14 +74,14 @@ ErrorCode TableOp::Init() {
   }
   ifs.close();
 
-  update_eff_col = std::move(arg_.update_eff_col);
+  update_eff_col = std::move(args_.update_eff_col);
   if (update_eff_col.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing update-effecting column" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
 
-  aggregate_col = std::move(arg_.aggregate_col);
+  aggregate_col = std::move(args_.aggregate_col);
   if (aggregate_col.empty()) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Missing aggregating column" << std::endl;
@@ -127,9 +113,12 @@ ErrorCode TableOp::Load() {
   latest_branch = master_branch;
 
   auto ec = ErrorCode::kUnknownOp;
-  auto elapsed_ms = Timer::TimeMilliseconds([this, &ec] {
-    // execution to be evaluated
-    ec = cs_.LoadCSV(arg_.file, table, master_branch);
+  size_t bytes_inc = 0;
+  auto elapsed_ms = Timer::TimeMilliseconds([this, &ec, &bytes_inc] {
+    ec = MeasureByteIncrement([this] {
+      // execution to be evaluated
+      return cs_.LoadCSV(args_.file, table, master_branch);
+    }, &bytes_inc);
   });
   // screen printing
   if (ec == ErrorCode::kOK) {
@@ -141,8 +130,11 @@ ErrorCode TableOp::Load() {
     std::cout << BOLD_RED("[FAILED: Load] ")
               << "Failed to load data";
   }
-  std::cout << " (in " << Utils::TimeString(elapsed_ms) << ") [branch: "
-            << BLUE(master_branch) << "]";
+  std::cout << " (in " << Utils::TimeString(elapsed_ms);
+  if (bytes_inc > 0) {
+    std::cout << ", +" << Utils::StorageSizeString(bytes_inc);
+  }
+  std::cout << ") [branch: " << BLUE(master_branch) << "]";
   if (ec != ErrorCode::kOK) {
     std::cout << RED(" --> Error(" << ec << "): " << Utils::ToString(ec));
   }
@@ -259,6 +251,34 @@ ErrorCode TableOp::Aggregate() {
   }
   std::cout << std::endl;
   return ec;
+}
+
+ErrorCode TableOp::VerifyColumn(const std::string& col) {
+  static Row schema;
+  if (schema.empty()) {
+    USTORE_GUARD(cs_.GetTableSchema(table, master_branch, &schema));
+  }
+  if (schema.find(col) == schema.end()) {
+    std::cerr << BOLD_RED("[ERROR] ")
+              << "Column \"" << col << "\" does not exist in table \""
+              << table << "\"" << std::endl;
+    return ErrorCode::kInvalidParameter;
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode TableOp::MeasureByteIncrement(const std::function<ErrorCode()>& f,
+                                        size_t* bytes_inc) {
+  size_t start_bytes;
+  USTORE_GUARD(cs_.GetStorageBytes(&start_bytes));
+
+  USTORE_GUARD(f());
+
+  size_t end_bytes;
+  USTORE_GUARD(cs_.GetStorageBytes(&end_bytes));
+
+  *bytes_inc = end_bytes - start_bytes;
+  return ErrorCode::kOK;
 }
 
 }  // namespace table_op
