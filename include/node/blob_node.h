@@ -3,6 +3,7 @@
 #ifndef USTORE_NODE_BLOB_NODE_H_
 #define USTORE_NODE_BLOB_NODE_H_
 
+#include <memory>
 #include <vector>
 
 #include "node/node.h"

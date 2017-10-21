@@ -20,15 +20,14 @@ Hash VMap::Set(const Slice& key, const Slice& val) const {
   return Hash::kNull;
 }
 
-Hash VMap::Remove(const Slice& key) const {
-  buffer_ = {UType::kMap, root_node_->hash(), 0, 1, {}, {key}};
-  return Hash::kNull;
-}
-
-
 Hash VMap::Set(const std::vector<Slice>& keys,
                const std::vector<Slice>& vals) const {
   buffer_ = {UType::kMap, root_node_->hash(), 0, 0, vals, keys};
+  return Hash::kNull;
+}
+
+Hash VMap::Remove(const Slice& key) const {
+  buffer_ = {UType::kMap, root_node_->hash(), 0, 1, {}, {key}};
   return Hash::kNull;
 }
 

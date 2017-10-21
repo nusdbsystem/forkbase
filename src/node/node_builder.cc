@@ -29,7 +29,7 @@ NodeBuilder::NodeBuilder(const Hash& root_hash, size_t idx,
                   0, chunk_writer, chunker, parent_chunker, isFixedEntryLen) {}
 
 NodeBuilder::NodeBuilder(ChunkWriter* chunk_writer, const Chunker* chunker,
-                         const Chunker* parent_chunker, bool isFixedEntryLen) noexcept
+    const Chunker* parent_chunker, bool isFixedEntryLen) noexcept
     : NodeBuilder(0, chunk_writer, chunker, parent_chunker, isFixedEntryLen) {}
 
 NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
@@ -59,7 +59,7 @@ NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
 
     // non-leaf builder must work on MetaNode, which is of var len entry
     parent_builder_.reset(new NodeBuilder(std::move(parent_cr), level + 1,
-                          chunk_writer_, parent_chunker, parent_chunker, false));
+        chunk_writer_, parent_chunker, parent_chunker, false));
   }
   if (cursor_->node()->numEntries() > 0) {
     Resume();
@@ -522,7 +522,7 @@ Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
                      isFixedEntryLen);
       nb.SpliceElements(0, {});
       return nb.Commit();
-    } else if(operands_.size() == 1){
+    } else if (operands_.size() == 1) {
       // Init the object with a single operand
       NodeBuilder nb(writer_, &chunker,
                      MetaChunker::Instance(),
@@ -564,25 +564,24 @@ Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
 
 Chunk AdvancedNodeBuilder::ChunkCacher::GetChunk(const Hash& key) {
   auto cache_it = cache_.find(key);
-  auto has_read_it = has_read_.find(key);
-
+  // read from write cache
   if (cache_it != cache_.end()) {
-    CHECK(has_read_it != has_read_.end());
-    has_read_it->second = true;
-    return Chunk(cache_it->second);
+    auto& p = cache_it->second;
+    // mark chunk as read
+    p.second = true;
+    return Chunk(p.first);
   }
-  return loader_->GetChunk(key);
+  // read from chunk loader
+  return Chunk(loader_->Load(key)->head());
 }
 
 bool AdvancedNodeBuilder::ChunkCacher::DumpUnreadCacheChunks() {
   bool all = true;
   for (const auto& kv : cache_) {
-    auto has_read_it = has_read_.find(kv.first);
-    CHECK(has_read_it != has_read_.end());
-
-    if (!has_read_it->second) {
-      bool result = writer_->Write(kv.first, Chunk(kv.second));
-      all = all && result;
+    const auto& p = kv.second;
+    if (!p.second) {
+      bool result = writer_->Write(kv.first, Chunk(p.first));
+      all &= result;
     }
   }
   return all;

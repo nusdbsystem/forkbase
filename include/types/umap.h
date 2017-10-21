@@ -47,11 +47,11 @@ class UMap : public ChunkableType {
   // Use chunk loader to load chunk and read value
   // return empty slice if key not found
   Slice Get(const Slice& key) const;
-  // Both Use chunk builder to do splice
+  // All use chunk builder to do splice
   virtual Hash Set(const Slice& key, const Slice& val) const = 0;
-  virtual Hash Remove(const Slice& key) const = 0;
   virtual Hash Set(const std::vector<Slice>& keys,
                    const std::vector<Slice>& vals) const = 0;
+  virtual Hash Remove(const Slice& key) const = 0;
 
   // Return an iterator that scan from List Start
   UMap::Iterator Scan() const;

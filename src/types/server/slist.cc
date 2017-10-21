@@ -21,7 +21,8 @@ SList::SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     chunk_writer_->Write(chunk_info.chunk.hash(), chunk_info.chunk);
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
-    NodeBuilder nb(chunk_writer_, ListChunker::Instance(), MetaChunker::Instance(), false);
+    NodeBuilder nb(chunk_writer_, ListChunker::Instance(),
+                   MetaChunker::Instance(), false);
     std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
     nb.SpliceElements(0, seg.get());
     SetNodeForHash(nb.Commit());
@@ -31,8 +32,8 @@ SList::SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
 Hash SList::Splice(size_t start_idx, size_t num_to_delete,
                    const std::vector<Slice>& entries) const {
   CHECK(!empty());
-  NodeBuilder nb(hash(), start_idx, chunk_loader_.get(),
-                 chunk_writer_, ListChunker::Instance(), MetaChunker::Instance(), false);
+  NodeBuilder nb(hash(), start_idx, chunk_loader_.get(), chunk_writer_,
+                 ListChunker::Instance(), MetaChunker::Instance(), false);
   // TODO(pingcheng): can directly init a segment instance instead of unique_ptr
   //   only need to make SplicElements take const seqment& as parameter
   //   hance we can avoid `new` operation

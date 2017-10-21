@@ -4,6 +4,7 @@
 #define USTORE_NODE_CURSOR_H_
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "chunk/chunk_loader.h"

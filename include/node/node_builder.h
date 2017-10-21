@@ -6,6 +6,8 @@
 #include <list>
 #include <memory>
 #include <vector>
+#include <unordered_map>
+#include <utility>
 
 #include "chunk/chunker.h"
 #include "chunk/chunk_loader.h"
@@ -50,7 +52,7 @@ class NodeBuilder : private Noncopyable {
   // Create and dump the chunk into storage
   // @return The hash (a.k.a. the key) of the newly commited root chunk.
   inline Hash Commit() {
-    bool found_canonical_root;
+    bool found_canonical_root = false;
     return Commit(&found_canonical_root);
   }
 
@@ -69,7 +71,8 @@ class NodeBuilder : private Noncopyable {
   // Commit the uncommited operation
   // Create and dump the chunk into storage
   // @return The hash (a.k.a. the key) of the newly commited root chunk.
-  // Return from from argument whether the upper builder has found the canonical root
+  // Return from from argument whether the upper builder has found
+  // the canonical root
   Hash Commit(bool* found_canonical_root);
 
   // Remove elements from cursor
@@ -200,19 +203,15 @@ To work on an existing prolly tree:
    public:
     explicit PersistentChunker(const Chunker* chunker) noexcept :
       chunker_(chunker) {}
+    ~PersistentChunker() = default;
 
     inline ChunkInfo Make(const std::vector<const Segment*>& segments) const
         override {
       ChunkInfo chunk_info = chunker_->Make(segments);
       created_chunks_.push_back(std::move(chunk_info.chunk));
-
       Chunk new_chunk(created_chunks_.rbegin()->head());
-
-      return {std::move(new_chunk),
-              std::move(chunk_info.meta_seg)};
+      return {std::move(new_chunk), std::move(chunk_info.meta_seg)};
     }
-
-    ~PersistentChunker() = default;
 
    private:
     const Chunker* chunker_;
@@ -220,38 +219,34 @@ To work on an existing prolly tree:
     mutable std::list<Chunk> created_chunks_;
   };
 
+  /* ChunkCacher allows to buffer written chunks from modification sequence
+   * It helps to avoid dumping intermediate chunks
+   */
   class ChunkCacher : public ChunkLoader, public ChunkWriter {
-  /*
-  ChunkCacher allows to cache the written chunks locally and provide priority access
-  to them if loaded.
-  */
-
    public:
     ChunkCacher(ChunkLoader* loader, ChunkWriter* writer) noexcept :
       loader_(loader), writer_(writer) {}
-
-    inline bool Write(const Hash& key, const Chunk& chunk) override {
-      cache_[key.Clone()] = chunk.head();
-      has_read_[key.Clone()] = false;
-
-      return true;
-    }
-
     // Delete the cached data
     ~ChunkCacher() = default;
 
+    inline bool Write(const Hash& key, const Chunk& chunk) override {
+      cache_[key.Clone()] = std::make_pair(chunk.head(), false);
+      return true;
+    }
     // Return true if all unread cached chunks are dumpted to ChunkWriter
     bool DumpUnreadCacheChunks();
+
    protected:
     // First try to find chunk from the cache
     // If not found, find from ChunkLoader
     Chunk GetChunk(const Hash& key) override;
 
    private:
+    // pointers to real loader and writer
     ChunkLoader* loader_;
     ChunkWriter* writer_;
-    std::map<Hash, const byte_t*> cache_;
-    std::map<Hash, bool> has_read_;
+    // value is a pair of (chunk head, is_read)
+    std::unordered_map<Hash, std::pair<const byte_t*, bool>> cache_;
   };
   // relevant information to perform one spliced operation
   struct SpliceOperand {

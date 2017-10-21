@@ -3,7 +3,7 @@
 #ifndef USTORE_CHUNK_CHUNK_LOADER_H_
 #define USTORE_CHUNK_CHUNK_LOADER_H_
 
-#include <map>
+#include <unordered_map>
 #include <string>
 #include "chunk/chunk.h"
 #include "hash/hash.h"
@@ -24,11 +24,12 @@ class ChunkLoader : private Noncopyable {
 
   const Chunk* Load(const Hash& key);
 
-  virtual Chunk GetChunk(const Hash& key) = 0;
  protected:
   ChunkLoader() = default;
+  // Do real work for fetching a chunk, only called by Load()
+  virtual Chunk GetChunk(const Hash& key) = 0;
 
-  std::map<Hash, Chunk> cache_;
+  std::unordered_map<Hash, Chunk> cache_;
 };
 
 // Local chunk loader load chunks from local storage
@@ -37,7 +38,7 @@ class LocalChunkLoader : public ChunkLoader {
   LocalChunkLoader() : cs_(store::GetChunkStore()) {}
   ~LocalChunkLoader() = default;
 
- // protected:
+ protected:
   Chunk GetChunk(const Hash& key) override;
 
  private:
@@ -51,7 +52,7 @@ class PartitionedChunkLoader : public ChunkLoader {
     : cs_(store::GetChunkStore()), ptt_(ptt), client_(client) {}
   ~PartitionedChunkLoader() = default;
 
- // protected:
+ protected:
   Chunk GetChunk(const Hash& key) override;
 
  private:
@@ -69,7 +70,7 @@ class ClientChunkLoader : public ChunkLoader {
   // Delete all chunks
   ~ClientChunkLoader() = default;
 
- // protected:
+ protected:
   Chunk GetChunk(const Hash& key) override;
 
  private:

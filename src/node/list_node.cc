@@ -145,9 +145,7 @@ std::unique_ptr<const Segment> ListNode::GetSegment(
   }
 
   CHECK_LE(start + num_elements, numEntries());
-
   std::vector<size_t> offsets;
-
   size_t num_bytes = 0;
 
   for (size_t i = start; i < start + num_elements; ++i) {

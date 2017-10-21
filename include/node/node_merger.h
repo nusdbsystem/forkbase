@@ -524,4 +524,4 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
 using KeyMerger = NodeMerger<OrderedKeyMapper>;
 }  // namespace ustore
 
-#endif  // USTORE_NODE_NODE_COMPARATOR_H_
+#endif  // USTORE_NODE_NODE_MERGER_H_

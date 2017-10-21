@@ -21,9 +21,9 @@ class SMap : public UMap {
   // Both Use chunk builder to do splice
   // this kv_items must be sorted in descending order before
   Hash Set(const Slice& key, const Slice& val) const override;
-  Hash Remove(const Slice& key) const override;
   Hash Set(const std::vector<Slice>& keys,
            const std::vector<Slice>& vals) const override;
+  Hash Remove(const Slice& key) const override;
 
   // Use this map as base to perform three-way merging
   //   return empty hash when merging fails

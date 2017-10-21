@@ -83,7 +83,6 @@ UList::Iterator UList::Diff(const UList& rhs) const {
     IndexDiffer differ(rhs.hash(), chunk_loader_.get());
     return UList::Iterator(hash(), differ.Compare(hash()), chunk_loader_.get());
   }
-
 }
 
 UList::Iterator UList::Intersect(const UList& rhs) const {

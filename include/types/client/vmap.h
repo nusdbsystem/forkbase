@@ -22,9 +22,9 @@ class VMap : public UMap, public VObject {
   ~VMap() = default;
 
   Hash Set(const Slice& key, const Slice& val) const override;
-  Hash Remove(const Slice& key) const override;
   Hash Set(const std::vector<Slice>& keys,
            const std::vector<Slice>& vals) const override;
+  Hash Remove(const Slice& key) const override;
 
  protected:
   // Load an existing VMap
