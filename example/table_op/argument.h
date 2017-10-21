@@ -3,6 +3,7 @@
 #ifndef USTORE_EXAMPLE_TABLE_OP_ARGUMENT_H_
 #define USTORE_EXAMPLE_TABLE_OP_ARGUMENT_H_
 
+#include <string>
 #include "utils/argument.h"
 
 namespace ustore {

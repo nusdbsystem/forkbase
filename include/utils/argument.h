@@ -18,7 +18,7 @@ class Argument {
  public:
   bool is_help;
 
-  explicit Argument() noexcept;
+  Argument() noexcept;
   ~Argument() = default;
 
   bool ParseCmdArgs(int argc, char* argv[]);

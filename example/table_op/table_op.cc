@@ -247,8 +247,7 @@ ErrorCode TableOp::Aggregate() {
   // screen printing
   if (ec == ErrorCode::kOK) {
     std::cout << BOLD_GREEN("[SUCCESS: Aggregate] ")
-              << "Average: " << avg
-              ;
+              << "Average: " << avg;
   } else {
     std::cout << BOLD_RED("[FAILED: Aggregate] ")
               << "Failed to perform aggregation";
