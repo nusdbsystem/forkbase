@@ -112,13 +112,15 @@ ErrorCode TableOp::Init() {
 ErrorCode TableOp::Load() {
   latest_branch = master_branch;
 
-  auto ec = ErrorCode::kUnknownOp;
+  double elapsed_ms = 0;
   size_t bytes_inc = 0;
-  auto elapsed_ms = Timer::TimeMilliseconds([this, &ec, &bytes_inc] {
-    ec = MeasureByteIncrement([this] {
+  auto ec = MeasureByteIncrement(&bytes_inc, [this, &elapsed_ms] {
+    auto ec = ErrorCode::kUnknownOp;
+    elapsed_ms = Timer::TimeMilliseconds([this, &ec] {
       // execution to be evaluated
-      return cs_.LoadCSV(args_.file, table, master_branch);
-    }, &bytes_inc);
+      ec = cs_.LoadCSV(args_.file, table, master_branch);
+    });
+    return ec;
   });
   // screen printing
   if (ec == ErrorCode::kOK) {
@@ -132,7 +134,7 @@ ErrorCode TableOp::Load() {
   }
   std::cout << " (in " << Utils::TimeString(elapsed_ms);
   if (bytes_inc > 0) {
-    std::cout << ", +" << Utils::StorageSizeString(bytes_inc);
+    std::cout << ", " << MAGENTA("+" << Utils::StorageSizeString(bytes_inc));
   }
   std::cout << ") [branch: " << BLUE(master_branch) << "]";
   if (ec != ErrorCode::kOK) {
@@ -154,15 +156,21 @@ ErrorCode TableOp::Update(const std::string& ref_val) {
   USTORE_GUARD(cs_.BranchTable(table, latest_branch, branch));
   latest_branch = branch;
 
-  auto ec = ErrorCode::kUnknownOp;
+  double elapsed_ms = 0;
+  size_t bytes_inc = 0;
   size_t n_rows_affected;
-  auto elapsed_ms = Timer::TimeMilliseconds(
-  [this, &ref_val, &branch, &ec, &n_rows_affected]() {
-    // execution to be evaluated
-    Row r;
-    r.emplace(update_eff_col, update_eff_val);
-    ec = cs_.UpdateConsecutiveRows(
-           table, branch, update_ref_col, ref_val, r, &n_rows_affected);
+  auto ec = MeasureByteIncrement(&bytes_inc,
+  [this, &ref_val, &branch, &n_rows_affected, &elapsed_ms] {
+    auto ec = ErrorCode::kUnknownOp;
+    elapsed_ms = Timer::TimeMilliseconds(
+    [this, &ref_val, &branch, &n_rows_affected, &ec] {
+      // execution to be evaluated
+      Row r;
+      r.emplace(update_eff_col, update_eff_val);
+      ec = cs_.UpdateConsecutiveRows(
+        table, branch, update_ref_col, ref_val, r, &n_rows_affected);
+    });
+    return ec;
   });
   // screen printing
   if (ec == ErrorCode::kOK) {
@@ -173,8 +181,11 @@ ErrorCode TableOp::Update(const std::string& ref_val) {
     std::cout << BOLD_RED("[FAILED: Update] ")
               << "Failed to update data";
   }
-  std::cout << " (in " << Utils::TimeString(elapsed_ms) << ") [branch: "
-            << BLUE(branch) << "]";
+  std::cout << " (in " << Utils::TimeString(elapsed_ms);
+  if (bytes_inc > 0) {
+    std::cout << ", " << MAGENTA("+" << Utils::StorageSizeString(bytes_inc));
+  }
+  std::cout << ") [branch: " << BLUE(branch) << "]";
   if (ec != ErrorCode::kOK) {
     std::cout << RED(" --> Error(" << ec << "): " << Utils::ToString(ec));
   }
@@ -267,8 +278,8 @@ ErrorCode TableOp::VerifyColumn(const std::string& col) {
   return ErrorCode::kOK;
 }
 
-ErrorCode TableOp::MeasureByteIncrement(const std::function<ErrorCode()>& f,
-                                        size_t* bytes_inc) {
+ErrorCode TableOp::MeasureByteIncrement(size_t* bytes_inc,
+                                        const std::function<ErrorCode()>& f) {
   size_t start_bytes;
   USTORE_GUARD(cs_.GetStorageBytes(&start_bytes));
 

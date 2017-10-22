@@ -83,10 +83,10 @@ int PoissonAnalytics::Compute(std::unordered_set<std::string>* aff_cols) {
   Utils::Print(kTableName, branch_, "Col-1", col1);
 
   // generate pseudo analytics results
-  std::vector<int> ana_vals_int(Config::n_records);
-  for (size_t i = 0; i < Config::iters; ++i) {
+  std::vector<int> ana_vals_int(args_.n_records);
+  for (int64_t i = 0; i < args_.iters; ++i) {
     auto n = NextRandom();
-    if (n < Config::n_records) ++ana_vals_int[n];
+    if (n < args_.n_records) ++ana_vals_int[n];
   }
 
   // store the results
@@ -114,8 +114,8 @@ int BinomialAnalytics::Compute(std::unordered_set<std::string>* aff_cols) {
   Utils::Print(kTableName, branch_, "Col-2", col2);
 
   // generate pseudo analytics results
-  std::vector<int> ana_vals_int(Config::n_records);
-  for (size_t i = 0; i < Config::iters; ++i) ++ana_vals_int[NextRandom()];
+  std::vector<int> ana_vals_int(args_.n_records);
+  for (int64_t i = 0; i < args_.iters; ++i) ++ana_vals_int[NextRandom()];
 
   // store the results
   std::vector<std::string> ana_vals_str;

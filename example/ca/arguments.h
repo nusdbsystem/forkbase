@@ -13,10 +13,10 @@ namespace ca {
 class Arguments : public ::ustore::Arguments {
  public:
   int task_id;
-  size_t n_columns;
-  size_t n_records;
+  int64_t n_columns;
+  int64_t n_records;
   double p;
-  size_t iters;
+  int64_t iters;
 
   Arguments() {
     Add(&task_id, "task", "t", "ID of analytics task", 0);

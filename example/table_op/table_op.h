@@ -28,9 +28,9 @@ class TableOp {
   ErrorCode Aggregate();
 
   ErrorCode VerifyColumn(const std::string& col);
-  
-  ErrorCode MeasureByteIncrement(const std::function<ErrorCode()>& f,
-                                 size_t* bytes_inc);
+
+  ErrorCode MeasureByteIncrement(size_t* bytes_inc,
+                                 const std::function<ErrorCode()>& f);
 
   ColumnStore cs_;
   Arguments args_;
