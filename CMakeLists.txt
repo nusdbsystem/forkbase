@@ -36,7 +36,8 @@ OPTION(ENABLE_TEST "Compile test module" ON)
 OPTION(TEST_NODEBUILDER "Test node builder" OFF)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
 OPTION(USE_RDMA "Use RDMA" OFF)
-OPTION(ENABLE_EXAMPLE "Compile example module" ON)
+OPTION(ENABLE_EXAMPLE "Compile example module" OFF)
+OPTION(ENABLE_GO "Generate Golang binding" ON)
 
 if (USE_BLAKE2b AND USE_SHA256)
   message(FATAL_ERROR "options USE_BLAKE2b and USE_BLAKE2b are"
@@ -117,6 +118,10 @@ ENDIF()
 
 IF(ENABLE_EXAMPLE)
   ADD_SUBDIRECTORY(example)
+ENDIF()
+
+IF(ENABLE_GO)
+  ADD_SUBDIRECTORY(go)
 ENDIF()
 
 ADD_SUBDIRECTORY(src)

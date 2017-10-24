@@ -4,6 +4,7 @@
 #define USTORE_TYPES_UBLOB_H_
 
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -90,17 +91,27 @@ class UBlob : public ChunkableType {
    *      the number of bytes that actually read
    */
   size_t Read(size_t pos, size_t len, byte_t* buffer) const;
-  /** Delete some bytes from a position and insert new bytes
-  *
-  *  Args:
-  *    pos: the byte position to remove or insert bytes
-  *    n_delete_bytes: the number of bytes to be deleted
-  *    data: the byte array to insert after deletion
-  *    n_insert_bytes: number of bytes in array to be inserted into current blob
-  *
-  *  Return:
-  *    the new Blob reflecting the operation
-  */
+  /** Read the blob data and copy into std::string buffer
+   *    Args:
+   *      pos: the number of position to read
+   *      len: the number of subsequent bytes to read into buffer
+   *      buffer: the string which the data is copied to
+   *
+   *    Return:
+   *      the number of bytes that actually read
+   */
+  size_t Read(size_t pos, size_t len, std::string* buffer) const;
+   /** Delete some bytes from a position and insert new bytes
+   *
+   *  Args:
+   *    pos: the byte position to remove or insert bytes
+   *    n_delete_bytes: the number of bytes to be deleted
+   *    data: the byte array to insert after deletion
+   *    n_insert_bytes: number of bytes in array to be inserted into current blob
+   *
+   *  Return:
+   *    the new Blob reflecting the operation
+   */
   virtual Hash Splice(size_t pos, size_t n_delete_bytes, const byte_t* data,
                       size_t n_insert_bytes) const = 0;
   // * Insert bytes given a position

@@ -99,4 +99,28 @@ size_t UBlob::Read(size_t pos, size_t len, byte_t* buffer) const {
   return total_copy_byte;
 }
 
+size_t UBlob::Read(size_t pos, size_t len, std::string* buffer) const {
+  if (pos >= size()) {
+    LOG(WARNING) << "Read Pos exceeds Blob Size. ";
+    return 0;
+  }
+  NodeCursor cursor(root_node_->hash(), pos, chunk_loader_.get());
+  buffer->clear();
+  buffer->reserve(len);
+  size_t total_copy_byte = 0;
+  do {
+    size_t chunk_copy_byte = 0;
+    const byte_t* chunk_copy_start = cursor.current();
+    do {
+      chunk_copy_byte += cursor.numCurrentBytes();
+      total_copy_byte += cursor.numCurrentBytes();
+      if (total_copy_byte == len) break;
+    } while (cursor.Advance(false));
+    buffer->append(reinterpret_cast<const char*>(chunk_copy_start), chunk_copy_byte);
+    if (total_copy_byte == len) break;
+  } while (cursor.Advance(true));
+
+  return total_copy_byte;
+}
+
 }  // namespace ustore
