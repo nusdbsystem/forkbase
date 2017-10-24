@@ -7,17 +7,21 @@
 #include "hash/hash.h"
 
 const ustore::byte_t raw_str[] = "The quick brown fox jumps over the lazy dog";
+#ifdef USE_BLAKE2b
+const char base32_encoded[] = "VCW5JPO57WJ6JB35E5DOMKAXWELDMSQ7";
+const char hash_hex_str[] = "a8add4bdddfd93e4877d2746e62817b116364a1f";
+#else
 const char base32_encoded[] = "26UPXMYH26AJI2OKTK6LACBOJ6GVMUPE";
 const char hash_hex_str[] = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e4";
-
+#endif
 TEST(Hash, FromBase32) {
   ustore::Hash h = ustore::Hash::FromBase32(base32_encoded);
   EXPECT_EQ(base32_encoded, h.ToBase32());
 }
 
 TEST(Hash, ComputeHash) {
-  ustore::Hash h= ustore::Hash::ComputeFrom(raw_str, 43);
-  EXPECT_EQ(h.ToBase32(), base32_encoded);
+  ustore::Hash h = ustore::Hash::ComputeFrom(raw_str, 43);
+  EXPECT_EQ(base32_encoded, h.ToBase32());
   std::ostringstream stm;
   for (size_t i = 0; i < ustore::Hash::kByteLength; ++i) {
     stm << std::hex << std::setfill('0') << std::setw(2)
