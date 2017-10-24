@@ -15,6 +15,7 @@ Iterator::Iterator(KVDB* db, ustore::Worker* wk)
   keys_ = wk_->GetBranchRef(ustore::Slice(cfkey));
   if (keys_!=nullptr) {
     iterator_ = keys_->begin();
+    valid_ = true;
   }
 }
 Iterator::~Iterator() {}
@@ -29,7 +30,7 @@ void Iterator::SetRange(const std::string& r_first, const std::string& r_last) {
   SeekToFirst();
 }
 
-bool Iterator::Valid() { return valid_; }
+bool Iterator::Valid() { return valid_; }// return keys_!= nullptr && iterator_ != keys_->end(); }
 
 void Iterator::SeekToFirst() {
   if (valid_) {
@@ -49,7 +50,7 @@ void Iterator::SeekToLast() {
 void Iterator::Seek(const std::string& key) {
   SeekToFirst();
   if (valid_) {
-    for (; iterator_ != keys_->end() && (iterator_->first).ToString() < key ; iterator_++) 
+    for (; iterator_ != keys_->end() && (iterator_->first).ToString() < key ; iterator_++); 
     valid_ = (iterator_ != keys_->end());
   }
 }
@@ -70,7 +71,8 @@ bool Iterator::Prev() {
 }
 
 std::string Iterator::key() const {
-  CHECK(valid_);
+  //CHECK(valid_);
+  //CHECK(iterator_ != keys_->end());
   return (iterator_->first).ToString();
 }
 

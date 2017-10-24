@@ -17,6 +17,7 @@
 namespace ustore_kvdb {
 
 class Iterator;
+class MapIterator;
 
 // a key-value store wrapper utilizing Blob data type.
 class KVDB {
@@ -37,6 +38,8 @@ class KVDB {
   bool Exist(const std::string& key);
   uint64_t GetSize(); 
   Iterator* NewIterator();
+  MapIterator* NewMapIterator(const std::string& key, const std::string& version);
+
   std::string GetCFName() { return cfname_; }
 
   // top-level map
@@ -48,11 +51,20 @@ class KVDB {
   std::pair<Status, std::string> SyncMap();
   // write to the top-level Map
   std::pair<Status, std::string> WriteMap();
-
   std::pair<Status, std::string> PutBlob(const std::string& key, const std::string& value);
-  // get the value of the latest key in map mapkey
-  std::pair<Status, std::string> GetLatestMap(const std::string& mapkey, const std::string& key);
-  std::pair<Status, std::string> GetMap(const std::string& key, const std::string& version);
+
+
+  // get the latest value of UMap[key] where the UMap is identified by (mapkey)
+  std::pair<Status, std::string> GetMap(const std::string& mapkey, const std::string& key);
+  // return the value of UMap[key] where u is identified by (mapkey, version)
+  std::pair<Status, std::string> GetMap(const std::string& mapkey, const std::string& key, const std::string& version);
+
+  // get the iterator of UMap object identified by mapkey 
+  std::pair<Status, MapIterator*> GetMapIterator(const std::string& mapkey, const std::string&version);
+
+  // return the previous version of ANY object identified by (key, version)
+  std::pair<Status, std::string> GetPreviousVersion(const std::string& key, const std::string& version);
+
   std::pair<Status, std::string> GetBlob(const std::string& key);
   std::pair<Status, std::string> GetBlob(const std::string& key, const std::string& version);
 
@@ -65,6 +77,22 @@ class KVDB {
   std::vector<std::string> skeys_, svalues_;
   std::vector<std::string> mapKeys_, mapValues_;
   std::map<std::string, bool> allMapKeys_;
+};
+
+class MapIterator {
+ public:
+  MapIterator() {}
+  MapIterator(ustore::ObjectDB* odb, const std::string& key, const std::string& version);
+  
+  void SeekToFirst();
+  bool Valid();
+  bool Next();
+  std::string key() const;
+  std::string value() const;
+ private:
+  ustore::ObjectDB* odb_;
+  ustore::UMap::Iterator *iterator_;
+  std::string key_, version_;
 };
 
 class Iterator {

@@ -90,6 +90,10 @@ Status KVDB::Write(WriteBatch* updates) {
 
 Iterator* KVDB::NewIterator() { return new Iterator(this, &wk_); }
 
+MapIterator* KVDB::NewMapIterator(const std::string& key, const std::string& version) {
+  return new MapIterator(&odb_, key, version);
+}
+
 // Initialize empty map
 Status KVDB::InitMap(const std::string& mapkey) {
   mapkey_ = mapkey;
@@ -177,7 +181,7 @@ std::pair<Status, std::string> KVDB::PutBlob(const std::string& key, const std::
   return std::make_pair(Status::OK(), HashToString(ret.value));
 }
 
-std::pair<Status, std::string> KVDB::GetLatestMap(const std::string& mapkey, const std::string& key) {
+std::pair<Status, std::string> KVDB::GetMap(const std::string& mapkey, const std::string& key) {
   auto v = odb_.Get(ustore::Slice(mapkey), DEFAULT_BRANCH).value.Map();
   ustore::Slice ret = v.Get(ustore::Slice(key));
   if (ret.empty())
@@ -186,8 +190,9 @@ std::pair<Status, std::string> KVDB::GetLatestMap(const std::string& mapkey, con
     return std::make_pair(Status::OK(), ret.ToString());
 }
 
-std::pair<Status, std::string> KVDB::GetMap(const std::string& key, const std::string& version) {
-  auto v = odb_.Get(ustore::Slice(mapkey_), ustore::Hash(
+std::pair<Status, std::string> KVDB::GetMap(const std::string& mapkey, 
+                              const std::string& key, const std::string& version) {
+  auto v = odb_.Get(ustore::Slice(mapkey), ustore::Hash(
                     reinterpret_cast<const unsigned char*>(version.data()))).value.Map();
   ustore::Slice ret = v.Get(ustore::Slice(key));
   if (ret.empty())
@@ -196,6 +201,16 @@ std::pair<Status, std::string> KVDB::GetMap(const std::string& key, const std::s
     return std::make_pair(Status::OK(), ret.ToString());
 }
 
+std::pair<Status, MapIterator*> KVDB::GetMapIterator(const std::string& mapkey, const std::string& version) {
+  return std::make_pair(Status::OK(), NewMapIterator(mapkey, version));
+}
+
+std::pair<Status, std::string> KVDB::GetPreviousVersion(const std::string& key, const std::string& version) {
+  auto v = odb_.Get(ustore::Slice(key), ustore::Hash(
+                    reinterpret_cast<const unsigned char*>(version.data())));
+  CHECK(ustore::ErrorCode::kOK == v.stat);
+  return std::make_pair(Status::OK(), HashToString(v.value.cell().preHash()));
+}
 std::pair<Status, std::string> KVDB::GetBlob(const std::string& key) {
   auto ret = odb_.Get(ustore::Slice(key), DEFAULT_BRANCH); 
   CHECK(ret.stat == ustore::ErrorCode::kOK);
