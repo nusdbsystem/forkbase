@@ -13,6 +13,7 @@
 #include "spec/slice.h"
 #include "worker/worker.h"
 #include "store/chunk_store.h"
+#include "utils/timer.h"
 
 namespace ustore_kvdb {
 
@@ -91,7 +92,8 @@ class MapIterator {
   std::string value() const;
  private:
   ustore::ObjectDB* odb_;
-  ustore::UMap::Iterator *iterator_;
+  std::vector<ustore::UMap::Iterator> iterator_;
+  ustore::VMap temp_map_;
   std::string key_, version_;
 };
 
@@ -101,6 +103,7 @@ class Iterator {
   // commit suicide
   void Release();
 
+  int GetTime();
   Iterator(const Iterator&) = delete;
   void operator=(const Iterator&) = delete;
 
@@ -133,13 +136,13 @@ class Iterator {
   // the returned slice is valid only until the next modification of
   // the iterator.
   // REQUIRES: Valid()
-  virtual std::string key() const;
+  virtual std::string key() ;
 
   // Return the value for the current entry.  The underlying storage for
   // the returned slice is valid only until the next modification of
   // the iterator.
   // REQUIRES: Valid()
-  virtual std::string value() const;
+  virtual std::string value() ;
 
  protected:
   friend class KVDB;
@@ -148,6 +151,8 @@ class Iterator {
   Iterator();
   Iterator(KVDB* db, ustore::Worker* wk);
 
+  ustore::Timer timer_;
+  size_t total_time_;
   std::string r_first_ = "";
   std::string r_last_ = "";
   bool valid_;

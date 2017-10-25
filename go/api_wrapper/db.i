@@ -58,6 +58,7 @@ class Iterator {
  public:
   virtual ~Iterator();
   
+  int GetTime();
   void Release();
   virtual void SetRange(const std::string& a, const std::string& b);
   virtual bool Valid();
@@ -66,8 +67,8 @@ class Iterator {
   virtual void Seek(const std::string& key);
   virtual bool Next();
   virtual bool Prev();
-  virtual std::string key() const;
-  virtual std::string value() const;
+  virtual std::string key();
+  virtual std::string value();
 };
 
 extern Iterator* NewEmptyIterator();

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include "db.h"
 #include "utils/logging.h"
-
+#include "utils/timer.h"
 namespace ustore_kvdb {
 
 Iterator::Iterator() {}
@@ -19,6 +19,10 @@ Iterator::Iterator(KVDB* db, ustore::Worker* wk)
   }
 }
 Iterator::~Iterator() {}
+
+int Iterator::GetTime() {
+  return total_time_;
+}
 
 void Iterator::Release() { 
   delete this; 
@@ -50,7 +54,12 @@ void Iterator::SeekToLast() {
 void Iterator::Seek(const std::string& key) {
   SeekToFirst();
   if (valid_) {
-    for (; iterator_ != keys_->end() && (iterator_->first).ToString() < key ; iterator_++); 
+    iterator_ = keys_->lower_bound(ustore::Slice(key));
+    /*
+    int c=0;
+    for (; iterator_ != keys_->end() && (iterator_->first) < ustore::Slice(key) ; iterator_++) 
+      c++;
+    */
     valid_ = (iterator_ != keys_->end());
   }
 }
@@ -70,13 +79,14 @@ bool Iterator::Prev() {
   return valid_;
 }
 
-std::string Iterator::key() const {
+std::string Iterator::key() {
   //CHECK(valid_);
   //CHECK(iterator_ != keys_->end());
-  return (iterator_->first).ToString();
+  std::string s = (iterator_->first).ToString();
+  return s;
 }
 
-std::string Iterator::value() const {
+std::string Iterator::value() {
   CHECK(valid_);
   std::string ret;
   db_->Get(key(), &ret);
@@ -94,11 +104,11 @@ class EmptyIterator : public Iterator {
   void Seek(const std::string&) override {}
   bool Next() override { return false; }
   bool Prev() override { return false; }
-  std::string key() const override {
+  std::string key() override {
     CHECK(false);
     return "";
   }
-  std::string value() const override {
+  std::string value() override {
     CHECK(false);
     return "";
   }

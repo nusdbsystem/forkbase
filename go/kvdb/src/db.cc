@@ -209,6 +209,9 @@ std::pair<Status, std::string> KVDB::GetPreviousVersion(const std::string& key, 
   auto v = odb_.Get(ustore::Slice(key), ustore::Hash(
                     reinterpret_cast<const unsigned char*>(version.data())));
   CHECK(ustore::ErrorCode::kOK == v.stat);
+  if (v.value.cell().preHash() == ustore::Hash::kNull) {
+    return std::make_pair(Status::NotFound(""), "");
+  }
   return std::make_pair(Status::OK(), HashToString(v.value.cell().preHash()));
 }
 std::pair<Status, std::string> KVDB::GetBlob(const std::string& key) {
