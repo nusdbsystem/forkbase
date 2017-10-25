@@ -18,7 +18,10 @@ class Arguments {
  public:
   bool is_help;
 
-  Arguments() noexcept;
+  Arguments() noexcept {
+    Add(&is_help, "help", "?", "print usage message");
+  }
+
   ~Arguments() = default;
 
   bool ParseCmdArgs(int argc, char* argv[]);
@@ -27,6 +30,7 @@ class Arguments {
 
  protected:
   virtual bool CheckArgs() { return true; }
+  virtual std::string MoreHelpMessage() { return ""; }
 
   template<typename T>
   static bool Check(const T& var, const bool expr, const std::string& title,
@@ -72,7 +76,7 @@ class Arguments {
   static inline bool CheckInRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
-    return Check(var, lbound <= var && var <= ubound, title, "range of" +
+    return Check(var, lbound <= var && var <= ubound, title, "range of " +
                  Utils::ToStringPair(lbound, ubound, "[", "]", ","));
   }
 
@@ -80,7 +84,7 @@ class Arguments {
   static inline bool CheckInLeftOpenRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
-    return Check(var, lbound < var && var <= ubound, title, "range of" +
+    return Check(var, lbound < var && var <= ubound, title, "range of " +
                  Utils::ToStringPair(lbound, ubound, "(", "]", ","));
   }
 
@@ -88,7 +92,7 @@ class Arguments {
   static inline bool CheckInRightOpenInRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
-    return Check(var, lbound <= var && var < ubound, title, "range of" +
+    return Check(var, lbound <= var && var < ubound, title, "range of " +
                  Utils::ToStringPair(lbound, ubound, "[", ")", ","));
   }
 
@@ -96,9 +100,7 @@ class Arguments {
   static inline bool CheckInOpenRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
-    const std::string expect = "range of (" + Utils::ToString(lbound) +
-                               "," + Utils::ToString(ubound) + ")";
-    return Check(var, lbound < var && var < ubound, title, "range of" +
+    return Check(var, lbound < var && var < ubound, title, "range of " +
                  Utils::ToStringPair(lbound, ubound, "(", ")", ","));
   }
 
@@ -107,6 +109,13 @@ class Arguments {
                   const std::string& deft_val = "") {
     args_.emplace_back(
       Meta<std::string>({param_ptr, name_long, name_short, desc, deft_val}));
+  }
+  inline void AddPositional(std::string* param_ptr,
+                            const std::string& name_long,
+                            const std::string& desc,
+                            const std::string& deft_val = "") {
+    auto desc_ext = AddPositional(name_long, desc);
+    Add(param_ptr, name_long, "", desc_ext, deft_val);
   }
   inline void Add(bool* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc) {
@@ -119,11 +128,22 @@ class Arguments {
     int_args_.emplace_back(
       Meta<int>({param_ptr, name_long, name_short, desc, deft_val}));
   }
+  inline void AddPositional(int* param_ptr, const std::string& name_long,
+                            const std::string& desc, const int& deft_val = 0) {
+    auto desc_ext = AddPositional(name_long, desc);
+    Add(param_ptr, name_long, "", desc_ext, deft_val);
+  }
   inline void Add(int64_t* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc,
                   const int64_t& deft_val = 0) {
     int64_args_.emplace_back(
       Meta<int64_t>({param_ptr, name_long, name_short, desc, deft_val}));
+  }
+  inline void AddPositional(int64_t* param_ptr, const std::string& name_long,
+                            const std::string& desc,
+                            const int64_t& deft_val = 0) {
+    auto desc_ext = AddPositional(name_long, desc);
+    Add(param_ptr, name_long, "", desc_ext, deft_val);
   }
   inline void Add(double* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc,
@@ -131,8 +151,11 @@ class Arguments {
     double_args_.emplace_back(
       Meta<double>({param_ptr, name_long, name_short, desc, deft_val}));
   }
-  inline void Positional(const std::string& name_long) {
-    pos_arg_names_.emplace_back(name_long);
+  inline void AddPositional(double* param_ptr, const std::string& name_long,
+                            const std::string& desc,
+                            const double& deft_val = 0.0) {
+    auto desc_ext = AddPositional(name_long, desc);
+    Add(param_ptr, name_long, "", desc_ext, deft_val);
   }
 
  private:
@@ -153,6 +176,13 @@ class Arguments {
 
   std::vector<std::string> pos_arg_names_;
 
+  inline std::string AddPositional(const std::string& name_long,
+                                   const std::string& desc) {
+    pos_arg_names_.emplace_back(name_long);
+    return desc + " [Positional: " +
+           Utils::ToString(pos_arg_names_.size()) + "]";
+  }
+
   inline void AssignArgs(const std::vector<Meta<std::string>>& args,
                          const po::variables_map& vm) {
     for (auto& meta : args) {
@@ -162,7 +192,7 @@ class Arguments {
   inline void AssignArgs(const std::vector<Meta<bool>>& args,
                          const po::variables_map& vm) {
     for (auto& meta : args) {
-      *(meta.param_ptr) = vm[meta.name_long].as<bool>();
+      *(meta.param_ptr) = vm.count(meta.name_long) ? true : false;
     }
   }
   inline void AssignArgs(const std::vector<Meta<int>>& args,
@@ -185,7 +215,10 @@ class Arguments {
   }
 
   template<typename T>
-  void AddArgs(const std::vector<Meta<T>> args, po::options_description* od);
+  void AddArgs(const std::vector<Meta<T>>& args, po::options_description* od);
+
+  void AddBoolArgs(const std::vector<Meta<bool>>& args,
+                   po::options_description* od);
 
   bool ParseCmdArgs(int argc, char* argv[], po::variables_map* vm);
 };
@@ -203,7 +236,7 @@ bool Arguments::Check(const T& var, const bool expr,
 }
 
 template<typename T>
-void Arguments::AddArgs(const std::vector<Meta<T>> args,
+void Arguments::AddArgs(const std::vector<Meta<T>>& args,
                         po::options_description* od) {
   for (auto& meta : args) {
     auto& name_long = meta.name_long;

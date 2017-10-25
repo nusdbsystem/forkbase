@@ -6,8 +6,6 @@
 
 namespace ustore {
 
-Arguments::Arguments() noexcept : is_help(false) {}
-
 bool Arguments::ParseCmdArgs(int argc, char* argv[]) {
   po::variables_map vm;
   GUARD(ParseCmdArgs(argc, argv, &vm));
@@ -26,9 +24,8 @@ bool Arguments::ParseCmdArgs(int argc, char* argv[]) {
 
 bool Arguments::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   po::options_description od(BLUE_STR("Options"), 120);
-  od.add_options()("help,?", "print usage message");
+  AddBoolArgs(bool_args_, &od);
   AddArgs(args_, &od);
-  AddArgs(bool_args_, &od);
   AddArgs(int_args_, &od);
   AddArgs(int64_args_, &od);
   AddArgs(double_args_, &od);
@@ -45,7 +42,7 @@ bool Arguments::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
       is_help = true;
       po::options_description visible;
       visible.add(od);
-      std::cout << visible << std::endl;
+      std::cout << visible << std::endl << MoreHelpMessage();
     }
     po::notify(*vm);
   } catch (std::exception& e) {
@@ -68,6 +65,18 @@ bool Arguments::ParseCmdArgs(const std::vector<std::string>& args) {
   auto ec = ParseCmdArgs(argc, argv);
   for (size_t i = 1; i < argc; ++i) delete argv[i];
   return ec;
+}
+
+void Arguments::AddBoolArgs(const std::vector<Meta<bool>>& args,
+                            po::options_description* od) {
+  for (auto& meta : args) {
+    auto& name_long = meta.name_long;
+    auto& name_short = meta.name_short;
+    auto cfg = name_long + (name_short.empty() ? "" : "," + name_short);
+    auto& desc = meta.desc;
+
+    od->add_options()(cfg.c_str(), desc.c_str());
+  }
 }
 
 }  // namespace ustore

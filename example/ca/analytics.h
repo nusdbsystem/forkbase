@@ -11,7 +11,7 @@
 #include "spec/relational.h"
 #include "types/type.h"
 
-#include "ca/arguments.h"
+#include "ca/ca_arguments.h"
 #include "ca/utils.h"
 
 namespace ustore {
@@ -28,7 +28,7 @@ class Random {
 
 class ColumnStoreAnalytics {
  public:
-  ColumnStoreAnalytics(const std::string& branch, const Arguments& args,
+  ColumnStoreAnalytics(const std::string& branch, const CAArguments& args,
                        ColumnStore& cs)
     : branch_(branch), args_(args), cs_(cs) {}
 
@@ -37,13 +37,13 @@ class ColumnStoreAnalytics {
 
  protected:
   const std::string branch_;
-  const Arguments& args_;
+  const CAArguments& args_;
   ColumnStore& cs_;
 };
 
 class SampleAnalytics : public ColumnStoreAnalytics {
  public:
-  SampleAnalytics(const std::string& branch, const Arguments& args,
+  SampleAnalytics(const std::string& branch, const CAArguments& args,
                   ColumnStore& cs)
     : ColumnStoreAnalytics(branch, args, cs) {}
 
@@ -52,7 +52,7 @@ class SampleAnalytics : public ColumnStoreAnalytics {
 
 class DataLoading : public ColumnStoreAnalytics {
  public:
-  DataLoading(const std::string& branch, const Arguments& args,
+  DataLoading(const std::string& branch, const CAArguments& args,
               ColumnStore& cs, size_t n_columns, size_t n_records)
     : ColumnStoreAnalytics(branch, args, cs),
       n_columns_(n_columns), n_records_(n_records) {
@@ -69,7 +69,7 @@ class DataLoading : public ColumnStoreAnalytics {
 
 class PoissonAnalytics : public ColumnStoreAnalytics, private Random {
  public:
-  PoissonAnalytics(const std::string& branch, const Arguments& args,
+  PoissonAnalytics(const std::string& branch, const CAArguments& args,
                    ColumnStore& cs, double mean)
     : ColumnStoreAnalytics(branch, args, cs), distr_(mean) {
     std::cout << "[Parameters]"
@@ -86,7 +86,7 @@ class PoissonAnalytics : public ColumnStoreAnalytics, private Random {
 
 class BinomialAnalytics : public ColumnStoreAnalytics, private Random {
  public:
-  BinomialAnalytics(const std::string& branch, const Arguments& args,
+  BinomialAnalytics(const std::string& branch, const CAArguments& args,
                     ColumnStore& cs, double p)
     : ColumnStoreAnalytics(branch, args, cs), distr_(args.n_records - 1, p) {
     std::cout << "[Parameters]"
@@ -104,7 +104,7 @@ class BinomialAnalytics : public ColumnStoreAnalytics, private Random {
 
 class MergeAnalytics : public ColumnStoreAnalytics {
  public:
-  MergeAnalytics(const std::string& branch, const Arguments& args,
+  MergeAnalytics(const std::string& branch, const CAArguments& args,
                  ColumnStore& cs)
     : ColumnStoreAnalytics(branch, args, cs) {
     std::cout << "[Parameters]"

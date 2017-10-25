@@ -34,6 +34,10 @@ class RandomGenerator {
                                            int mod);
   std::vector<std::string> PrefixRandString(const std::string& prefix, int size,
                                            int mod);
+  inline int RandomInt(const int min, const int max) {
+    std::uniform_int_distribution<> dist(min, max);
+    return dist(engine_);
+  }
 
  private:
   std::default_random_engine engine_;

@@ -4,8 +4,9 @@
 #include <fstream>
 #include <utility>
 #include <vector>
-#include "table_op.h"
 #include "utils/logging.h"
+
+#include "table_op.h"
 
 namespace ustore {
 namespace example {
@@ -20,16 +21,7 @@ const std::string update_eff_val = "__updated__";
 std::string aggregate_col = "";
 std::string latest_branch = "";
 
-TableOp::TableOp(DB* db) noexcept : cs_(db) {}
-
-ErrorCode TableOp::Run(int argc, char* argv[]) {
-  if (!args_.ParseCmdArgs(argc, argv)) {
-    std::cerr << BOLD_RED("[ERROR] ")
-              << "Found invalid command-line option" << std::endl;
-    return ErrorCode::kInvalidCommandArgument;
-  }
-  if (args_.is_help) return ErrorCode::kOK;
-  // execution
+ErrorCode TableOp::Run() {
   USTORE_GUARD(Init());
   std::cout << std::endl;
   USTORE_GUARD(Load());

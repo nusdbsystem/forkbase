@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_EXAMPLE_CA_ARGUMENTS_H_
-#define USTORE_EXAMPLE_CA_ARGUMENTS_H_
+#ifndef USTORE_EXAMPLE_CA_CA_ARGUMENTS_H_
+#define USTORE_EXAMPLE_CA_CA_ARGUMENTS_H_
 
 #include <string>
 #include "utils/arguments.h"
@@ -10,7 +10,7 @@ namespace ustore {
 namespace example {
 namespace ca {
 
-class Arguments : public ::ustore::Arguments {
+class CAArguments : public ::ustore::Arguments {
  public:
   int task_id;
   int64_t n_columns;
@@ -18,7 +18,7 @@ class Arguments : public ::ustore::Arguments {
   double p;
   int64_t iters;
 
-  Arguments() {
+  CAArguments() {
     Add(&task_id, "task", "t", "ID of analytics task", 0);
     Add(&n_columns, "columns", "c", "number of columns in a simple table", 3);
     Add(&n_records, "records", "n", "number of records in a simple table", 10);
@@ -37,11 +37,11 @@ class Arguments : public ::ustore::Arguments {
     return true;
   }
 
-  ~Arguments() = default;
+  ~CAArguments() = default;
 };
 
 }  // namespace ca
 }  // namespace example
 }  // namespace ustore
 
-#endif  // USTORE_EXAMPLE_CA_ARGUMENTS_H_
+#endif  // USTORE_EXAMPLE_CA_CA_ARGUMENTS_H_

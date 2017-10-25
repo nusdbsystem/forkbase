@@ -7,7 +7,7 @@
 #include "spec/relational.h"
 #include "utils/timer.h"
 
-#include "arguments.h"
+#include "table_op_arguments.h"
 
 namespace ustore {
 namespace example {
@@ -15,10 +15,12 @@ namespace table_op {
 
 class TableOp {
  public:
-  explicit TableOp(DB* db) noexcept;
+  explicit TableOp(TableOpArguments& args, DB* db) noexcept
+    : cs_(db), args_(args) {}
+
   ~TableOp() = default;
 
-  ErrorCode Run(int argc, char* argv[]);
+  ErrorCode Run();
 
  private:
   ErrorCode Init();
@@ -33,7 +35,7 @@ class TableOp {
                                  const std::function<ErrorCode()>& f);
 
   ColumnStore cs_;
-  Arguments args_;
+  TableOpArguments& args_;
 };
 
 }  // namespace table_op

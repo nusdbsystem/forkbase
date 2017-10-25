@@ -5,8 +5,8 @@
 #include "cluster/worker_client_service.h"
 #include "spec/relational.h"
 
-#include "ca/arguments.h"
 #include "ca/analytics.h"
+#include "ca/ca_arguments.h"
 #include "ca/utils.h"
 
 namespace ustore {
@@ -14,7 +14,7 @@ namespace example {
 namespace ca {
 
 ColumnStore* cs = nullptr;
-Arguments args;
+CAArguments args;
 
 int RunSample() {
   std::cout << std::endl
