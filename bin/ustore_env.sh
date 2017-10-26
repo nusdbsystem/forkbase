@@ -36,6 +36,11 @@ if [ -z $USTORE_CONF_HOST_FILE ]; then
   USTORE_CONF_HOST_FILE=`grep "worker_file:" $USTORE_CONF_FILE | cut -d '"' -f 2`
 fi
 
+# set USTORE_CONF_DATA_DIR
+if [ -z $USTORE_CONF_DATA_DIR ]; then
+  USTORE_CONF_DATA_DIR=`grep "data_dir:" $USTORE_CONF_FILE | cut -d '"' -f 2`
+fi
+
 # set USTORE_LOG
 if [ -z $USTORE_LOG ]; then
   USTORE_LOG=$USTORE_HOME/log

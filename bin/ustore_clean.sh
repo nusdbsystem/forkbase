@@ -20,9 +20,9 @@ hosts=`cat $USTORE_CONF_HOST_FILE | cut -d ':' -f 1`
 for i in ${hosts[@]}; do
   echo Clean ustore @ $i ...
   if [ $i == localhost ]; then
-    rm ./ustore_data/ustore*
+    rm $USTORE_CONF_DATA_DIR/*
   else
-    ssh $ssh_options $i rm $USTORE_HOME/ustore_data/ustore*
+    ssh $ssh_options $i rm $USTORE_CONF_DATA_DIR/*
   fi
 done
 echo "----------- All data removed ------------"
