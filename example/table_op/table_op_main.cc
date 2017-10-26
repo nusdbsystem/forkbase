@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include "cluster/worker_client_service.h"
+#include "worker/worker.h"
 
 #include "table_gen.h"
 #include "table_op.h"
@@ -33,10 +34,16 @@ int main(int argc, char* argv[]) {
     }
     return static_cast<int>(ec);
   } else {
-    WorkerClientService svc;
-    svc.Run();
-    auto db = svc.CreateWorkerClient();
-    auto ec = TableOp(args, &db).Run();
+    auto ec = ErrorCode::kUnknownOp;
+    if (args.is_at_svr) {
+      Worker db(0, nullptr, true);
+      ec = TableOp(args, &db).Run();
+    } else {
+      WorkerClientService svc;
+      svc.Run();
+      auto db = svc.CreateWorkerClient();
+      ec = TableOp(args, &db).Run();
+    }
     if (ec != ErrorCode::kOK) {
       std::cout << BOLD_RED("[FAILED: Table Op] ")
                 << "Error(" << ec << "): " << Utils::ToString(ec) << std::endl;

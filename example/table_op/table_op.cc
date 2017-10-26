@@ -24,17 +24,20 @@ std::string latest_branch = "";
 ErrorCode TableOp::Run() {
   USTORE_GUARD(Init());
   std::cout << std::endl;
-  USTORE_GUARD(Load());
-  std::cout << std::endl;
-  for (auto& ref_val : update_ref_vals) USTORE_GUARD(Update(ref_val));
-  std::cout << std::endl;
-  for (auto& ref_val : update_ref_vals) {
-    auto dev_branch = "dev-" + ref_val;
-    USTORE_GUARD(Diff(master_branch, dev_branch));
+  if (args_.is_diff) {
+    for (auto& ref_val : update_ref_vals) {
+      auto dev_branch = "dev-" + ref_val;
+      USTORE_GUARD(Diff(master_branch, dev_branch));
+    }
+    std::cout << std::endl;
+  } else {
+    USTORE_GUARD(Load());
+    std::cout << std::endl;
+    for (auto& ref_val : update_ref_vals) USTORE_GUARD(Update(ref_val));
+    std::cout << std::endl;
+    USTORE_GUARD(Aggregate());
+    std::cout << std::endl;
   }
-  std::cout << std::endl;
-  USTORE_GUARD(Aggregate());
-  std::cout << std::endl;
   return ErrorCode::kOK;
 }
 
@@ -80,24 +83,26 @@ ErrorCode TableOp::Init() {
     return ErrorCode::kInvalidCommandArgument;
   }
   // reset environment
-  auto f_delete_if_exists = [this](const std::string & branch) {
-    bool exists;
-    USTORE_GUARD(cs_.ExistsTable(table, branch, &exists));
-    if (exists) USTORE_GUARD(cs_.DeleteTable(table, branch));
-    return ErrorCode::kOK;
-  };
-  for (auto& branch_id : update_ref_vals) {
-    auto branch = "dev-" + branch_id;
-    USTORE_GUARD(f_delete_if_exists(branch));
-  }
-  USTORE_GUARD(f_delete_if_exists(master_branch));
-  USTORE_GUARD(cs_.CreateTable(table, master_branch));
+  if (!args_.is_diff) {
+    auto f_delete_if_exists = [this](const std::string & branch) {
+      bool exists;
+      USTORE_GUARD(cs_.ExistsTable(table, branch, &exists));
+      if (exists) USTORE_GUARD(cs_.DeleteTable(table, branch));
+      return ErrorCode::kOK;
+    };
+    for (auto& branch_id : update_ref_vals) {
+      auto branch = "dev-" + branch_id;
+      USTORE_GUARD(f_delete_if_exists(branch));
+    }
+    USTORE_GUARD(f_delete_if_exists(master_branch));
+    USTORE_GUARD(cs_.CreateTable(table, master_branch));
 
-  std::cout << "Table: " << YELLOW(table)
-            << ", Update-referring column: " << YELLOW(update_ref_col)
-            << ", Update-effecting column: " << YELLOW(update_eff_col)
-            << ", Aggregating column: " << YELLOW(aggregate_col)
-            << std::endl;
+    std::cout << "Table: " << YELLOW(table)
+              << ", Update-referring column: " << YELLOW(update_ref_col)
+              << ", Update-effecting column: " << YELLOW(update_eff_col)
+              << ", Aggregating column: " << YELLOW(aggregate_col)
+              << std::endl;
+  }
   return ErrorCode::kOK;
 }
 
