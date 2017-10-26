@@ -4,6 +4,7 @@
 #define USTORE_EXAMPLE_TABLE_OP_TABLE_OP_ARGUMENTS_H_
 
 #include <string>
+#include <vector>
 #include "utils/arguments.h"
 
 namespace ustore {
