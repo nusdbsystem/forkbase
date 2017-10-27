@@ -19,6 +19,7 @@ std::vector<std::string> update_ref_vals;
 std::string update_eff_col = "";
 const std::string update_eff_val = "__updated__";
 std::string aggregate_col = "";
+const int val_to_count = 1;
 std::string latest_branch = "";
 
 ErrorCode TableOp::Run() {
@@ -231,23 +232,24 @@ ErrorCode TableOp::Aggregate() {
   USTORE_GUARD(VerifyColumn(aggregate_col));
 
   auto ec = ErrorCode::kUnknownOp;
-  int avg;
+  size_t count(0), all;
   auto elapsed_ms = Timer::TimeMilliseconds(
-  [this, &ec, &avg]() {
+  [this, &ec, &count, &all]() {
     // execution to be evaluated
     Column col;
     ec = cs_.GetColumn(table, master_branch, aggregate_col, &col);
     if (ec != ErrorCode::kOK) return;
-    uint64_t sum = 0;
     for (auto it = col.Scan(); !it.end(); it.next()) {
-      sum += std::stod(it.value().ToString());
+      if (std::stod(it.value().ToString()) == val_to_count) ++count;
     }
-    avg = sum / col.numElements();
+    all = col.numElements();
   });
   // screen printing
   if (ec == ErrorCode::kOK) {
     std::cout << BOLD_GREEN("[SUCCESS: Aggregate] ")
-              << "Average: " << avg;
+              << count << " out of " << all << " row"
+              << (count > 1 ? "s are" : " is") << " equal to " << YELLOW(1)
+              << " in column \"" << YELLOW(aggregate_col) << "\"";
   } else {
     std::cout << BOLD_RED("[FAILED: Aggregate] ")
               << "Failed to perform aggregation";
