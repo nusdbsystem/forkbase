@@ -9,6 +9,7 @@ namespace ustore {
 bool Arguments::ParseCmdArgs(int argc, char* argv[]) {
   po::variables_map vm;
   GUARD(ParseCmdArgs(argc, argv, &vm));
+  if (is_help) return true;
   try {
     AssignArgs(args_, vm);
     AssignArgs(bool_args_, vm);

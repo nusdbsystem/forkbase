@@ -39,6 +39,11 @@ class RandomGenerator {
     return dist(engine_);
   }
 
+  template<typename T>
+  inline void Shuffle(std::vector<T>* elems) {
+    std::shuffle(elems->begin(), elems->end(), engine_);
+  }
+
  private:
   std::default_random_engine engine_;
   std::uniform_int_distribution<> alph_dist_;

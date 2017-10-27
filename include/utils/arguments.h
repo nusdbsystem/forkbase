@@ -16,7 +16,7 @@ namespace po = boost::program_options;
 
 class Arguments {
  public:
-  bool is_help;
+  bool is_help = false;
 
   Arguments() noexcept {
     Add(&is_help, "help", "?", "print usage message");

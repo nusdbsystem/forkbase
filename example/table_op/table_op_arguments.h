@@ -21,7 +21,7 @@ class TableOpArguments : public ::ustore::Arguments {
   bool to_gen_data;
   int64_t num_gen_rows;
   int num_gen_update_refs;
-  double prob_to_update;
+  int num_gen_queries;
   bool is_at_svr;
   bool is_diff;
 
@@ -40,8 +40,8 @@ class TableOpArguments : public ::ustore::Arguments {
         "# of rows to generate", 100);
     Add(&num_gen_update_refs, "num-gen-refs", "R",
         "# of update-referring values to generate", 5);
-    Add(&prob_to_update, "prob-update", "P",
-        "probability of updating a referring value", 0.25);
+    Add(&num_gen_queries, "num-gen-queries", "Q",
+        "# of update-referring values to query", 3);
     Add(&is_at_svr, "at-server", "", "enable server-side operation");
     Add(&is_diff, "diff", "", "perform DIFF operation");
   }
@@ -53,8 +53,8 @@ class TableOpArguments : public ::ustore::Arguments {
                   "Number of update-referring values"));
     GUARD(CheckGE(num_gen_rows, num_gen_update_refs,
                   "Number of rows"));
-    GUARD(CheckInRange(prob_to_update, 0.0, 1.0,
-                       "Probability"));
+    GUARD(CheckInLeftOpenRange(num_gen_queries, 0, num_gen_update_refs,
+                               "Number of queries"));
     return true;
   }
 

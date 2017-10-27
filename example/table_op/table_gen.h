@@ -3,6 +3,8 @@
 #ifndef USTORE_EXAMPLE_TABLE_OP_TABLE_GEN_H_
 #define USTORE_EXAMPLE_TABLE_OP_TABLE_GEN_H_
 
+#include "benchmark/bench_utils.h"
+
 #include "table_op_arguments.h"
 
 namespace ustore {
@@ -18,7 +20,11 @@ class TableGen {
   ErrorCode Run();
 
  private:
+  ErrorCode GenData(const std::vector<std::string>& vals);
+  ErrorCode GenQueries(const std::vector<std::string>& vals);
+
   TableOpArguments& args_;
+  RandomGenerator rand_;
 };
 
 }  // namespace table_op

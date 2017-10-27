@@ -4,8 +4,6 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-#include "benchmark/bench_utils.h"
-#include "utils/logging.h"
 
 #include "table_gen.h"
 
@@ -16,36 +14,57 @@ namespace table_op {
 const char kOutputDelimiter[] = ",";
 
 ErrorCode TableGen::Run() {
-  std::ofstream ofs_data(args_.file);
-  USTORE_GUARD(ofs_data ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
-  std::ofstream ofs_update_refs(args_.update_ref_val);
-  USTORE_GUARD(ofs_update_refs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
-  // schema
-  ofs_data << "ID" << kOutputDelimiter
-           << "Name" << kOutputDelimiter
-           << "UpdateBy" << kOutputDelimiter
-           << "AggregateBy" << kOutputDelimiter
-           << "UpdateOn" << std::endl;
-  // rows
-  int n_rows_per_update_by = args_.num_gen_rows / args_.num_gen_update_refs;
-  size_t id = 0;
-  int prob_bar = static_cast<int>(10000.0 * args_.prob_to_update);
-  RandomGenerator rand;
+  std::vector<std::string> update_by_vals;
   for (int i = 0; i < args_.num_gen_update_refs; ++i) {
-    const std::string val_update_by = rand.FixedString(8);
-    for (int j = 0; j < n_rows_per_update_by; ++j) {
-      ofs_data << std::setfill('0') << std::setw(12) << ++id << kOutputDelimiter
-               << rand.RandomString(32) << kOutputDelimiter
-               << val_update_by << kOutputDelimiter
-               << rand.RandomInt(1, 20) << kOutputDelimiter
-               << rand.FixedString(128) << std::endl;
-    }
-    if (rand.RandomInt(0, 10000) < prob_bar) {
-      ofs_update_refs << val_update_by << std::endl;
+    update_by_vals.emplace_back(rand_.FixedString(12));
+  }
+  USTORE_GUARD(GenQueries(update_by_vals));
+  USTORE_GUARD(GenData(update_by_vals));
+  return ErrorCode::kOK;
+}
+
+ErrorCode TableGen::GenData(const std::vector<std::string>& vals) {
+  std::ofstream ofs(args_.file);
+  USTORE_GUARD(ofs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
+  // schema
+  ofs << "ID" << kOutputDelimiter
+      << "Name" << kOutputDelimiter
+      << "UpdateBy" << kOutputDelimiter
+      << "AggregateBy" << kOutputDelimiter
+      << "UpdateOn" << std::endl;
+  // rows
+  int n_rows_per_update_by = args_.num_gen_rows / vals.size();
+  size_t id = 0;
+  for (auto& v : vals) {
+    for (int i = 0; i < n_rows_per_update_by; ++i) {
+      ofs << std::setfill('0') << std::setw(12) << ++id << kOutputDelimiter
+          << rand_.RandomString(32) << kOutputDelimiter
+          << v << kOutputDelimiter
+          << rand_.RandomInt(1, 20) << kOutputDelimiter
+          << rand_.FixedString(128) << std::endl;
     }
   }
-  ofs_data.close();
-  ofs_update_refs.close();
+  ofs.close();
+  return ErrorCode::kOK;
+}
+
+ErrorCode TableGen::GenQueries(const std::vector<std::string>& vals) {
+  std::ofstream ofs(args_.update_ref_val);
+  USTORE_GUARD(ofs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
+  std::vector<size_t> all_indicies;
+  for (size_t i = 0; i < vals.size(); ++i) all_indicies.emplace_back(i);
+  rand_.Shuffle(&all_indicies);
+
+  std::vector<size_t> query_indices;
+  for (size_t i = 0; i < static_cast<size_t>(args_.num_gen_queries); ++i) {
+    query_indices.emplace_back(all_indicies.at(i));
+  }
+  std::sort(query_indices.begin(), query_indices.end());
+
+  for (auto& idx : query_indices) {
+    ofs << vals.at(idx) << std::endl;
+  }
+  ofs.close();
   return ErrorCode::kOK;
 }
 
