@@ -29,6 +29,8 @@ class TableOp {
   ErrorCode Aggregate();
   ErrorCode Diff(const std::string& lhs_branch, const std::string& rhs_branch);
 
+  ErrorCode DropIfExists(const std::string& tab);
+
   ErrorCode VerifyColumn(const std::string& col);
 
   ErrorCode MeasureByteIncrement(size_t* bytes_inc,

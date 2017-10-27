@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
   }
   if (args.is_help) return static_cast<int>(ErrorCode::kOK);
   // execution
-  if (args.to_gen_data) {
+  if (args.to_gen_data) { // for data generation
     auto ec = TableGen(args).Run();
     if (ec == ErrorCode::kOK) {
       std::cout << BOLD_GREEN("[SUCCESS: Table Gen] ")
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
                 << "Error(" << ec << "): " << Utils::ToString(ec) << std::endl;
     }
     return static_cast<int>(ec);
-  } else {
+  } else { // for data operation
     auto ec = ErrorCode::kUnknownOp;
     if (args.is_at_svr) {
       Worker db(0, nullptr, true);

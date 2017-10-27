@@ -22,8 +22,8 @@ class TableOpArguments : public ::ustore::Arguments {
   int64_t num_gen_rows;
   int num_gen_update_refs;
   double prob_to_update;
-  bool is_diff;
   bool is_at_svr;
+  bool is_diff;
 
   TableOpArguments() {
     AddPositional(&file, "file", "path of input file");
@@ -42,8 +42,8 @@ class TableOpArguments : public ::ustore::Arguments {
         "# of update-referring values to generate", 5);
     Add(&prob_to_update, "prob-update", "P",
         "probability of updating a referring value", 0.25);
-    Add(&is_diff, "diff", "", "perform DIFF operation");
     Add(&is_at_svr, "at-server", "", "enable server-side operation");
+    Add(&is_diff, "diff", "", "perform DIFF operation");
   }
 
   ~TableOpArguments() = default;
