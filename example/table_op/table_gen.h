@@ -3,8 +3,9 @@
 #ifndef USTORE_EXAMPLE_TABLE_OP_TABLE_GEN_H_
 #define USTORE_EXAMPLE_TABLE_OP_TABLE_GEN_H_
 
+#include <string>
+#include <vector>
 #include "benchmark/bench_utils.h"
-
 #include "table_op_arguments.h"
 
 namespace ustore {

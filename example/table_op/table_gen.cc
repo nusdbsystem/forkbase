@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <string>
