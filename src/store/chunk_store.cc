@@ -49,7 +49,8 @@ std::ostream& operator<<(std::ostream& os, const StoreInfo& obj) {
   constexpr int kSegmentAlign = 12;
   constexpr int kChunkAlign = 12;
 
-  os << "============= Storage Usage Information ==============" << endl
+  os << endl
+     << "============= Storage Usage Information ==============" << endl
      // node info
      << setw(kNodeAlign) << left << "Node Info"
      << " |" << setw(kSegmentAlign*3 + 4) << right << obj.nodeId << endl
@@ -85,7 +86,7 @@ std::ostream& operator<<(std::ostream& os, const StoreInfo& obj) {
        << " |" << setw(kChunkAlign) << right << Readable(obj.bytesPerType.at(type))  // NOLINT
        << " |" << setw(kChunkAlign) << right << obj.bytesPerType.at(type)
        << endl;
-  os << "======================================================" << endl;
+  os << "======================================================";
   return os;
 }
 

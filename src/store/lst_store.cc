@@ -299,7 +299,7 @@ LSTSegment* LSTStore::Allocate(LSTSegment* current) {
     if (free_list_ == nullptr) {
       msync(LSTSegment::base_addr_,
           storeInfo.allocSegments * kSegmentSize + kMetaLogSize, MS_SYNC);
-      std::cout << GetInfo();
+      LOG(INFO) << GetInfo();
       LOG(FATAL) << "Chunk store: no free memory allocated";
     }
   }
@@ -452,7 +452,7 @@ void LSTStore::Load(void* address) {
   storeInfo.freeSegments = storeInfo.allocSegments - loaded;
 
   LOG(INFO) << "load completed";
-  std::cout << GetInfo();
+  LOG(INFO) << GetInfo();
 }
 
 Chunk LSTStore::Get(const Hash& key) {
@@ -516,7 +516,7 @@ void LSTStore::Sync() const {
 
 LSTStore::~LSTStore() noexcept(false) {
   Sync();
-  std::cout << GetInfo();
+  LOG(INFO) << GetInfo();
   DestroySegmentList(free_list_);
   DestroySegmentList(major_list_);
   ::munmap(LSTSegment::base_addr_, max_log_size_);

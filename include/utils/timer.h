@@ -114,13 +114,13 @@ class TimerPool : private Noncopyable, public Singleton<TimerPool> {
     return TimerPool::Instance()->timers_[name];
   }
 
-  static size_t ListTimers(std::ostream& os = std::cout) {
+  static size_t ListTimers() {
     auto& timers = TimerPool::Instance()->timers_;
     for (auto& kv : timers) {
       auto& tm = kv.second;
-      os << "[Timer] Tag: \"" << kv.first << "\", Elapsed: "
-         << tm.ElapsedMilliseconds() << " ms, Counter: "
-         << tm.GetStartCounter() << " ops" << std::endl;
+      LOG(INFO) << "[Timer] Tag: \"" << kv.first << "\", Elapsed: "
+                << tm.ElapsedMilliseconds() << " ms, Counter: "
+                << tm.GetStartCounter() << " ops";
     }
     return timers.size();
   }
