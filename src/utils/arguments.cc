@@ -16,6 +16,12 @@ bool Arguments::ParseCmdArgs(int argc, char* argv[]) {
     AssignArgs(int_args_, vm);
     AssignArgs(int64_args_, vm);
     AssignArgs(double_args_, vm);
+
+    AssignArgs(hidden_args_, vm);
+    AssignArgs(hidden_bool_args_, vm);
+    AssignArgs(hidden_int_args_, vm);
+    AssignArgs(hidden_int64_args_, vm);
+    AssignArgs(hidden_double_args_, vm);
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -24,26 +30,37 @@ bool Arguments::ParseCmdArgs(int argc, char* argv[]) {
 }
 
 bool Arguments::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
-  po::options_description od(BLUE_STR("Options"), 120);
-  AddBoolArgs(bool_args_, &od);
-  AddArgs(args_, &od);
-  AddArgs(int_args_, &od);
-  AddArgs(int64_args_, &od);
-  AddArgs(double_args_, &od);
+  po::options_description general_od(BLUE_STR("Options"), 120);
+  AddBoolArgs(bool_args_, &general_od);
+  AddArgs(args_, &general_od);
+  AddArgs(int_args_, &general_od);
+  AddArgs(int64_args_, &general_od);
+  AddArgs(double_args_, &general_od);
+
+  po::options_description backend_od("Hidden Options", 120);
+  AddBoolArgs(hidden_bool_args_, &backend_od);
+  AddArgs(hidden_args_, &backend_od);
+  AddArgs(hidden_int_args_, &backend_od);
+  AddArgs(hidden_int64_args_, &backend_od);
+  AddArgs(hidden_double_args_, &backend_od);
 
   po::positional_options_description pos_od;
   for (auto& name_long : pos_arg_names_) {
     pos_od.add(name_long.c_str(), 1);
   }
+
+  po::options_description all_od("Allowed Options");
+  all_od.add(general_od).add(backend_od);
+
+  po::options_description visible_od;
+  visible_od.add(general_od);
   try {
-    po::store(po::command_line_parser(argc, argv).options(od)
+    po::store(po::command_line_parser(argc, argv).options(all_od)
               .style(po::command_line_style::unix_style)
               .positional(pos_od).run(), *vm);
     if (vm->count("help")) {
       is_help = true;
-      po::options_description visible;
-      visible.add(od);
-      std::cout << visible << std::endl << MoreHelpMessage();
+      std::cout << visible_od << std::endl << MoreHelpMessage();
     }
     po::notify(*vm);
   } catch (std::exception& e) {

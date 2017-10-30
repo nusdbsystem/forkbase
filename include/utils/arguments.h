@@ -104,11 +104,17 @@ class Arguments {
                  Utils::ToStringPair(lbound, ubound, "(", ")", ","));
   }
 
+  // for string argument
   inline void Add(std::string* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc,
                   const std::string& deft_val = "") {
     args_.emplace_back(
       Meta<std::string>({param_ptr, name_long, name_short, desc, deft_val}));
+  }
+  inline void AddHidden(std::string* param_ptr, const std::string& name_long,
+                        const std::string& deft_val = "") {
+    hidden_args_.emplace_back(
+      Meta<std::string>({param_ptr, name_long, "", "", deft_val}));
   }
   inline void AddPositional(std::string* param_ptr,
                             const std::string& name_long,
@@ -117,27 +123,47 @@ class Arguments {
     auto desc_ext = AddPositional(name_long, desc);
     Add(param_ptr, name_long, "", desc_ext, deft_val);
   }
+
+  // for bool argument
   inline void Add(bool* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc) {
     bool_args_.emplace_back(
       Meta<bool>({param_ptr, name_long, name_short, desc, false}));
   }
+  inline void AddHidden(bool* param_ptr, const std::string& name_long) {
+    hidden_bool_args_.emplace_back(
+      Meta<bool>({param_ptr, name_long, "", "", false}));
+  }
+
+  // for int argument
   inline void Add(int* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc,
                   const int& deft_val = 0) {
     int_args_.emplace_back(
       Meta<int>({param_ptr, name_long, name_short, desc, deft_val}));
   }
+  inline void AddHidden(int* param_ptr, const std::string& name_long,
+                        const int& deft_val = 0) {
+    hidden_int_args_.emplace_back(
+      Meta<int>({param_ptr, name_long, "", "", deft_val}));
+  }
   inline void AddPositional(int* param_ptr, const std::string& name_long,
                             const std::string& desc, const int& deft_val = 0) {
     auto desc_ext = AddPositional(name_long, desc);
     Add(param_ptr, name_long, "", desc_ext, deft_val);
   }
+
+  // for int64_t argument
   inline void Add(int64_t* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc,
                   const int64_t& deft_val = 0) {
     int64_args_.emplace_back(
       Meta<int64_t>({param_ptr, name_long, name_short, desc, deft_val}));
+  }
+  inline void AddHidden(int64_t* param_ptr, const std::string& name_long,
+                        const int64_t& deft_val = 0) {
+    hidden_int64_args_.emplace_back(
+      Meta<int64_t>({param_ptr, name_long, "", "", deft_val}));
   }
   inline void AddPositional(int64_t* param_ptr, const std::string& name_long,
                             const std::string& desc,
@@ -145,11 +171,18 @@ class Arguments {
     auto desc_ext = AddPositional(name_long, desc);
     Add(param_ptr, name_long, "", desc_ext, deft_val);
   }
+
+  // for double argument
   inline void Add(double* param_ptr, const std::string& name_long,
                   const std::string& name_short, const std::string& desc,
                   const double& deft_val = 0.0) {
     double_args_.emplace_back(
       Meta<double>({param_ptr, name_long, name_short, desc, deft_val}));
+  }
+  inline void AddHidden(double* param_ptr, const std::string& name_long,
+                        const double& deft_val = 0.0) {
+    hidden_double_args_.emplace_back(
+      Meta<double>({param_ptr, name_long, "", "", deft_val}));
   }
   inline void AddPositional(double* param_ptr, const std::string& name_long,
                             const std::string& desc,
@@ -173,6 +206,12 @@ class Arguments {
   std::vector<Meta<int>> int_args_;
   std::vector<Meta<int64_t>> int64_args_;
   std::vector<Meta<double>> double_args_;
+
+  std::vector<Meta<std::string>> hidden_args_;
+  std::vector<Meta<bool>> hidden_bool_args_;
+  std::vector<Meta<int>> hidden_int_args_;
+  std::vector<Meta<int64_t>> hidden_int64_args_;
+  std::vector<Meta<double>> hidden_double_args_;
 
   std::vector<std::string> pos_arg_names_;
 
