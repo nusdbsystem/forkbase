@@ -26,6 +26,9 @@ using Row = std::unordered_map<std::string, std::string>;
 using TableDiffIterator = DuallyDiffKeyIterator;
 using ColumnDiffIterator = DuallyDiffIndexIterator;
 
+// for experiment only
+using FuncRow = std::unordered_map<std::string, std::function<std::string()>>;
+
 class ColumnStore {
  public:
   explicit ColumnStore(DB* db) noexcept : odb_(db) {}
@@ -131,7 +134,8 @@ class ColumnStore {
   ErrorCode UpdateConsecutiveRows(const std::string& table_name,
                                   const std::string& branch_name,
                                   const std::string& ref_col_name,
-                                  const std::string& ref_val, const Row& row,
+                                  const std::string& ref_val,
+                                  const FuncRow& func_row,
                                   size_t* n_rows_affected = nullptr);
 
   ErrorCode InsertRow(const std::string& table_name,

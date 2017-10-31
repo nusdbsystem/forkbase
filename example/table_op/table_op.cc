@@ -4,6 +4,7 @@
 #include <fstream>
 #include <utility>
 #include <vector>
+#include "benchmark/bench_utils.h"
 
 #include "table_op.h"
 
@@ -153,17 +154,22 @@ ErrorCode TableOp::Update(const std::string& ref_val) {
   USTORE_GUARD(cs_.BranchTable(table, latest_branch, branch));
   latest_branch = branch;
 
+  static RandomGenerator rand;
+  const auto f_update = args_.is_random_update
+                        ? [] { return rand.RandomString(100); }
+                        : [] { return update_eff_val; };
+
   double elapsed_ms = 0;
   size_t bytes_inc = 0;
   size_t n_rows_affected;
   auto ec = MeasureByteIncrement(&bytes_inc,
-  [this, &ref_val, &branch, &n_rows_affected, &elapsed_ms] {
+  [this, &ref_val, &f_update, &branch, &n_rows_affected, &elapsed_ms] {
     auto ec = ErrorCode::kUnknownOp;
     elapsed_ms = Timer::TimeMilliseconds(
-    [this, &ref_val, &branch, &n_rows_affected, &ec] {
+    [this, &ref_val, &f_update, &branch, &n_rows_affected, &ec] {
       // execution to be evaluated
-      Row r;
-      r.emplace(update_eff_col, update_eff_val);
+      FuncRow r;
+      r.emplace(update_eff_col, f_update);
       ec = cs_.UpdateConsecutiveRows(
         table, branch, update_ref_col, ref_val, r, &n_rows_affected);
     });

@@ -24,6 +24,7 @@ class TableOpArguments : public ::ustore::Arguments {
   int num_gen_queries;
   bool is_at_svr;
   bool is_diff;
+  bool is_random_update;
 
   TableOpArguments() {
     AddPositional(&file, "file", "path of input file");
@@ -44,6 +45,7 @@ class TableOpArguments : public ::ustore::Arguments {
         "# of update-referring values to query", 3);
     Add(&is_at_svr, "at-server", "", "enable server-side operation");
     Add(&is_diff, "diff", "", "perform DIFF operation");
+    AddHidden(&is_random_update, "random-update");
   }
 
   ~TableOpArguments() = default;

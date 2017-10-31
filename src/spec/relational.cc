@@ -837,7 +837,7 @@ ErrorCode ColumnStore::UpdateRow(const std::string& table_name,
 ErrorCode ColumnStore::UpdateConsecutiveRows(
   const std::string& table_name, const std::string& branch_name,
   const std::string& ref_col_name, const std::string& ref_val,
-  const Row& row, size_t* n_rows_affected) {
+  const FuncRow& func_row, size_t* n_rows_affected) {
   if (n_rows_affected != nullptr) *n_rows_affected = 0;
   if (ref_col_name.empty()) {
     LOG(ERROR) << "Referring column is not specified";
@@ -866,11 +866,15 @@ ErrorCode ColumnStore::UpdateConsecutiveRows(
   if (num_to_delete == 0) return ErrorCode::kRowNotExists;
   // apply row updates
   Slice table(table_name), branch(branch_name);
-  for (auto& field : row) {
+  for (auto& field : func_row) {
     auto& col_name = field.first;
-    auto field_value = Slice(field.second);
+    auto& field_func = field.second;
+    std::unordered_set<std::string> values;
     std::vector<Slice> entries;
-    for (size_t i = 0; i < num_to_delete; ++i) entries.push_back(field_value);
+    for (size_t i = 0; i < num_to_delete; ++i) {
+      // de-duplication for value instances
+      entries.emplace_back(*(values.emplace(field_func()).first));
+    }
     // retrieve the column
     Table tab;
     USTORE_GUARD(ReadTable(table, branch, &tab));
