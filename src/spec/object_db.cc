@@ -7,12 +7,14 @@ namespace ustore {
 Result<VMeta> ObjectDB::Get(const Slice& key, const Slice& branch) const {
   UCell cell;
   ErrorCode code = db_->Get(key, branch, &cell);
+  if (loader_) return {VMeta(db_, std::move(cell), loader_), code};
   return {VMeta(db_, std::move(cell)), code};
 }
 
 Result<VMeta> ObjectDB::Get(const Slice& key, const Hash& version) const {
   UCell cell;
   ErrorCode code = db_->Get(key, version, &cell);
+  if (loader_) return {VMeta(db_, std::move(cell), loader_), code};
   return {VMeta(db_, std::move(cell)), code};
 }
 

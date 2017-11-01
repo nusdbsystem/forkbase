@@ -38,6 +38,9 @@ class ChunkableType : public BaseType {
     return root_node_->numElements();
   }
 
+  // TODO(wangsh): expose it in a safer way
+  std::shared_ptr<ChunkLoader>& GetChunkLoader() { return chunk_loader_; }
+
  protected:
   ChunkableType() = default;
   ChunkableType(ChunkableType&&) = default;

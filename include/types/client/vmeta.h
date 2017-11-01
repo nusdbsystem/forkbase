@@ -19,6 +19,8 @@ namespace ustore {
 // TODO(wangsh): modify DB api and remove version in VMeta
 class VMeta : private Moveable {
  public:
+  VMeta(DB* db, UCell&& cell, std::shared_ptr<ChunkLoader> loader)
+    : db_(db), cell_(std::move(cell)), loader_(loader) {}
   VMeta(DB* db, UCell&& cell) : db_(db), cell_(std::move(cell)) {}
   VMeta(VMeta&&) = default;
   VMeta& operator=(VMeta&&) = default;
@@ -38,6 +40,7 @@ class VMeta : private Moveable {
  private:
   DB* db_;
   UCell cell_;
+  std::shared_ptr<ChunkLoader> loader_;
 };
 
 }  // namespace ustore

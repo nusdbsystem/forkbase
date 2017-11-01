@@ -7,6 +7,7 @@ namespace ustore {
 
 VBlob VMeta::Blob() const {
   if (!cell_.empty() && cell_.type() == UType::kBlob) {
+    if (loader_) return VBlob(loader_, cell_.dataHash());
     return VBlob(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                  cell_.dataHash());
   }
@@ -24,6 +25,7 @@ VString VMeta::String() const {
 
 VList VMeta::List() const {
   if (!cell_.empty() && cell_.type() == UType::kList) {
+    if (loader_) return VList(loader_, cell_.dataHash());
     return VList(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                  cell_.dataHash());
   }
@@ -33,6 +35,7 @@ VList VMeta::List() const {
 
 VMap VMeta::Map() const {
   if (!cell_.empty() && cell_.type() == UType::kMap) {
+    if (loader_) return VMap(loader_, cell_.dataHash());
     return VMap(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                 cell_.dataHash());
   }
@@ -42,6 +45,7 @@ VMap VMeta::Map() const {
 
 VSet VMeta::Set() const {
   if (!cell_.empty() && cell_.type() == UType::kSet) {
+    if (loader_) return VSet(loader_, cell_.dataHash());
     return VSet(std::make_shared<ClientChunkLoader>(db_, cell_.key()),
                 cell_.dataHash());
   }

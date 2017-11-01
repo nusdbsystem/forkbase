@@ -63,8 +63,12 @@ class ObjectDB {
   // Get Storage Info
   Result<std::vector<StoreInfo>> GetStorageInfo() const;
 
+  // TODO(wangsh): tmp use only
+  void Share(std::shared_ptr<ChunkLoader>&& loader) { loader_ = loader; }
+  void Clean() { loader_.reset(); }
  private:
   DB* db_;
+  std::shared_ptr<ChunkLoader> loader_;
 };
 
 }  // namespace ustore
