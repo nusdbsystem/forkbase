@@ -117,6 +117,8 @@ class NodeCursor {
 
   inline bool empty() const { return !seq_node_.get(); }
 
+  inline ChunkLoader* loader() const { return chunk_loader_; }
+
  private:
   // Init cursor given parent cursor
   // Internally use to create NodeCursor recursively

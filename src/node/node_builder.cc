@@ -205,10 +205,6 @@ NodeBuilder* NodeBuilder::parent_builder() {
 
 Chunk NodeBuilder::HandleBoundary(const std::vector<const Segment*>& segments) {
   // DLOG(INFO) << "Start Handing Boundary. ";
-  for (const Segment* seg : segments) {
-    this->num_created_entries_ += seg->numEntries();
-  }
-
   ChunkInfo chunk_info = chunker_->Make(segments);
 
   Chunk& chunk = chunk_info.chunk;
@@ -221,7 +217,28 @@ Chunk NodeBuilder::HandleBoundary(const std::vector<const Segment*>& segments) {
   return std::move(chunk);
 }
 
-Hash NodeBuilder::Commit(bool* is_canonical_root) {
+Hash NodeBuilder::Commit() {
+  Hash root = commit();
+  if (cursor_) {
+    //  The tree is NOT constructed from scratch but updated on an existing tree
+    //  It is possible that its height shall be reduced for removing elements.
+    //  We need to prune away the root node from top
+    //    if the root node contains a single metaentry.
+    const Chunk* root_chunk = cursor_->loader()->Load(root);
+    auto root_node = SeqNode::CreateFromChunk(root_chunk);
+
+    while (!root_node->isLeaf() && root_node->numEntries() == 1) {
+      const MetaNode* mnode = dynamic_cast<const MetaNode*>(root_node.get());
+      root = mnode->GetChildHashByEntry(0);
+      root_chunk = cursor_->loader()->Load(root);
+      root_node = SeqNode::CreateFromChunk(root_chunk);
+    }  // end while
+  }  // end if cursor_
+
+  return root;
+}
+
+Hash NodeBuilder::commit() {
   CHECK(!commited_);
   // As we are about to make new chunk,
   // parent metaentry that points the old chunk
@@ -388,21 +405,12 @@ Hash NodeBuilder::Commit(bool* is_canonical_root) {
   // upper node builder would build a tree node with a single metaentry
   //   This node will be excluded from final prolley tree
   // DLOG(INFO) << "Finish one level commiting.\n";
-  Hash root_key(last_created_chunk.hash().Clone());
-  bool is_parent_canonical_root = false;
+  Hash root_hash(last_created_chunk.hash().Clone());
   if (parent_builder()->cursor_ != nullptr ||
       parent_builder()->numAppendSegs() > 1) {
-    Hash parent_hash = parent_builder()->Commit(&is_parent_canonical_root);
-
-    if (is_parent_canonical_root) {
-      *is_canonical_root = true;
-      return parent_hash;
-    }
+    root_hash = parent_builder()->Commit();
   }  // end if parent_builder
-  if (!is_parent_canonical_root) {
-    *is_canonical_root = level_ > 0 && num_created_entries_ > 1;
-  }
-  return root_key;
+  return root_hash;
 }
 
 Segment* NodeBuilder::SegAtCursor() {
@@ -422,7 +430,8 @@ Segment* NodeBuilder::SegAtCursor() {
 AdvancedNodeBuilder::AdvancedNodeBuilder(const Hash& root,
                                          ChunkLoader* loader,
                                          ChunkWriter* writer) :
-    root_(root), loader_(loader), writer_(writer), operands_() {}
+    root_(root), loader_(loader), writer_(writer),
+    operands_(), all_operand_segs_() {}
 
 
 AdvancedNodeBuilder::AdvancedNodeBuilder(ChunkWriter* writer) :
@@ -430,10 +439,8 @@ AdvancedNodeBuilder::AdvancedNodeBuilder(ChunkWriter* writer) :
 
 AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
     uint64_t start_idx, uint64_t num_delete,
-    const std::vector<const Segment*>& segs) {
-
+    std::vector<std::unique_ptr<const Segment>> segs) {
   uint64_t total_num_elements = 0;
-
   do {
     if (root_.empty()) {
       if (start_idx > 0 || num_delete > 0) {
@@ -451,9 +458,11 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
 
     std::vector<const Segment*> operand_segs;
 
-    for (const Segment* seg : segs) {
-      if (!seg->empty()) operand_segs.push_back(seg);
-    }
+    for (auto seg_it = segs.begin(); seg_it != segs.end(); ++seg_it) {
+      if ((*seg_it)->empty()) continue;
+      operand_segs.push_back((*seg_it).get());
+      all_operand_segs_.push_back(std::move(*seg_it));
+    }  // end for
 
     bool inserted = false;
     bool advanced = false;
@@ -555,10 +564,9 @@ Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
     base = nb.Commit();
   }  // end for
 
-  if (!chunk_cacher.DumpUnreadCacheChunks()) {
-    LOG(FATAL) << "Fail to Dump Created Chunk.";
-  }
-
+  PreorderDump(base, &chunk_cacher);
+  operands_.clear();
+  all_operand_segs_.clear();
   return base;
 }
 
@@ -566,25 +574,40 @@ Chunk AdvancedNodeBuilder::ChunkCacher::GetChunk(const Hash& key) {
   auto cache_it = cache_.find(key);
   // read from write cache
   if (cache_it != cache_.end()) {
-    auto& p = cache_it->second;
-    // mark chunk as read
-    p.second = true;
-    return Chunk(p.first);
+    return Chunk(cache_it->second);
   }
   // read from chunk loader
   return Chunk(loader_->Load(key)->head());
 }
+bool AdvancedNodeBuilder::ChunkCacher::ExistInCache(const Hash& key) const {
+  auto cache_it = cache_.find(key);
+  return cache_it != cache_.end();
+}
 
-bool AdvancedNodeBuilder::ChunkCacher::DumpUnreadCacheChunks() {
-  bool all = true;
-  for (const auto& kv : cache_) {
-    const auto& p = kv.second;
-    if (!p.second) {
-      bool result = writer_->Write(kv.first, Chunk(p.first));
-      all &= result;
-    }
+bool AdvancedNodeBuilder::ChunkCacher::DumpCacheChunk(const Hash& key) {
+  auto cache_it = cache_.find(key);
+  if (cache_it != cache_.end()) {
+    return writer_->Write(cache_it->first, Chunk(cache_it->second));
+  } else {
+    return false;
   }
-  return all;
+}
+
+bool AdvancedNodeBuilder::PreorderDump(const Hash& root, ChunkCacher* cacher) {
+  bool result = true;
+  if (cacher->ExistInCache(root)) {
+    result = cacher->DumpCacheChunk(root);
+    const Chunk* chunk = cacher->Load(root);
+    auto seq_node = SeqNode::CreateFromChunk(chunk);
+    if (!seq_node->isLeaf()) {
+      auto meta_node = dynamic_cast<const MetaNode*>(seq_node.get());
+      for (size_t i = 0; i < meta_node->numEntries(); ++i) {
+        Hash child_hash = meta_node->GetChildHashByEntry(i);
+        result = result & PreorderDump(child_hash, cacher);
+      }  // end for
+    }  // end if seq_node
+  }  // end if cacher
+  return result;
 }
 
 }  // namespace ustore

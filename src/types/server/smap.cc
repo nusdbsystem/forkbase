@@ -66,7 +66,6 @@ Hash SMap::Set(const std::vector<Slice>& keys,
 
   // Created_segs ensures the created segments does not vanish until
   //   the node builder commits.
-  std::list<std::unique_ptr<const Segment>> created_segs;
 
   for (size_t i : Utils::SortIndexes<Slice>(keys)) {
     OrderedKey orderKey = OrderedKey::FromSlice(keys[i]);
@@ -80,9 +79,9 @@ Hash SMap::Set(const std::vector<Slice>& keys,
 
     KVItem kv_item = {keys[i], vals[i]};
     std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
-
-    nb.Splice(idxForKey, num_delete, {seg.get()});
-    created_segs.push_back(std::move(seg));
+    std::vector<std::unique_ptr<const Segment>> segs;
+    segs.push_back(std::move(seg));
+    nb.Splice(idxForKey, num_delete, std::move(segs));
   }
 
   return nb.Commit(*MapChunker::Instance(), false);

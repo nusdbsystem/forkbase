@@ -60,7 +60,7 @@ class NodeBuilderEnv : public ::testing::Test {
       //   which now places at seq start of its level
       if (cursor->parent() == nullptr) {
         parent_cur = nullptr;
-        ASSERT_LT(1, cursor->node()->numEntries());
+        ASSERT_LT(size_t(1), cursor->node()->numEntries());
       } else {
         parent_cur = new ustore::NodeCursor(*(cursor->parent()));
       }
@@ -469,11 +469,14 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
 
   ustore::AdvancedNodeBuilder builder1(root_hash_, loader_, writer_);
 
-  ustore::FixedSegment inserted_seg(inserted_data,
-                                    num_bytes_inserted,
-                                    num_bytes_inserted);
+  std::unique_ptr<const ustore::Segment> inserted_seg(
+      new ustore::FixedSegment(inserted_data,
+                               num_bytes_inserted,
+                               num_bytes_inserted));
 
-  builder1.Insert(0, inserted_seg);
+  std::vector<std::unique_ptr<const ustore::Segment>> segs;
+  segs.push_back(std::move(inserted_seg));
+  builder1.Insert(0, std::move(segs));
 
   const ustore::Hash hash1 =
       builder1.Commit(*ustore::BlobChunker::Instance(), true);
@@ -488,11 +491,13 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
 
   ustore::AdvancedNodeBuilder builder2(hash1, loader_, writer_);
 
-  ustore::FixedSegment spliced_seg(spliced_data,
-                                   num_bytes_spliced,
-                                   num_bytes_spliced);
+  std::unique_ptr<const ustore::Segment> spliced_seg(
+       new ustore::FixedSegment(spliced_data,
+       num_bytes_spliced, num_bytes_spliced));
 
-  builder2.Splice(0, num_bytes_removed, spliced_seg);
+  segs.clear();
+  segs.push_back(std::move(spliced_seg));
+  builder2.Splice(0, num_bytes_removed, std::move(segs));
 
   const ustore::Hash hash2 =
       builder2.Commit(*ustore::BlobChunker::Instance(), true);
@@ -526,8 +531,13 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
     ustore::AdvancedNodeBuilder builder(writer_);
-    ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
-    builder.Splice(0, 0, seg);
+    std::unique_ptr<const ustore::Segment> seg(
+        new ustore::FixedSegment(original_content_,
+                                 num_original_bytes_, 1));
+
+    std::vector<std::unique_ptr<const ustore::Segment>> segs;
+    segs.push_back(std::move(seg));
+    builder.Splice(0, 0, std::move(segs));
     root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
   }
 
@@ -559,11 +569,14 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
 
     ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
-    ustore::FixedSegment seg(inserted_data,
-                             num_bytes_inserted,
-                             num_bytes_inserted);
+    std::unique_ptr<const ustore::Segment> seg(
+        new ustore::FixedSegment(inserted_data,
+                                 num_bytes_inserted,
+                                 num_bytes_inserted));
 
-    builder.Splice(idx, num_bytes_removed, seg);
+    std::vector<std::unique_ptr<const ustore::Segment>> segs;
+    segs.push_back(std::move(seg));
+    builder.Splice(idx, num_bytes_removed, std::move(segs));
 
     const ustore::Hash result_hash =
         builder.Commit(*ustore::BlobChunker::Instance(), true);
@@ -613,17 +626,24 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
 
     ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
-    ustore::FixedSegment seg1(inserted_data1,
-                              num_bytes_inserted1,
-                              num_bytes_inserted1);
 
-    builder.Splice(idx1, num_bytes_removed1, seg1);
+    std::unique_ptr<const ustore::Segment> seg1(
+        new ustore::FixedSegment(inserted_data1,
+                                 num_bytes_inserted1,
+                                 num_bytes_inserted1));
 
-    ustore::FixedSegment seg2(inserted_data2,
-                              num_bytes_inserted2,
-                              num_bytes_inserted2);
+    std::vector<std::unique_ptr<const ustore::Segment>> segs;
+    segs.push_back(std::move(seg1));
 
-    builder.Splice(idx2, num_bytes_removed2, seg2);
+    builder.Splice(idx1, num_bytes_removed1, std::move(segs));
+
+    std::unique_ptr<const ustore::Segment> seg2(
+        new ustore::FixedSegment(inserted_data2,
+                                 num_bytes_inserted2,
+                                 num_bytes_inserted2));
+    segs.clear();
+    segs.push_back(std::move(seg2));
+    builder.Splice(idx2, num_bytes_removed2, std::move(segs));
 
     const ustore::Hash result_hash =
         builder.Commit(*ustore::BlobChunker::Instance(), true);
@@ -721,8 +741,12 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
     ustore::AdvancedNodeBuilder builder(writer_);
-    ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
-    builder.Splice(0, 0, seg);
+
+    std::unique_ptr<const ustore::Segment> seg(
+        new ustore::FixedSegment(original_content_, num_original_bytes_, 1));
+    std::vector<std::unique_ptr<const ustore::Segment>> segs;
+    segs.push_back(std::move(seg));
+    builder.Splice(0, 0, std::move(segs));
     root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
   }
 
@@ -826,26 +850,30 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
                             &expected_num_bytes);
 
 
+    std::unique_ptr<const ustore::Segment> seg1(
+        new ustore::FixedSegment(inserted_data1,
+                                 num_bytes_inserted1, 1));
+    std::vector<std::unique_ptr<const ustore::Segment>> segs1;
+    segs1.push_back(std::move(seg1));
 
-    ustore::FixedSegment seg1(inserted_data1,
-                              num_bytes_inserted1,
-                              1);
+    std::unique_ptr<const ustore::Segment> seg2(
+        new ustore::FixedSegment(inserted_data2,
+                                 num_bytes_inserted2, 1));
+    std::vector<std::unique_ptr<const ustore::Segment>> segs2;
+    segs2.push_back(std::move(seg2));
 
-    ustore::FixedSegment seg2(inserted_data2,
-                              num_bytes_inserted2,
-                              1);
-
-
-    ustore::FixedSegment seg3(inserted_data3,
-                              num_bytes_inserted3,
-                              1);
+    std::unique_ptr<const ustore::Segment> seg3(
+        new ustore::FixedSegment(inserted_data3,
+                                 num_bytes_inserted3, 1));
+    std::vector<std::unique_ptr<const ustore::Segment>> segs3;
+    segs3.push_back(std::move(seg3));
 
     ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
     const ustore::Hash result_hash =
-        builder.Splice(idx1, num_bytes_removed1, seg1)
-               .Splice(idx2, num_bytes_removed2, seg2)
-               .Splice(idx3, num_bytes_removed3, seg3)
+        builder.Splice(idx1, num_bytes_removed1, std::move(segs1))
+               .Splice(idx2, num_bytes_removed2, std::move(segs2))
+               .Splice(idx3, num_bytes_removed3, std::move(segs3))
                .Commit(*ustore::BlobChunker::Instance(), true);
 
     Test_Same_Content(result_hash, loader_, expected_result);
@@ -904,25 +932,30 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
 
                             &expected_num_bytes);
 
-    ustore::FixedSegment seg1(inserted_data1,
-                              num_bytes_inserted1,
-                              1);
+    std::unique_ptr<const ustore::Segment> seg1(
+        new ustore::FixedSegment(inserted_data1,
+                                 num_bytes_inserted1, 1));
+    std::vector<std::unique_ptr<const ustore::Segment>> segs1;
+    segs1.push_back(std::move(seg1));
 
-    ustore::FixedSegment seg2(inserted_data2,
-                              num_bytes_inserted2,
-                              1);
+    std::unique_ptr<const ustore::Segment> seg2(
+        new ustore::FixedSegment(inserted_data2,
+                                 num_bytes_inserted2, 1));
+    std::vector<std::unique_ptr<const ustore::Segment>> segs2;
+    segs2.push_back(std::move(seg2));
 
-
-    ustore::FixedSegment seg3(inserted_data3,
-                              num_bytes_inserted3,
-                              1);
+    std::unique_ptr<const ustore::Segment> seg3(
+        new ustore::FixedSegment(inserted_data3,
+                                 num_bytes_inserted3, 1));
+    std::vector<std::unique_ptr<const ustore::Segment>> segs3;
+    segs3.push_back(std::move(seg3));
 
     ustore::AdvancedNodeBuilder builder(root_hash_, loader_, writer_);
 
     const ustore::Hash result_hash =
-        builder.Insert(idx1, seg1)
-               .Insert(idx2, seg2)
-               .Insert(idx3, seg3)
+        builder.Insert(idx1, std::move(segs1))
+               .Insert(idx2, std::move(segs2))
+               .Insert(idx3, std::move(segs3))
                .Commit(*ustore::BlobChunker::Instance(), true);
 
 

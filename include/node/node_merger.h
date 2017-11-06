@@ -120,8 +120,10 @@ Usage:
 
   uint64_t numElements(const Hash& hash) const;
 
-  const std::vector<const Segment*> GetSegmentsFromIndexRange(
-      const Hash node, IndexRange index_range) const;
+
+  std::vector<std::unique_ptr<const Segment>>
+      GetSegmentsFromIndexRange(const Hash node,
+                                IndexRange index_range) const;
 
   const Hash base_;
   mutable ChunkLoader* loader_;
@@ -283,16 +285,14 @@ bool NodeMerger<Mapper>::IsIdenticalContents(
   }
   #endif
 
-  for (const Segment* seg : lhs_segs) delete seg;
-  for (const Segment* seg : rhs_segs) delete seg;
-
   return is_identical;
 }
 
 template <class Mapper>
-const std::vector<const Segment*> NodeMerger<Mapper>::GetSegmentsFromIndexRange(
+std::vector<std::unique_ptr<const Segment>>
+    NodeMerger<Mapper>::GetSegmentsFromIndexRange(
     const Hash hash, IndexRange index_range) const {
-  std::vector<const Segment*> segs;
+  std::vector<std::unique_ptr<const Segment>> segs;
   DLOG(INFO) << "Get Segments from index: "
              << index_range.start_idx
              << " len: " << index_range.num_subsequent;
@@ -321,7 +321,7 @@ const std::vector<const Segment*> NodeMerger<Mapper>::GetSegmentsFromIndexRange(
                  << " len: " << leaf_remaining_num_elements;
       std::unique_ptr<const Segment> seg =
         leaf_node->GetSegment(entry_idx, leaf_remaining_num_elements);
-      segs.push_back(seg.release());
+      segs.push_back(std::move(seg));
 
       // Move the cursor to the start of next chunk.
       uint64_t actual_steps = cursor.AdvanceSteps(
@@ -335,7 +335,7 @@ const std::vector<const Segment*> NodeMerger<Mapper>::GetSegmentsFromIndexRange(
                  << " len: " << remaining_len;
       std::unique_ptr<const Segment> seg
         = leaf_node->GetSegment(entry_idx, remaining_len);
-      segs.push_back(seg.release());
+      segs.push_back(std::move(seg));
       break;
     }
   }  // end of while true
@@ -371,14 +371,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
   auto map_it1  = range_map1.begin();
   auto map_it2  = range_map2.begin();
 
-
   ustore::AdvancedNodeBuilder builder(base_, loader_, writer_);
-  // the container to collect all created segments
-  //   so that they can be deleted after commiting node builder
-  std::vector<const Segment*> all_segs;
-
-  // segments to pass to builder as operand
-  std::vector<const Segment*> segs;
 
 #ifdef DEBUG
   bool merge_first_node = false;
@@ -390,7 +383,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
     DLOG(INFO) << "--------------------------------------------";
     IndexRange base_range;
     IndexRange node_range;
-
+    std::vector<std::unique_ptr<const Segment>> segs;
     if (map_it1 == range_map1.end()) {
       base_range = map_it2->first;
       node_range = map_it2->second;
@@ -405,7 +398,6 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
       merge_first_node = false;
 #endif
       segs = GetSegmentsFromIndexRange(node2, node_range);
-      all_segs.insert(all_segs.end(), segs.begin(), segs.end());
       ++map_it2;
     } else if (map_it2 == range_map2.end()) {
       base_range = map_it1->first;
@@ -420,7 +412,6 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
       merge_first_node = true;
 #endif
       segs = GetSegmentsFromIndexRange(node1, node_range);
-      all_segs.insert(all_segs.end(), segs.begin(), segs.end());
       ++map_it1;
     } else {
       IndexRange base_range1 = map_it1->first;
@@ -456,7 +447,6 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
         base_range = map_it1->first;
         node_range = map_it1->second;
         segs = GetSegmentsFromIndexRange(node1, node_range);
-        all_segs.insert(all_segs.end(), segs.begin(), segs.end());
         ++map_it1;
         ++map_it2;
       } else if (base_range1.start_idx + base_range1.num_subsequent
@@ -468,7 +458,6 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
         base_range = base_range1;
         node_range = node_range1;
         segs = GetSegmentsFromIndexRange(node1, node_range);
-        all_segs.insert(all_segs.end(), segs.begin(), segs.end());
         ++map_it1;
       } else if (base_range2.start_idx + base_range2.num_subsequent
                  <= base_range1.start_idx) {
@@ -479,11 +468,9 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
         base_range = base_range2;
         node_range = node_range2;
         segs = GetSegmentsFromIndexRange(node2, node_range);
-        all_segs.insert(all_segs.end(), segs.begin(), segs.end());
         ++map_it2;
       } else {
         LOG(INFO) << "Merging fails.";
-        for (const Segment* seg : all_segs) {delete seg; }
         return Hash();
       }  // end if (base_range1.start_idx + base_range1.num_subsequent
     }  // end if (map_it1 == range_map1.end())
@@ -497,7 +484,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
     }
 
     size_t num_entries = 0;
-    for (const Segment* seg : segs) {
+    for (const auto& seg : segs) {
       num_entries += seg->numEntries();
     }
 
@@ -512,11 +499,9 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
 #endif
     builder.Splice(base_range.start_idx,
                    base_range.num_subsequent,
-                   segs);
+                   std::move(segs));
   }  // end while
   Hash result = builder.Commit(chunker, isFixedEntryLen);
-
-  for (const Segment* seg : all_segs) {delete seg; }
 
   return result;
 }

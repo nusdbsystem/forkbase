@@ -48,13 +48,10 @@ class NodeBuilder : private Noncopyable {
   void SpliceElements(size_t num_delete,
                       std::vector<const Segment*> element_segs);
 
-  // Commit the uncommited operation
-  // Create and dump the chunk into storage
+  // Call the recursivce commit
+  // Prune the tree so that the non-leaf node contains multiple entries
   // @return The hash (a.k.a. the key) of the newly commited root chunk.
-  inline Hash Commit() {
-    bool found_canonical_root = false;
-    return Commit(&found_canonical_root);
-  }
+  Hash Commit();
 
  private:
   // Internal constructor used to recursively construct Parent NodeBuilder
@@ -68,12 +65,10 @@ class NodeBuilder : private Noncopyable {
               const Chunker* chunker, const Chunker* parent_chunker,
               bool isFixedEntryLen) noexcept;
 
-  // Commit the uncommited operation
+  // Commit the uncommited operation in recursive manner
   // Create and dump the chunk into storage
   // @return The hash (a.k.a. the key) of the newly commited root chunk.
-  // Return from from argument whether the upper builder has found
-  // the canonical root
-  Hash Commit(bool* found_canonical_root);
+  Hash commit();
 
   // Remove elements from cursor
   // Return the number of elements actually removed
@@ -129,7 +124,6 @@ class NodeBuilder : private Noncopyable {
   // whether the built entry is fixed length
   // type blob: true
   const bool isFixedEntryLen_;
-  size_t num_created_entries_ = 0;
 };
 
 
@@ -166,13 +160,8 @@ To work on an existing prolly tree:
   explicit AdvancedNodeBuilder(ChunkWriter* writer);
 
   inline AdvancedNodeBuilder& Insert(uint64_t start_idx,
-                                     const std::vector<const Segment*>& segs) {
-    return Splice(start_idx, 0, segs);
-  }
-
-  inline AdvancedNodeBuilder& Insert(uint64_t start_idx,
-                                     const Segment& seg) {
-    return Splice(start_idx, 0, {&seg});
+      std::vector<std::unique_ptr<const Segment>> segs) {
+    return Splice(start_idx, 0, std::move(segs));
   }
 
   inline AdvancedNodeBuilder& Remove(uint64_t start_idx,
@@ -180,16 +169,9 @@ To work on an existing prolly tree:
     return Splice(start_idx, num_delete, {});
   }
 
-  // segs can be empty.
-  // NOTE: The segments in the argument list should be alive
-  //   until commit is called.
+  // segs can contain empty segment.
   AdvancedNodeBuilder& Splice(uint64_t start_idx, uint64_t num_delete,
-                              const std::vector<const Segment*>& segs);
-
-  AdvancedNodeBuilder& Splice(uint64_t start_idx, uint64_t num_delete,
-                              const Segment& seg) {
-    return  Splice(start_idx, num_delete, {&seg});
-  }
+                              std::vector<std::unique_ptr<const Segment>> segs);
 
   Hash Commit(const Chunker& chunker, bool isFixedEntryLen);
 
@@ -230,11 +212,15 @@ To work on an existing prolly tree:
     ~ChunkCacher() = default;
 
     inline bool Write(const Hash& key, const Chunk& chunk) override {
-      cache_[key.Clone()] = std::make_pair(chunk.head(), false);
+      cache_[key.Clone()] = chunk.head();
       return true;
     }
-    // Return true if all unread cached chunks are dumpted to ChunkWriter
-    bool DumpUnreadCacheChunks();
+    // Return true if all the cached chunk with specific hash
+    //   is dumped to ChunkWriter
+    bool DumpCacheChunk(const Hash& key);
+
+    // Return true if a chunk with specific hash exist in cache
+    bool ExistInCache(const Hash& key) const;
 
    protected:
     // First try to find chunk from the cache
@@ -246,7 +232,7 @@ To work on an existing prolly tree:
     ChunkLoader* loader_;
     ChunkWriter* writer_;
     // value is a pair of (chunk head, is_read)
-    std::unordered_map<Hash, std::pair<const byte_t*, bool>> cache_;
+    std::unordered_map<Hash, const byte_t*> cache_;
   };
   // relevant information to perform one spliced operation
   struct SpliceOperand {
@@ -258,10 +244,20 @@ To work on an existing prolly tree:
     std::vector<const Segment*> appended_segs;
   };
 
+  // Perform the preorder traversal on the final built tree
+  //   if a root node exists in cache
+  //     Dump the cached chunk to writer
+  //     Continue to examine its children
+  //   else
+  //     Do nothing and return;
+  // Return true if all dumping are successful
+  bool PreorderDump(const Hash& root, ChunkCacher* cacher);
+
   const Hash root_;
   ChunkLoader* loader_;
   ChunkWriter* writer_;
   std::list<SpliceOperand> operands_;
+  std::vector<std::unique_ptr<const Segment>> all_operand_segs_;
 };
 }  // namespace ustore
 
