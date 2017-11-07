@@ -23,6 +23,10 @@ class SList : public UList {
   Hash Splice(uint64_t start_idx, uint64_t num_to_delete,
               const std::vector<Slice>& entries) const override;
 
+  // Use this List as base to perform three-way merging
+  //   return empty hash when merging fails
+  Hash Merge(const SList& node1, const SList& node2) const;
+
  protected:
   // Load existing SList
   SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,

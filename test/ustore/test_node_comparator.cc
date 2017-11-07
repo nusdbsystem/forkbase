@@ -4,6 +4,7 @@
 
 #include "node/blob_node.h"
 #include "node/map_node.h"
+#include "node/list_node.h"
 #include "node/node_comparator.h"
 #include "node/node_builder.h"
 
@@ -609,4 +610,177 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
   EXPECT_EQ(size_t(500), range_maps[2].second.start_idx);
   EXPECT_EQ(num_items_ - 500, range_maps[2].second.num_subsequent);
+}
+
+
+TEST(LevenshteinMapper, Simple) {
+  const ustore::Slice k("k", 1);
+  const ustore::Slice s("s", 1);
+  const ustore::Slice i("i", 1);
+  const ustore::Slice t("t", 1);
+  const ustore::Slice e("e", 1);
+  const ustore::Slice n("n", 1);
+  const ustore::Slice g("g", 1);
+
+  std::unique_ptr<const ustore::Segment> lhs_init_seg =
+      ustore::ListNode::Encode({k, i, t, e, n});
+
+  std::unique_ptr<const ustore::Segment> rhs_init_seg =
+      ustore::ListNode::Encode({s, i, t, i, n, g});
+
+/* Edi distance matrix shall be as follows:
++>: RHS Insertion   +^: LHS Insertion
+++: Subsitution     **: Match
+
+                               R H S
+           0       s       i       t        i       n      g
+  ---------------------------------------------------------------
+    0  | (oo, 0) (+>, 1) (+>, 2) (+>, 3) (+>, 4) (+>, 5) (+>, 6)
+L   k  | (+^, 1) (++, 1) (++, 2) (++, 3) (++, 4) (++, 5) (++, 6)
+H   i  | (+^, 2) (++, 2) (**, 1) (+>, 2) (**, 3) (+>, 4) (+>, 5)
+S   t  | (+^, 3) (++, 3) (+^, 2) (**, 1) (+>, 2) (+>, 3) (+>, 4)
+    e  | (+^, 4) (++, 4) (+^, 3) (+^, 2) (++, 2) (++, 3) (++, 4)
+    n  | (+^, 5) (++, 5) (+^, 4)(|^,  3) (++, 3) (**, 2) (+>, 3)
+
+Result Map: LHS => RHS
+(1, 2) => (1, 2)
+(4, 1) => (4, 1)
+*/
+
+  ustore::LocalChunkWriter writer;
+  auto loader = std::make_shared<ustore::LocalChunkLoader>();
+
+  ustore::NodeBuilder lhs_nb(&writer, ustore::ListChunker::Instance(),
+                             ustore::MetaChunker::Instance(), false);
+  lhs_nb.SpliceElements(0, lhs_init_seg.get());
+  const ustore::Hash lhs_root = lhs_nb.Commit();
+
+  ustore::NodeBuilder rhs_nb(&writer, ustore::ListChunker::Instance(),
+                             ustore::MetaChunker::Instance(), false);
+  rhs_nb.SpliceElements(0, rhs_init_seg.get());
+  const ustore::Hash rhs_root = rhs_nb.Commit();
+
+  ustore::LevenshteinMapper mapper(rhs_root, loader.get());
+  ustore::RangeMaps result = mapper.Compare(lhs_root);
+
+  ASSERT_EQ(size_t(2), result.size());
+  ustore::IndexRange lhs_range = result[0].first;
+  ustore::IndexRange rhs_range = result[0].second;
+
+  EXPECT_EQ(uint64_t(1), lhs_range.start_idx);
+  EXPECT_EQ(uint64_t(2), lhs_range.num_subsequent);
+
+  EXPECT_EQ(uint64_t(1), rhs_range.start_idx);
+  EXPECT_EQ(uint64_t(2), rhs_range.num_subsequent);
+
+  lhs_range = result[1].first;
+  rhs_range = result[1].second;
+
+  EXPECT_EQ(uint64_t(4), lhs_range.start_idx);
+  EXPECT_EQ(uint64_t(1), lhs_range.num_subsequent);
+
+  EXPECT_EQ(uint64_t(4), rhs_range.start_idx);
+  EXPECT_EQ(uint64_t(1), rhs_range.num_subsequent);
+}
+
+TEST(LevenshteinMapper, Complex) {
+  std::vector<const ustore::byte_t*> vals;
+  std::vector<ustore::Slice> lhs_init_slices;
+  for (uint32_t i = 0; i < 1024; i++) {
+    ustore::byte_t* val = new ustore::byte_t[sizeof(uint32_t)];
+    std::memcpy(val, &i, sizeof(uint32_t));
+    vals.push_back(val);
+    lhs_init_slices.push_back(ustore::Slice(val, sizeof(uint32_t)));
+  }  // end 2 fors
+
+  std::vector<ustore::Slice> rhs_insert_slices;
+  for (uint32_t i = 2048; i < 2148; i++) {
+    ustore::byte_t* val = new ustore::byte_t[sizeof(uint32_t)];
+    std::memcpy(val, &i, sizeof(uint32_t));
+    vals.push_back(val);
+    rhs_insert_slices.push_back(ustore::Slice(val, sizeof(uint32_t)));
+  }  // end for
+
+/* RHS is constructed by removing 100 elements from LHS 100th
+     And THEN inserting 100 elements at LHS's 600 idx.
+
+LHS: [0 ... 100 ... 200 ... 600     600 ... 1024]
+      |------|       | ----- |       | ----- |
+RHS: [0 ... 100     100 ... 500 *** 600 ... 1024]
+
+Final Result Map: LHS => RHS
+  (0, 100) => (0, 100)
+  (200, 400) => (100, 400)
+  (600, 424) => (600, 424)
+*/
+
+  std::vector<ustore::Slice> rhs_init_slices;
+  rhs_init_slices.insert(rhs_init_slices.end(),
+                         lhs_init_slices.begin(),
+                         lhs_init_slices.begin() + 100);
+
+  rhs_init_slices.insert(rhs_init_slices.end(),
+                         lhs_init_slices.begin() + 200,
+                         lhs_init_slices.begin() + 600);
+
+  rhs_init_slices.insert(rhs_init_slices.end(),
+                         rhs_insert_slices.begin(),
+                         rhs_insert_slices.end());
+
+  rhs_init_slices.insert(rhs_init_slices.end(),
+                         lhs_init_slices.begin() + 600,
+                         lhs_init_slices.end());
+
+// Construct tree
+  std::unique_ptr<const ustore::Segment> lhs_init_seg =
+      ustore::ListNode::Encode(lhs_init_slices);
+
+  std::unique_ptr<const ustore::Segment> rhs_init_seg =
+      ustore::ListNode::Encode(rhs_init_slices);
+
+  ustore::LocalChunkWriter writer;
+  auto loader = std::make_shared<ustore::LocalChunkLoader>();
+
+  ustore::NodeBuilder lhs_nb(&writer, ustore::ListChunker::Instance(),
+                             ustore::MetaChunker::Instance(), false);
+  lhs_nb.SpliceElements(0, lhs_init_seg.get());
+  const ustore::Hash lhs_root = lhs_nb.Commit();
+
+  ustore::NodeBuilder rhs_nb(&writer, ustore::ListChunker::Instance(),
+                             ustore::MetaChunker::Instance(), false);
+  rhs_nb.SpliceElements(0, rhs_init_seg.get());
+  const ustore::Hash rhs_root = rhs_nb.Commit();
+
+  ustore::LevenshteinMapper mapper(rhs_root, loader.get());
+  ustore::RangeMaps result = mapper.Compare(lhs_root);
+
+  ASSERT_EQ(size_t(3), result.size());
+  ustore::IndexRange lhs_range = result[0].first;
+  ustore::IndexRange rhs_range = result[0].second;
+
+  EXPECT_EQ(uint64_t(0), lhs_range.start_idx);
+  EXPECT_EQ(uint64_t(100), lhs_range.num_subsequent);
+
+  EXPECT_EQ(uint64_t(0), rhs_range.start_idx);
+  EXPECT_EQ(uint64_t(100), rhs_range.num_subsequent);
+
+  lhs_range = result[1].first;
+  rhs_range = result[1].second;
+
+  EXPECT_EQ(uint64_t(200), lhs_range.start_idx);
+  EXPECT_EQ(uint64_t(400), lhs_range.num_subsequent);
+
+  EXPECT_EQ(uint64_t(100), rhs_range.start_idx);
+  EXPECT_EQ(uint64_t(400), rhs_range.num_subsequent);
+
+  lhs_range = result[2].first;
+  rhs_range = result[2].second;
+
+  EXPECT_EQ(uint64_t(600), lhs_range.start_idx);
+  EXPECT_EQ(uint64_t(424), lhs_range.num_subsequent);
+
+  EXPECT_EQ(uint64_t(600), rhs_range.start_idx);
+  EXPECT_EQ(uint64_t(424), rhs_range.num_subsequent);
+
+  for (const ustore::byte_t* val : vals) delete[] val;
 }

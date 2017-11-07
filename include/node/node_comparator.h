@@ -14,6 +14,8 @@
 #include "utils/noncopyable.h"
 
 namespace ustore {
+
+using RangeMaps = std::vector<std::pair<IndexRange, IndexRange>>;
 // the following two traits dictate how to compute key
 //   from element, metaentry and seqnode for comparing and traversing
 struct IndexTrait {
@@ -265,7 +267,7 @@ struct Mapper {
 /*
 Mapper is used to map the index range of identical lhs elements to rhs elements
 */
-  typedef std::vector<std::pair<IndexRange, IndexRange>> ResultType;
+  typedef RangeMaps ResultType;
   // Both lhs and rhs share the same elements due to the identical hashes
   //   Map the entire lhs index range to the entire rhs index range
   static ResultType IdenticalHashes(
@@ -582,6 +584,62 @@ using KeyDiffer = NodeComparator<OrderedKeyTrait, Differ>;
 
 using KeyMapper = NodeComparator<OrderedKeyTrait, Mapper>;
 
+
+class LevenshteinMapper : private Noncopyable {
+/*
+ LevenshteinMapper maps the elements bewtween two prolly trees based on the minimum
+ edit distance.
+
+*/
+ public:
+// loader is used for both lhs and rhs
+  LevenshteinMapper(const Hash& rhs,
+                    ChunkLoader* loader) noexcept :
+      rhs_(rhs), loader_(loader) {}
+
+  virtual ~LevenshteinMapper() = default;
+
+  // Return the index maps from lhs to rhs
+  RangeMaps Compare(const Hash& lhs) const;
+
+ private:
+  enum class EditMarker : unsigned char {
+    kNull = 0,
+    kLHSInsertion = 1,
+    kRHSInsertion = 2,
+    kSubstitution = 3,
+    kMatch = 4
+  };
+
+  struct Entry {
+    EditMarker marker;
+    uint64_t edit_distance;
+  };
+  // Map the elements in recursive manner from top to bottom
+  // Args:
+  //   lhs_cr: cursor pointing to the first entry of lhs
+  //   lhs_range: the lhs index range for mapping
+  //   rhs_cr: cursor pointing to the first entry of rhs
+  //   rhs_range: the rhs index range for mapping
+  RangeMaps map(std::unique_ptr<NodeCursor> lhs_cr, IndexRange lhs_range,
+                std::unique_ptr<NodeCursor> rhs_cr, IndexRange rhs_range) const;
+
+  // Map the elements in two sequececes based on minimum edit distance.
+  // Args:
+  //   lhs_cr: cursor pointing to the first entry of lhs
+  //   lhs_range: the lhs index range for mapping
+  //   rhs_cr: cursor pointing to the first entry of rhs
+  //   rhs_range: the rhs index range for mapping
+  RangeMaps SeqMap(std::unique_ptr<NodeCursor> lhs_cr, IndexRange lhs_range,
+      std::unique_ptr<NodeCursor> rhs_cr, IndexRange rhs_range) const;
+
+  // return the number of elements rooted at the entry pointed by cursor
+  static uint64_t numElementsByCursor(const NodeCursor& cursor);
+
+  const Hash rhs_;
+  // loader for both lhs and rhs
+  mutable ChunkLoader* loader_;
+};
 }  // namespace ustore
 
 #endif  // USTORE_NODE_NODE_COMPARATOR_H_

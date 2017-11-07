@@ -218,11 +218,9 @@ class SListHugeEnv : public ::testing::Test {
 
     for (uint32_t i = 0; i < 1 << 10; i++) {
       char* element = new char[element_size_];
-
       std::memcpy(element, &i, element_size_);
-
       elements_.push_back(ustore::Slice(element, element_size_));
-    }
+    }  // end for
   }
 
   // a utility method to generate a vector of [0, 1 ,2 ... upper - 1]
@@ -451,4 +449,233 @@ TEST_F(SListHugeEnv, Compare) {
   auto intersect_it = lhs.Intersect(rhs);
   CheckIdenticalElements(intersect_idx, intersect_elements,
                          &intersect_it);
+}
+
+TEST_F(SListHugeEnv, Merge) {
+ /*
+ Node 1 is constructed by
+   removing 20 and inserting 30 elements at 120th from base,
+   replacing 50 elements at 160th of Node 1 and
+   removing 50 elements at 500th of Node 1.
+
+ Node 1:  0 ... 50 ... 100 . 120 . 150 . 160 ... 210 ................. 910   910 . 984
+          | ----------------- |     | --- |       | ------------------- |     | --- |
+ Base:    0 ... 50 ... 100 . 120 . 140 . 150 ... 200 ... 550     550 . 900 . 950 . 1024
+          | --- |       |  -------------  |       |  ---  |       |  -------------  |
+ Node 2:  0 ... 50      50 ............. 100 ... 150 ... 500 ... 550 ............. 1024
+
+ Node 2 is constructed by
+   removing 50 elements at 50th from base,
+   replacing 50 elements at 100th of Node 2 and
+   inserting 50 elements at 500th of Node 2.
+
+NOTE: Two replacing contents on both nodes are identical.
+ */
+  ustore::ChunkableTypeFactory factory;
+  ustore::SList base = factory.Create<ustore::SList>(elements_);
+
+  std::vector<ustore::Slice> node1_insertion;
+  for (uint32_t i = 1024; i < 1054; i++) {
+    char* element = new char[element_size_];
+    std::memcpy(element, &i, element_size_);
+    node1_insertion.push_back(ustore::Slice(element, element_size_));
+  }  // end for
+
+  std::vector<ustore::Slice> node2_insertion;
+  for (uint32_t i = 1054; i < 1104; i++) {
+    char* element = new char[element_size_];
+    std::memcpy(element, &i, element_size_);
+    node2_insertion.push_back(ustore::Slice(element, element_size_));
+  }  // end for
+
+  std::vector<ustore::Slice> replacement;
+  for (uint32_t i = 1104; i < 1154; i++) {
+    char* element = new char[element_size_];
+    std::memcpy(element, &i, element_size_);
+    replacement.push_back(ustore::Slice(element, element_size_));
+  }  // end for
+
+
+  std::vector<ustore::Slice> node1_elements;
+  node1_elements.insert(node1_elements.end(),
+                        elements_.begin(),
+                        elements_.begin() + 120);
+
+  node1_elements.insert(node1_elements.end(),
+                        node1_insertion.begin(),
+                        node1_insertion.end());
+
+  node1_elements.insert(node1_elements.end(),
+                        elements_.begin() + 140,
+                        elements_.begin() + 150);
+
+  node1_elements.insert(node1_elements.end(),
+                        replacement.begin(),
+                        replacement.end());
+
+  node1_elements.insert(node1_elements.end(),
+                        elements_.begin() + 200,
+                        elements_.begin() + 900);
+
+  node1_elements.insert(node1_elements.end(),
+                        elements_.begin() + 950,
+                        elements_.end());
+
+  ASSERT_EQ(size_t(984), node1_elements.size());
+  ustore::SList node1 = factory.Create<ustore::SList>(node1_elements);
+
+
+  std::vector<ustore::Slice> node2_elements;
+  node2_elements.insert(node2_elements.end(),
+                        elements_.begin(),
+                        elements_.begin() + 50);
+
+  node2_elements.insert(node2_elements.end(),
+                        elements_.begin() + 100,
+                        elements_.begin() + 150);
+
+  node2_elements.insert(node2_elements.end(),
+                        replacement.begin(),
+                        replacement.end());
+
+  node2_elements.insert(node2_elements.end(),
+                        elements_.begin() + 200,
+                        elements_.begin() + 550);
+
+  node2_elements.insert(node2_elements.end(),
+                        node2_insertion.begin(),
+                        node2_insertion.end());
+
+  node2_elements.insert(node2_elements.end(),
+                        elements_.begin() + 550,
+                        elements_.end());
+
+  ASSERT_EQ(size_t(1024), node2_elements.size());
+  ustore::SList node2 = factory.Create<ustore::SList>(node2_elements);
+
+
+  std::vector<ustore::Slice> merged_elements;
+  merged_elements.insert(merged_elements.end(),
+                         elements_.begin(),
+                         elements_.begin() + 50);
+
+  merged_elements.insert(merged_elements.end(),
+                         elements_.begin() + 100,
+                         elements_.begin() + 120);
+
+  merged_elements.insert(merged_elements.end(),
+                         node1_insertion.begin(),
+                         node1_insertion.end());
+
+  merged_elements.insert(merged_elements.end(),
+                         elements_.begin() + 140,
+                         elements_.begin() + 150);
+
+  merged_elements.insert(merged_elements.end(),
+                         replacement.begin(),
+                         replacement.end());
+
+  merged_elements.insert(merged_elements.end(),
+                         elements_.begin() + 200,
+                         elements_.begin() + 550);
+
+  merged_elements.insert(merged_elements.end(),
+                         node2_insertion.begin(),
+                         node2_insertion.end());
+
+  merged_elements.insert(merged_elements.end(),
+                         elements_.begin() + 550,
+                         elements_.begin() + 900);
+
+  merged_elements.insert(merged_elements.end(),
+                         elements_.begin() + 950,
+                         elements_.begin() + 1024);
+
+  ustore::SList expected_merge = factory.Create<ustore::SList>(merged_elements);
+
+
+  ustore::SList actual_merge =
+      factory.Load<ustore::SList>(base.Merge(node1, node2));
+
+  ASSERT_TRUE(expected_merge.hash() == actual_merge.hash());
+
+  for (const auto& ele : node1_insertion) delete[] ele.data();
+  for (const auto& ele : node2_insertion) delete[] ele.data();
+  for (const auto& ele : replacement) delete[] ele.data();
+}
+
+TEST(SListMerge, Conflict) {
+  ustore::ChunkableTypeFactory factory;
+  const ustore::Slice a("a", 1);
+  const ustore::Slice b("b", 1);
+  const ustore::Slice c("c", 1);
+  const ustore::Slice d("d", 1);
+  const ustore::Slice e("e", 1);
+
+  const ustore::Slice B("B", 1);
+  const ustore::Slice C("C", 1);
+
+  // Base List: a b c d e
+  ustore::SList base = factory.Create<ustore::SList>(
+      std::vector<ustore::Slice>{a, b, c, d, e});
+
+  // Node 1 is constructed by
+  //   removing b,
+  //   replacing c with C,
+  ustore::SList node1 = factory.Create<ustore::SList>(
+      std::vector<ustore::Slice>{a, C, d, e});
+
+  // Node 2 is constructed by
+  //   removing a,
+  //   replacing b with B
+  ustore::SList node2 = factory.Create<ustore::SList>(
+      std::vector<ustore::Slice>{B, c, d, e});
+
+  ustore::Hash merge_hash = base.Merge(node1, node2);
+  ASSERT_TRUE(merge_hash.empty());
+}
+
+
+TEST(SListMerge, Small) {
+  ustore::ChunkableTypeFactory factory;
+  const ustore::Slice a("a", 1);
+  const ustore::Slice b("b", 1);
+  const ustore::Slice c("c", 1);
+  const ustore::Slice d("d", 1);
+  const ustore::Slice e("e", 1);
+  const ustore::Slice f("f", 1);
+  const ustore::Slice g("g", 1);
+  const ustore::Slice h("h", 1);
+
+  const ustore::Slice C("C", 1);
+  const ustore::Slice E("E", 1);
+  const ustore::Slice G("G", 1);
+  const ustore::Slice H("H", 1);
+
+  // Base List: a b c d e f g h
+  ustore::SList base = factory.Create<ustore::SList>(
+      std::vector<ustore::Slice>{a, b, c, d, e, f, g, h});
+
+  // Node 1 is constructed by
+  //   removing b,
+  //   replacing c with C,
+  //   inserting G before g
+  ustore::SList node1 = factory.Create<ustore::SList>(
+      std::vector<ustore::Slice>{a, C, d, e, f, G, g, h});
+
+  // Node 2 is constructed by
+  //   removing a,
+  //   replacing e with E,
+  //   inserting H after h.
+  ustore::SList node2 = factory.Create<ustore::SList>(
+      std::vector<ustore::Slice>{b, c, d, E, f, g, h, H});
+
+  // Expected Merge Node:
+  ustore::SList expected_merge = factory.Create<ustore::SList>(
+      std::vector<ustore::Slice>{C, d, E, f, G, g, h, H});
+
+  ustore::SList actual_merge =
+      factory.Load<ustore::SList>(base.Merge(node1, node2));
+
+  ASSERT_TRUE(expected_merge.hash() == actual_merge.hash());
 }

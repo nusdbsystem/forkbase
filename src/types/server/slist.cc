@@ -4,6 +4,8 @@
 
 #include "node/list_node.h"
 #include "node/node_builder.h"
+#include "node/node_comparator.h"
+#include "node/node_merger.h"
 
 namespace ustore {
 
@@ -40,6 +42,17 @@ Hash SList::Splice(size_t start_idx, size_t num_to_delete,
   std::unique_ptr<const Segment> seg = ListNode::Encode({entries});
   nb.SpliceElements(num_to_delete, seg.get());
   return nb.Commit();
+}
+
+Hash SList::Merge(const SList& node1, const SList& node2) const {
+  if (numElements() == 0 || node1.numElements() == 0 ||
+      node2.numElements() == 0) {
+    // Merge fails if an empty map exists.
+    return Hash();
+  }
+  IndexMerger merger(hash(), chunk_loader_.get(), chunk_writer_);
+  return merger.Merge(node1.hash(), node2.hash(),
+                      *ListChunker::Instance(), false);
 }
 
 }  // namespace ustore
