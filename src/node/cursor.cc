@@ -235,6 +235,8 @@ bool NodeCursor::Retreat(bool cross_boundary) {
 }
 
 size_t NodeCursor::AdvanceEntry(size_t num_advanced_entry) {
+  // Attemp to advance to a valid entry. If failed, return 0
+  if (isEnd() && !this->Advance(true)) return 0;
   size_t node_num_entry = this->node()->numEntries();
   size_t node_remain_entry = static_cast<size_t>(
       static_cast<int32_t>(node_num_entry) - this->idx_);
@@ -248,7 +250,7 @@ size_t NodeCursor::AdvanceEntry(size_t num_advanced_entry) {
       isSeqEnd = !this->Advance(true);
       remain_advanced_entry -= node_remain_entry;
       if (!isSeqEnd) {
-        CHECK_EQ(0, this->idx_);
+        CHECK_EQ(int32_t(0), this->idx_);
         node_num_entry = this->node()->numEntries();
         node_remain_entry = node_num_entry;
       }
@@ -261,65 +263,107 @@ size_t NodeCursor::AdvanceEntry(size_t num_advanced_entry) {
   return num_advanced_entry - remain_advanced_entry;
 }
 
-uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
-  uint64_t acc_step = 0;
-  DLOG(INFO) << "\n";
-  DLOG(INFO) << "Parameter Step: " << step;
-  DLOG(INFO) << "!Before Parent: "
-             << (seq_node_->isLeaf() ? "Leaf" : "Meta");
-  DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
-  DLOG(INFO) << "  Before Index: " << idx_;
-  if (seq_node_->isLeaf()) {
-    uint64_t max_step = static_cast<uint64_t>(
-                          static_cast<int32_t>(seq_node_->numEntries()) - idx_);
+size_t NodeCursor::RetreatEntry(size_t num_retreat_entry) {
+  // Attemp to retreat to a valid entry. If failed, return 0
+  if (isBegin() && !this->Retreat(true)) return 0;
 
-    // Only advance cursor within leaf node is enough
-    if (step < max_step) {
-      idx_ += static_cast<int32_t>(step);
-      return step;
+  size_t node_num_entry = this->node()->numEntries();
+  size_t node_remain_entry = static_cast<size_t>(this->idx_);
+
+  // Accumulate entries retreat
+  size_t remain_retreat_entry = num_retreat_entry;
+  bool isSeqBegin = false;
+  do {
+    if (node_remain_entry < remain_retreat_entry) {
+      this->idx_ = 0;
+      isSeqBegin = !this->Retreat(true);
+      remain_retreat_entry -= node_remain_entry + 1;
+      if (!isSeqBegin) {
+        CHECK_EQ(this->node()->numEntries() - 1, size_t(this->idx_));
+        node_num_entry = this->node()->numEntries();
+        node_remain_entry = node_num_entry - 1;
+      }
     } else {
-      acc_step = max_step;
-      idx_ = static_cast<int32_t>(seq_node_->numEntries());
+      this->idx_ -= static_cast<int32_t>(remain_retreat_entry);
+      CHECK_LE(0, this->idx_);
+      remain_retreat_entry = 0;
     }
-  } else {
-    // internal node must point to a valid entry
-    DCHECK(!isBegin() && !isEnd());
+  } while (!isSeqBegin && remain_retreat_entry > 0);
+  return num_retreat_entry - remain_retreat_entry;
+}
 
-    uint64_t entry_num_elements = 0;
-    ++idx_;
-    while (!isEnd()) {
-      MetaEntry meta_entry(current());
-      entry_num_elements = meta_entry.numElements();
-      if (acc_step + entry_num_elements > step) break;
-      acc_step += entry_num_elements;
-      ++idx_;
-    }  // end while
-    // DLOG(INFO) << "Meta Acc1 Step: "
-    //            << acc_step;
+/* Cursor makes the advancement on three phases
 
-    if (!isEnd()) {
-      DCHECK_LT(step, acc_step + entry_num_elements);
-      DCHECK_LE(acc_step, step);
+1. Move steps and advance to current chunk last element.
+2. Recursively call parent cursor to move for the remaining steps.
+3. Move the remaining steps and advance to the element
+*/
+uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
+  uint64_t acc1_step = 0;  // Accumulated steps in Phase 1
+  // DLOG(INFO) << "\n";
+  // DLOG(INFO) << "Parameter Step: " << step;
+  // DLOG(INFO) << "!Before Parent: "
+  //            << (seq_node_->isLeaf() ? "Leaf" : "Meta");
+  // DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
+  // DLOG(INFO) << "  Before Index: " << idx_;
+  bool initial_end = isEnd();
+  if (!initial_end) {
+    if (seq_node_->isLeaf()) {
+      uint64_t step2last = static_cast<uint64_t>(
+                            static_cast<int32_t>(seq_node_->numEntries()) - 1 - idx_);
+      // Only advance cursor within leaf node is enough
+      if (step <= step2last) {
+        idx_ += static_cast<int32_t>(step);
+        return step;
+      } else {
+        acc1_step = step2last;
+        idx_ = static_cast<int32_t>(seq_node_->numEntries());
+      }  // end if (step <= step2last)
+    } else {
+      uint64_t entry_num_elements = 0;
+      uint64_t last_entry_num_elements = 0;
 
-      DLOG(INFO) << "Not End.  After Index: " << idx_;
-      DLOG(INFO) << "Acc Step: " << acc_step;
-      return acc_step;
-    }  // end isEnd
-  }  // end if
+      // Remaining steps to advance in Phase 1
+      int64_t remain1_steps = static_cast<int64_t>(step);
 
-  DLOG(INFO) << "  After Index: " << idx_;
-  DLOG(INFO) << "Acc Step: " << acc_step;
-  DCHECK_LE(acc_step, step);
+      while (remain1_steps > 0) {
+        ++idx_;
+        acc1_step += last_entry_num_elements;
+        if (isEnd()) { break; }
+        MetaEntry meta_entry(current());
+        entry_num_elements = meta_entry.numElements();
+
+        remain1_steps -= static_cast<int64_t>(entry_num_elements);
+        last_entry_num_elements = entry_num_elements;
+      }  // end while
+      // DLOG(INFO) << "Meta Acc1 Step: "
+      //            << acc1_step;
+
+      if (remain1_steps <= 0) {
+        // Current metanode can already accomodate the advanced steps.
+        DCHECK_LE(step, acc1_step + entry_num_elements);
+        DCHECK_LE(acc1_step, step);
+
+        // DLOG(INFO) << "Not End.  After Index: " << idx_;
+        // DLOG(INFO) << "Acc Step: " << acc1_step;
+        return acc1_step;
+      }  // end isEnd
+    }  // end if
+  }  // end if End()
+
+  // DLOG(INFO) << "  After Index: " << idx_;
+  // DLOG(INFO) << "Acc Step: " << acc1_step;
   DCHECK(isEnd());
+  DCHECK_LE(acc1_step, step);
   // Ask upper cursor for advance
 
-  if (parent_cr_ == nullptr) {return acc_step; }
+  if (parent_cr_ == nullptr) {
+    return acc1_step + (initial_end ? 0 : 1);
+  }
 
-  uint64_t parent_step = parent_cr_->AdvanceSteps(step - acc_step);
-  DLOG(INFO) << "\nAfter Parent: ";
-  DLOG(INFO) << "  Parent Step: " << parent_step;
-
-  DCHECK_LE(parent_step, step - acc_step);
+  uint64_t parent_step = parent_cr_->AdvanceSteps(step - acc1_step);
+  // DLOG(INFO) << "\nAfter Parent: ";
+  // DLOG(INFO) << "  Parent Step: " << parent_step;
 
   bool endParent = parent_cr_->isEnd();
   if (endParent) {
@@ -336,98 +380,115 @@ uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
   if (endParent) {
     // Place this cursor to seq end
     idx_ = static_cast<int32_t>(seq_node_->numEntries());
-
-    return acc_step + parent_step;
+    return acc1_step + parent_step;
   }
 
-  DCHECK_LE(acc_step + parent_step, step);
-  uint64_t remain_step = step - acc_step - parent_step;
+  DCHECK_LE(acc1_step + parent_step, step);
 
-  uint64_t acc2_step = 0;
+  // Remaining steps to advance in Phase 3
+  uint64_t remain3_step = step - acc1_step - parent_step;
+
+  // Accumulated advanced steps in Phase 3
+  uint64_t acc3_step = 0;
 
   if (seq_node_->isLeaf()) {
-    DCHECK_LT(remain_step, seq_node_->numEntries());
-    idx_ = static_cast<int32_t>(remain_step);
-    DLOG(INFO) << "Leaf Final Cursor Position: " << idx_;
-    acc2_step = remain_step;
+    DCHECK_LE(remain3_step, seq_node_->numEntries());
+    idx_ = static_cast<int32_t>(remain3_step - 1);
+    // DLOG(INFO) << "Leaf Final Cursor Position: " << idx_;
+    acc3_step = remain3_step;
   } else {
     idx_ = 0;
     while (!isEnd()) {
       MetaEntry meta_entry(current());
       uint64_t entry_num_elements = meta_entry.numElements();
-      if (acc2_step + entry_num_elements > remain_step) break;
-      acc2_step += entry_num_elements;
+      if (acc3_step + entry_num_elements > remain3_step) break;
+      acc3_step += entry_num_elements;
       ++idx_;
     }  // end while
-    DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
+    // DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
 
-    DCHECK(!isEnd());
-    DCHECK_LE(acc2_step, remain_step);
+    DCHECK_LE(acc3_step, remain3_step);
   }  // end if
-  DLOG(INFO) << "acc2_step: " << acc2_step
-             << "remain_step: " << remain_step;
+  // DLOG(INFO) << "acc3_step: " << acc3_step
+             // << "remain_step: " << remain_step;
 
-  DLOG(INFO) << "Total Step: " << acc_step + parent_step + acc2_step;
+  // DLOG(INFO) << "Total Step: " << acc_step + parent_step + acc3_step;
 
-  return acc_step + parent_step + acc2_step;
+  return acc1_step + parent_step + acc3_step;
 }
 
+/* Cursor makes the retreatment on three phases
+
+1. Move steps and retreat to current chunk first element.
+2. Recursively call parent cursor to move for the remaining steps.
+3. Move the remaining steps and retreat to the final element
+*/
 uint64_t NodeCursor::RetreatSteps(uint64_t step) {
-  uint64_t acc_step = 0;
-  DLOG(INFO) << "\n";
-  DLOG(INFO) << "Parameter Step: " << step;
-  DLOG(INFO) << "!Before Parent: "
-             << (seq_node_->isLeaf() ? "Leaf" : "Meta");
-  DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
-  DLOG(INFO) << "  Before Index: " << idx_;
-  if (seq_node_->isLeaf()) {
-    // Max step to advance to node start
-    uint64_t max_step = static_cast<uint64_t>(idx_ + 1);
+  // Accumulated retreated steps in Phase 1
+  uint64_t acc1_step = 0;
+  // DLOG(INFO) << "\n";
+  // DLOG(INFO) << "Parameter Step: " << step;
+  // DLOG(INFO) << "!Before Parent: "
+             // << (seq_node_->isLeaf() ? "Leaf" : "Meta");
+  // DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
+  // DLOG(INFO) << "  Before Index: " << idx_;
+  bool initial_begin = isBegin();
+  if (!initial_begin){
+    if (seq_node_->isLeaf()) {
+      // Max step to advance to the first element
+      uint64_t step2first = static_cast<uint64_t>(idx_);
 
-    // Only advance cursor within leaf node is enough
-    if (step < max_step) {
-      idx_ -= static_cast<int32_t>(step);
-      return step;
+      // Only advance cursor within leaf node is enough
+      if (step <= step2first) {
+        idx_ -= static_cast<int32_t>(step);
+        return step;
+      } else {
+        acc1_step = step2first;
+        idx_ = -1;
+      }  // end if step <= step2first
     } else {
-      acc_step = max_step;
-      idx_ = -1;
-    }
-  } else {
-    // internal node must point to a valid entry
-    DCHECK(!isBegin() && !isEnd());
 
-    uint64_t entry_num_elements = 0;
-    --idx_;
-    while (!isBegin()) {
-      MetaEntry meta_entry(current());
-      entry_num_elements = meta_entry.numElements();
-      if (acc_step + entry_num_elements > step) break;
-      acc_step += entry_num_elements;
-      --idx_;
-    }  // end while
+      uint64_t entry_num_elements = 0;
+      uint64_t prev_entry_num_elements = 0;
 
-    if (!isBegin()) {
-      DCHECK_LT(step, acc_step + entry_num_elements);
-      DCHECK_LE(acc_step, step);
+      // Remaining steps to advance in Phase 1
+      int64_t remain1_steps = static_cast<int64_t>(step);
 
-      DLOG(INFO) << "Not Begin.  After Index: " << idx_;
-      DLOG(INFO) << "Acc Step: " << acc_step;
-      return acc_step;
-    }  // end isEnd
-  }  // end if
+      while (remain1_steps > 0) {
+        --idx_;
+        acc1_step += prev_entry_num_elements;
+        if (isBegin()) {break; }
+        MetaEntry meta_entry(current());
+        entry_num_elements = meta_entry.numElements();
 
-  DLOG(INFO) << "  After Index: " << idx_;
-  DLOG(INFO) << "Acc Step: " << acc_step;
-  DCHECK_LE(acc_step, step);
+        remain1_steps -= static_cast<int64_t>(entry_num_elements);
+        prev_entry_num_elements = entry_num_elements;
+      }  // end while
+
+      if (remain1_steps <= 0) {
+        DCHECK_LE(step, acc1_step + entry_num_elements);
+        DCHECK_LE(acc1_step, step);
+
+        // DLOG(INFO) << "Not Begin.  After Index: " << idx_;
+        // DLOG(INFO) << "Acc Step: " << acc1_step;
+        return acc1_step;
+      }  // end isEnd
+    }  // end if
+  }  // end if isBegin()
+
+  // DLOG(INFO) << "  After Index: " << idx_;
+  // DLOG(INFO) << "Acc Step: " << acc1_step;
+  DCHECK_LE(acc1_step, step);
   DCHECK(isBegin());
   // Ask upper cursor for advance
 
-  if (parent_cr_ == nullptr) {return acc_step; }
+  if (parent_cr_ == nullptr) {
+    return acc1_step + (initial_begin ? 0 : 1);
+  }
 
-  uint64_t parent_step = parent_cr_->RetreatSteps(step - acc_step);
-  DLOG(INFO) << "\nAfter Parent: ";
-  DLOG(INFO) << "  Parent Step: " << parent_step;
-  DCHECK_LE(parent_step, step - acc_step);
+  uint64_t parent_step = parent_cr_->RetreatSteps(step - acc1_step);
+  // DLOG(INFO) << "\nAfter Parent: ";
+  // DLOG(INFO) << "  Parent Step: " << parent_step;
 
   bool headParent = parent_cr_->isBegin();
   if (headParent) {
@@ -444,37 +505,40 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
   if (headParent) {
     // Place this cursor to seq head
     idx_ = -1;
-    return acc_step + parent_step;
+    return acc1_step + parent_step;
   }
 
-  DCHECK_LE(acc_step + parent_step, step);
-  uint64_t remain_step = step - acc_step - parent_step;
-  uint64_t acc2_step = 0;
+  DCHECK_LT(acc1_step + parent_step, step);
+  // Remaining steps to advance in Phase 3
+  uint64_t remain3_step = step - acc1_step - parent_step;
+  // Accumulated retreated steps in Phase 3
+  uint64_t acc3_step = 0;
 
   if (seq_node_->isLeaf()) {
-    DCHECK_LT(remain_step, seq_node_->numEntries());
-    idx_ = static_cast<int32_t>(seq_node_->numEntries()) - 1
-           - static_cast<int32_t>(remain_step);
-    DLOG(INFO) << "Leaf Final Cursor Position: " << idx_;
-    acc2_step = remain_step;
+    DCHECK_LE(remain3_step, seq_node_->numEntries());
+    idx_ = static_cast<int32_t>(seq_node_->numEntries())
+           - static_cast<int32_t>(remain3_step);
+    // DLOG(INFO) << "Leaf Final Cursor Position: " << idx_;
+    acc3_step = remain3_step;
   } else {
+    // DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
+
     idx_ = static_cast<int32_t>(seq_node_->numEntries()) - 1;
     while (!isBegin()) {
       MetaEntry meta_entry(current());
       uint64_t entry_num_elements = meta_entry.numElements();
-      if (acc2_step + entry_num_elements > remain_step) break;
-      acc2_step += entry_num_elements;
+      if (acc3_step + entry_num_elements > remain3_step) break;
+      acc3_step += entry_num_elements;
       --idx_;
     }  // end while
-    DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
-    DCHECK(!isEnd());
-    DCHECK_LE(acc2_step, remain_step);
+    // DLOG(INFO) << "Meta Final Cursor Position: " << idx_;
+    DCHECK_LE(acc3_step, remain3_step);
   }  // end if
-  DLOG(INFO) << "acc2_step: " << acc2_step
-             << "remain_step: " << remain_step;
-  DLOG(INFO) << "Total Step: " << acc_step + parent_step + acc2_step;
+  // DLOG(INFO) << "acc3_step: " << acc3_step
+             // << "remain_step: " << remain_step;
+  // DLOG(INFO) << "Total Step: " << acc1_step + parent_step + acc3_step;
 
-  return acc_step + parent_step + acc2_step;
+  return acc1_step + parent_step + acc3_step;
 }
 
 const byte_t* NodeCursor::current() const {

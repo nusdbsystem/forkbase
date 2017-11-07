@@ -4,8 +4,11 @@
 #define USTORE_NODE_CURSOR_H_
 
 #include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
+
 
 #include "chunk/chunk_loader.h"
 #include "node/orderedkey.h"
@@ -29,6 +32,23 @@ struct IndexRange {
 //   {0, 6} => {3, 6}
   static std::vector<std::pair<IndexRange, IndexRange>> Compact(
       const std::vector<std::pair<IndexRange, IndexRange>>& range_map);
+
+  static std::string to_str(IndexRange range) {
+    std::ostringstream sstream;
+    sstream << "(" << range.start_idx << ", "
+               << range.num_subsequent << ") ";
+    return sstream.str();
+  }
+
+  static std::string to_str(std::pair<IndexRange, IndexRange> range_map) {
+    std::ostringstream sstream;
+    sstream << "(" << range_map.first.start_idx << ", "
+                      << range_map.first.num_subsequent << ")"
+            << " => "
+            << "(" << range_map.second.start_idx << ", "
+                   << range_map.second.num_subsequent << ")";
+    return sstream.str();
+  }
 };
 
 class NodeCursor {
@@ -74,7 +94,13 @@ class NodeCursor {
   // Return the actual number of entries advanced
   size_t AdvanceEntry(size_t num_entry);
 
+  // Retreat entries in this cursor pointed node
+  //   May bypass to the previous chunk
+  // Return the actual number of entries retreated
+  size_t RetreatEntry(size_t num_entry);
+
   inline OrderedKey currentKey() const { return seq_node_->key(idx_); }
+
   // Advance skip multiple elements.
   // Possible to cross boundary for advancement
   // return the number of actual advancement

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Ustore Authors.
+
 
 #ifndef USTORE_NODE_NODE_MERGER_H_
 #define USTORE_NODE_NODE_MERGER_H_
@@ -18,8 +18,6 @@
 
 namespace ustore {
 
-using RangeMaps = std::vector<std::pair<IndexRange, IndexRange>>;
-
 struct OrderedKeyMapper {
   // Map the index range of lhs elements to the index range
   //   of identical elements in rhs based on key comparison
@@ -33,7 +31,7 @@ struct OrderedKeyMapper {
     IndexRange lhs_range = map_it->first;
     IndexRange rhs_range = map_it->second;
 
-    DLOG(INFO) << "Adding Last Flipped Range Maps: "
+    DLOG(INFO) << "Result from OrderedKeyMapper: "
                << "(" << lhs_range.start_idx << ", "
                <<  lhs_range.num_subsequent << ") => "
                << "(" << rhs_range.start_idx << ", "
@@ -46,12 +44,29 @@ struct OrderedKeyMapper {
   }
 };
 
-struct EditDistanceMapper {
+struct MinEditDistanceMapper {
   // Map the index range of lhs elements to the index range
   //   of identical elements in rhs based on edit distance
-  // static RangeMaps Map(
-  //    const Hash& lhs, const Hash& rhs, ChunkLoader* loader) {
-  // }
+  static RangeMaps Map(const Hash& lhs, const Hash& rhs, ChunkLoader* loader) {
+    LevenshteinMapper mapper(rhs, loader);
+#ifdef DEBUG
+  RangeMaps result = mapper.Compare(lhs);
+  for (auto map_it = result.begin(); map_it != result.end();
+       ++map_it) {
+    IndexRange lhs_range = map_it->first;
+    IndexRange rhs_range = map_it->second;
+
+    DLOG(INFO) << "Results from MinEditDistanceMapper: "
+               << "(" << lhs_range.start_idx << ", "
+               <<  lhs_range.num_subsequent << ") => "
+               << "(" << rhs_range.start_idx << ", "
+               <<  rhs_range.num_subsequent << ")";
+  }
+  return result;
+#else
+  return mapper.Compare(lhs);
+#endif
+  }
 };
 
 template <class Mapper>
@@ -143,10 +158,7 @@ RangeMaps NodeMerger<Mapper>::flip(const RangeMaps& range_maps,
        range_map_it != range_maps.end(); ++range_map_it) {
     IndexRange lhs_range = range_map_it->first;
     IndexRange rhs_range = range_map_it->second;
-    DLOG(INFO) << "  (" << lhs_range.start_idx << ", "
-               << lhs_range.num_subsequent << ") => "
-               << "(" << rhs_range.start_idx << ", "
-               << rhs_range.num_subsequent << ")";
+    DLOG(INFO) << IndexRange::to_str({lhs_range, rhs_range});
   }
 
 #endif
@@ -180,10 +192,7 @@ RangeMaps NodeMerger<Mapper>::flip(const RangeMaps& range_maps,
     if (pre_lhs_range.num_subsequent != 0 ||
         pre_rhs_range.num_subsequent != 0) {
       DLOG(INFO) << "Adding Flipped Range Maps: "
-                 << "(" << pre_lhs_range.start_idx << ", "
-                 <<  pre_lhs_range.num_subsequent << ") => "
-                 << "(" << pre_rhs_range.start_idx << ", "
-                 <<  pre_rhs_range.num_subsequent << ")";
+                 << IndexRange::to_str({pre_lhs_range, pre_rhs_range});
 
       flipped_maps.push_back({pre_lhs_range, pre_rhs_range});
     }
@@ -201,10 +210,7 @@ RangeMaps NodeMerger<Mapper>::flip(const RangeMaps& range_maps,
   if (last_lhs_range.num_subsequent != 0 ||
       last_rhs_range.num_subsequent != 0) {
     DLOG(INFO) << "Adding Last Flipped Range Maps: "
-               << "(" << last_lhs_range.start_idx << ", "
-               <<  last_lhs_range.num_subsequent << ") => "
-               << "(" << last_rhs_range.start_idx << ", "
-               <<  last_rhs_range.num_subsequent << ")";
+               << IndexRange::to_str({last_lhs_range, last_rhs_range});
 
     flipped_maps.push_back({last_lhs_range, last_rhs_range});
   }
@@ -221,10 +227,7 @@ bool NodeMerger<Mapper>::IsIdenticalContents(
   }
 
   DLOG(INFO) << "Checking Identical Contents for "
-             << "LHS Index Range: (" << lhs_range.start_idx
-             << ", " << lhs_range.num_subsequent << ") <=> "
-             << "RHS Index Range: (" << rhs_range.start_idx
-             << ", " << rhs_range.num_subsequent << ") ";
+             << IndexRange::to_str({lhs_range, rhs_range});
 
   auto lhs_segs = GetSegmentsFromIndexRange(lhs, lhs_range);
   auto rhs_segs = GetSegmentsFromIndexRange(rhs, rhs_range);
@@ -390,10 +393,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
 
 #ifdef DEBUG
       DLOG(INFO) << "Only Node 2 Map "
-                 <<  "(" << base_range.start_idx << ", "
-                 << base_range.num_subsequent << ") =>"
-                 <<  "(" << node_range.start_idx << ", "
-                 << node_range.num_subsequent << ")";
+                 << IndexRange::to_str({base_range, node_range});
 
       merge_first_node = false;
 #endif
@@ -404,10 +404,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
       node_range = map_it1->second;
 #ifdef DEBUG
       DLOG(INFO) << "Only Node 1 Map "
-                 <<  "(" << base_range.start_idx << ", "
-                 << base_range.num_subsequent << ") =>"
-                 <<  "(" << node_range.start_idx << ", "
-                 << node_range.num_subsequent << ")";
+                 << IndexRange::to_str({base_range, node_range});
 
       merge_first_node = true;
 #endif
@@ -421,14 +418,11 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
       IndexRange node_range2 = map_it2->second;
 
 
-      DLOG(INFO) << "LHS Map: (" << base_range1.start_idx
-                 << ", " << base_range1.num_subsequent << ") => ("
-                 << node_range1.start_idx << ", "
-                 << node_range1.num_subsequent << ")   "
-                 << "RHS Map: (" << base_range2.start_idx
-                 << ", " << base_range2.num_subsequent << ") => ("
-                 << node_range2.start_idx << ", "
-                 << node_range2.num_subsequent << ")   ";
+      DLOG(INFO) << "LHS Map: "
+                 << IndexRange::to_str({base_range, node_range1})
+                 << "  "
+                 << "RHS Map: "
+                 << IndexRange::to_str({base_range, node_range2});
 
       if (base_range1.start_idx ==
                    base_range2.start_idx &&
@@ -436,9 +430,9 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
                    base_range2.num_subsequent &&
                  IsIdenticalContents(node1, node_range1,
                                       node2, node_range2)) {
-          // base_range1 and base_range2 precisely overlaps
-          // and the referencing contents are identical
-          //   Apply only one different part
+        // base_range1 and base_range2 precisely overlaps
+        // and the referencing contents are identical
+        //   Apply only one different part
 
 #ifdef DEBUG
         DLOG(INFO) << "Identical Contents. ";
@@ -491,10 +485,8 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
 
     DLOG(INFO) << msg << "with # of Segments: " << segs.size()
                << " # of entries: " << num_entries
-               << " (" << node_range.start_idx << ", "
-               << node_range.num_subsequent << ") on "
-               << " Base Node (" << base_range.start_idx
-               << ", " << base_range.num_subsequent << ")\n"
+               << " Base Range: " << IndexRange::to_str(base_range)
+               << " Node Range: " << IndexRange::to_str(node_range)
                << "--------------------------------------------";
 #endif
     builder.Splice(base_range.start_idx,
@@ -507,6 +499,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
 }
 
 using KeyMerger = NodeMerger<OrderedKeyMapper>;
+using IndexMerger = NodeMerger<MinEditDistanceMapper>;
 }  // namespace ustore
 
 #endif  // USTORE_NODE_NODE_MERGER_H_
