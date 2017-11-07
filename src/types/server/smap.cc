@@ -113,6 +113,12 @@ Hash SMap::Remove(const Slice& key) const {
 }
 
 Hash SMap::Merge(const SMap& node1, const SMap& node2) const {
+  if (numElements() == 0 || node1.numElements() == 0 ||
+      node2.numElements() == 0) {
+    // Merge fails if an empty map exists.
+    return Hash();
+  }
+
   KeyMerger merger(hash(), chunk_loader_.get(), chunk_writer_);
   return merger.Merge(node1.hash(), node2.hash(),
                       *MapChunker::Instance(), false);
