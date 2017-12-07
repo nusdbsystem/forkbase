@@ -300,6 +300,9 @@ class Utils {
   static std::string TimeString(double ms);
   static std::string StorageSizeString(size_t n_bytes);
 
+  static ErrorCode GetFileContents(const std::string& file_path,
+                                   std::string* container);
+
  private:
   template<typename T>
   static inline void SleepFor(size_t units) {

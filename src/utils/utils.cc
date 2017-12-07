@@ -2,6 +2,7 @@
 
 #include <boost/tokenizer.hpp>
 #include <cmath>
+#include <fstream>
 #include <iomanip>
 #include <limits>
 #include "utils/utils.h"
@@ -372,6 +373,20 @@ std::string Utils::StorageSizeString(size_t n_bytes) {
        << (static_cast<double>(n_bytes) / bytes_per_pb) << "PB";
   }
   return ss.str();
+}
+
+ErrorCode Utils::GetFileContents(const std::string& file_path,
+                                 std::string* buf) {
+  std::ifstream ifs(file_path, std::ios::in | std::ios::binary);
+  if (!ifs) return ErrorCode::kFailedOpenFile;
+
+  ifs.seekg(0, std::ios::end);
+  size_t sz = ifs.tellg();
+  buf->resize(sz);
+  ifs.seekg(0, std::ios::beg);
+  ifs.read(&(buf->at(0)), sz);
+  ifs.close();
+  return ErrorCode::kOK;
 }
 
 }  // namespace ustore

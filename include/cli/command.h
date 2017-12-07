@@ -138,6 +138,8 @@ class Command {
                              const VList& list,
                              size_t ignored_pos = Utils::max_size_t);
 
+  ErrorCode PrepareValue(const std::string& cmd);
+
   static const size_t kDefaultLimitPrintElems;
   static size_t limit_print_elems;
 

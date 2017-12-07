@@ -228,9 +228,9 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BASIC_CMD("GET{_ALL}")
      << "-k <key> [-b <branch> | -v <version>]" << std::endl
      << FORMAT_BASIC_CMD("PUT")
-     << "-k <key> -x <value> {-p <type>} {-b <branch> |"
-     << std::endl << std::setw(kPrintBasicCmdWidth + 36) << ""
-     << "-u <refer_version>}" << std::endl
+     << "-k <key> [-x <value> | <file>]"
+     << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
+     << "{-p <type>} {-b <branch> | -u <refer_version>}" << std::endl
      << FORMAT_BASIC_CMD("APPEND")
      << "-k <key> -x <value> [-b <branch> | -u <refer_version>]" << std::endl
      << FORMAT_BASIC_CMD("UPDATE")
@@ -356,7 +356,7 @@ ErrorCode Command::ExecCommand(const std::string& cmd) {
   if (it_cmd_exec == cmd_exec_.end()) {
     auto it_alias_exec = alias_exec_.find(cmd);
     if (it_alias_exec == alias_exec_.end()) {
-      std::cerr << BOLD_RED("[ERROR] ")
+      std::cout << BOLD_RED("[ERROR] ")
                 << "Unknown command: " << cmd << std::endl;
       return ErrorCode::kUnknownCommand;
     }
@@ -367,7 +367,7 @@ ErrorCode Command::ExecCommand(const std::string& cmd) {
 
 ErrorCode Command::Run(int argc, char* argv[]) {
   if (!Config::ParseCmdArgs(argc, argv)) {
-    std::cerr << BOLD_RED("[ERROR] ")
+    std::cout << BOLD_RED("[ERROR] ")
               << "Found invalid command-line option" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -384,7 +384,7 @@ ErrorCode Command::Run(int argc, char* argv[]) {
   if (Config::command.empty() && !Config::script.empty()) {
     return ExecScript(Config::script);
   }
-  std::cerr << BOLD_RED("[ERROR] ")
+  std::cout << BOLD_RED("[ERROR] ")
             << "Either UStore command or \"--script\" must be given, "
             << "but not both" << std::endl;
   return ErrorCode::kInvalidCommandArgument;
@@ -395,7 +395,7 @@ ErrorCode Command::ExecScript(const std::string& script) {
                          << "Path of script must be given";
   std::ifstream ifs(script);
   if (!ifs) {
-    std::cerr << BOLD_RED("[FAILURE] ") << "Invalid path of script: "
+    std::cout << BOLD_RED("[FAILURE] ") << "Invalid path of script: "
               << script << std::endl;
     return ErrorCode::kFailedOpenFile;
   }
@@ -412,21 +412,21 @@ ErrorCode Command::ExecScript(const std::string& script) {
     if (line == "exit") break;
     std::cout << YELLOW(cnt_line << ":> ") << line << std::endl;
     if (!Utils::TokenizeArgs(line, &args)) {
-      std::cerr << BOLD_RED("[ERROR] ") << "Illegal command line"
+      std::cout << BOLD_RED("[ERROR] ") << "Illegal command line"
                 << std::endl << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
     } else if (!Config::ParseCmdArgs(args)) {  // parse command-line arguments
-      std::cerr << BOLD_RED("[ERROR] ")
+      std::cout << BOLD_RED("[ERROR] ")
                 << "Found invalid command-line option" << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
     } else if (Config::is_help) {  // ignore printing help message
       std::cout << "...(ignored for script running)" << std::endl;
     } else if (!Config::script.empty()) {  // prohibit running with script
-      std::cerr << BOLD_RED("[ERROR] ") << "\"--script\" cannot be used in "
+      std::cout << BOLD_RED("[ERROR] ") << "\"--script\" cannot be used in "
                 << "UStore script" << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
     } else if (Config::command.empty()) {  // validate the existence of command
-      std::cerr << BOLD_RED("[ERROR] ") << "UStore command is missing"
+      std::cout << BOLD_RED("[ERROR] ") << "UStore command is missing"
                 << std::endl;
       ec = ErrorCode::kInvalidCommandArgument;
     } else {  // everything is ready, go!
@@ -434,7 +434,7 @@ ErrorCode Command::ExecScript(const std::string& script) {
     }
     if (!expected_fail.empty()) {
       if (ec == ErrorCode::kOK) {
-        std::cerr << BOLD_RED("[FAILURE EXPECTED] ")
+        std::cout << BOLD_RED("[FAILURE EXPECTED] ")
                   << expected_fail << std::endl;
         ec = ErrorCode::kUnexpectedSuccess;
       } else {
@@ -456,20 +456,20 @@ ErrorCode Command::ExecManipMeta(
   const auto& ver = Config::version;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: GET] ")
+    std::cout << BOLD_RED("[INVALID ARGS: GET] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\", "
               << "Version: \"" << ver << "\"" << std::endl;
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET] ")
+    std::cout << BOLD_RED("[FAILED: GET] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET] ")
+    std::cout << BOLD_RED("[FAILED: GET] ")
               << "Key: \"" << key << "\", "
               << "Version: \"" << ver << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -558,7 +558,7 @@ ErrorCode Command::ValidateDistinct(const std::string& cmd,
                                     const std::vector<std::string>& elems,
                                     const VList& list, size_t ignored_pos) {
   const auto f_rpt_fail_by_distinct = [&cmd](const Slice & elem) {
-    std::cerr << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
+    std::cout << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
               << "Element \"" << elem << "\" violates the distinct constraint"
               << std::endl;
   };
@@ -597,14 +597,14 @@ ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
     Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+    std::cout << BOLD_RED("[FAILED: " << cmd << "] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: " << cmd << "] ")
+    std::cout << BOLD_RED("[FAILED: " << cmd << "] ")
               << "Key: \"" << key << "\", "
               << "Ref. Version: \"" << ref_ver << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -634,19 +634,50 @@ ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
   }
 }
 
+ErrorCode Command::PrepareValue(const std::string& cmd) {
+  auto& val = Config::value;
+  auto& file_path = Config::file;
+  // conditional execution
+  if ((val.empty() && file_path.empty()) ||
+      (!val.empty() && !file_path.empty())) {
+    std::cout << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
+              << "Value: \"" << val << "\", "
+              << "File: \"" << file_path << "\"" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (val.empty() && !file_path.empty()) {
+    auto ec = Utils::GetFileContents(file_path, &val);
+    if (ec != ErrorCode::kOK) {
+      std::cout << BOLD_RED("[FAILED: " << cmd << "] ")
+                << "Failed to open file: " << Config::file << std::endl;
+    }
+    return ec;
+  }
+  return ErrorCode::kOK;
+}
+
 ErrorCode Command::ExecPut() {
+  USTORE_GUARD(PrepareValue("PUT"));
+
   const auto& type = Config::type;
   const auto& key = Config::key;
   const auto& val = Config::value;
+  const auto& file_path = Config::file;
   const auto& branch = Config::branch;
   const auto& ref_ver = Config::ref_version;
   // conditional execution
   if (key.empty() || val.empty() || !(branch.empty() || ref_ver.empty())) {
-    std::cerr << BOLD_RED("[INVALID ARGS: PUT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: PUT] ")
               << "Type: \"" << type << "\", "
-              << "Key: \"" << key << "\", "
-              << "Value: \"" << val << "\", "
-              << "Branch: \"" << branch << "\", "
+              << "Key: \"" << key << "\", ";
+
+    if (file_path.empty()) {
+      std::cout << "Value: \"" << val << "\", ";
+    } else {
+      std::cout << "File: \"" << file_path << "\", ";
+    }
+
+    std::cout << "Branch: \"" << branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\"" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -703,7 +734,7 @@ ErrorCode Command::ExecPutMap() {
   for (auto it = elems.begin(); it != elems.end();) {
     keys.emplace_back(*it++);
     if (it == elems.end()) {
-      std::cerr << BOLD_RED("[INVALID ARGS: PUT] ")
+      std::cout << BOLD_RED("[INVALID ARGS: PUT] ")
                 << "Data value for map entry with Key \"" << *(it - 1)
                 << "\" is not provided" << std::endl;
       return ErrorCode::kInvalidCommandArgument;
@@ -755,7 +786,7 @@ ErrorCode Command::ExecAppend(VBlob& blob) {
   const auto& val = Config::value;
   // conditional execution
   if (val.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+    std::cout << BOLD_RED("[INVALID ARGS: APPEND] ")
               << "No data is provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -768,7 +799,7 @@ ErrorCode Command::ExecAppend(VList& list) {
   const auto& distinct = Config::distinct;
   // screen printing
   const auto f_rpt_invalid_args = [&val]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: APPEND] ")
+    std::cout << BOLD_RED("[INVALID ARGS: APPEND] ")
               << "No element is provided: \"" << val << "\""
               << std::endl;
   };
@@ -829,13 +860,13 @@ ErrorCode Command::ExecUpdate(VBlob& blob) {
   const auto& n_elems = Config::num_elements;
   // conditional execution
   if (pos < 0 || static_cast<size_t>(pos) >= blob.numElements()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << blob.numElements() - 1 << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (val.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "No data is provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -850,12 +881,12 @@ ErrorCode Command::ExecUpdate(VList& list) {
   auto& pos = Config::position;
   // screen printing
   const auto f_rpt_invalid_args = [&val]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "No element is provided: \"" << val << "\""
               << std::endl;
   };
   const auto f_rpt_fail_by_index = [&list, &pos]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << list.numElements() - 1 << std::endl;
   };
@@ -878,18 +909,18 @@ ErrorCode Command::ExecUpdate(VMap& map) {
   const auto& mkey = Config::map_key;
   // conditional execution
   if (mkey.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "Data key of map entry is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (val.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: UPDATE] ")
               << "Data value for map entry with Key \"" << mkey
               << "\" is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (map.Get(Slice(mkey)).empty()) {
-    std::cerr << BOLD_RED("[FAILED: UPDATE] ")
+    std::cout << BOLD_RED("[FAILED: UPDATE] ")
               << "Map entry with Key \"" << mkey << "\" does not exist"
               << std::endl;
     return ErrorCode::kMapKeyNotExists;
@@ -946,13 +977,13 @@ ErrorCode Command::ExecInsert(VBlob& blob) {
   const auto& pos = Config::position;
   // conditional execution
   if (pos < 0 || static_cast<size_t>(pos) > blob.numElements()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << blob.numElements() << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (val.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "No data is provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -966,12 +997,12 @@ ErrorCode Command::ExecInsert(VList& list) {
   const auto& pos = Config::position;
   // screen printing
   const auto f_rpt_invalid_args = [&val]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "No element is provided: \"" << val << "\""
               << std::endl;
   };
   const auto f_rpt_fail_by_index = [&list, &pos]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << list.numElements() << std::endl;
   };
@@ -998,18 +1029,18 @@ ErrorCode Command::ExecInsert(VMap& map) {
   const auto& mkey = Config::map_key;
   // conditional execution
   if (mkey.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Data key of map entry is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (val.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Data value for map entry with Key \"" << mkey
               << "\" is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (!map.Get(Slice(mkey)).empty()) {
-    std::cerr << BOLD_RED("[FAILED: INSERT] ")
+    std::cout << BOLD_RED("[FAILED: INSERT] ")
               << "Map entry with Key \"" << mkey << "\" already exists"
               << std::endl;
     return ErrorCode::kMapKeyExists;
@@ -1022,12 +1053,12 @@ ErrorCode Command::ExecInsert(VSet& set) {
   const auto& mkey = Config::map_key;
   // conditional execution
   if (mkey.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT] ")
               << "Data key of Set entry is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (!set.Get(Slice(mkey)).empty()) {
-    std::cerr << BOLD_RED("[FAILED: INSERT] ")
+    std::cout << BOLD_RED("[FAILED: INSERT] ")
               << "Set entry with Key \"" << mkey << "\" already exists"
               << std::endl;
     return ErrorCode::kMapKeyExists;
@@ -1086,7 +1117,7 @@ ErrorCode Command::ExecDelete(VBlob& blob) {
   const auto& n_elems = Config::num_elements;
   // conditional execution
   if (pos < 0 || static_cast<size_t>(pos) >= blob.numElements()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << blob.numElements() - 1 << std::endl;
     return ErrorCode::kInvalidCommandArgument;
@@ -1100,7 +1131,7 @@ ErrorCode Command::ExecDelete(VList& list) {
   const auto& n_elems = Config::num_elements;
   // conditional execution
   if (pos < 0 || static_cast<size_t>(pos) >= list.numElements()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE] ")
               << "Illegal positional index: [Actual] " << pos
               << ", [Expected] 0.." << list.numElements() - 1 << std::endl;
     return ErrorCode::kInvalidCommandArgument;
@@ -1113,12 +1144,12 @@ ErrorCode Command::ExecDelete(VMap& map) {
   const auto& mkey = Config::map_key;
   // conditional execution
   if (mkey.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE] ")
               << "Data key of map entry is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (map.Get(Slice(mkey)).empty()) {
-    std::cerr << BOLD_RED("[FAILED: DELETE] ")
+    std::cout << BOLD_RED("[FAILED: DELETE] ")
               << "Map entry with Key \"" << mkey << "\" does not exist"
               << std::endl;
     return ErrorCode::kMapKeyNotExists;
@@ -1131,12 +1162,12 @@ ErrorCode Command::ExecDelete(VSet& set) {
   const auto& mkey = Config::map_key;
   // conditional execution
   if (mkey.empty()) {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE] ")
               << "Data key of Set entry is not provided" << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   if (set.Get(Slice(mkey)).empty()) {
-    std::cerr << BOLD_RED("[FAILED: DELETE] ")
+    std::cout << BOLD_RED("[FAILED: DELETE] ")
               << "Set entry with Key \"" << mkey << "\" does not exist"
               << std::endl;
     return ErrorCode::kMapKeyNotExists;
@@ -1154,7 +1185,7 @@ ErrorCode Command::ExecMerge() {
   const auto& ref_ver2 = Config::version;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: MERGE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: MERGE] ")
               << "Key: \"" << key << "\", "
               << "Value: \"" << val << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
@@ -1168,7 +1199,7 @@ ErrorCode Command::ExecMerge() {
     Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: MERGE] ")
+    std::cout << BOLD_RED("[FAILED: MERGE] ")
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Ref. Branch: \"" << ref_branch << "\""
@@ -1176,7 +1207,7 @@ ErrorCode Command::ExecMerge() {
               << std::endl;
   };
   const auto f_rpt_fail_by_branch_ver = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: MERGE] ")
+    std::cout << BOLD_RED("[FAILED: MERGE] ")
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\""
@@ -1184,7 +1215,7 @@ ErrorCode Command::ExecMerge() {
               << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: MERGE] ")
+    std::cout << BOLD_RED("[FAILED: MERGE] ")
               << "Key: \"" << key << "\", "
               << "Ref. Version: \"" << ref_ver << "\", "
               << "Ref. Version (2nd): \"" << ref_ver2 << "\""
@@ -1238,7 +1269,7 @@ ErrorCode Command::ExecBranch() {
   const auto& ref_ver = Config::ref_version;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: BRANCH] ")
+    std::cout << BOLD_RED("[INVALID ARGS: BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Referring Branch: \"" << ref_branch << "\", "
@@ -1251,7 +1282,7 @@ ErrorCode Command::ExecBranch() {
               << std::endl;
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: BRANCH] ")
+    std::cout << BOLD_RED("[FAILED: BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Referring Branch: \"" << ref_branch << "\""
@@ -1259,7 +1290,7 @@ ErrorCode Command::ExecBranch() {
               << std::endl;
   };
   const auto f_rpt_fail_by_ver = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: BRANCH] ")
+    std::cout << BOLD_RED("[FAILED: BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Ref. Version: \"" << ref_ver << "\""
@@ -1295,7 +1326,7 @@ ErrorCode Command::ExecRenameBranch() {
   const auto& new_branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: RENAME] ")
+    std::cout << BOLD_RED("[INVALID ARGS: RENAME] ")
               << "Key: \"" << key << "\", "
               << "Referring Branch: \"" << old_branch << "\", "
               << "Target Branch: \"" << new_branch << "\"" << std::endl;
@@ -1307,7 +1338,7 @@ ErrorCode Command::ExecRenameBranch() {
               << "\" for Key \"" << key << "\"" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: RENAME] ")
+    std::cout << BOLD_RED("[FAILED: RENAME] ")
               << "Key: \"" << key << "\", "
               << "Ref. Branch: \"" << old_branch << "\", "
               << "Target Branch: \"" << new_branch << "\""
@@ -1329,7 +1360,7 @@ ErrorCode Command::ExecDeleteBranch() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE_BRANCH] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE_BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
@@ -1339,7 +1370,7 @@ ErrorCode Command::ExecDeleteBranch() {
               << "\" has been deleted for Key \"" << key << "\"" << std::endl;
   };
   const auto f_rpt_fail = [&key, &branch](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DELETE_BRANCH] ")
+    std::cout << BOLD_RED("[FAILED: DELETE_BRANCH] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1367,7 +1398,7 @@ ErrorCode Command::ExecListKey() {
     }
   };
   const auto f_rpt_fail = [](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: LIST_KEY] ")
+    std::cout << BOLD_RED("[FAILED: LIST_KEY] ")
               << "--> ErrorCode: " << ec << std::endl;
   };
   // execution
@@ -1388,7 +1419,7 @@ ErrorCode Command::ExecListBranch() {
   const auto& key = Config::key;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: LIST_BRANCH] ")
+    std::cout << BOLD_RED("[INVALID ARGS: LIST_BRANCH] ")
               << "Key: \"" << key << "\"" << std::endl;
   };
   const auto f_rpt_success = [](const std::vector<std::string>& branches) {
@@ -1401,7 +1432,7 @@ ErrorCode Command::ExecListBranch() {
     }
   };
   const auto f_rpt_fail = [&key](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: LIST_BRANCH] ")
+    std::cout << BOLD_RED("[FAILED: LIST_BRANCH] ")
               << "Key: \"" << key << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
@@ -1423,7 +1454,7 @@ ErrorCode Command::ExecHead() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: HEAD] ")
+    std::cout << BOLD_RED("[INVALID ARGS: HEAD] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
@@ -1433,7 +1464,7 @@ ErrorCode Command::ExecHead() {
     Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail = [&key, &branch](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: HEAD] ")
+    std::cout << BOLD_RED("[FAILED: HEAD] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1455,7 +1486,7 @@ ErrorCode Command::ExecLatest() {
   const auto& key = Config::key;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: LATEST] ")
+    std::cout << BOLD_RED("[INVALID ARGS: LATEST] ")
               << "Key: \"" << key << "\""
               << std::endl;
   };
@@ -1469,7 +1500,7 @@ ErrorCode Command::ExecLatest() {
     }
   };
   const auto f_rpt_fail = [&key](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: LATEST] ")
+    std::cout << BOLD_RED("[FAILED: LATEST] ")
               << "Key: \"" << key << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
@@ -1496,7 +1527,7 @@ ErrorCode Command::ExecExists() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: EXISTS] ")
+    std::cout << BOLD_RED("[INVALID ARGS: EXISTS] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
@@ -1509,7 +1540,7 @@ ErrorCode Command::ExecExists() {
               << (exist ? "True" : "False") << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: EXISTS] ")
+    std::cout << BOLD_RED("[FAILED: EXISTS] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1541,7 +1572,7 @@ ErrorCode Command::ExecIsHead() {
   const auto& ver = Config::version;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: IS_HEAD] ")
+    std::cout << BOLD_RED("[INVALID ARGS: IS_HEAD] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\", "
               << "Version: \"" << ver << "\"" << std::endl;
@@ -1551,7 +1582,7 @@ ErrorCode Command::ExecIsHead() {
               << (is_head ? "True" : "False") << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: IS_HEAD] ")
+    std::cout << BOLD_RED("[FAILED: IS_HEAD] ")
               << "Key: \"" << key << "\", "
               << "Branch: \"" << branch << "\", "
               << "Version: \"" << ver << "\""
@@ -1576,7 +1607,7 @@ ErrorCode Command::ExecIsLatest() {
   const auto& ver = Config::version;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: IS_LATEST] ")
+    std::cout << BOLD_RED("[INVALID ARGS: IS_LATEST] ")
               << "Key: \"" << key << "\", "
               << "Version: \"" << ver << "\"" << std::endl;
   };
@@ -1585,7 +1616,7 @@ ErrorCode Command::ExecIsLatest() {
               << (is_latest ? "True" : "False") << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: IS_LATEST] ")
+    std::cout << BOLD_RED("[FAILED: IS_LATEST] ")
               << "Key: \"" << key << "\", "
               << "Version: \"" << ver << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1608,7 +1639,7 @@ ErrorCode Command::ExecCreateTable() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: CREATE_TABLE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: CREATE_TABLE] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
@@ -1618,7 +1649,7 @@ ErrorCode Command::ExecCreateTable() {
               << branch << "\"" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: CREATE_TABLE] ")
+    std::cout << BOLD_RED("[FAILED: CREATE_TABLE] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1639,7 +1670,7 @@ ErrorCode Command::ExecGetTable() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: GET_TABLE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: GET_TABLE] ")
               << "Table: \"" << tab_name << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
@@ -1653,7 +1684,7 @@ ErrorCode Command::ExecGetTable() {
     }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
+    std::cout << BOLD_RED("[FAILED: GET_TABLE] ")
               << "Table: \"" << tab_name << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1676,7 +1707,7 @@ ErrorCode Command::ExecBranchTable() {
   const auto& ref_branch = Config::ref_branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: BRANCH_TABLE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: BRANCH_TABLE] ")
               << "Table: \"" << tab << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Referring Branch: \"" << ref_branch << "\"" << std::endl;
@@ -1688,7 +1719,7 @@ ErrorCode Command::ExecBranchTable() {
               << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: BRANCH_TABLE] ")
+    std::cout << BOLD_RED("[FAILED: BRANCH_TABLE] ")
               << "Table: \"" << tab << "\", "
               << "Target Branch: \"" << tgt_branch << "\", "
               << "Referring Branch: \"" << ref_branch << "\""
@@ -1709,7 +1740,7 @@ ErrorCode Command::ExecListTableBranch() {
   const auto& tab = Config::table;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: LIST_TABLE_BRANCH] ")
+    std::cout << BOLD_RED("[INVALID ARGS: LIST_TABLE_BRANCH] ")
               << "Table: \"" << tab << "\"" << std::endl;
   };
   const auto f_rpt_success = [](const std::vector<std::string>& branches) {
@@ -1722,7 +1753,7 @@ ErrorCode Command::ExecListTableBranch() {
     }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: LIST_TABLE_BRANCH] ")
+    std::cout << BOLD_RED("[FAILED: LIST_TABLE_BRANCH] ")
               << "Table: \"" << tab << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
@@ -1743,7 +1774,7 @@ ErrorCode Command::ExecDeleteTable() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE_TABLE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE_TABLE] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
@@ -1753,7 +1784,7 @@ ErrorCode Command::ExecDeleteTable() {
               << "\" has been deleted" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DELETE_TABLE] ")
+    std::cout << BOLD_RED("[FAILED: DELETE_TABLE] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1775,7 +1806,7 @@ ErrorCode Command::ExecGetColumn() {
   const auto& col_name = Config::column;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: GET_COLUMN] ")
+    std::cout << BOLD_RED("[INVALID ARGS: GET_COLUMN] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\"" << std::endl;
@@ -1792,7 +1823,7 @@ ErrorCode Command::ExecGetColumn() {
     }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
+    std::cout << BOLD_RED("[FAILED: GET_COLUMN] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\""
@@ -1815,7 +1846,7 @@ ErrorCode Command::ExecListColumnBranch() {
   const auto& col = Config::column;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: LIST_COLUMN_BRANCH] ")
+    std::cout << BOLD_RED("[INVALID ARGS: LIST_COLUMN_BRANCH] ")
               << "Table: \"" << tab << "\", "
               << "Column: \"" << col << "\"" << std::endl;
   };
@@ -1829,7 +1860,7 @@ ErrorCode Command::ExecListColumnBranch() {
     }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: LIST_COLUMN_BRANCH] ")
+    std::cout << BOLD_RED("[FAILED: LIST_COLUMN_BRANCH] ")
               << "Table: \"" << tab << "\", "
               << "Column: \"" << col << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1852,7 +1883,7 @@ ErrorCode Command::ExecDeleteColumn() {
   const auto& col_name = Config::column;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE_COLUMN] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE_COLUMN] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\"" << std::endl;
@@ -1864,7 +1895,7 @@ ErrorCode Command::ExecDeleteColumn() {
               << "\" of Branch \"" << branch << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DELETE_COLUMN] ")
+    std::cout << BOLD_RED("[FAILED: DELETE_COLUMN] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\""
@@ -1893,7 +1924,7 @@ ErrorCode Command::ExecDiffTable() {
   const auto& rhs_branch = Config::ref_branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DIFF_TABLE] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DIFF_TABLE] ")
               << "Table: \"" << lhs_tab_name << "\", "
               << "Branch: \"" << lhs_branch << "\", "
               << "Table (2nd): \"" << rhs_tab_name << "\", "
@@ -1911,14 +1942,14 @@ ErrorCode Command::ExecDiffTable() {
     }
   };
   const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
+    std::cout << BOLD_RED("[FAILED: GET_TABLE] ")
               << "Table: \"" << lhs_tab_name << "\", "
               << "Branch: \"" << lhs_branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET_TABLE] ")
+    std::cout << BOLD_RED("[FAILED: GET_TABLE] ")
               << "Table (2nd): \"" << rhs_tab_name << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -1956,7 +1987,7 @@ ErrorCode Command::ExecDiffColumn() {
   auto& rhs_col_name = Config::ref_column;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DIFF_COLUMN] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DIFF_COLUMN] ")
               << "Table: \"" << lhs_tab << "\", "
               << "Branch: \"" << lhs_branch << "\", "
               << "Column: \"" << lhs_col_name << "\", "
@@ -1979,7 +2010,7 @@ ErrorCode Command::ExecDiffColumn() {
     }
   };
   const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
+    std::cout << BOLD_RED("[FAILED: GET_COLUMN] ")
               << "Table: \"" << lhs_tab << "\", "
               << "Branch: \"" << lhs_branch << "\", "
               << "Column: \"" << lhs_col_name << "\""
@@ -1987,7 +2018,7 @@ ErrorCode Command::ExecDiffColumn() {
               << std::endl;
   };
   const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET_COLUMN] ")
+    std::cout << BOLD_RED("[FAILED: GET_COLUMN] ")
               << "Table (2nd): \"" << rhs_tab << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\", "
               << "Column (2nd): \"" << rhs_col_name << "\""
@@ -2024,7 +2055,7 @@ ErrorCode Command::ExecExistsTable() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: EXISTS] ")
+    std::cout << BOLD_RED("[INVALID ARGS: EXISTS] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
@@ -2037,7 +2068,7 @@ ErrorCode Command::ExecExistsTable() {
               << (exist ? "True" : "False") << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: EXISTS] ")
+    std::cout << BOLD_RED("[FAILED: EXISTS] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -2067,7 +2098,7 @@ ErrorCode Command::ExecExistsColumn() {
   const auto& col_name = Config::column;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: EXISTS] ")
+    std::cout << BOLD_RED("[INVALID ARGS: EXISTS] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\"" << std::endl;
@@ -2081,7 +2112,7 @@ ErrorCode Command::ExecExistsColumn() {
               << (exist ? "True" : "False") << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: EXISTS] ")
+    std::cout << BOLD_RED("[FAILED: EXISTS] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\""
@@ -2113,7 +2144,7 @@ ErrorCode Command::ExecLoadCSV() {
   const auto& batch_size = Config::batch_size;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: LOAD_CSV] ")
+    std::cout << BOLD_RED("[INVALID ARGS: LOAD_CSV] ")
               << "File: \"" << file_path << "\", "
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
@@ -2124,7 +2155,7 @@ ErrorCode Command::ExecLoadCSV() {
               << "has been populated" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: LOAD_CSV] ")
+    std::cout << BOLD_RED("[FAILED: LOAD_CSV] ")
               << "File: \"" << file_path << "\", "
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
@@ -2147,7 +2178,7 @@ ErrorCode Command::ExecDumpCSV() {
   const auto& branch = Config::branch;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DUMP_CSV] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DUMP_CSV] ")
               << "File: \"" << file_path << "\", "
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
@@ -2158,7 +2189,7 @@ ErrorCode Command::ExecDumpCSV() {
               << "\" " << "has been exported" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DUMP_CSV] ")
+    std::cout << BOLD_RED("[FAILED: DUMP_CSV] ")
               << "File: \"" << file_path << "\", "
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\""
@@ -2182,7 +2213,7 @@ ErrorCode Command::ExecGetRow() {
   const auto& ref_val = Config::ref_value;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: GET_ROW] ")
+    std::cout << BOLD_RED("[INVALID ARGS: GET_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
@@ -2205,7 +2236,7 @@ ErrorCode Command::ExecGetRow() {
     }
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: GET_ROW] ")
+    std::cout << BOLD_RED("[FAILED: GET_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
@@ -2246,7 +2277,7 @@ ErrorCode Command::ExecInsertRow() {
   const auto& val = Config::value;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: INSERT_ROW] ")
+    std::cout << BOLD_RED("[INVALID ARGS: INSERT_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << (distinct ? "Distinct Column: \"" + distinct_col + "\", " : "")
@@ -2257,7 +2288,7 @@ ErrorCode Command::ExecInsertRow() {
               << "1 row has been inserted" << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: INSERT_ROW] ")
+    std::cout << BOLD_RED("[FAILED: INSERT_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << (distinct ? "Distinct Column: \"" + distinct_col + "\", " : "")
@@ -2295,7 +2326,7 @@ ErrorCode Command::ExecUpdateRow() {
   const auto& val = Config::value;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: UPDATE_ROW] ")
+    std::cout << BOLD_RED("[INVALID ARGS: UPDATE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
@@ -2309,7 +2340,7 @@ ErrorCode Command::ExecUpdateRow() {
               << " been updated" << std::endl;
   };
   const auto f_rpt_fail_by_idx = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: UPDATE_ROW] ")
+    std::cout << BOLD_RED("[FAILED: UPDATE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Row Index: " << row_idx << ", "
@@ -2318,7 +2349,7 @@ ErrorCode Command::ExecUpdateRow() {
               << std::endl;
   };
   const auto f_rpt_fail_by_col = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: UPDATE_ROW] ")
+    std::cout << BOLD_RED("[FAILED: UPDATE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
@@ -2360,7 +2391,7 @@ ErrorCode Command::ExecDeleteRow() {
   const auto& row_idx = Config::position;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cerr << BOLD_RED("[INVALID ARGS: DELETE_ROW] ")
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
@@ -2373,7 +2404,7 @@ ErrorCode Command::ExecDeleteRow() {
               << " been deleted" << std::endl;
   };
   const auto f_rpt_fail_by_idx = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DELETE_ROW] ")
+    std::cout << BOLD_RED("[FAILED: DELETE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Row Index: " << row_idx
@@ -2381,7 +2412,7 @@ ErrorCode Command::ExecDeleteRow() {
               << std::endl;
   };
   const auto f_rpt_fail_by_col = [&](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: DELETE_ROW] ")
+    std::cout << BOLD_RED("[FAILED: DELETE_ROW] ")
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\", "
               << "Ref. Column: \"" << ref_col << "\", "
@@ -2419,7 +2450,7 @@ ErrorCode Command::ExecInfo() {
     for (auto& e : info) std::cout << e << std::endl;
   };
   const auto f_rpt_fail = [](const ErrorCode & ec) {
-    std::cerr << BOLD_RED("[FAILED: INFO] ")
+    std::cout << BOLD_RED("[FAILED: INFO] ")
               << "--> ErrorCode: " << ec << std::endl;
   };
   // execution
@@ -2450,7 +2481,7 @@ ErrorCode Command::ExecMeta() {
     // check for type consistency
     auto type = ucell.type();
     if (expected_type != UType::kUnknown && type != expected_type) {
-      std::cerr << BOLD_RED("[FAILED: META] ")
+      std::cout << BOLD_RED("[FAILED: META] ")
                 << "Inconsistent types: [Actual] \"" << type << "\", "
                 << "[Expected] \"" << expected_type << "\"" << std::endl;
       return ErrorCode::kInconsistentType;
