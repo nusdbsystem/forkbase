@@ -226,7 +226,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
   os << BLUE("UStore Basic Commands") << ":"
      << std::endl
      << FORMAT_BASIC_CMD("GET{_ALL}")
-     << "-k <key> [-b <branch> | -v <version>]" << std::endl
+     << "-k <key> [-b <branch> | -v <version>] {<file>}" << std::endl
      << FORMAT_BASIC_CMD("PUT")
      << "-k <key> [-x <value> | <file>]"
      << std::endl << std::setw(kPrintBasicCmdWidth + 3) << ""
@@ -501,6 +501,17 @@ ErrorCode Command::ExecGet() {
   }
 
   const auto f_manip_meta = [](const VMeta & meta) {
+    auto& file_path = Config::file;
+    std::ofstream ofs(file_path, std::ios::out | std::ios::binary);
+    if (!file_path.empty() && !ofs) {
+      std::cout << BOLD_RED("[FAILED: GET] ")
+                << "Failed to open file: " << file_path << std::endl;
+      return ErrorCode::kFailedOpenFile;
+    }
+    std::ostream& val_os = file_path.empty() ? std::cout : ofs;
+    const std::string quote(file_path.empty() ? "\"" : "");
+    if (!file_path.empty()) limit_print_elems = Utils::max_size_t;
+
     auto type = meta.type();
     if (!Config::is_vert_list) {
       std::cout << BOLD_GREEN("[SUCCESS: GET] ")
@@ -510,15 +521,16 @@ ErrorCode Command::ExecGet() {
     switch (type) {
       case UType::kString:
       case UType::kBlob:
-        std::cout << "\"" << meta << "\"";
+        val_os << quote << meta << quote;
         break;
       case UType::kList: {
         auto list = meta.List();
         if (Config::is_vert_list) {
           for (auto it = list.Scan(); !it.end(); it.next())
-            std::cout << it.value() << std::endl;
+            val_os << it.value() << std::endl;
         } else {
-          Utils::Print(list, "[", "]", ", ", true, limit_print_elems);
+          Utils::Print(
+            list, "[", "]", ", ", !quote.empty(), limit_print_elems, val_os);
         }
         break;
       }
@@ -526,10 +538,10 @@ ErrorCode Command::ExecGet() {
         auto map = meta.Map();
         if (Config::is_vert_list) {
           for (auto it = map.Scan(); !it.end(); it.next())
-            std::cout << it.key() << " -> " << it.value() << std::endl;
+            val_os << it.key() << " -> " << it.value() << std::endl;
         } else {
-          Utils::Print(
-            meta.Map(), "[", "]", ", ", "(", ")", ",", true, limit_print_elems);
+          Utils::Print(meta.Map(), "[", "]", ", ", "(", ")", ",",
+                       !quote.empty(), limit_print_elems, val_os);
         }
         break;
       }
@@ -537,18 +549,23 @@ ErrorCode Command::ExecGet() {
         auto set = meta.Set();
         if (Config::is_vert_list) {
           for (auto it = set.Scan(); !it.end(); it.next())
-            std::cout << it.key() << std::endl;
+            val_os << it.key() << std::endl;
         } else {
-          Utils::Print(
-            meta.Set(), "[", "]", ", ", "(", ")", true, limit_print_elems);
+          Utils::Print(meta.Set(), "[", "]", ", ", !quote.empty(),
+                       limit_print_elems, val_os);
         }
         break;
       }
       default:
-        std::cout << meta;
+        val_os << meta;
         break;
     }
-    if (!Config::is_vert_list) std::cout << std::endl;
+    if (!Config::is_vert_list && file_path.empty()) val_os << std::endl;
+    if (!file_path.empty()) {
+      std::cout << "--> " << file_path << std::endl;
+      ofs.close();
+      limit_print_elems = kDefaultLimitPrintElems;
+    }
     return ErrorCode::kOK;
   };
   return ExecManipMeta(f_manip_meta);
@@ -638,8 +655,7 @@ ErrorCode Command::PrepareValue(const std::string& cmd) {
   auto& val = Config::value;
   auto& file_path = Config::file;
   // conditional execution
-  if ((val.empty() && file_path.empty()) ||
-      (!val.empty() && !file_path.empty())) {
+  if (!(val.empty() ^ file_path.empty())) {
     std::cout << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
               << "Value: \"" << val << "\", "
               << "File: \"" << file_path << "\"" << std::endl;
@@ -649,7 +665,7 @@ ErrorCode Command::PrepareValue(const std::string& cmd) {
     auto ec = Utils::GetFileContents(file_path, &val);
     if (ec != ErrorCode::kOK) {
       std::cout << BOLD_RED("[FAILED: " << cmd << "] ")
-                << "Failed to open file: " << Config::file << std::endl;
+                << "Failed to open file: " << file_path << std::endl;
     }
     return ec;
   }

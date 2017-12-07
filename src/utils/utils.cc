@@ -216,12 +216,11 @@ void Utils::Print(const UMap& map, const std::string& lsymbol,
 
 void Utils::Print(const USet& set, const std::string& lsymbol,
                   const std::string& rsymbol, const std::string& sep,
-                  const std::string& lentry, const std::string& rentry,
                   bool elem_in_quote, size_t limit, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = set.Scan();
   auto f_print_it = [&]() {
-    os << lentry << quote << it.key() << quote << rentry;
+    os << quote << it.key() << quote;
   };
   os << lsymbol;
   if (!it.end()) {

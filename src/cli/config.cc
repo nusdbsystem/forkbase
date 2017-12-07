@@ -48,7 +48,7 @@ void Config::Reset() {
   file = "";
   time_exec = false;
   is_vert_list = false;
-  type = UType::kString;
+  type = UType::kBlob;
   key = "";
   map_key = "";
   value = "";
@@ -154,7 +154,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
 
   po::options_description general(BLUE_STR("General Options"), 120);
   general.add_options()
-  ("type,p", po::value<std::string>()->default_value("String"),
+  ("type,p", po::value<std::string>()->default_value("Blob"),
    "data type")
   ("key,k", po::value<std::string>()->default_value(""),
    "key of data")

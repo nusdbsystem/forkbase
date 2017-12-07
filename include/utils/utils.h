@@ -238,8 +238,6 @@ class Utils {
   static void Print(const USet& set, const std::string& lsymbol = "[",
                     const std::string& rsymbol = "]",
                     const std::string& sep = ", ",
-                    const std::string& lentry = "(",
-                    const std::string& rentry = ")",
                     bool elem_in_quote = false, size_t limit = max_size_t,
                     std::ostream& os = std::cout);
 
@@ -499,7 +497,7 @@ inline std::ostream& operator<<(std::ostream& os, const UMap& obj) {
 
 inline std::ostream& operator<<(std::ostream& os, const USet& obj) {
   Utils::Print(
-    obj, "[", "]", ", ", "(", ")", false, Utils::max_size_t, os);
+    obj, "[", "]", ", ", false, Utils::max_size_t, os);
   return os;
 }
 
