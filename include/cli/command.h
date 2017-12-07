@@ -111,6 +111,8 @@ class Command {
   ErrorCode ExecManipMeta(
     const std::function<ErrorCode(const VMeta&)>& f_output_meta);
 
+  ErrorCode PrepareValue(const std::string& cmd);
+
   ErrorCode ExecPut(const std::string& cmd, const VObject& obj);
   ErrorCode ExecPutString();
   ErrorCode ExecPutBlob();
@@ -138,7 +140,7 @@ class Command {
                              const VList& list,
                              size_t ignored_pos = Utils::max_size_t);
 
-  ErrorCode PrepareValue(const std::string& cmd);
+  ErrorCode ExecGetStoreSize();
 
   static const size_t kDefaultLimitPrintElems;
   static size_t limit_print_elems;

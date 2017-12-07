@@ -993,4 +993,16 @@ ErrorCode ColumnStore::GetStorageBytes(size_t* n_bytes) {
   return ErrorCode::kOK;
 }
 
+ErrorCode ColumnStore::GetStorageChunks(size_t* n_chunks) {
+  auto rst = odb_.GetStorageInfo();
+  USTORE_GUARD(rst.stat);
+  *n_chunks = 0;
+  for (auto& info : rst.value) {
+    for (auto& n_chunks_per_type : info.chunksPerType) {
+      *n_chunks += n_chunks_per_type.second;
+    }
+  }
+  return ErrorCode::kOK;
+}
+
 }  // namespace ustore

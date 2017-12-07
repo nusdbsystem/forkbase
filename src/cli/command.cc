@@ -212,6 +212,9 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("INFO", "STATE");
   CMD_ALIAS("INFO", "STATUS");
   CMD_ALIAS("INFO", "STAT");
+  CMD_HANDLER("STORE_SIZE", ExecGetStoreSize());
+  CMD_ALIAS("STORE_SIZE", "STORE-SIZE");
+  CMD_ALIAS("STORE_SIZE", "SIZE");
 }
 
 const int kPrintBasicCmdWidth = 15;
@@ -326,7 +329,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << BLUE("UStore Utility Commands") << ":"
      << std::endl
      << FORMAT_UTIL_CMD("HELP") << std::endl
-     << FORMAT_UTIL_CMD("INFO") << std::endl;
+     << FORMAT_UTIL_CMD("INFO") << std::endl
+     << FORMAT_UTIL_CMD("STORE_SIZE") << std::endl;
 }
 
 void Command::PrintHelp() {
@@ -1415,7 +1419,8 @@ ErrorCode Command::ExecListKey() {
   };
   const auto f_rpt_fail = [](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: LIST_KEY] ")
-              << "--> ErrorCode: " << ec << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // execution
   auto rst = odb_.ListKeys();
@@ -2467,7 +2472,8 @@ ErrorCode Command::ExecInfo() {
   };
   const auto f_rpt_fail = [](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: INFO] ")
-              << "--> ErrorCode: " << ec << std::endl;
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
   };
   // execution
   auto rst = odb_.GetStorageInfo();
@@ -2541,6 +2547,38 @@ ErrorCode Command::ExecListKeyAll() { PRINT_ALL(ExecListKey()); }
 ErrorCode Command::ExecLatestAll() { PRINT_ALL(ExecLatest()); }
 
 ErrorCode Command::ExecGetColumnAll() { PRINT_ALL(ExecGetColumn()); }
+
+ErrorCode Command::ExecGetStoreSize() {
+  // screen printing
+  const auto f_rpt_success = [](const size_t n_bytes, const size_t n_chunks) {
+    std::cout << BOLD_GREEN("[SUCCESS:: STORE_SIZE] ")
+              << "Total: " << Utils::StorageSizeString(n_bytes)
+              << BLUE("  [Chunks: " << n_chunks << "]") << std::endl;
+  };
+  const auto f_rpt_fail = [](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: STORE_SIZE] ")
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // execution
+  size_t n_bytes, n_chunks;
+  ErrorCode ec(ErrorCode::kUnknownOp);
+
+  ec = cs_.GetStorageBytes(&n_bytes);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+
+  ec = cs_.GetStorageChunks(&n_chunks);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+
+  f_rpt_success(n_bytes, n_chunks);
+  return ErrorCode::kOK;
+}
 
 }  // namespace cli
 }  // namespace ustore

@@ -166,6 +166,7 @@ class ColumnStore {
   }
 
   ErrorCode GetStorageBytes(size_t* n_bytes);
+  ErrorCode GetStorageChunks(size_t* n_chunks);
 
  private:
   ErrorCode ReadTable(const Slice& table, const Slice& branch, Table* tab);
