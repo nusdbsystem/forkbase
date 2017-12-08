@@ -103,8 +103,7 @@ std::ostream& operator<<(std::ostream& os, const UList& obj) {
   if (!it.end()) {
     os << it.value();
     for (it.next(); !it.end(); it.next()) {
-      os << ", ";
-      os << it.value();
+      os << ", " << it.value();
     }
   }
   os << "]";

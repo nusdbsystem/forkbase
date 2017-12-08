@@ -613,8 +613,8 @@ ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
   // screen printing
   const auto f_rpt_success = [&](const Hash & ver) {
     std::cout << BOLD_GREEN("[SUCCESS: " << cmd << "] ")
-              << "Type: \"" << obj.value().type << "\", "
-              << "Version: \"" << ver << '\"' << std::endl;
+              << "Type: " << obj.value().type << ", "
+              << "Version: " << ver << std::endl;
     Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
@@ -698,7 +698,7 @@ ErrorCode Command::ExecPut() {
     }
 
     std::cout << "Branch: \"" << branch << "\", "
-              << "Ref. Version: \"" << ref_ver << "\"" << std::endl;
+              << "Ref. Version: " << ref_ver << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   ErrorCode ec(ErrorCode::kUnknownOp);
@@ -1215,7 +1215,7 @@ ErrorCode Command::ExecMerge() {
   };
   const auto f_rpt_success = [](const Hash & ver) {
     std::cout << BOLD_GREEN("[SUCCESS: MERGE] ")
-              << "Version: \"" << ver << '\"' << std::endl;
+              << "Version: " << ver << std::endl;
     Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail_by_branch = [&](const ErrorCode & ec) {
@@ -1481,7 +1481,7 @@ ErrorCode Command::ExecHead() {
   };
   const auto f_rpt_success = [](const Hash & ver) {
     std::cout << BOLD_GREEN("[SUCCESS: HEAD] ")
-              << "Version: \"" << ver << '\"' << std::endl;
+              << "Version: " << ver << std::endl;
     Config::AddHistoryVersion(ver);
   };
   const auto f_rpt_fail = [&key, &branch](const ErrorCode & ec) {
@@ -2522,11 +2522,47 @@ ErrorCode Command::ExecMeta() {
       os << name << ": ";
       return os;
     };
+    auto f_print_value = [&meta, &os] {
+      switch (meta.type()) {
+        case UType::kString:
+        case UType::kBlob:
+          os << "\"" << meta << "\"";
+          break;
+        case UType::kList: {
+          auto list = meta.List();
+          Utils::Print(
+            list, "[", "]", ", ", true, limit_print_elems, os);
+          break;
+        }
+        case UType::kMap: {
+          auto map = meta.Map();
+          Utils::Print(meta.Map(), "[", "]", ", ", "(", ")", ",", true,
+                       limit_print_elems, os);
+          break;
+        }
+        case UType::kSet: {
+          auto set = meta.Set();
+          Utils::Print(
+            meta.Set(), "[", "]", ", ", true, limit_print_elems, os);
+          break;
+        }
+        default:
+          os << meta;
+          break;
+      }
+    };
     os << (is_vert_list ? "" : BOLD_GREEN_STR("[SUCCESS: META] "));
-    f_next_item("", "Type") << "\"" << ucell.type() << "\"";
-    f_next_item(", ", "Version") << "\"" << ucell.hash() << "\"";
-    f_next_item(", ", "Parents");
-    Utils::Print(prev_vers, "[", "]", ", ", true);
+    {
+      f_next_item("", "Type") << ucell.type();
+    }{
+      f_next_item(", ", "Value");
+      f_print_value();
+    }{
+      f_next_item(", ", "Version") << ucell.hash();
+    }{
+      f_next_item(", ", "Parents");
+      Utils::Print(prev_vers, "[", "]", ", ", false);
+    }
     os << std::endl;
     return ErrorCode::kOK;
   };
