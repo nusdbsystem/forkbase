@@ -15,70 +15,49 @@
 
 namespace ustore {
 
-/**
- * @brief Table of head versions of data.
- *
- * This class should only be instantiated by Worker.
- */
 class HeadVersion : private Noncopyable {
  public:
-  HeadVersion() = default;
-  ~HeadVersion() = default;
-
   // TODO(yaochang): persist the log of branch update.
-  inline void LogBranchUpdate(const Slice& key, const Slice& branch,
-                              const Hash& ver) const {}
+  virtual void LogBranchUpdate(const Slice& key, const Slice& branch,
+                               const Hash& ver) const {}
 
   // Load branch version info from log path
   // Add them into member branch_ver_
   // Return whether loading succeeds
-  bool LoadBranchVersion(const std::string& log_path);
+  virtual bool LoadBranchVersion(const std::string& log_path) = 0;
 
   // Dump branch_ver_ into log_path
   // Return whether Dumping succeeds
-  bool DumpBranchVersion(const std::string& log_path);
+  virtual bool DumpBranchVersion(const std::string& log_path) const = 0;
 
-  boost::optional<Hash> GetBranch(const Slice& key,
-                                  const Slice& branch) const;
+  virtual boost::optional<Hash> GetBranch(const Slice& key,
+                                          const Slice& branch) const = 0;
 
-  std::vector<Hash> GetLatest(const Slice& key) const;
+  virtual std::vector<Hash> GetLatest(const Slice& key) const = 0;
 
-  void PutBranch(const Slice& key, const Slice& branch, const Hash& ver);
+  virtual void PutBranch(const Slice& key, const Slice& branch,
+                         const Hash& ver) = 0;
 
-  void PutLatest(const Slice& key, const Hash& prev_ver1,
-                 const Hash& prev_ver2, const Hash& ver);
+  virtual void PutLatest(const Slice& key, const Hash& prev_ver1,
+                         const Hash& prev_ver2, const Hash& ver) = 0;
 
-  void RemoveBranch(const Slice& key, const Slice& branch);
+  virtual void RemoveBranch(const Slice& key, const Slice& branch) = 0;
 
-  void RenameBranch(const Slice& key, const Slice& old_branch,
-                    const Slice& new_branch);
+  virtual void RenameBranch(const Slice& key, const Slice& old_branch,
+                            const Slice& new_branch) = 0;
 
-  std::vector<Slice> ListKey() const;
+  virtual std::vector<Slice> ListKey() const = 0;
 
-  inline bool Exists(const Slice& key) const {
-    return latest_ver_.find(key) != latest_ver_.end();
-  }
+  virtual bool Exists(const Slice& key) const = 0;
 
-  bool Exists(const Slice& key, const Slice& branch) const;
+  virtual bool Exists(const Slice& key, const Slice& branch) const = 0;
 
-  bool IsLatest(const Slice& key, const Hash& ver) const;
+  virtual bool IsLatest(const Slice& key, const Hash& ver) const = 0;
 
-  inline bool IsBranchHead(const Slice& key, const Slice& branch,
-                           const Hash& ver) const {
-    return Exists(key, branch) ? branch_ver_.at(key).at(branch) == ver : false;
-  }
+  virtual bool IsBranchHead(const Slice& key, const Slice& branch,
+                            const Hash& ver) const = 0;
 
-  std::vector<Slice> ListBranch(const Slice& key) const;
-
-  inline const std::unordered_map<PSlice, std::map<PSlice, Hash>>&
-      branchVersion() const {
-    return branch_ver_;
-  }
-
- private:
-  // use std::map for branch to preserve branch order
-  std::unordered_map<PSlice, std::map<PSlice, Hash>> branch_ver_;
-  std::unordered_map<PSlice, std::unordered_set<Hash>> latest_ver_;
+  virtual std::vector<Slice> ListBranch(const Slice& key) const = 0;
 };
 
 }  // namespace ustore

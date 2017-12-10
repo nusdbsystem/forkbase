@@ -6,7 +6,7 @@
 
 #include "hash/hash.h"
 #include "spec/slice.h"
-#include "worker/head_version.h"
+#include "worker/simple_head_version.h"
 
 using namespace ustore;
 
@@ -28,7 +28,7 @@ const Hash ver[] = {
   Hash::ComputeFrom("v7")
 };
 
-HeadVersion head_ver;
+SimpleHeadVersion head_ver;
 constexpr char test_head_version_log[] = "test_head_version.log";
 
 TEST(Worker, HeadVersion_PutBranch) {
@@ -56,7 +56,7 @@ TEST(Worker, HeadVersion_PutBranch) {
 }
 
 TEST(Worker, HeadVersion_Load) {
-  HeadVersion new_head_ver;
+  SimpleHeadVersion new_head_ver;
   new_head_ver.LoadBranchVersion(test_head_version_log);
   EXPECT_EQ(size_t(3), new_head_ver.ListBranch(key[0]).size());
   EXPECT_EQ(ver[1], new_head_ver.GetBranch(key[0], branch[0]));

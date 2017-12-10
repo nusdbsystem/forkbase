@@ -14,7 +14,8 @@
 #include "types/server/factory.h"
 #include "types/ucell.h"
 #include "utils/noncopyable.h"
-#include "worker/head_version.h"
+#include "worker/rocksdb_head_version.h"
+#include "worker/simple_head_version.h"
 
 namespace ustore {
 
@@ -58,7 +59,7 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
    * @return        Error code. (ErrorCode::kOK for success)
    */
   ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell) const
-    override;
+  override;
 
   /**
    * @brief Read the value of a version.
@@ -69,7 +70,7 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
    * @return        Error code. (ErrorCode::kOK for success)
    */
   ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell) const
-    override;
+  override;
 
   /**
    * @brief Write a new value as the head of a branch.
@@ -205,14 +206,14 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
   }
 
   ErrorCode GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) const
-    override;
+  override;
 
   ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const override;
 
   ErrorCode ListKeys(std::vector<std::string>* keys) const override;
 
   ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
-    const override;
+  const override;
 
   bool Exists(const Hash& ver) const;
 
@@ -276,7 +277,7 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
   }
 
   inline ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* vers)
-    const override {
+  const override {
     *vers = GetLatestVersions(key);
     return ErrorCode::kOK;
   }
@@ -297,14 +298,17 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
     return ErrorCode::kOK;
   }
 
-  const std::map<PSlice, Hash>* GetBranchRef(const Slice& key) const {
-    const auto& branch_it = head_ver_.branchVersion().find(key);
-    if (branch_it == head_ver_.branchVersion().end()) return nullptr;
-    return &(branch_it->second);
-  }
+  /**
+   * linqian: remove this since GetBranchRef() is unused.
+   */
+  // const std::map<PSlice, Hash>* GetBranchRef(const Slice& key) const {
+  //   const auto& branch_it = head_ver_.branchVersion().find(key);
+  //   if (branch_it == head_ver_.branchVersion().end()) return nullptr;
+  //   return &(branch_it->second);
+  // }
 
  protected:
-  HeadVersion head_ver_;
+  SimpleHeadVersion head_ver_;
 
  private:
   ErrorCode CreateUCell(const Slice& key, const UType& utype,

@@ -42,7 +42,7 @@ Worker::~Worker() {
 }
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell)
-    const {
+const {
   const auto& version_opt = head_ver_.GetBranch(key, branch);
   if (!version_opt) {
     if (Exists(key)) {
@@ -363,7 +363,7 @@ ErrorCode Worker::Delete(const Slice& key, const Slice& branch) {
 }
 
 ErrorCode Worker::GetChunk(const Slice& key, const Hash& ver, Chunk* chunk)
-    const {
+const {
   static const auto chunk_store = store::GetChunkStore();
   *chunk = chunk_store->Get(ver);
   if (chunk->empty()) return ErrorCode::kChunkNotExists;
