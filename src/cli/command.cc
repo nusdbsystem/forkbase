@@ -2554,12 +2554,12 @@ ErrorCode Command::ExecMeta() {
     os << (is_vert_list ? "" : BOLD_GREEN_STR("[SUCCESS: META] "));
     {
       f_next_item("", "Type") << ucell.type();
-    }{
+    } {
       f_next_item(", ", "Value");
       f_print_value();
-    }{
+    } {
       f_next_item(", ", "Version") << ucell.hash();
-    }{
+    } {
       f_next_item(", ", "Parents");
       Utils::Print(prev_vers, "[", "]", ", ", false);
     }
