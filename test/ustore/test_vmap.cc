@@ -7,9 +7,9 @@
 #include "worker/worker.h"
 
 std::vector<std::string> smap_key {"The", "quick", "brown", "fox", "jumps",
-                                   "over", "the", "lazy", "dog"};
+  "over", "the", "lazy", "dog"};
 std::vector<std::string> smap_val {"v1", "v2", "v3", "v4", "v5",
-                                   "v6", "v7", "v8", "v9"};
+  "v6", "v7", "v8", "v9"};
 
 using ustore::byte_t;
 using ustore::Slice;
@@ -21,7 +21,7 @@ const char key_vmap[] = "key_vmap";
 const char branch_vmap[] = "branch_vmap";
 
 ustore::Worker& worker_vmap() {
-  static ustore::Worker* worker = new ustore::Worker(2017, nullptr, false);
+  static ustore::Worker* worker = new ustore::Worker(1993, nullptr, false);
   return *worker;
 }
 
@@ -132,7 +132,7 @@ TEST(VMap, RemoveFromExistingVMap) {
   // get map
   auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).value.Map();
   // remove from map
-  v.Remove(slice_key[slice_key.size()-1]);
+  v.Remove(slice_key[slice_key.size() - 1]);
   auto update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
   EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated map
@@ -206,4 +206,8 @@ TEST(VMap, MultiSetExistingVMap) {
     EXPECT_EQ(slice_val[i], it.value());
     it.next();
   }
+}
+
+TEST(VMap, DestructWorker) {
+  delete &worker_vmap();
 }

@@ -3,6 +3,8 @@
 #ifndef USTORE_WORKER_WORKER_H_
 #define USTORE_WORKER_WORKER_H_
 
+// #define __IN_MEMORY_HEAD_VERSION__
+
 #include <map>
 #include <memory>
 #include <string>
@@ -14,8 +16,12 @@
 #include "types/server/factory.h"
 #include "types/ucell.h"
 #include "utils/noncopyable.h"
-#include "worker/rocksdb_head_version.h"
+
+#if defined(__IN_MEMORY_HEAD_VERSION__)
 #include "worker/simple_head_version.h"
+#else
+#include "worker/rocksdb_head_version.h"
+#endif
 
 namespace ustore {
 
@@ -39,15 +45,11 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
    * @return Head version of the branch; Hash::kNull if the requesting head
    *         version is unavailable.
    */
-  inline Hash GetBranchHead(const Slice& key, const Slice& branch) const {
-    const auto& ver_opt = head_ver_.GetBranch(key, branch);
-    return ver_opt ? *ver_opt : Hash::kNull;
-  }
-
   inline ErrorCode GetBranchHead(const Slice& key, const Slice& branch,
                                  Hash* ver) const override {
-    *ver = GetBranchHead(key, branch);
-    return *ver == Hash::kNull ? ErrorCode::kBranchNotExists : ErrorCode::kOK;
+    return head_ver_.GetBranch(key, branch, ver)
+           ? ErrorCode::kOK
+           : ErrorCode::kBranchNotExists;
   }
 
   /**
@@ -83,7 +85,9 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
    */
   inline ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                        Hash* ver) override {
-    return Put(key, val, branch, GetBranchHead(key, branch), ver);
+    Hash head;
+    head_ver_.GetBranch(key, branch, &head);
+    return Put(key, val, branch, head, ver);
   }
 
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch) {
@@ -308,7 +312,11 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
   // }
 
  protected:
+#if defined(__IN_MEMORY_HEAD_VERSION__)
   SimpleHeadVersion head_ver_;
+#else
+  RocksDBHeadVersion head_ver_;
+#endif
 
  private:
   ErrorCode CreateUCell(const Slice& key, const UType& utype,

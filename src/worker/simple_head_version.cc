@@ -36,7 +36,7 @@ bool SimpleHeadVersion::LoadBranchVersion(const std::string& log_path) {
   return true;
 }
 
-bool SimpleHeadVersion::DumpBranchVersion(const std::string& log_path) const {
+bool SimpleHeadVersion::DumpBranchVersion(const std::string& log_path) {
   // Dump the brach_ver_ to external file to persist
   LOG(INFO) << "Dumping head version file: " << log_path << " ......";
   std::ofstream ofs(log_path, std::ofstream::out);
@@ -62,11 +62,16 @@ bool SimpleHeadVersion::DumpBranchVersion(const std::string& log_path) const {
   return succeeds;
 }
 
-boost::optional<Hash> SimpleHeadVersion::GetBranch(const Slice& key,
-    const Slice& branch) const {
-  return Exists(key, branch)
-         ? boost::make_optional(branch_ver_.at(key).at(branch))
-         : boost::none;
+bool SimpleHeadVersion::GetBranch(const Slice& key,
+                                  const Slice& branch,
+                                  Hash* ver) const {
+  if (Exists(key, branch)) {
+    *ver = branch_ver_.at(key).at(branch);
+    return true;
+  } else {
+    *ver = Hash::kNull;
+    return false;
+  }
 }
 
 std::vector<Hash> SimpleHeadVersion::GetLatest(const Slice& key) const {
@@ -162,17 +167,17 @@ bool SimpleHeadVersion::IsLatest(const Slice& key, const Hash& ver) const {
   return lv_key.find(ver) != lv_key.end();
 }
 
-std::vector<Slice> SimpleHeadVersion::ListKey() const {
-  std::vector<Slice> keys;
-  for (auto& lv : latest_ver_) keys.emplace_back(lv.first);
+std::vector<std::string> SimpleHeadVersion::ListKey() const {
+  std::vector<std::string> keys;
+  for (auto& lv : latest_ver_) keys.emplace_back(lv.first.ToString());
   return keys;
 }
 
-std::vector<Slice> SimpleHeadVersion::ListBranch(const Slice& key) const {
-  std::vector<Slice> branchs;
+std::vector<std::string> SimpleHeadVersion::ListBranch(const Slice& key) const {
+  std::vector<std::string> branchs;
   if (branch_ver_.find(key) != branch_ver_.end()) {
     for (const auto& bv : branch_ver_.at(key)) {
-      branchs.emplace_back(bv.first);
+      branchs.emplace_back(bv.first.ToString());
     }
   }
   return branchs;

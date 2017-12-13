@@ -119,7 +119,7 @@ ErrorCode ColumnStore::LoadCSV(std::ifstream& ifs,
       ec = rst.stat;
       if (ec != ErrorCode::kOK) break;
       auto& col_ver = rst.value;
-      tab.Set(Slice(name), HASH_TO_SLICE(col_ver));
+      tab.Set(Slice(name), Utils::ToSlice(col_ver));
       ec = odb_.Put(table, tab, branch).stat;
     }
   }
@@ -466,7 +466,7 @@ ErrorCode ColumnStore::MergeTable(
   USTORE_GUARD(
     WriteColumn(table_name, tgt_branch_name, new_col_name, new_col_vals,
                 &new_col_ver));
-  tab.Set(Slice(new_col_name), HASH_TO_SLICE(new_col_ver));
+  tab.Set(Slice(new_col_name), Utils::ToSlice(new_col_ver));
   return odb_.Merge(table, tab, tgt_branch, ref_branch).stat;
 }
 
@@ -519,7 +519,7 @@ ErrorCode ColumnStore::GetColumn(
   Table tab;
   USTORE_GUARD(
     ReadTable(Slice(table_name), Slice(branch_name), &tab));
-  auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
+  auto col_ver = Utils::ToHash(tab.Get(Slice(col_name)));
   if (col_ver.empty()) {
     LOG(WARNING) << "Column \"" << col_name << "\" does not exist in Table \""
                  << table_name << "\" of Branch \"" << branch_name << "\"";
@@ -538,7 +538,7 @@ ErrorCode ColumnStore::GetTableSize(const std::string& table_name,
     ReadTable(Slice(table_name), Slice(branch_name), &tab));
   auto it = tab.Scan();
   auto col_name = it.key();
-  auto col_ver = SLICE_TO_HASH(it.value());
+  auto col_ver = Utils::ToHash(it.value());
   auto col_key = GlobalKey(table_name, col_name);
   Column col;
   USTORE_GUARD(
@@ -573,7 +573,7 @@ ErrorCode ColumnStore::PutColumn(const std::string& table_name,
   Hash col_ver;
   USTORE_GUARD(
     WriteColumn(table_name, branch_name, col_name, col_vals, &col_ver));
-  tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver));
+  tab.Set(Slice(col_name), Utils::ToSlice(col_ver));
   return odb_.Put(table, tab, branch).stat;
 }
 
@@ -646,7 +646,7 @@ ErrorCode ColumnStore::GetRow(const std::string& table_name,
   for (auto it = tab.Scan(); !it.end(); it.next()) {
     auto col_name = it.key().ToString();
     if (col_name == ref_col_name) continue;
-    auto col_ver = SLICE_TO_HASH(it.value());
+    auto col_ver = Utils::ToHash(it.value());
     auto col_key = GlobalKey(table_name, col_name);
     Column col;
     USTORE_GUARD(
@@ -694,7 +694,7 @@ ErrorCode ColumnStore::ManipRow(
     USTORE_GUARD(
       ReadTable(table, branch, &tab));
     // retrive column corresponding to the field
-    auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
+    auto col_ver = Utils::ToHash(tab.Get(Slice(col_name)));
     auto col_key_str = GlobalKey(table_name, col_name);
     Slice col_key(col_key_str);
     Column col;
@@ -713,7 +713,7 @@ ErrorCode ColumnStore::ManipRow(
     USTORE_GUARD(col_rst.stat);
     auto& col_ver_new = col_rst.value;
     // update column entry in the table
-    tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver_new));
+    tab.Set(Slice(col_name), Utils::ToSlice(col_ver_new));
     USTORE_GUARD(
       odb_.Put(table, tab, branch).stat);
   }
@@ -794,7 +794,7 @@ ErrorCode ColumnStore::ManipRows(
     Table tab;
     USTORE_GUARD(
       ReadTable(table, branch, &tab));
-    auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
+    auto col_ver = Utils::ToHash(tab.Get(Slice(col_name)));
     auto col_key_str = GlobalKey(table_name, col_name);
     Slice col_key(col_key_str);
     // update column values
@@ -811,7 +811,7 @@ ErrorCode ColumnStore::ManipRows(
       col_ver = col_rst.value.Clone();
     }
     // update column entry in the table
-    tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver));
+    tab.Set(Slice(col_name), Utils::ToSlice(col_ver));
     USTORE_GUARD(
       odb_.Put(table, tab, branch).stat);
   }
@@ -878,7 +878,7 @@ ErrorCode ColumnStore::UpdateConsecutiveRows(
     // retrieve the column
     Table tab;
     USTORE_GUARD(ReadTable(table, branch, &tab));
-    const auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
+    const auto col_ver = Utils::ToHash(tab.Get(Slice(col_name)));
     auto col_key_str = GlobalKey(table_name, col_name);
     Slice col_key(col_key_str);
     Column col;
@@ -890,7 +890,7 @@ ErrorCode ColumnStore::UpdateConsecutiveRows(
     USTORE_GUARD(col_rst.stat);
     const auto col_ver_new = col_rst.value.Clone();
     // update column entry in the table
-    tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver_new));
+    tab.Set(Slice(col_name), Utils::ToSlice(col_ver_new));
     USTORE_GUARD(odb_.Put(table, tab, branch).stat);
   }
   if (n_rows_affected != nullptr) *n_rows_affected = num_to_delete;
@@ -960,7 +960,7 @@ ErrorCode ColumnStore::InsertRow(const Slice& table, const Slice& branch,
     Table tab;
     USTORE_GUARD(
       ReadTable(table, branch, &tab));
-    auto col_ver = SLICE_TO_HASH(tab.Get(Slice(col_name)));
+    auto col_ver = Utils::ToHash(tab.Get(Slice(col_name)));
     // retrive column corresponding to the field
     auto col_key_str = GlobalKey(table_name, col_name);
     Slice col_key(col_key_str);
@@ -974,7 +974,7 @@ ErrorCode ColumnStore::InsertRow(const Slice& table, const Slice& branch,
     USTORE_GUARD(col_rst.stat);
     auto& col_ver_new = col_rst.value;
     // update column entry in the table
-    tab.Set(Slice(col_name), HASH_TO_SLICE(col_ver_new));
+    tab.Set(Slice(col_name), Utils::ToSlice(col_ver_new));
     USTORE_GUARD(
       odb_.Put(table, tab, branch).stat);
   }

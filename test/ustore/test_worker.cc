@@ -115,22 +115,24 @@ TEST(Worker, NamedBranch_GetPutString) {
 }
 
 TEST(Worker, NamedBranch_Branch) {
-  ec = worker().Branch(key[0], branch[0], branch[2]);
-  EXPECT_EQ(ErrorCode::kOK, ec);
+  Hash version;
+  EXPECT_EQ(ErrorCode::kOK, worker().Branch(key[0], branch[0], branch[2]));
   worker().ListBranches(key[0], &branches);
   EXPECT_EQ(size_t(3), branches.size());
-  EXPECT_EQ(worker().GetBranchHead(key[0], branch[0]),
-            worker().GetBranchHead(key[0], branch[2]));
+  EXPECT_EQ(ErrorCode::kOK, worker().GetBranchHead(key[0], branch[0], &version));
+  EXPECT_EQ(ErrorCode::kOK, worker().GetBranchHead(key[0], branch[2], &head));
+  EXPECT_EQ(version, head);
   worker().GetLatestVersions(key[0], &latest);
   EXPECT_EQ(size_t(2), latest.size());
 }
 
 TEST(Worker, NamedBranch_Rename) {
-  worker().GetBranchHead(key[0], branch[0], &head);
+  Hash version;
+  EXPECT_EQ(ErrorCode::kOK, worker().GetBranchHead(key[0], branch[0], &head));
   EXPECT_EQ(ver[1], head);
-  ec = worker().Rename(key[0], branch[0], branch[3]);
-  EXPECT_EQ(ErrorCode::kOK, ec);
-  EXPECT_EQ(head, worker().GetBranchHead(key[0], branch[3]));
+  EXPECT_EQ(ErrorCode::kOK, worker().Rename(key[0], branch[0], branch[3]));
+  EXPECT_EQ(ErrorCode::kOK, worker().GetBranchHead(key[0], branch[3], &version));
+  EXPECT_EQ(head, version);
   worker().ListBranches(key[0], &branches);
   EXPECT_EQ(size_t(3), branches.size());
   worker().Exists(key[0], branch[0], &exist);
@@ -474,6 +476,10 @@ TEST(Worker, DeleteBranch) {
   EXPECT_EQ(ErrorCode::kOK, ec);
   worker().Exists(key[0], branch[1], &exist);
   EXPECT_FALSE(exist);
+}
+
+TEST(Worker, Destruct) {
+  delete &worker();
 }
 
 /**

@@ -18,7 +18,7 @@ const char key_vstring[] = "key_vstring";
 const char branch_vstring[] = "branch_vstring";
 
 ustore::Worker& worker_vstring() {
-  static ustore::Worker* worker = new ustore::Worker(2017, nullptr, false);
+  static ustore::Worker* worker = new ustore::Worker(1995, nullptr, false);
   return *worker;
 }
 
@@ -52,4 +52,8 @@ TEST(VString, CreateFromEmpty) {
   // check data
   EXPECT_EQ(size_t(0), v.len());
   EXPECT_EQ(nullptr, v.data());
+}
+
+TEST(VString, DestructWorker) {
+  delete &worker_vstring();
 }

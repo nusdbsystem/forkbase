@@ -19,7 +19,7 @@ const char key_vlist[] = "key_vlist";
 const char branch_vlist[] = "branch_vlist";
 
 ustore::Worker& worker_vlist() {
-  static ustore::Worker* worker = new ustore::Worker(2017, nullptr, false);
+  static ustore::Worker* worker = new ustore::Worker(1992, nullptr, false);
   return *worker;
 }
 
@@ -107,4 +107,8 @@ TEST(VList, UpdateExistingVList) {
     EXPECT_EQ(s, it.value());
     it.next();
   }
+}
+
+TEST(VList, DestructWorker) {
+  delete &worker_vlist();
 }

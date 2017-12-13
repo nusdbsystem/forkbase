@@ -31,7 +31,7 @@ const Hash ver[] = {
 SimpleHeadVersion head_ver;
 constexpr char test_head_version_log[] = "test_head_version.log";
 
-TEST(Worker, HeadVersion_PutBranch) {
+TEST(SimpleHeadVersion, PutBranch) {
   EXPECT_FALSE(head_ver.Exists(key[0], branch[0]));
   EXPECT_EQ(size_t(0), head_ver.ListBranch(key[0]).size());
 
@@ -55,24 +55,32 @@ TEST(Worker, HeadVersion_PutBranch) {
   ASSERT_TRUE(head_ver.DumpBranchVersion(test_head_version_log));
 }
 
-TEST(Worker, HeadVersion_Load) {
+TEST(SimpleHeadVersion, Load) {
   SimpleHeadVersion new_head_ver;
+  Hash version;
   new_head_ver.LoadBranchVersion(test_head_version_log);
   EXPECT_EQ(size_t(3), new_head_ver.ListBranch(key[0]).size());
-  EXPECT_EQ(ver[1], new_head_ver.GetBranch(key[0], branch[0]));
-  EXPECT_EQ(ver[2], new_head_ver.GetBranch(key[0], branch[1]));
-  EXPECT_EQ(ver[3], new_head_ver.GetBranch(key[0], branch[2]));
+  EXPECT_TRUE(new_head_ver.GetBranch(key[0], branch[0], &version));
+  EXPECT_EQ(ver[1], version);
+  EXPECT_TRUE(new_head_ver.GetBranch(key[0], branch[1], &version));
+  EXPECT_EQ(ver[2], version);
+  EXPECT_TRUE(new_head_ver.GetBranch(key[0], branch[2], &version));
+  EXPECT_EQ(ver[3], version);
   std::remove(test_head_version_log);
 }
 
-TEST(Worker, HeadVersion_GetBranch) {
+TEST(SimpleHeadVersion, GetBranch) {
+  Hash version;
   EXPECT_EQ(size_t(3), head_ver.ListBranch(key[0]).size());
-  EXPECT_EQ(ver[1], head_ver.GetBranch(key[0], branch[0]));
-  EXPECT_EQ(ver[2], head_ver.GetBranch(key[0], branch[1]));
-  EXPECT_EQ(ver[3], head_ver.GetBranch(key[0], branch[2]));
+  EXPECT_TRUE(head_ver.GetBranch(key[0], branch[0], &version));
+  EXPECT_EQ(ver[1], version);
+  EXPECT_TRUE(head_ver.GetBranch(key[0], branch[1], &version));
+  EXPECT_EQ(ver[2], version);
+  EXPECT_TRUE(head_ver.GetBranch(key[0], branch[2], &version));
+  EXPECT_EQ(ver[3], version);
 }
 
-TEST(Worker, HeadVersion_PutLatest) {
+TEST(SimpleHeadVersion, PutLatest) {
   head_ver.PutLatest(key[1], Hash::kNull, Hash::kNull, ver[4]);
   EXPECT_TRUE(head_ver.IsLatest(key[1], ver[4]));
 
@@ -87,19 +95,21 @@ TEST(Worker, HeadVersion_PutLatest) {
   EXPECT_TRUE(head_ver.IsLatest(key[1], ver[7]));
 }
 
-TEST(Worker, HeadVersion_GetLatest) {
+TEST(SimpleHeadVersion, GetLatest) {
   EXPECT_EQ(size_t(0), head_ver.GetLatest(key[0]).size());
   EXPECT_EQ(size_t(1), head_ver.GetLatest(key[1]).size());
 }
 
-TEST(Worker, HeadVersion_RenameBranch) {
+TEST(SimpleHeadVersion, RenameBranch) {
+  Hash version;
   head_ver.RenameBranch(key[0], branch[1], branch[3]);
   EXPECT_FALSE(head_ver.Exists(key[0], branch[1]));
   EXPECT_TRUE(head_ver.Exists(key[0], branch[3]));
-  EXPECT_EQ(ver[2], head_ver.GetBranch(key[0], branch[3]));
+  EXPECT_TRUE(head_ver.GetBranch(key[0], branch[3], &version));
+  EXPECT_EQ(ver[2], version);
 }
 
-TEST(Worker, HeadVersion_RemoveBranch) {
+TEST(SimpleHeadVersion, RemoveBranch) {
   EXPECT_EQ(size_t(3), head_ver.ListBranch(key[0]).size());
 
   head_ver.RemoveBranch(key[0], branch[2]);

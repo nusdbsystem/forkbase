@@ -107,14 +107,16 @@ namespace ustore {
   if (var == ErrorCode::from) var = ErrorCode::to; \
 } while (0)
 
-#define HASH_TO_SLICE(hash) \
-  ::ustore::Slice(hash.value(), ::ustore::Hash::kByteLength)
-
-#define SLICE_TO_HASH(slice) \
-  ::ustore::Hash(slice.data())
-
 class Utils {
  public:
+  static inline Slice ToSlice(const Hash& hash) {
+    return Slice(hash.value(), ::ustore::Hash::kByteLength);
+  }
+
+  static inline Hash ToHash(const Slice& slice) {
+    return Hash(slice.data());
+  }
+
   static const size_t max_size_t;
 
   static inline void SleepForMilliseconds(size_t ms) {

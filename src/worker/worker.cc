@@ -18,6 +18,7 @@ namespace fs = boost::filesystem;
 
 Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool pst)
   : StoreInitializer(id, pst), id_(id), factory_(ptt) {
+#if defined(__IN_MEMORY_HEAD_VERSION__)
   if (persist()) {
     // load head file
     std::string head_path = dataPath() + ".head";
@@ -31,20 +32,37 @@ Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool pst)
         UpdateLatestVersion(UCell(std::move(chunk)));
     }
   }
+#else
+  if (persist()) {
+    head_ver_.LoadBranchVersion(dataPath() + ".head.db");
+  } else {
+    const std::string tmp_db("/tmp/ustore.head-" + std::to_string(id_));
+    RocksDBHeadVersion::DeleteDB(tmp_db);
+    head_ver_.LoadBranchVersion(tmp_db);
+  }
+#endif
 }
 
 Worker::~Worker() {
-  // dump head file
+#if defined(__IN_MEMORY_HEAD_VERSION__)
   if (persist()) {
     std::string head_path = dataPath() + ".head";
     head_ver_.DumpBranchVersion(head_path);
   }
+#else
+  if (persist()) {
+    head_ver_.DumpBranchVersion(dataPath() + ".head.db");
+    head_ver_.CloseDB();
+  } else {
+    head_ver_.DeleteDB();
+  }
+#endif
 }
 
 ErrorCode Worker::Get(const Slice& key, const Slice& branch, UCell* ucell)
 const {
-  const auto& version_opt = head_ver_.GetBranch(key, branch);
-  if (!version_opt) {
+  Hash ver;
+  if (!head_ver_.GetBranch(key, branch, &ver)) {
     if (Exists(key)) {
       LOG(WARNING) << "Branch \"" << branch << "\" for Key \"" << key
                    << "\" does not exist!";
@@ -54,7 +72,7 @@ const {
       return ErrorCode::kKeyNotExists;
     }
   }
-  return Get(key, *version_opt, ucell);
+  return Get(key, ver, ucell);
 }
 
 ErrorCode Worker::Get(const Slice& key, const Hash& ver, UCell* ucell) const {
@@ -92,25 +110,25 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Hash& prev_ver,
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Slice& tgt_branch, const Slice& ref_branch,
                         Hash* ver) {
-  const auto& ref_ver_opt = head_ver_.GetBranch(key, ref_branch);
-  if (!ref_ver_opt) {
+  Hash ref_ver;
+  if (!head_ver_.GetBranch(key, ref_branch, &ref_ver)) {
     LOG(ERROR) << "Branch \"" << ref_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
-  return Merge(key, val, tgt_branch, *ref_ver_opt, ver);
+  return Merge(key, val, tgt_branch, ref_ver, ver);
 }
 
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Slice& tgt_branch, const Hash& ref_ver,
                         Hash* ver) {
-  const auto& tgt_ver_opt = head_ver_.GetBranch(key, tgt_branch);
-  if (!tgt_ver_opt) {
+  Hash tgt_ver;
+  if (!head_ver_.GetBranch(key, tgt_branch, &tgt_ver)) {
     LOG(ERROR) << "Branch \"" << tgt_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
-  auto ec = Merge(key, val, *tgt_ver_opt, ref_ver, ver);
+  auto ec = Merge(key, val, tgt_ver, ref_ver, ver);
   if (ec == ErrorCode::kOK) head_ver_.PutBranch(key, tgt_branch, *ver);
   return ec;
 }
@@ -310,13 +328,13 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
 
 ErrorCode Worker::Branch(const Slice& key, const Slice& old_branch,
                          const Slice& new_branch) {
-  const auto& version_opt = head_ver_.GetBranch(key, old_branch);
-  if (!version_opt) {
+  Hash ver;
+  if (!head_ver_.GetBranch(key, old_branch, &ver)) {
     LOG(ERROR) << "Branch \"" << old_branch << "\" for Key \"" << key
                << "\" does not exist!";
     return ErrorCode::kBranchNotExists;
   }
-  return Branch(key, *version_opt, new_branch);
+  return Branch(key, ver, new_branch);
 }
 
 ErrorCode Worker::Branch(const Slice& key, const Hash& ver,
@@ -378,8 +396,8 @@ ErrorCode Worker::GetStorageInfo(std::vector<StoreInfo>* info) const {
 
 ErrorCode Worker::ListKeys(std::vector<std::string>* keys) const {
   keys->clear();
-  for (auto& k : head_ver_.ListKey()) {
-    keys->emplace_back(k.ToString());
+  for (auto && k : head_ver_.ListKey()) {
+    keys->push_back(std::move(k));
   }
   return ErrorCode::kOK;
 }
@@ -387,8 +405,8 @@ ErrorCode Worker::ListKeys(std::vector<std::string>* keys) const {
 ErrorCode Worker::ListBranches(const Slice& key,
                                std::vector<std::string>* branches) const {
   branches->clear();
-  for (auto& b : head_ver_.ListBranch(key)) {
-    branches->emplace_back(b.ToString());
+  for (auto && b : head_ver_.ListBranch(key)) {
+    branches->push_back(std::move(b));
   }
   return ErrorCode::kOK;
 }

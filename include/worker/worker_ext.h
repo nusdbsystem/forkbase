@@ -19,7 +19,9 @@ class WorkerExt : public Worker {
 
   inline ErrorCode GetForType(const UType& type, const Slice& key,
                               const Slice& branch, UCell* ucell) {
-    return GetForType(type, key, GetBranchHead(key, branch), ucell);
+    Hash head;
+    head_ver_.GetBranch(key, branch, &head);
+    return GetForType(type, key, head, ucell);
   }
 };
 

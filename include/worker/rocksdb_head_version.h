@@ -3,9 +3,8 @@
 #ifndef USTORE_WORKER_ROCKSDB_HEAD_VERSION_H_
 #define USTORE_WORKER_ROCKSDB_HEAD_VERSION_H_
 
-#include <iomanip>
 #include "rocksdb/db.h"
-
+#include "rocksdb/slice_transform.h"
 #include "worker/head_version.h"
 
 namespace ustore {
@@ -15,62 +14,69 @@ namespace ustore {
  *
  * This class should only be instantiated by Worker.
  */
-// class RocksDBHeadVersion : public HeadVersion {
-class RocksDBHeadVersion {
+class RocksDBHeadVersion : public HeadVersion {
  public:
-  RocksDBHeadVersion();
+  explicit RocksDBHeadVersion();
   ~RocksDBHeadVersion();
 
-  inline bool LoadBranchVersion(const std::string& log_path) { return true; }
+  void CloseDB();
 
-  inline bool DumpBranchVersion(const std::string& log_path) const {
-    db_->Flush(rocksdb::FlushOptions());
-    return true;
-  }
+  static bool DeleteDB(const std::string& db_path);
 
-  boost::optional<Hash> GetBranch(const Slice& key,
-                                  const Slice& branch) const;
+  bool DeleteDB();
 
-  std::vector<Hash> GetLatest(const Slice& key) const;
+  bool LoadBranchVersion(const std::string& store_path) override;
 
-  void PutBranch(const Slice& key, const Slice& branch, const Hash& ver);
+  bool DumpBranchVersion(const std::string& log_path) override;
+
+  bool GetBranch(const Slice& key, const Slice& branch,
+                 Hash* ver) const override;
+
+  std::vector<Hash> GetLatest(const Slice& key) const override;
+
+  void PutBranch(const Slice& key, const Slice& branch,
+                 const Hash& ver) override;
 
   void PutLatest(const Slice& key, const Hash& prev_ver1,
-                 const Hash& prev_ver2, const Hash& ver);
+                 const Hash& prev_ver2, const Hash& ver) override;
 
-  void RemoveBranch(const Slice& key, const Slice& branch);
+  void RemoveBranch(const Slice& key, const Slice& branch) override;
 
   void RenameBranch(const Slice& key, const Slice& old_branch,
-                    const Slice& new_branch);
+                    const Slice& new_branch) override;
 
-  bool Exists(const Slice& key) const;
+  bool Exists(const Slice& key) const override;
 
-  bool Exists(const Slice& key, const Slice& branch) const;
+  bool Exists(const Slice& key, const Slice& branch) const override;
 
-  bool IsLatest(const Slice& key, const Hash& ver) const;
+  bool IsLatest(const Slice& key, const Hash& ver) const override;
 
   bool IsBranchHead(const Slice& key, const Slice& branch,
-                    const Hash& ver) const;
+                    const Hash& ver) const override;
 
-  // std::vector<Slice> ListKey() const;
+  std::vector<std::string> ListKey() const override;
 
-  // std::vector<Slice> ListBranch(const Slice& key) const;
+  std::vector<std::string> ListBranch(const Slice& key) const override;
 
  private:
-  inline std::string DBKey(const Slice& key) const {
-    return "$" + key.ToString();
-  }
+  std::string DBKey(const Slice& key) const;
+  std::string ExtractKey(const rocksdb::Slice& db_key) const;
 
-  inline std::string DBKey(const Slice& key, const Slice& branch) const {
-    std::stringstream ss;
-    ss << std::hex << std::setfill('0') << std::setw(4) << key.len() << key
-       << branch;
-    return ss.str();
-  }
+  std::string DBKey(const Slice& key, const Slice& branch) const;
+  std::string ExtractBranch(const rocksdb::Slice& db_key) const;
+
+  const rocksdb::SliceTransform* NewMetaPrefixTransform();
 
   void DeleteBranch(const Slice& key, const Slice& branch);
 
+  bool FlushDB() const;
+
+  std::string db_path_;
   rocksdb::DB* db_;
+  rocksdb::Options db_opts_;
+  rocksdb::ReadOptions db_read_opts_;
+  rocksdb::WriteOptions db_write_opts_;
+  rocksdb::FlushOptions db_flush_opts_;
 };
 
 }  // namespace ustore

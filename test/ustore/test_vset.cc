@@ -21,7 +21,7 @@ const char key_vset[] = "key_vset";
 const char branch_vset[] = "branch_vset";
 
 ustore::Worker& worker_vset() {
-  static ustore::Worker* worker = new ustore::Worker(2017, nullptr, false);
+  static ustore::Worker* worker = new ustore::Worker(1994, nullptr, false);
   return *worker;
 }
 
@@ -136,4 +136,8 @@ TEST(VSet, RemoveFromExistingVset) {
     EXPECT_EQ(slice_key[i], it.key());
     it.next();
   }
+}
+
+TEST(VSet, DestructWorker) {
+  delete &worker_vset();
 }

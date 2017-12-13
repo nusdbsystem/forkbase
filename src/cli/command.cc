@@ -1516,7 +1516,7 @@ ErrorCode Command::ExecLatest() {
       for (auto& v : vers) std::cout << v << std::endl;
     } else {
       std::cout << BOLD_GREEN("[SUCCESS: LATEST] ") << "Versions: ";
-      Utils::Print(vers, "[", "]", ", ", true, limit_print_elems);
+      Utils::Print(vers, "[", "]", ", ", false, limit_print_elems);
       std::cout << std::endl;
     }
   };

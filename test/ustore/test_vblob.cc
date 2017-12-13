@@ -18,7 +18,7 @@ const char key_vblob[] = "key_vblob";
 const char branch_vblob[] = "branch_vblob";
 
 ustore::Worker& worker_vblob() {
-  static ustore::Worker* worker = new ustore::Worker(2017, nullptr, false);
+  static ustore::Worker* worker = new ustore::Worker(1991, nullptr, false);
   return *worker;
 }
 
@@ -90,7 +90,8 @@ TEST(VBlob, UpdateExistingVBlob) {
   std::string s{raw_data};
   std::string delta = " delta";
   s += delta;
-  v.Append(reinterpret_cast<const byte_t*>(s.data()+v.size()), delta.length());
+  v.Append(
+    reinterpret_cast<const byte_t*>(s.data() + v.size()), delta.length());
   auto update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
   EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated blob
@@ -102,4 +103,8 @@ TEST(VBlob, UpdateExistingVBlob) {
   v.Read(0, v.size(), buf);
   EXPECT_EQ(0, memcmp(s.data(), buf, s.length()));
   delete[] buf;
+}
+
+TEST(VBlob, DestructWorker) {
+  delete &worker_vblob();
 }

@@ -3,7 +3,6 @@
 #ifndef USTORE_WORKER_HEAD_VERSION_H_
 #define USTORE_WORKER_HEAD_VERSION_H_
 
-#include <boost/optional.hpp>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -28,10 +27,10 @@ class HeadVersion : private Noncopyable {
 
   // Dump branch_ver_ into log_path
   // Return whether Dumping succeeds
-  virtual bool DumpBranchVersion(const std::string& log_path) const = 0;
+  virtual bool DumpBranchVersion(const std::string& log_path) = 0;
 
-  virtual boost::optional<Hash> GetBranch(const Slice& key,
-                                          const Slice& branch) const = 0;
+  virtual bool GetBranch(const Slice& key, const Slice& branch,
+                         Hash* ver) const = 0;
 
   virtual std::vector<Hash> GetLatest(const Slice& key) const = 0;
 
@@ -46,8 +45,6 @@ class HeadVersion : private Noncopyable {
   virtual void RenameBranch(const Slice& key, const Slice& old_branch,
                             const Slice& new_branch) = 0;
 
-  virtual std::vector<Slice> ListKey() const = 0;
-
   virtual bool Exists(const Slice& key) const = 0;
 
   virtual bool Exists(const Slice& key, const Slice& branch) const = 0;
@@ -57,7 +54,9 @@ class HeadVersion : private Noncopyable {
   virtual bool IsBranchHead(const Slice& key, const Slice& branch,
                             const Hash& ver) const = 0;
 
-  virtual std::vector<Slice> ListBranch(const Slice& key) const = 0;
+  virtual std::vector<std::string> ListKey() const = 0;
+
+  virtual std::vector<std::string> ListBranch(const Slice& key) const = 0;
 };
 
 }  // namespace ustore
