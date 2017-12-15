@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <cstring>
 #include <iomanip>
 #include <utility>
 #include "rocksdb/filter_policy.h"
@@ -10,6 +11,13 @@
 #include "worker/rocksdb_head_version.h"
 
 namespace ustore {
+
+using key_size_t = uint16_t;
+const char kBranchKeyInit('@');
+const char kLatestKeyInit('$');
+
+const size_t kKeySizeBytes(sizeof(key_size_t));
+const size_t kBranchKeyMetaPrefixBytes(1 + kKeySizeBytes);
 
 RocksDBHeadVersion::RocksDBHeadVersion()
   : db_(nullptr),
@@ -223,56 +231,73 @@ bool RocksDBHeadVersion::IsLatest(const Slice& key, const Hash& ver) const {
   return false;
 }
 
-std::vector<std::string> RocksDBHeadVersion::ListKey() const {
+std::vector<std::string> RocksDBHeadVersion::PrefixScanDBKeys(
+  const std::string& db_seek_key,
+  const std::function<std::string(const rocksdb::Slice&)>& f_transform) const {
   std::vector<std::string> keys;
   if (!FlushDB()) return keys; // must flush DB prior to perform prefix scan
-  auto db_seek_key = DBKey(Slice("*"));
   auto prefix = rocksdb::Slice(db_seek_key.data(), db_seek_key.size() - 1);
   auto it = db_->NewIterator(db_read_opts_);
   for (it->Seek(rocksdb::Slice(db_seek_key)); it->Valid(); it->Next()) {
     auto db_key = it->key();
-    if (db_key.starts_with(prefix)) keys.emplace_back(ExtractKey(db_key));
+    if (db_key.starts_with(prefix)) keys.emplace_back(f_transform(db_key));
   }
   delete it;
   return keys;
+}
+
+std::vector<std::string> RocksDBHeadVersion::ListKey() const {
+  static auto db_seek_key = DBKey(Slice("*"));
+  static auto f_transform = [this](const rocksdb::Slice & db_key) {
+    return ExtractKey(db_key);
+  };
+  return PrefixScanDBKeys(db_seek_key, f_transform);
 }
 
 std::vector<std::string> RocksDBHeadVersion::ListBranch(
   const Slice& key) const {
-  std::vector<std::string> keys;
-  if (!FlushDB()) return keys; // must flush DB prior to perform prefix scan
   auto db_seek_key = DBKey(key, Slice("*"));
-  auto prefix = rocksdb::Slice(db_seek_key.data(), db_seek_key.size() - 1);
-  auto it = db_->NewIterator(db_read_opts_);
-  for (it->Seek(rocksdb::Slice(db_seek_key)); it->Valid(); it->Next()) {
-    auto db_key = it->key();
-    if (db_key.starts_with(prefix)) keys.emplace_back(ExtractBranch(db_key));
-  }
-  delete it;
-  return keys;
+  static auto f_transform = [this](const rocksdb::Slice & db_key) {
+    return ExtractBranch(db_key);
+  };
+  return PrefixScanDBKeys(db_seek_key, f_transform);
 }
 
 std::string RocksDBHeadVersion::DBKey(const Slice& key) const {
-  return "$" + key.ToString();
+  const size_t key_len = key.len();
+  std::string db_key(1, kLatestKeyInit);
+  db_key.resize(1 + key_len);
+  std::memcpy(&(db_key.at(1)), key.data(), key_len);
+  return db_key;
 }
 
-std::string RocksDBHeadVersion::ExtractKey(
-  const rocksdb::Slice& db_key) const {
-  DCHECK(db_key.starts_with(rocksdb::Slice("$")));
+std::string RocksDBHeadVersion::ExtractKey(const rocksdb::Slice& db_key) const {
+  DCHECK(db_key[0] == kLatestKeyInit);
   return std::string(&db_key.data()[1], db_key.size() - 1);
 }
 
 std::string RocksDBHeadVersion::DBKey(const Slice& key,
                                       const Slice& branch) const {
-  std::stringstream ss;
-  ss << std::hex << std::setfill('0') << std::setw(8) << key.len() << key
-     << branch;
-  return ss.str();
+  const size_t key_len = key.len();
+  const size_t branch_len = branch.len();
+  std::string db_key(1, kBranchKeyInit);
+  db_key.resize(kBranchKeyMetaPrefixBytes + key_len + branch_len);
+  char* p = &(db_key.at(1));
+  *(reinterpret_cast<key_size_t*>(p)) = static_cast<key_size_t>(key_len);
+  p += kKeySizeBytes;
+  std::memcpy(p, key.data(), key_len);
+  p += key_len;
+  std::memcpy(p, branch.data(), branch_len);
+  return db_key;
 }
+
 std::string RocksDBHeadVersion::ExtractBranch(
   const rocksdb::Slice& db_key) const {
+  DCHECK(db_key[0] == kBranchKeyInit);
   const char* data = db_key.data();
-  size_t prefix_len = 8 + std::stoi(std::string(data, 8), nullptr, 16);
+  key_size_t key_len;
+  std::memcpy(&key_len, &data[1], kKeySizeBytes);
+  size_t prefix_len = kBranchKeyMetaPrefixBytes + key_len;
   return std::string(&data[prefix_len], db_key.size() - prefix_len);
 }
 
@@ -285,9 +310,16 @@ class MetaPrefixTransform : public rocksdb::SliceTransform {
 
   rocksdb::Slice Transform(const rocksdb::Slice& src) const {
     const char* data = src.data();
-    if (data[0] == '$') return rocksdb::Slice(data, 1);
-    size_t key_len = std::stoi(std::string(data, 8), nullptr, 16);
-    return rocksdb::Slice(data, 8 + key_len);
+    if (src[0] == kLatestKeyInit) {  // for latest key
+      static const std::string kLatestKeyPrefixString(1, kLatestKeyInit);
+      static const rocksdb::Slice kLatestKeyPrefixSlice(kLatestKeyPrefixString);
+      return kLatestKeyPrefixSlice;
+    } else {  // for branch key
+      DCHECK(src[0] == kBranchKeyInit);
+      key_size_t key_len;
+      std::memcpy(&key_len, &data[1], kKeySizeBytes);
+      return rocksdb::Slice(data, kBranchKeyMetaPrefixBytes + key_len);
+    }
   }
 
   bool InDomain(const rocksdb::Slice& src) const { return true; }

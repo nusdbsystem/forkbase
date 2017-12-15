@@ -20,7 +20,7 @@ hosts=`cat $USTORE_CONF_HOST_FILE | cut -d ':' -f 1`
 for i in ${hosts[@]}; do
   echo Clean ustore @ $i ...
   if [ $i == localhost ]; then
-    rm $USTORE_CONF_DATA_DIR/*
+    rm -rf $USTORE_CONF_DATA_DIR/*
   else
     ssh $ssh_options $i rm $USTORE_CONF_DATA_DIR/*
   fi

@@ -36,6 +36,7 @@ OPTION(ENABLE_TEST "Compile test module" ON)
 OPTION(TEST_NODEBUILDER "Test node builder" OFF)
 OPTION(ENABLE_DEBUG "Enable debug mode" OFF)
 OPTION(USE_RDMA "Use RDMA" OFF)
+OPTION(USE_ROCKSDB "Use rocksdb" OFF)
 OPTION(ENABLE_EXAMPLE "Compile example module" ON)
 OPTION(ENABLE_GO "Generate Golang binding" OFF)
 

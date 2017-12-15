@@ -71,6 +71,10 @@ class RocksDBHeadVersion : public HeadVersion {
 
   bool FlushDB() const;
 
+  std::vector<std::string> PrefixScanDBKeys(
+    const std::string& db_seek_key,
+    const std::function<std::string(const rocksdb::Slice&)>& f_transform) const;
+
   std::string db_path_;
   rocksdb::DB* db_;
   rocksdb::Options db_opts_;
