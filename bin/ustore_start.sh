@@ -3,19 +3,17 @@
 # start worker and client services
 #
 
-usage="Usage: ustore-run.sh [ arguments ]\n
+usage="Usage: ustore-start.sh [ arguments ]\n
         --config <configuration file> : if the configuration file is not in the default location (conf/config)\n"
 
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/ustore_env.sh
+cd $USTORE_HOME
 
 # create log directory
 if [ ! -d $USTORE_LOG ]; then
   mkdir $USTORE_LOG
 fi
-
-# go to ustore home to execute binary
-cd $USTORE_HOME
 
 if [ $# -ge 1 ]; then
     libs=$1

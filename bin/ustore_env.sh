@@ -9,16 +9,17 @@
 
 # exit if varaiables already set
 [ -z $USTORE_ENV_DONE ] || exit 0
-
-# set USTORE_BIN
-if [ -z $USTORE_BIN ]; then
-  USTORE_BIN=`dirname "${BASH_SOURCE-$0}"`
-  USTORE_BIN=`cd "$USTORE_BIN">/dev/null; pwd`
-fi
+USTORE_ENV_DONE=1
 
 # set USTORE_HOME
 if [ -z $USTORE_HOME ]; then
-  USTORE_HOME=`cd "$USTORE_BIN/..">/dev/null; pwd`
+  USTORE_HOME=`dirname "${BASH_SOURCE-$0}"`
+  USTORE_HOME=`cd "$USTORE_HOME/..">/dev/null; pwd`
+fi
+
+# set USTORE_BIN
+if [ -z $USTORE_BIN ]; then
+  USTORE_BIN=$USTORE_HOME/bin
 fi
 
 # set USTORE_CONF
@@ -46,6 +47,7 @@ if [ -z $USTORE_LOG ]; then
   USTORE_LOG=$USTORE_HOME/log
 fi
 
+# function for killing process
 wait_and_fkill() {
     fkill=$1
     pid=$2
@@ -69,7 +71,3 @@ wait_and_fkill() {
         fi
     done
 }
-
-
-# mark that we have done all
-USTORE_ENV_DONE=1

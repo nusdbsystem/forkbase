@@ -3,17 +3,10 @@
 #ifndef USTORE_UTILS_ENV_H_
 #define USTORE_UTILS_ENV_H_
 
-#include <gflags/gflags.h>
 #include "proto/config.pb.h"
 #include "utils/singleton.h"
 
-#ifndef GFLAGS_GFLAGS_H_
-namespace gflags = google;
-#endif  // GFLAGS_GFLAGS_H_
-
 namespace ustore {
-
-DECLARE_string(config);  // passed from the commandline
 
 /*
  * USTORE environment

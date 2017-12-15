@@ -6,6 +6,10 @@
 #include "cluster/chunk_service.h"
 #include "cluster/worker_service.h"
 
+#ifndef GFLAGS_GFLAGS_H_
+namespace gflags = google;
+#endif  // GFLAGS_GFLAGS_H_
+
 DEFINE_string(node_id, "", "ip address of this node (ib0 interface)");
 DEFINE_int32(loglevel, ustore::INFO, "logging severity level");
 
