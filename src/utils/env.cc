@@ -14,26 +14,22 @@ namespace ustore {
 const char* Env::kDefaultConfigFile = "conf/config.cfg";
 
 Env::Env() {
-  const char* config_path = getenv("USTORE_CONF");
-  int fd = open(config_path, O_RDONLY);
+  const char* home_path = getenv("USTORE_HOME");
+  std::string config_path = kDefaultConfigFile;
+  if (home_path == nullptr)
+    LOG(WARNING) << "Use working dir (env USTORE_HOME not set)";
+  else
+    config_path = home_path + std::string("/") + config_path;
+  int fd = open(config_path.c_str(), O_RDONLY);
   if (fd == -1) {
-    if (config_path == nullptr)
-      LOG(WARNING) << "Use default configuration (env USTORE_CONF not set)";
-    else
-      LOG(WARNING) << "Use default configuration (file \""
-                   << config_path << "\" not found)";
-    config_path = kDefaultConfigFile;
-    fd = open(config_path, O_RDONLY);
-    if (fd == -1) {
-      LOG(FATAL) << "Fail to load default configuration (file \""
-                 << config_path << "\" not found)";
-      return;
-    }
+    LOG(FATAL) << "Fail to load configuration (file \""
+               << config_path << "\" not found)";
+    return;
   }
-  LOG(INFO) << "Load configuration \"" << config_path << "\"";
+  LOG(INFO) << "Load config \"" << config_path << "\"";
   google::protobuf::TextFormat::Parse(
       new google::protobuf::io::FileInputStream(fd), &config_);
-  LOG(INFO) << "Loaded configuration:" << std::endl << config_.DebugString();
+  LOG(INFO) << "Loaded config:" << std::endl << config_.DebugString();
   close(fd);
 }
 }  // namespace ustore
