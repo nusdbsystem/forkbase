@@ -2,9 +2,12 @@
 
 #include "cluster/worker_service.h"
 
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include "hash/hash.h"
 #include "net/net.h"
 #include "spec/slice.h"
+#include "utils/message_parser.h"
 #include "utils/logging.h"
 
 namespace ustore {
@@ -29,7 +32,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
                                   const node_id_t &source) {
   // parse the request
   UMessage umsg;
-  umsg.ParseFromArray(msg, size);
+  MessageParser::Parse(msg, size, &umsg);
   // init response
   UMessage response;
   response.set_type(UMessage::RESPONSE);

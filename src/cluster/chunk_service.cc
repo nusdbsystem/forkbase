@@ -2,6 +2,8 @@
 
 #include "cluster/chunk_service.h"
 #include "utils/env.h"
+#include "utils/message_parser.h"
+
 namespace ustore {
 
 class ChunkServiceCallBack : public CallBack {
@@ -20,8 +22,9 @@ void ChunkService::Init() {
 
 void ChunkService::HandleRequest(const void *msg, int size,
                                  const node_id_t &source) {
+  // parse the request
   UMessage umsg;
-  umsg.ParseFromArray(msg, size);
+  MessageParser::Parse(msg, size, &umsg);
   // init response
   UMessage response;
   response.set_type(UMessage::RESPONSE);

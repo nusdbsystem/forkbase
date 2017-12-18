@@ -4,6 +4,7 @@
 
 #include "utils/env.h"
 #include "utils/logging.h"
+#include "utils/message_parser.h"
 
 namespace ustore {
 
@@ -17,8 +18,9 @@ void ClientService::Init(std::unique_ptr<CallBack> callback) {
 
 void ClientService::HandleResponse(const void *msg, int size,
                                    const node_id_t& source) {
+  // parse the request
   UMessage *ustore_msg = new UMessage();
-  ustore_msg->ParseFromArray(msg, size);
+  MessageParser::Parse(msg, size, ustore_msg);
   ResponseBlob* res_blob = responses_[ustore_msg->source()].get();
 
   std::unique_lock<std::mutex> lck(res_blob->lock);
