@@ -5,7 +5,7 @@
 namespace ustore_kvdb {
 
 const ustore::Slice KVDB::DEFAULT_BRANCH = ustore::Slice("default", 7);
-const size_t kMaxSize = 1<<12;
+const size_t kMaxSize = 1<<26;
 Status KVDB::Get(const std::string& key, std::string* value) {
   //auto ret = odb_.Get(ustore::Slice(key), DEFAULT_BRANCH);
   auto ret = odb_.Get(ustore::Slice(cfname_), ustore::Slice(key)); 
@@ -174,6 +174,11 @@ std::pair<Status, std::string> KVDB::WriteMap() {
 }
 
 std::pair<Status, std::string> KVDB::PutBlob(const std::string& key, const std::string& value) {
+  if (value.length() < kMaxSize) {
+    ustore::VString val{ustore::Slice{value}};
+    auto ret = odb_.Put(ustore::Slice(key), val, DEFAULT_BRANCH);
+    return std::make_pair(Status::OK(), HashToString(ret.value));
+  }
   ustore::VBlob val{ustore::Slice{value}};
   auto ret = odb_.Put(ustore::Slice(key), val, DEFAULT_BRANCH);
 
@@ -220,10 +225,18 @@ std::pair<Status, std::string> KVDB::GetBlob(const std::string& key) {
   if (ret.stat != ustore::ErrorCode::kOK) {
     return std::make_pair(Status::NotFound(key), "");
   }
-
+  
   std::string value;
-  auto blob = ret.value.Blob();
-  blob.Read(0, blob.size(), &value);
+  if (ret.value.type() == ustore::UType::kBlob) { 
+    auto blob = ret.value.Blob();
+    blob.Read(0, blob.size(), &value);
+  }
+  else {
+    auto str = ret.value.String();
+    value.clear();
+    value.reserve(str.len());
+    value.append(reinterpret_cast<const char*>(str.data()), str.len());
+  }
   return std::make_pair(Status::OK(), value);
 }
 
@@ -234,9 +247,24 @@ std::pair<Status, std::string> KVDB::GetBlob(const std::string& key, const std::
     return std::make_pair(Status::NotFound(key), "");
   }
 
+  /*
   std::string value;
   auto blob = ret.value.Blob();
   blob.Read(0, blob.size(), &value);
+  return std::make_pair(Status::OK(), value);
+  */
+
+  std::string value;
+  if (ret.value.type() == ustore::UType::kBlob) { 
+    auto blob = ret.value.Blob();
+    blob.Read(0, blob.size(), &value);
+  }
+  else {
+    auto str = ret.value.String();
+    value.clear();
+    value.reserve(str.len());
+    value.append(reinterpret_cast<const char*>(str.data()), str.len());
+  }
   return std::make_pair(Status::OK(), value);
 
 }

@@ -44,7 +44,7 @@ class CellNode {
     return *reinterpret_cast<const uint16_t*>(chunk_.data() + kKeyOffsetPos);
   }
   inline size_t dataLength() const {
-    return *reinterpret_cast<const int16_t*>(chunk_.data() + kDataLengthPos);
+    return *reinterpret_cast<const int32_t*>(chunk_.data() + kDataLengthPos);
   }
   inline size_t dataOffset() const {
     return *reinterpret_cast<const int16_t*>(chunk_.data() + kDataOffsetPos);
@@ -69,7 +69,7 @@ class CellNode {
   static constexpr size_t kKeyLengthPos = kNumPreHashPos + sizeof(uint8_t);
   static constexpr size_t kKeyOffsetPos = kKeyLengthPos + sizeof(uint16_t);
   static constexpr size_t kDataLengthPos = kKeyOffsetPos + sizeof(uint16_t);
-  static constexpr size_t kDataOffsetPos = kDataLengthPos + sizeof(uint16_t);
+  static constexpr size_t kDataOffsetPos = kDataLengthPos + sizeof(uint32_t);
   static constexpr size_t kPreHashPos = kDataOffsetPos + sizeof(uint16_t);
 
   inline static size_t ComputePreHashOffset(size_t idx) {

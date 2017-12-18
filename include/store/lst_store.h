@@ -36,7 +36,7 @@ namespace lst_store {
 using offset_t = uint64_t;
 
 constexpr offset_t kMetaLogSize = 4096;
-constexpr offset_t kSegmentSize = (1<<22);
+constexpr offset_t kSegmentSize = (1<<27);
 constexpr offset_t kMetaSegmentSize = 2 * sizeof(offset_t);
 constexpr size_t kMaxPendingSyncChunks = 1024;
 constexpr uint64_t kMaxSyncTimeoutMilliseconds = 3000;

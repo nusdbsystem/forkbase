@@ -30,12 +30,12 @@ if (NOT DEFINED ENV{GOPATH})
     Please check the installation of Golang")
 endif()
 
-SET(USTORE_GOPATH $ENV{GOPATH}/src/github.com/hyperledger/fabric/ustore)
+SET(USTORE_GOPATH $ENV{GOPATH}/src/ustore)
 
 file(REMOVE_RECURSE ${USTORE_GOPATH})
 file(MAKE_DIRECTORY ${USTORE_GOPATH})
-file(GLOB go_unittest_files unit_test/*.go)
-file(COPY ${go_unittest_files} DESTINATION ${USTORE_GOPATH})
+#file(GLOB go_unittest_files unit_test/*.go)
+#file(COPY ${go_unittest_files} DESTINATION ${USTORE_GOPATH})
 file(GLOB api_wrapper_srcs api_wrapper/*.i)
 file(COPY ${api_wrapper_srcs} DESTINATION ${USTORE_GOPATH})
 
