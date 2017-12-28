@@ -116,7 +116,8 @@ size_t UBlob::Read(size_t pos, size_t len, std::string* buffer) const {
       total_copy_byte += cursor.numCurrentBytes();
       if (total_copy_byte == len) break;
     } while (cursor.Advance(false));
-    buffer->append(reinterpret_cast<const char*>(chunk_copy_start), chunk_copy_byte);
+    buffer->append(reinterpret_cast<const char*>(chunk_copy_start),
+      chunk_copy_byte);
     if (total_copy_byte == len) break;
   } while (cursor.Advance(true));
 
