@@ -1,5 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#ifdef USE_ROCKSDB
+
 #include <stdio.h>
 
 #include "gtest/gtest.h"
@@ -113,3 +115,5 @@ TEST(RocksDBHeadVersion, Dump) {
   EXPECT_TRUE(rocksdb_head_ver.DumpBranchVersion(head_version_db));
   rocksdb_head_ver.CloseDB();
 }
+
+#endif // USE_ROCKSDB

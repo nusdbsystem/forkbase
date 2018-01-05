@@ -1,5 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#ifdef USE_ROCKSDB
+
 #include <cstring>
 #include <iomanip>
 #include <utility>
@@ -336,3 +338,5 @@ const rocksdb::SliceTransform* RocksDBHeadVersion::NewMetaPrefixTransform() {
 }
 
 }  // namespace ustore
+
+#endif
