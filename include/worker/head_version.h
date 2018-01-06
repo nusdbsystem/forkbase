@@ -3,10 +3,7 @@
 #ifndef USTORE_WORKER_HEAD_VERSION_H_
 #define USTORE_WORKER_HEAD_VERSION_H_
 
-#include <map>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include "hash/hash.h"
 #include "spec/slice.h"
@@ -20,14 +17,9 @@ class HeadVersion : private Noncopyable {
   virtual void LogBranchUpdate(const Slice& key, const Slice& branch,
                                const Hash& ver) const {}
 
-  // Load branch version info from log path
-  // Add them into member branch_ver_
-  // Return whether loading succeeds
-  virtual bool LoadBranchVersion(const std::string& log_path) = 0;
+  virtual bool Load(const std::string& persist_path) = 0;
 
-  // Dump branch_ver_ into log_path
-  // Return whether Dumping succeeds
-  virtual bool DumpBranchVersion(const std::string& log_path) = 0;
+  virtual bool Dump(const std::string& persist_path) = 0;
 
   virtual bool GetBranch(const Slice& key, const Slice& branch,
                          Hash* ver) const = 0;

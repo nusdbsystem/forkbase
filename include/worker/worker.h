@@ -3,8 +3,6 @@
 #ifndef USTORE_WORKER_WORKER_H_
 #define USTORE_WORKER_WORKER_H_
 
-// #define __IN_MEMORY_HEAD_VERSION__
-
 #include <map>
 #include <memory>
 #include <string>
@@ -17,10 +15,10 @@
 #include "types/ucell.h"
 #include "utils/noncopyable.h"
 
-#if defined(__IN_MEMORY_HEAD_VERSION__)
+#if defined(USE_SIMPLE_HEAD_VERSION)
 #include "worker/simple_head_version.h"
 #else
-#include "worker/rocksdb_head_version.h"
+#include "worker/rocks_head_version.h"
 #endif
 
 namespace ustore {
@@ -60,8 +58,8 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  ErrorCode Get(const Slice& key, const Slice& branch, UCell* ucell) const
-  override;
+  ErrorCode Get(const Slice& key, const Slice& branch,
+                UCell* ucell) const override;
 
   /**
    * @brief Read the value of a version.
@@ -71,8 +69,8 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
    * @param ucell   Accommodator of the to-be-retrieved UCell object.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  ErrorCode Get(const Slice& key, const Hash& ver, UCell* ucell) const
-  override;
+  ErrorCode Get(const Slice& key, const Hash& ver,
+                UCell* ucell) const override;
 
   /**
    * @brief Write a new value as the head of a branch.
@@ -209,15 +207,15 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
     return Merge(key, val, ref_ver1, ref_ver2, &ver);
   }
 
-  ErrorCode GetChunk(const Slice& key, const Hash& ver, Chunk* chunk) const
-  override;
+  ErrorCode GetChunk(const Slice& key, const Hash& ver,
+                     Chunk* chunk) const override;
 
   ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const override;
 
   ErrorCode ListKeys(std::vector<std::string>* keys) const override;
 
-  ErrorCode ListBranches(const Slice& key, std::vector<std::string>* branches)
-  const override;
+  ErrorCode ListBranches(const Slice& key,
+                         std::vector<std::string>* branches) const override;
 
   bool Exists(const Hash& ver) const;
 
@@ -280,8 +278,8 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
     return head_ver_.GetLatest(key);
   }
 
-  inline ErrorCode GetLatestVersions(const Slice& key, std::vector<Hash>* vers)
-  const override {
+  inline ErrorCode GetLatestVersions(const Slice& key,
+                                     std::vector<Hash>* vers) const override {
     *vers = GetLatestVersions(key);
     return ErrorCode::kOK;
   }
@@ -312,37 +310,46 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
   // }
 
  protected:
-#if defined(__IN_MEMORY_HEAD_VERSION__)
+#if defined(USE_SIMPLE_HEAD_VERSION)
   SimpleHeadVersion head_ver_;
 #else
-  RocksDBHeadVersion head_ver_;
+  RocksHeadVersion head_ver_;
 #endif
 
  private:
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Slice& utype_data, const Hash& prev_ver1,
                         const Hash& prev_ver2, Hash* ver);
+  
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Hash& utype_hash, const Hash& prev_ver1,
                         const Hash& prev_ver2, Hash* ver);
+  
   ErrorCode Write(const Slice& key, const Value& val, const Hash& prev_ver1,
                   const Hash& prev_ver2, Hash* ver);
+  
   ErrorCode WriteBlob(const Slice& key, const Value& val, const Hash& prev_ver1,
                       const Hash& prev_ver2, Hash* ver);
+  
   ErrorCode WriteString(const Slice& key, const Value& val,
                         const Hash& prev_ver1, const Hash& prev_ver2,
                         Hash* ver);
+  
   ErrorCode WriteList(const Slice& key, const Value& val,
                       const Hash& prev_ver1, const Hash& prev_ver2,
                       Hash* ver);
+  
   ErrorCode WriteMap(const Slice& key, const Value& val,
                      const Hash& prev_ver1, const Hash& prev_ver2,
                      Hash* ver);
+  
   ErrorCode WriteSet(const Slice& key, const Value& val,
                      const Hash& prev_ver1, const Hash& prev_ver2,
                      Hash* ver);
+  
   ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
                 const Hash& prev_ver, Hash* ver);
+  
   inline void UpdateLatestVersion(const UCell& ucell) {
     const auto& prev_ver1 = ucell.preHash();
     const auto& prev_ver2 = ucell.preHash(true);

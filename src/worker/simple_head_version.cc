@@ -9,7 +9,7 @@
 
 namespace ustore {
 
-bool SimpleHeadVersion::LoadBranchVersion(const std::string& log_path) {
+bool SimpleHeadVersion::Load(const std::string& log_path) {
   std::ifstream ifs(log_path, std::ifstream::in);
   if (!ifs) return false;
   LOG(INFO) << "Loading head version file: " << log_path << " ......";
@@ -36,7 +36,7 @@ bool SimpleHeadVersion::LoadBranchVersion(const std::string& log_path) {
   return true;
 }
 
-bool SimpleHeadVersion::DumpBranchVersion(const std::string& log_path) {
+bool SimpleHeadVersion::Dump(const std::string& log_path) {
   // Dump the brach_ver_ to external file to persist
   LOG(INFO) << "Dumping head version file: " << log_path << " ......";
   std::ofstream ofs(log_path, std::ofstream::out);

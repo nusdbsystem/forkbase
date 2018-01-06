@@ -3,6 +3,9 @@
 #ifndef USTORE_WORKER_SIMPLE_HEAD_VERSION_H_
 #define USTORE_WORKER_SIMPLE_HEAD_VERSION_H_
 
+#include <map>
+#include <unordered_map>
+#include <unordered_set>
 #include "worker/head_version.h"
 
 namespace ustore {
@@ -17,9 +20,9 @@ class SimpleHeadVersion : public HeadVersion {
   SimpleHeadVersion() = default;
   ~SimpleHeadVersion() = default;
 
-  bool LoadBranchVersion(const std::string& log_path) override;
+  bool Load(const std::string& log_path) override;
 
-  bool DumpBranchVersion(const std::string& log_path) override;
+  bool Dump(const std::string& log_path) override;
 
   bool GetBranch(const Slice& key, const Slice& branch,
                  Hash* ver) const override;

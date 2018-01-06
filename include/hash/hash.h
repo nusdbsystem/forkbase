@@ -86,18 +86,17 @@ class Hash {
   inline bool own() const { return own_.get() != nullptr; }
   // expose byte array to others
   inline const byte_t* value() const { return value_; }
-  // get a copy that contains own bytes
-  Hash Clone() const;
   // encode to base32 format
   std::string ToBase32() const;
-  // get a string version copy
+  // get a copy that contains own bytes
+  Hash Clone() const;
   inline std::string ToString() const {
     return std::string(reinterpret_cast<const char*>(value_),
                        Hash::kByteLength);
   }
 
   friend inline std::ostream& operator<<(std::ostream& os, const Hash& obj) {
-    os << obj.ToBase32();
+    os << (obj == kNull ? "<null>" : obj.ToBase32());
     return os;
   }
 

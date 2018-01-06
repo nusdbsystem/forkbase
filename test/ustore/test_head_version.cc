@@ -52,13 +52,13 @@ TEST(SimpleHeadVersion, PutBranch) {
   head_ver.PutBranch(key[0], branch[2], ver[3]);
   EXPECT_TRUE(head_ver.IsBranchHead(key[0], branch[2], ver[3]));
 
-  ASSERT_TRUE(head_ver.DumpBranchVersion(test_head_version_log));
+  ASSERT_TRUE(head_ver.Dump(test_head_version_log));
 }
 
 TEST(SimpleHeadVersion, Load) {
   SimpleHeadVersion new_head_ver;
   Hash version;
-  new_head_ver.LoadBranchVersion(test_head_version_log);
+  new_head_ver.Load(test_head_version_log);
   EXPECT_EQ(size_t(3), new_head_ver.ListBranch(key[0]).size());
   EXPECT_TRUE(new_head_ver.GetBranch(key[0], branch[0], &version));
   EXPECT_EQ(ver[1], version);

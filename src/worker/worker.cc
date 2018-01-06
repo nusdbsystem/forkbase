@@ -18,11 +18,11 @@ namespace fs = boost::filesystem;
 
 Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool pst)
   : StoreInitializer(id, pst), id_(id), factory_(ptt) {
-#if defined(__IN_MEMORY_HEAD_VERSION__)
+#if defined(USE_SIMPLE_HEAD_VERSION)
   if (persist()) {
-    // load head file
-    std::string head_path = dataPath() + ".head";
-    if (fs::exists(fs::path(head_path))) head_ver_.LoadBranchVersion(head_path);
+    // load branch versions
+    const std::string log_path(dataPath() + ".head");
+    if (fs::exists(fs::path(log_path))) head_ver_.Load(log_path);
 
     // load latest versions
     auto store = store::GetChunkStore();
@@ -34,27 +34,27 @@ Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool pst)
   }
 #else
   if (persist()) {
-    head_ver_.LoadBranchVersion(dataPath() + ".head.db");
+    head_ver_.Load(dataPath() + ".head.db");
   } else {
     const std::string tmp_db("/tmp/ustore.head-" + std::to_string(id_));
-    RocksDBHeadVersion::DeleteDB(tmp_db);
-    head_ver_.LoadBranchVersion(tmp_db);
+    RocksHeadVersion::DestroyDB(tmp_db);
+    head_ver_.Load(tmp_db);
   }
 #endif
 }
 
 Worker::~Worker() {
-#if defined(__IN_MEMORY_HEAD_VERSION__)
+#if defined(USE_SIMPLE_HEAD_VERSION)
   if (persist()) {
-    std::string head_path = dataPath() + ".head";
-    head_ver_.DumpBranchVersion(head_path);
+    std::string log_path(dataPath() + ".head");
+    head_ver_.Dump(log_path);
   }
 #else
   if (persist()) {
-    head_ver_.DumpBranchVersion(dataPath() + ".head.db");
+    head_ver_.Dump(dataPath() + ".head.db");
     head_ver_.CloseDB();
   } else {
-    head_ver_.DeleteDB();
+    head_ver_.DestroyDB();
   }
 #endif
 }
