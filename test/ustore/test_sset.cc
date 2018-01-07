@@ -201,12 +201,12 @@ TEST_F(SsetHugeEnv, Compare) {
   ustore::Hash rhs_hash = lhs.hash();
   for (uint32_t i = 100; i < 200; ++i) {
     ustore::SSet rhs = factory.Load<ustore::SSet>(rhs_hash);
-    rhs_hash = rhs.Remove(keys_[i]);
+    rhs_hash = rhs.Remove(keys_[i]).Clone();
   }
 
   for (uint32_t i = 200; i < 300; ++i) {
     ustore::SSet rhs = factory.Load<ustore::SSet>(rhs_hash);
-    rhs_hash = rhs.Set(keys_[i]);
+    rhs_hash = rhs.Set(keys_[i]).Clone();
   }
 
   std::vector<ustore::Slice> new_keys;

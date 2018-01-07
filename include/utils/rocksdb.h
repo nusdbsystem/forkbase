@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include "chunk/chunk.h"
 #include "hash/hash.h"
 #include "rocksdb/db.h"
 #include "rocksdb/merge_operator.h"
@@ -29,6 +30,11 @@ class RocksDB : private Noncopyable {
   static inline rocksdb::Slice ToRocksSlice(const ustore::Hash& x) {
     return rocksdb::Slice(reinterpret_cast<const char*>(x.value()),
                           ustore::Hash::kByteLength);
+  }
+
+  static inline rocksdb::Slice ToRocksSlice(const ustore::Chunk& x) {
+    return rocksdb::Slice(reinterpret_cast<const char*>(x.head()),
+                          x.numBytes());
   }
 
   static inline rocksdb::Env* DefaultEnv() { return rocksdb::Env::Default(); }

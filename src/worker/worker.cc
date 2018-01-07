@@ -34,7 +34,7 @@ Worker::Worker(const WorkerID& id, const Partitioner* ptt, bool pst)
   }
 #else
   if (persist()) {
-    head_ver_.Load(dataPath() + ".head.db");
+    head_ver_.Load(dataPath() + ".head");
   } else {
     const std::string tmp_db("/tmp/ustore.head-" + std::to_string(id_));
     RocksHeadVersion::DestroyDB(tmp_db);

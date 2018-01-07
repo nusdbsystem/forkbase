@@ -7,6 +7,9 @@
 
 #include "utils/enum.h"
 #include "utils/logging.h"
+#ifdef USE_ROCKS_STORE
+#include "store/rocks_store.h"
+#endif  // USE_ROCKS_STORE
 #ifdef USE_LEVELDB
 #include "store/ldb_store.h"
 #endif  // USE_LEVELDB
@@ -53,7 +56,7 @@ std::ostream& operator<<(std::ostream& os, const StoreInfo& obj) {
      << "============= Storage Usage Information ==============" << endl
      // node info
      << setw(kNodeAlign) << left << "Node Info"
-     << " |" << setw(kSegmentAlign*3 + 4) << right << obj.nodeId << endl
+     << " |" << setw(kSegmentAlign * 3 + 4) << right << obj.nodeId << endl
      << "======================================================" << endl
      // segment type
      << setw(kSegmentAlign) << left << "Segment Type"
@@ -94,6 +97,9 @@ namespace store {
 
 ChunkStore* InitChunkStore(const std::string& dir, const std::string& file,
                            bool persist) {
+#ifdef USE_ROCKS_STORE
+  return RocksStore::MakeSingleton(dir + "/" + file + ".store", persist);
+#endif  // USE_ROCKS_STORE
 #ifdef USE_LEVELDB
   return LDBStore::MakeSingleton(file + "_ldb");
 #endif
@@ -103,6 +109,9 @@ ChunkStore* InitChunkStore(const std::string& dir, const std::string& file,
 }
 
 ChunkStore* GetChunkStore() {
+#ifdef USE_ROCKS_STORE
+  return RocksStore::Instance();
+#endif  // USE_ROCKS_STORE
 #ifdef USE_LEVELDB
   return LDBStore::Instance();
 #endif
