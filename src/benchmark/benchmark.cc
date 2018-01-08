@@ -95,35 +95,36 @@ void Benchmark::LoadParameters() {
   kDefaultBranch = BenchmarkConfig::default_branch;
   kSuffix = BenchmarkConfig::suffix;
   kSuffixRange = BenchmarkConfig::suffix_range;
+  kOpsAmplifier = BenchmarkConfig::ops_amplifier;
   // String
-  param.ops = BenchmarkConfig::string_ops;
+  param.ops = BenchmarkConfig::string_ops * kOpsAmplifier;
   param.length = BenchmarkConfig::string_length;
   param.elements = 1;
   param.key = BenchmarkConfig::string_key;
   params_.emplace(UType::kString, param);
   // Blob
-  param.ops = BenchmarkConfig::blob_ops;
+  param.ops = BenchmarkConfig::blob_ops * kOpsAmplifier;
   param.length = BenchmarkConfig::blob_length;
   param.elements = 1;
   param.key = BenchmarkConfig::blob_key;
   params_.emplace(UType::kBlob, param);
   // List
-  param.ops = BenchmarkConfig::list_ops;
+  param.ops = BenchmarkConfig::list_ops * kOpsAmplifier;
   param.length = BenchmarkConfig::list_length;
   param.elements = BenchmarkConfig::list_elements;
   param.key = BenchmarkConfig::list_key;
   params_.emplace(UType::kList, param);
   // Map
-  param.ops = BenchmarkConfig::map_ops;
+  param.ops = BenchmarkConfig::map_ops * kOpsAmplifier;
   param.length = BenchmarkConfig::map_length;
   param.elements = BenchmarkConfig::map_elements;
   param.key = BenchmarkConfig::map_key;
   params_.emplace(UType::kMap, param);
   // Branch
-  kBranchOps = BenchmarkConfig::branch_ops;
+  kBranchOps = BenchmarkConfig::branch_ops * kOpsAmplifier;
   kBranchKey = BenchmarkConfig::branch_key;
   // Merge
-  kMergeOps = BenchmarkConfig::merge_ops;
+  kMergeOps = BenchmarkConfig::merge_ops * kOpsAmplifier;
   kMergeKey = BenchmarkConfig::merge_key;
 
   // Init subkeys for Map

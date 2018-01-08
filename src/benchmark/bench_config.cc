@@ -17,6 +17,7 @@ int BenchmarkConfig::validate_ops;
 std::string BenchmarkConfig::default_branch;
 bool BenchmarkConfig::suffix;
 int BenchmarkConfig::suffix_range;
+int BenchmarkConfig::ops_amplifier;
 // string
 int BenchmarkConfig::string_ops;
 int BenchmarkConfig::string_length;
@@ -60,6 +61,8 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[]) {
     suffix = vm["suffix"].as<bool>();
     suffix_range = vm["suffix-range"].as<int>();
     GUARD(CheckArgGT(suffix_range, 0, "Key suffix range"));
+    ops_amplifier = vm["ops-amplifier"].as<int>();
+    GUARD(CheckArgGT(ops_amplifier, 0, "Operation number amplifier"));
     // string
     string_ops = vm["string-ops"].as<int>();
     GUARD(CheckArgGT(string_ops, 0, "Number of string related operations"));
@@ -132,6 +135,8 @@ bool BenchmarkConfig::ParseCmdArgs(int argc, char* argv[],
    "add suffix to a key or not")
   ("suffix-range", po::value<int>()->default_value(100),
    "key suffix length")
+  ("ops-amplifier", po::value<int>()->default_value(1),
+   "operation number amplifier")
   // string
   ("string-ops", po::value<int>()->default_value(100000),
    "number of string related operations")

@@ -24,6 +24,7 @@ class BenchmarkConfig {
   static std::string default_branch;
   static bool suffix;
   static int suffix_range;
+  static int ops_amplifier;
   // string
   static int string_ops;
   static int string_length;

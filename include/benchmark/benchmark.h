@@ -75,6 +75,7 @@ class Benchmark {
   size_t kMergeOps = 1000;
   bool kSuffix = true;
   size_t kSuffixRange = 100;
+  size_t kOpsAmplifier = 1;
   std::string kDefaultBranch;
   std::string kBranchKey;
   std::string kMergeKey;
