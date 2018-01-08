@@ -24,7 +24,10 @@ RocksStore::RocksStore(const std::string& db_path, const bool persist)
 }
 
 RocksStore::~RocksStore() {
-  if (persist_) CloseDB(); else DestroyDB();
+  if (persist_)
+    CloseDB();
+  else
+    DestroyDB();
 }
 
 Chunk RocksStore::Get(const Hash& key) {
@@ -42,6 +45,7 @@ Chunk RocksStore::Get(const Hash& key) {
   }
 }
 
+// TODO(linqian): The current impl of checking existence is slow
 bool RocksStore::Exists(const rocksdb::Slice& key) const {
   static rocksdb::PinnableSlice value;
   value.Reset();
