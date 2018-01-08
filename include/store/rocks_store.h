@@ -3,6 +3,7 @@
 #ifndef USTORE_STORE_ROCKS_STORE_H_
 #define USTORE_STORE_ROCKS_STORE_H_
 
+#include <mutex>
 #include <string>
 #include "chunk/chunk.h"
 #include "hash/hash.h"
@@ -24,7 +25,7 @@ class RocksStore
   Chunk Get(const Hash& key) override;
   bool Exists(const Hash& key) override;
   bool Put(const Hash& key, const Chunk& chunk) override;
-  const StoreInfo& GetInfo() const override;
+  const StoreInfo& GetInfo() override;
 
   StoreIterator begin() const override;
   StoreIterator cbegin() const override;
@@ -35,9 +36,12 @@ class RocksStore
   RocksStore();
   explicit RocksStore(const std::string& db_path, const bool persist = true);
 
-  bool Exists(const rocksdb::Slice& key) const;
+  void InitStoreInfo();
+  void UpdateStoreInfoForNewChunk(const Chunk& chunk);
 
   bool persist_;
+  StoreInfo store_info_;
+  std::mutex mtx_store_info_;
 };
 
 }  // namespace ustore

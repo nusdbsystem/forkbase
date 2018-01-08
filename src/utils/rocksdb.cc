@@ -19,6 +19,7 @@ RocksDB::RocksDB()
   db_opts_.write_buffer_size = kDefaultWriteBufferSize;
   db_opts_.IncreaseParallelism(std::thread::hardware_concurrency());
   db_opts_.OptimizeLevelStyleCompaction(kDefaultMemtableMemoryBudget);
+  db_blk_tab_opts_.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
 }
 
 bool RocksDB::OpenDB(const std::string& db_path) {
@@ -31,8 +32,6 @@ bool RocksDB::OpenDB(const std::string& db_path) {
   if (prefix_trans != nullptr) {
     db_opts_.prefix_extractor.reset(prefix_trans);
     db_read_opts_.prefix_same_as_start = true;
-    db_blk_tab_opts_.filter_policy.reset(  // enable prefix bloom for SST files
-      rocksdb::NewBloomFilterPolicy(10, true));
   }
   // Note: NewMergeOperator() shouldn't be called in the constructor.
   rocksdb::MergeOperator* merge_op = NewMergeOperator();

@@ -45,7 +45,7 @@ class ChunkStore {
   virtual Chunk Get(const Hash& key) = 0;
   virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
   virtual bool Exists(const Hash& key) = 0;
-  virtual const StoreInfo& GetInfo() const = 0;
+  virtual const StoreInfo& GetInfo() = 0;
 
   virtual StoreIterator begin() const = 0;
   virtual StoreIterator cbegin() const = 0;

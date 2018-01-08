@@ -85,7 +85,7 @@ bool LDBStore::Exists(const Hash& key) {
   return false;
 }
 
-const StoreInfo& LDBStore::GetInfo() const {
+const StoreInfo& LDBStore::GetInfo() {
   static StoreInfo info;
   return info;
 }

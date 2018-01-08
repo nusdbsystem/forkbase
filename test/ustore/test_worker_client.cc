@@ -157,7 +157,11 @@ void TestClientRequest(WorkerClient* client, int idx, int len) {
   // check info
   std::vector<StoreInfo> info;
   ErrorCode err = client->GetStorageInfo(&info);
+#ifdef ENABLE_STORE_INFO
   EXPECT_EQ(err, ErrorCode::kOK);
+#else
+  EXPECT_EQ(err, ErrorCode::kStoreInfoUnavailable);
+#endif
 }
 
 TEST(TestMessage, TestWorkerClient1Thread) {

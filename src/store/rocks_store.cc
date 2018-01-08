@@ -3,6 +3,8 @@
 #ifdef USE_ROCKSDB
 
 #include <utility>
+#include "utils/enum.h"
+
 #include "store/rocks_store.h"
 
 namespace ustore {
@@ -21,22 +23,23 @@ RocksStore::RocksStore(const std::string& db_path, const bool persist)
   db_blk_tab_opts_.block_cache = rocksdb::NewClockCache(kCacheSizeBytes);
 
   CHECK(OpenDB(db_path));
+
+  InitStoreInfo();
+#ifdef ENABLE_STORE_INFO
+  DBFullScan([this](const rocksdb::Iterator * it) {
+    UpdateStoreInfoForNewChunk(ToChunk(it->value()));
+  });
+#endif
 }
 
 RocksStore::~RocksStore() {
-  if (persist_)
-    CloseDB();
-  else
-    DestroyDB();
+  persist_ ? CloseDB() : static_cast<void>(DestroyDB());
 }
 
 Chunk RocksStore::Get(const Hash& key) {
   rocksdb::PinnableSlice value;
   if (DBGet(ToRocksSlice(key), &value)) {
-    const auto value_size = value.size();
-    std::unique_ptr<byte_t[]> buf(new byte_t[value_size]);
-    std::memcpy(buf.get(), value.data(), value_size);
-    Chunk chunk(std::move(buf));
+    auto chunk = ToChunk(value);
     DCHECK(key == chunk.hash());
     return chunk;
   } else {
@@ -45,45 +48,81 @@ Chunk RocksStore::Get(const Hash& key) {
   }
 }
 
-// TODO(linqian): The current impl of checking existence is slow
-bool RocksStore::Exists(const rocksdb::Slice& key) const {
-  static rocksdb::PinnableSlice value;
-  value.Reset();
-  return DBGet(key, &value);
-}
-
 bool RocksStore::Exists(const Hash& key) {
-  return Exists(ToRocksSlice(key));
+  return DBExists(ToRocksSlice(key));
 }
 
 bool RocksStore::Put(const Hash& key, const Chunk& chunk) {
   const auto key_slice = ToRocksSlice(key);
-  if (Exists(key_slice)) return true;
-  return DBPut(key_slice, ToRocksSlice(chunk));
+  if (DBExists(key_slice)) return true;
+  auto success = DBPut(key_slice, ToRocksSlice(chunk));
+
+#ifdef ENABLE_STORE_INFO
+  if (success) {
+    std::lock_guard<std::mutex> lock(mtx_store_info_);
+    UpdateStoreInfoForNewChunk(chunk);
+  }
+#endif
+
+  return success;
 }
 
-const StoreInfo& RocksStore::GetInfo() const {
-  static StoreInfo info;
-  return info;
+void RocksStore::InitStoreInfo() {
+  store_info_.chunks = 0;
+  store_info_.chunkBytes = 0;
+  store_info_.validChunks = 0;
+  store_info_.validChunkBytes = 0;
+  for (auto chunk_type : Enum<ChunkType>()) {
+    store_info_.bytesPerType[chunk_type] = 0;
+    store_info_.chunksPerType[chunk_type] = 0;
+  }
+}
+
+void RocksStore::UpdateStoreInfoForNewChunk(const Chunk& chunk) {
+  const auto chunk_type = chunk.type();
+  ++store_info_.chunksPerType[chunk_type];
+  store_info_.bytesPerType[chunk_type] += chunk.numBytes();
+}
+
+const StoreInfo& RocksStore::GetInfo() {
+#ifdef ENABLE_STORE_INFO
+  std::lock_guard<std::mutex> lock(mtx_store_info_);
+  store_info_.chunks = 0;
+  for (auto& n_chunks_per_type : store_info_.chunksPerType) {
+    store_info_.chunks += n_chunks_per_type.second;
+  }
+  store_info_.validChunks = store_info_.chunks;
+
+  store_info_.chunkBytes = 0;
+  for (auto& n_bytes_per_type : store_info_.bytesPerType) {
+    store_info_.chunkBytes += n_bytes_per_type.second;
+  }
+  store_info_.validChunkBytes = store_info_.chunkBytes;
+#endif
+  return store_info_;
 }
 
 StoreIterator RocksStore::begin() const {
   // TODO(linqian)
+  LOG(WARNING) << "RocksStore::begin() is called";
   return StoreIterator(nullptr);
 }
 
 StoreIterator RocksStore::cbegin() const {
   // TODO(linqian)
+  LOG(WARNING) << "RocksStore::cbegin() is called";
   return StoreIterator(nullptr);
 }
 
 StoreIterator RocksStore::end() const {
   // TODO(linqian)
+  LOG(WARNING) << "RocksStore::end() is called";
   return StoreIterator(nullptr);
 }
 
 StoreIterator RocksStore::cend() const {
   // TODO(linqian)
+  LOG(WARNING) << "RocksStore::cend() is called";
   return StoreIterator(nullptr);
 }
 

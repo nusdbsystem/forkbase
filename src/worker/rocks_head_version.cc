@@ -92,10 +92,8 @@ bool RocksBranchVersionDB::Get(const Slice& key, const Slice& branch,
 }
 
 bool RocksBranchVersionDB::Exists(const Slice& key, const Slice& branch) const {
-  static rocksdb::PinnableSlice version;
-  version.Reset();
   const auto db_key = DBKey(key, branch);
-  return DBGet(rocksdb::Slice(db_key), &version);
+  return DBExists(rocksdb::Slice(db_key));
 }
 
 bool RocksBranchVersionDB::Put(const Slice& key, const Slice& branch,
@@ -245,9 +243,7 @@ std::vector<Hash> RocksLatestVersionDB::Get(const Slice& key) const {
 }
 
 bool RocksLatestVersionDB::Exists(const Slice& key) const {
-  static rocksdb::PinnableSlice versions;
-  versions.Reset();
-  return DBGet(ToRocksSlice(key), &versions);
+  return DBExists(ToRocksSlice(key));
 }
 
 bool RocksLatestVersionDB::Exists(const Slice& key, const Hash& ver) const {

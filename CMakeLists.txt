@@ -41,6 +41,7 @@ OPTION(USE_ROCKSDB "Use RocksDB" OFF)
 OPTION(USE_ROCKS_STORE "Use RocksDB-based chunk store" OFF)
 OPTION(ENABLE_EXAMPLE "Compile example module" ON)
 OPTION(ENABLE_GO "Generate Golang binding" OFF)
+OPTION(ENABLE_STORE_INFO "Enable profiling storage" ON)
 
 if (USE_BLAKE2b AND USE_SHA256)
   message(FATAL_ERROR "options USE_BLAKE2b and USE_BLAKE2b are"
@@ -99,6 +100,11 @@ endif()
 if(USE_ROCKS_STORE AND NOT USE_ROCKSDB)
   message(STATUS "Use of RocksDB-based chunk store recalls RocksDB")
 	set(USE_ROCKSDB ON CACHE BOOL "Recall RocksDB" FORCE)
+endif()
+
+if(ENABLE_STORE_INFO)
+  message(STATUS "Enable profiling storage")
+  add_definitions(-DENABLE_STORE_INFO)
 endif()
 
 SET(BOOST_COMPONENT "filesystem")

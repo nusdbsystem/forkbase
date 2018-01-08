@@ -985,11 +985,7 @@ ErrorCode ColumnStore::GetStorageBytes(size_t* n_bytes) {
   auto rst = odb_.GetStorageInfo();
   USTORE_GUARD(rst.stat);
   *n_bytes = 0;
-  for (auto& info : rst.value) {
-    for (auto& n_bytes_per_type : info.bytesPerType) {
-      *n_bytes += n_bytes_per_type.second;
-    }
-  }
+  for (auto& info : rst.value) *n_bytes += info.chunkBytes;
   return ErrorCode::kOK;
 }
 
@@ -997,11 +993,7 @@ ErrorCode ColumnStore::GetStorageChunks(size_t* n_chunks) {
   auto rst = odb_.GetStorageInfo();
   USTORE_GUARD(rst.stat);
   *n_chunks = 0;
-  for (auto& info : rst.value) {
-    for (auto& n_chunks_per_type : info.chunksPerType) {
-      *n_chunks += n_chunks_per_type.second;
-    }
-  }
+  for (auto& info : rst.value) *n_chunks += info.chunks;
   return ErrorCode::kOK;
 }
 

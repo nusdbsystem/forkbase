@@ -37,6 +37,13 @@ class RocksDB : private Noncopyable {
                           x.numBytes());
   }
 
+  static inline ustore::Chunk ToChunk(const rocksdb::Slice& x) {
+    const auto data_size = x.size();
+    std::unique_ptr<byte_t[]> buf(new byte_t[data_size]);
+    std::memcpy(buf.get(), x.data(), data_size);
+    return Chunk(std::move(buf));
+  }
+
   static inline rocksdb::Env* DefaultEnv() { return rocksdb::Env::Default(); }
 
   RocksDB();
@@ -84,6 +91,11 @@ class RocksDB : private Noncopyable {
 
   inline bool DBWrite(rocksdb::WriteBatch* updates) {
     return db_->Write(db_write_opts_, updates).ok();
+  }
+
+  inline bool DBExists(const rocksdb::Slice& key) const {
+    rocksdb::PinnableSlice pin_val;
+    return DBGet(key, &pin_val);
   }
 
   void DBFullScan(

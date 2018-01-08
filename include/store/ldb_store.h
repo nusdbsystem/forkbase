@@ -28,7 +28,7 @@ class LDBStore
   Chunk Get(const Hash& key) override;
   bool Put(const Hash& key, const Chunk& chunk) override;
   bool Exists(const Hash& key) override;
-  const StoreInfo& GetInfo() const override;
+  const StoreInfo& GetInfo() override;
 
  private:
   LDBStore();

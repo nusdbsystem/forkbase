@@ -100,6 +100,7 @@ enum class ErrorCode : byte_t {
   // chunk
   kChunkNotExists = 40,
   kFailedCreateChunk = 41,
+  kStoreInfoUnavailable = 42,
   // relational
   kTypeMismatch = 50,
   kTableNotExists = 51,

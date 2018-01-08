@@ -389,9 +389,13 @@ const {
 }
 
 ErrorCode Worker::GetStorageInfo(std::vector<StoreInfo>* info) const {
+#ifdef ENABLE_STORE_INFO
   static const auto chunk_store = store::GetChunkStore();
   info->push_back(chunk_store->GetInfo());
   return ErrorCode::kOK;
+#else
+  return ErrorCode::kStoreInfoUnavailable;
+#endif
 }
 
 ErrorCode Worker::ListKeys(std::vector<std::string>* keys) const {

@@ -50,6 +50,7 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kReferringVersionNotExist, "referring version does not exist"},
   {ErrorCode::kUCellNotExists, "UCell does not exist"},
   {ErrorCode::kChunkNotExists, "chunk does not exist"},
+  {ErrorCode::kStoreInfoUnavailable, "storage information is unavailable"},
   {ErrorCode::kTypeUnsupported, "unsupported data type"},
   {ErrorCode::kFailedCreateUCell, "failed to create UCell"},
   {ErrorCode::kFailedCreateSBlob, "failed to create SBlob"},
@@ -82,7 +83,7 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kMapKeyNotExists, "key of map entry does not exist"},
   {ErrorCode::kMapKeyExists, "key of map entry already exists"},
   {ErrorCode::kElementExists, "element already exists"},
-  {ErrorCode::kUnexpectedSuccess, "Unexpected success of command execution"}
+  {ErrorCode::kUnexpectedSuccess, "unexpected success of command execution"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {
