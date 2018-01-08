@@ -85,6 +85,11 @@ if(USE_SIMPLE_HEAD_VERSION)
   add_definitions(-DUSE_SIMPLE_HEAD_VERSION)
 endif()
 
+IF (NOT USE_SIMPLE_HEAD_VERSION AND NOT USE_ROCKSDB)
+    message(STATUS "No use of simple head version recalls RocksDB")
+	set(USE_ROCKSDB ON CACHE BOOL "Recall RocksDB" FORCE)
+ENDIF()
+
 SET(BOOST_COMPONENT "filesystem")
 LIST(APPEND BOOST_COMPONENT "program_options")
 LIST(APPEND BOOST_COMPONENT "thread")

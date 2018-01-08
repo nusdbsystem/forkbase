@@ -13,11 +13,6 @@ IF(Boost_FOUND)
 ENDIF()
 
 # Rocksdb (optional)
-IF (NOT USE_SIMPLE_HEAD_VERSION AND NOT USE_ROCKSDB)
-    message(STATUS "No use of simple head version recalls RocksDB")
-	set(USE_ROCKSDB ON CACHE BOOL "Recall RocksDB" FORCE)
-ENDIF()
-
 IF (USE_ROCKSDB)
   MESSAGE(STATUS "Use RocksDB")
   FIND_PACKAGE(Rocksdb REQUIRED)

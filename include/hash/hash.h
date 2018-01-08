@@ -86,10 +86,11 @@ class Hash {
   inline bool own() const { return own_.get() != nullptr; }
   // expose byte array to others
   inline const byte_t* value() const { return value_; }
-  // encode to base32 format
-  std::string ToBase32() const;
   // get a copy that contains own bytes
   Hash Clone() const;
+  // encode to base32 format
+  std::string ToBase32() const;
+  // get a string version copy
   inline std::string ToString() const {
     return std::string(reinterpret_cast<const char*>(value_),
                        Hash::kByteLength);

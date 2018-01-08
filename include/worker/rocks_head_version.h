@@ -3,6 +3,9 @@
 #ifndef USTORE_WORKER_ROCKS_HEAD_VERSION_H_
 #define USTORE_WORKER_ROCKS_HEAD_VERSION_H_
 
+#include <memory>
+#include <string>
+#include <vector>
 #include "utils/rocksdb.h"
 #include "worker/head_version.h"
 
@@ -11,7 +14,7 @@ namespace ustore {
 class RocksBranchVersionDB : public RocksDB {
  public:
   RocksBranchVersionDB();
-  RocksBranchVersionDB(const std::shared_ptr<rocksdb::Cache>& cache);
+  explicit RocksBranchVersionDB(const std::shared_ptr<rocksdb::Cache>& cache);
   ~RocksBranchVersionDB() = default;
 
   bool Get(const Slice& key, const Slice& branch, Hash* ver) const;
@@ -37,7 +40,7 @@ class RocksBranchVersionDB : public RocksDB {
 class RocksLatestVersionDB : public RocksDB {
  public:
   RocksLatestVersionDB();
-  RocksLatestVersionDB(const std::shared_ptr<rocksdb::Cache>& cache);
+  explicit RocksLatestVersionDB(const std::shared_ptr<rocksdb::Cache>& cache);
   ~RocksLatestVersionDB() = default;
 
   std::vector<Hash> Get(const Slice& key) const;
