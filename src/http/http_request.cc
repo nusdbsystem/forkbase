@@ -29,6 +29,7 @@ int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
   int pos = start;
   int is, ie;  // start and end position of each item
 
+  DLOG(INFO) << "First Line: " + std::string(buf, start, end-start+1);
   // method
   TrimSpace(buf, pos, end);
   if (unlikely(pos > end)) return ST_ERROR;
@@ -64,7 +65,7 @@ int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
     } else {
       uri_ = string(buf, is, p - is);
       headers_[kParaKey] = string(buf, p+1, ie - p - 1);
-    }
+    } 
   } else {
     LOG(WARNING) << "Unsupported method: " << method_;
   }
@@ -81,6 +82,8 @@ int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
 int HttpRequest::ParseOneLine(char* buf, int start, int end) {
   TrimSpace(buf, start, end);
   if (unlikely(start > end)) return ST_ERROR;
+
+  DLOG(INFO) << "One line: " << string(buf, start, end-start+1);
 
   int is = start, ie = FindChar(buf, start, end, ':');
   if (ie < end) ToLower(buf, is, ie-1);
@@ -109,10 +112,11 @@ int HttpRequest::ParseLastLine(char* buf, int start, int end) {
   TrimSpace(buf, start, end);
   if (unlikely(start > end)) return ST_ERROR;
 
-  DLOG(INFO) << "Last line: " << string(buf, start, end-start);
+  DLOG(INFO) << "Last line: " << string(buf, start, end-start+1);
 
-  if (method_ == "post" && 
-          (!headers_.count("content-length") || atoi(headers_["content-length"].c_str()))) {
+  if ( (method_ == "post" || (headers_.count("content-type") 
+      && headers_["content-type"] != "application/x-www-form-urlencoded" ) ) 
+    && (!headers_.count("content-length") || atoi(headers_["content-length"].c_str()))) {
     string key = string(buf, start, end-start+1);
     if (headers_.count("content-length")) {
       int cl = atoi(headers_["content-length"].c_str());
@@ -151,19 +155,84 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
   unordered_map<string, string> kv;
   if (headers_.count(kParaKey)) {
      string& para = headers_[kParaKey];
-     size_t cur = 0, prev = 0;
-     while ((cur = para.find('&', cur)) != std::string::npos) {
-       // LOG(WARNING) << para.substr(prev, cur-prev);
-       int ep = para.find('=', prev);
-       CHECK_LT(ep, int32_t(cur));
-       kv[para.substr(prev, ep-prev)] = para.substr(ep+1, cur-ep-1);
-       cur++;
-       prev = cur;
-     }
+     if (headers_.count("content-type") 
+      && headers_["content-type"] == "application/xml") {
+        DLOG(INFO) << "content-type: application/xml";
+        DLOG(INFO) << "para: " + para;
+        size_t cur = 0, prev = 0;
+        while ((cur = para.find('<', cur)) != std::string::npos) {
+          if (para[cur + 1] == '?') {
+            cur = para.find(">", cur + 2);
+            if (cur == std::string::npos) {
+               LOG(WARNING) << "XML format error";
+            }
+            continue;
+          }
+          if (para.substr(cur, 4) == "<!--") {
+            cur = para.find("-->", cur + 4);
+            if (cur == std::string::npos) {
+               LOG(WARNING) << "XML format error";
+            }
+            continue;
+          }
+          prev = para.find('>', cur);
+          if (prev == std::string::npos) {
+             LOG(WARNING) << "XML format error";
+             break;
+          }
+          string key = para.substr(cur + 1, prev - cur - 1);
+          cur = para.find("</" + key + ">", prev);
+          if (cur == std::string::npos) {
+             LOG(WARNING) << "XML format error";
+             break;
+          }
+          kv[key] = para.substr(prev + 1, cur - prev - 1);
 
-     int ep = para.find('=', prev);
-     CHECK_NE(ep, int32_t(cur));
-     kv[para.substr(prev, ep-prev)] = para.substr(ep+1);
+          cur = para.find('>', cur + 1);
+        }
+
+     } else if (headers_.count("content-type") 
+      && headers_["content-type"] == "application/json") {
+          DLOG(INFO) << "content-type: application/json";
+          DLOG(INFO) << "para: " + para;
+          size_t cur = para.find('{', 0) + 1;
+          size_t prev = para.find('{', cur);
+          while ((cur = para.find('}', prev)) != std::string::npos) {
+               prev++;
+               size_t colon = para.find(':', prev);
+               if (colon == std::string::npos || colon >= cur) {
+                   LOG(WARNING) << "json format error";
+                   break;
+               }
+               CHECK_LT(colon, cur);
+               string key = para.substr(prev, colon-prev);
+               string value = para.substr(colon+1, cur-colon-1);
+               kv[trim(key)] = trim(value); 
+               
+               prev = para.find('{', cur);
+          } 
+     } else {
+        DLOG(INFO) << "content-type: application/x-www-form-urlencoded";
+        DLOG(INFO) << "para: " + para;
+       size_t cur = 0, prev = 0;
+       while ((cur = para.find('&', cur)) != std::string::npos) {
+         // LOG(WARNING) << para.substr(prev, cur-prev);
+         size_t ep = para.find('=', prev);
+         if (ep == std::string::npos || ep >= cur) {
+             LOG(WARNING) << "url format error";
+             break;
+         }
+         CHECK_LT(ep, cur);
+         kv[para.substr(prev, ep-prev)] = para.substr(ep+1, cur-ep-1);
+         cur++;
+         prev = cur;
+       }
+       size_t ep = para.find('=', prev);
+       if (ep != std::string::npos) {
+            CHECK_NE(ep, cur);
+            kv[para.substr(prev, ep-prev)] = para.substr(ep+1);
+        }
+     }
   }
   return kv;
 }
@@ -176,7 +245,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
   }
 
   DLOG(INFO) << "Received: " << buf;
-
+  
   int ls = 0, le = 0;  // start and end position of each line
   int pos = 0;
   int linenum = 0;

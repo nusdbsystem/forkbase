@@ -163,6 +163,15 @@ class HttpRequest {
     return start;
   }
 
+  inline std::string& trim(std::string &s) {  
+    if (s.empty())  {  
+        return s;  
+    }  
+    s.erase(0,s.find_first_not_of(" "));  
+    s.erase(s.find_last_not_of(" ") + 1);  
+    return s;  
+  } 
+
   string method_;
   string uri_;
   string http_version_;
@@ -173,6 +182,7 @@ class HttpRequest {
   // status_: e.g. 202 OK, 404 Not Found
   string status_ = kOk;
 };
+
 }  // namespace ustore
 
 #endif  // USTORE_HTTP_HTTP_REQUEST_H_
