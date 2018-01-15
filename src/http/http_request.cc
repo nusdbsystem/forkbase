@@ -65,7 +65,7 @@ int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
     } else {
       uri_ = string(buf, is, p - is);
       headers_[kParaKey] = string(buf, p+1, ie - p - 1);
-    } 
+    }
   } else {
     LOG(WARNING) << "Unsupported method: " << method_;
   }
@@ -114,14 +114,14 @@ int HttpRequest::ParseLastLine(char* buf, int start, int end) {
 
   DLOG(INFO) << "Last line: " << string(buf, start, end-start+1);
 
-  if ( (method_ == "post" || (headers_.count("content-type") 
-      && headers_["content-type"] != "application/x-www-form-urlencoded" ) ) 
-    && (!headers_.count("content-length") || atoi(headers_["content-length"].c_str()))) {
+  if (method_ == "post" && (!headers_.count("content-length")
+        || atoi(headers_["content-length"].c_str()))) {
     string key = string(buf, start, end-start+1);
     if (headers_.count("content-length")) {
       int cl = atoi(headers_["content-length"].c_str());
       while (int(key.length()) > cl) {
-        LOG(WARNING) << "Content larger than the specified content-length:" << key.length() << ":" << cl;
+        LOG(WARNING) << "Content larger than the specified content-length:"
+                     << key.length() << ":" << cl;
         key.pop_back();
       }
     }
@@ -146,7 +146,7 @@ int HttpRequest::ParseLastLine(char* buf, int start, int end) {
       headers_[key] = string(buf, ie, end-ie+1);
       // LOG(WARNING) << "Parsed: " << key << " : " << headers_[key];
     }
-  } 
+  }
   return ST_SUCCESS;
 }
 
@@ -155,7 +155,7 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
   unordered_map<string, string> kv;
   if (headers_.count(kParaKey)) {
      string& para = headers_[kParaKey];
-     if (headers_.count("content-type") 
+     if (headers_.count("content-type")
       && headers_["content-type"] == "application/xml") {
         DLOG(INFO) << "content-type: application/xml";
         DLOG(INFO) << "para: " + para;
@@ -191,7 +191,7 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
           cur = para.find('>', cur + 1);
         }
 
-     } else if (headers_.count("content-type") 
+     } else if (headers_.count("content-type")
       && headers_["content-type"] == "application/json") {
           DLOG(INFO) << "content-type: application/json";
           DLOG(INFO) << "para: " + para;
@@ -207,10 +207,10 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
                CHECK_LT(colon, cur);
                string key = para.substr(prev, colon-prev);
                string value = para.substr(colon+1, cur-colon-1);
-               kv[trim(key)] = trim(value); 
-               
+               kv[trim(key)] = trim(value);
+
                prev = para.find('{', cur);
-          } 
+          }
      } else {
         DLOG(INFO) << "content-type: application/x-www-form-urlencoded";
         DLOG(INFO) << "para: " + para;
@@ -245,7 +245,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
   }
 
   DLOG(INFO) << "Received: " << buf;
-  
+
   int ls = 0, le = 0;  // start and end position of each line
   int pos = 0;
   int linenum = 0;
@@ -263,7 +263,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
     TrimSpecialReverse(buf, le, ls);
     if (unlikely(linenum == 0)) {
       if (ParseFirstLine(buf, ls, le) == ST_ERROR) return ST_ERROR;
-    } else if (pos >= nread) { 
+    } else if (pos >= nread) {
       if (ParseLastLine(buf, ls, le) == ST_ERROR) return ST_ERROR;
     } else {
       if (ParseOneLine(buf, ls, le) == ST_ERROR) return ST_ERROR;
@@ -314,7 +314,7 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
   pos += kContentLen.length();
   // end of header
   pos += sprintf(header+pos, "%ld\r\n\r\n",
-                 response.length() > kMaxFileSize ? kMaxFileSize : response.length());
+           response.length() > kMaxFileSize ? kMaxFileSize : response.length());
 
   int res_len;
   if (response.length() > kMaxFileSize) {
