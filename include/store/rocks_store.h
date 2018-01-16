@@ -25,7 +25,7 @@ class RocksStore
   Chunk Get(const Hash& key) override;
   bool Exists(const Hash& key) override;
   bool Put(const Hash& key, const Chunk& chunk) override;
-  const StoreInfo& GetInfo() override;
+  StoreInfo GetInfo() override;
 
   StoreIterator begin() const override;
   StoreIterator cbegin() const override;

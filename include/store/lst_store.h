@@ -236,7 +236,7 @@ class LSTStore : public ChunkStore
     return chunk_map_.find(key.value()) != chunk_map_.end();
   }
   bool Put(const Hash& key, const Chunk& chunk) override;
-  const StoreInfo& GetInfo() override {
+  StoreInfo GetInfo() override {
     return storeInfo;
   }
 

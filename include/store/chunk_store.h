@@ -20,13 +20,13 @@ struct StoreInfo {
   size_t validChunks;
   size_t validChunkBytes;
 
-  MapType chunksPerType;
-  MapType bytesPerType;
-
   size_t maxSegments;
   size_t allocSegments;
   size_t freeSegments;
   size_t usedSegments;
+
+  MapType chunksPerType;
+  MapType bytesPerType;
 
   std::string nodeId;
 
@@ -45,7 +45,7 @@ class ChunkStore {
   virtual Chunk Get(const Hash& key) = 0;
   virtual bool Put(const Hash& key, const Chunk& chunk) = 0;
   virtual bool Exists(const Hash& key) = 0;
-  virtual const StoreInfo& GetInfo() = 0;
+  virtual StoreInfo GetInfo() = 0;
 
   virtual StoreIterator begin() const = 0;
   virtual StoreIterator cbegin() const = 0;

@@ -3,7 +3,9 @@
 #ifndef USTORE_UTILS_ROCKSDB_H_
 #define USTORE_UTILS_ROCKSDB_H_
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include "chunk/chunk.h"
 #include "hash/hash.h"

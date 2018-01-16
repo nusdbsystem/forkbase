@@ -84,7 +84,7 @@ void RocksStore::UpdateStoreInfoForNewChunk(const Chunk& chunk) {
   store_info_.bytesPerType[chunk_type] += chunk.numBytes();
 }
 
-const StoreInfo& RocksStore::GetInfo() {
+StoreInfo RocksStore::GetInfo() {
 #ifdef ENABLE_STORE_INFO
   std::lock_guard<std::mutex> lock(mtx_store_info_);
   store_info_.chunks = 0;
