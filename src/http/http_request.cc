@@ -160,6 +160,7 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
         DLOG(INFO) << "content-type: application/xml";
         DLOG(INFO) << "para: " + para;
         size_t cur = 0, prev = 0;
+        bool outerFlag = 1;
         while ((cur = para.find('<', cur)) != std::string::npos) {
           if (para[cur + 1] == '?') {
             cur = para.find(">", cur + 2);
@@ -185,6 +186,12 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
           if (cur == std::string::npos) {
              LOG(WARNING) << "XML format error";
              break;
+          }
+          if (outerFlag) {
+              para = para.substr(prev + 1, cur - prev - 1);
+              cur = 0;
+              outerFlag = 0;
+              continue;
           }
           kv[key] = para.substr(prev + 1, cur - prev - 1);
 
