@@ -202,22 +202,24 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
       && headers_["content-type"] == "application/json") {
           DLOG(INFO) << "content-type: application/json";
           DLOG(INFO) << "para: " + para;
-          size_t cur = para.find('{', 0) + 1;
-          size_t prev = para.find('{', cur);
-          while ((cur = para.find('}', prev)) != std::string::npos) {
-               prev++;
-               size_t colon = para.find(':', prev);
-               if (colon == std::string::npos || colon >= cur) {
-                   LOG(WARNING) << "json format error";
-                   break;
-               }
-               CHECK_LT(colon, cur);
-               string key = para.substr(prev, colon-prev);
-               string value = para.substr(colon+1, cur-colon-1);
-               kv[trim(key)] = trim(value);
-
-               prev = para.find('{', cur);
-          }
+          size_t prev = para.find('{', 0) + 1;
+          size_t cur = prev, colon = prev;
+          while ((colon = para.find(':', cur)) != std::string::npos) {  
+               cur = para.find(',', colon);
+               if (cur == std::string::npos) cur = para.find('}', colon);
+               if (cur == std::string::npos) {
+                  LOG(WARNING) << "json format error";
+                  break;
+               }    
+               size_t valueHead = colon + 1;
+               size_t valueTail = cur - 1;
+               colon--;
+               TrimSpecial(para, prev, colon);
+               TrimSpecial(para, valueHead, valueTail); 
+               kv[para.substr(prev, colon - prev + 1)] = para.substr(valueHead, valueTail - valueHead + 1); 
+               
+               prev = cur + 1;
+          } 
      } else {
         DLOG(INFO) << "content-type: application/x-www-form-urlencoded";
         DLOG(INFO) << "para: " + para;

@@ -163,11 +163,19 @@ class HttpRequest {
     return start;
   }
 
-  inline std::string& trim(std::string &s) {
-    if (s.empty()) return s;
-    s.erase(0, s.find_first_not_of(" "));
-    s.erase(s.find_last_not_of(" ") + 1);
-    return s;
+  inline void TrimSpecial(const string &buf, size_t& start, size_t& end) {
+    while (start <= end && (buf[start] == ' ' || buf[start] == '\"'
+        || buf[start] == '\n' || buf[start] == '\r'
+        || (buf[start] == '\\' && buf[start+1] == 'n') )) { 
+            if (buf[start] == '\\' && buf[start+1] == 'n') start++;
+            start++;
+        }
+    while (end >= start && (buf[end] == ' ' || buf[end] == '\"'
+        || buf[end] == '\n' || buf[end] == '\r'
+        || (buf[end-1] == '\\' && buf[end] == 'n') )) { 
+            if (buf[end-1] == '\\' && buf[end] == 'n') end--;
+            end--;
+        }
   }
 
   string method_;
