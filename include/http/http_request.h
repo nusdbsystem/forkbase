@@ -59,7 +59,7 @@ class HttpRequest {
    * based on the header fields
    * get the required resource and respond to the client
    */
-  int Respond(ClientSocket* socket, const string response);
+  int Respond(ClientSocket* socket, string&& response);
 
   // whether or not close the socket
   inline bool KeepAlive() { return keep_alive_; }

@@ -297,7 +297,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
 }
 
 
-int HttpRequest::Respond(ClientSocket* socket, const string response) {
+int HttpRequest::Respond(ClientSocket* socket, string&& response) {
   if (!(method_ == "post" || method_ == "get")) {
     if (unlikely(int(kBadRequest.length()) !=
         socket->Send(kBadRequest.c_str(), kBadRequest.length()))) {
@@ -306,6 +306,19 @@ int HttpRequest::Respond(ClientSocket* socket, const string response) {
     LOG(WARNING) << "unsupported method: " << method_.c_str();
     return ST_SUCCESS;
   }
+
+  // handle accept type
+  if (headers_.count("accept")) {
+    string& accept = headers_["accept"];
+    if (accept == "application/xml")
+      response = "<?xml version=\"1.0\" ?>" + CRLF + "<result>"
+          + response + "</result>";
+    else if (accept == "application/json")
+      response = "{\"result\": \"" + response + "\"}";
+  }
+
+  // add CRLF ending
+  response += CRLF;
 
   char header[kMaxResponseSize];
   int pos = 0;
