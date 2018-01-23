@@ -154,94 +154,94 @@ int HttpRequest::ParseLastLine(char* buf, int start, int end) {
 unordered_map<string, string> HttpRequest::ParseParameters() {
   unordered_map<string, string> kv;
   if (headers_.count(kParaKey)) {
-     string& para = headers_[kParaKey];
-     if (headers_.count("content-type")
-      && headers_["content-type"] == "application/xml") {
-        DLOG(INFO) << "content-type: application/xml";
-        DLOG(INFO) << "para: " + para;
-        size_t cur = 0, prev = 0;
-        bool outerFlag = 1;
-        while ((cur = para.find('<', cur)) != std::string::npos) {
-          if (para[cur + 1] == '?') {
-            cur = para.find(">", cur + 2);
-            if (cur == std::string::npos) {
-               LOG(WARNING) << "XML format error";
-            }
-            continue;
-          }
-          if (para.substr(cur, 4) == "<!--") {
-            cur = para.find("-->", cur + 4);
-            if (cur == std::string::npos) {
-               LOG(WARNING) << "XML format error";
-            }
-            continue;
-          }
-          prev = para.find('>', cur);
-          if (prev == std::string::npos) {
-             LOG(WARNING) << "XML format error";
-             break;
-          }
-          string key = para.substr(cur + 1, prev - cur - 1);
-          cur = para.find("</" + key + ">", prev);
+    string& para = headers_[kParaKey];
+    if (headers_.count("content-type")
+        && headers_["content-type"] == "application/xml") {
+      DLOG(INFO) << "content-type: application/xml";
+      DLOG(INFO) << "para: " + para;
+      size_t cur = 0, prev = 0;
+      bool outerFlag = 1;
+      while ((cur = para.find('<', cur)) != std::string::npos) {
+        if (para[cur + 1] == '?') {
+          cur = para.find(">", cur + 2);
           if (cur == std::string::npos) {
-             LOG(WARNING) << "XML format error";
-             break;
+            LOG(WARNING) << "XML format error";
           }
-          if (outerFlag) {
-              para = para.substr(prev + 1, cur - prev - 1);
-              cur = 0;
-              outerFlag = 0;
-              continue;
+          continue;
+        }
+        if (para.substr(cur, 4) == "<!--") {
+          cur = para.find("-->", cur + 4);
+          if (cur == std::string::npos) {
+            LOG(WARNING) << "XML format error";
           }
-          kv[key] = para.substr(prev + 1, cur - prev - 1);
-
-          cur = para.find('>', cur + 1);
+          continue;
         }
-
-     } else if (headers_.count("content-type")
-      && headers_["content-type"] == "application/json") {
-          DLOG(INFO) << "content-type: application/json";
-          DLOG(INFO) << "para: " + para;
-          size_t prev = para.find('{', 0) + 1;
-          size_t cur = prev, colon = prev;
-          while ((colon = para.find(':', cur)) != std::string::npos) {  
-               cur = para.find(',', colon);
-               if (cur == std::string::npos) cur = para.find('}', colon);
-               if (cur == std::string::npos) {
-                  LOG(WARNING) << "json format error";
-                  break;
-               }    
-               size_t valueHead = colon + 1;
-               size_t valueTail = cur - 1;
-               colon--;
-               TrimSpecial(para, prev, colon);
-               TrimSpecial(para, valueHead, valueTail); 
-               kv[para.substr(prev, colon - prev + 1)] = para.substr(valueHead, valueTail - valueHead + 1); 
-               
-               prev = cur + 1;
-          } 
-     } else {
-        DLOG(INFO) << "content-type: application/x-www-form-urlencoded";
-        DLOG(INFO) << "para: " + para;
-       size_t cur = 0, prev = 0;
-       while ((cur = para.find('&', cur)) != std::string::npos) {
-         // LOG(WARNING) << para.substr(prev, cur-prev);
-         size_t ep = para.find('=', prev);
-         if (ep == std::string::npos || ep >= cur) {
-             LOG(WARNING) << "url format error";
-             break;
-         }
-         CHECK_LT(ep, cur);
-         kv[para.substr(prev, ep-prev)] = para.substr(ep+1, cur-ep-1);
-         cur++;
-         prev = cur;
-       }
-       size_t ep = para.find('=', prev);
-       if (ep != std::string::npos) {
-            CHECK_NE(ep, cur);
-            kv[para.substr(prev, ep-prev)] = para.substr(ep+1);
+        prev = para.find('>', cur);
+        if (prev == std::string::npos) {
+          LOG(WARNING) << "XML format error";
+          break;
         }
-     }
+        string key = para.substr(cur + 1, prev - cur - 1);
+        cur = para.find("</" + key + ">", prev);
+        if (cur == std::string::npos) {
+          LOG(WARNING) << "XML format error";
+          break;
+        }
+        if (outerFlag) {
+          para = para.substr(prev + 1, cur - prev - 1);
+          cur = 0;
+          outerFlag = 0;
+          continue;
+        }
+        kv[key] = para.substr(prev + 1, cur - prev - 1);
+
+        cur = para.find('>', cur + 1);
+      }
+
+    } else if (headers_.count("content-type")
+        && headers_["content-type"] == "application/json") {
+      DLOG(INFO) << "content-type: application/json";
+      DLOG(INFO) << "para: " + para;
+      size_t prev = para.find('{', 0) + 1;
+      size_t cur = prev, colon = prev;
+      while ((colon = para.find(':', cur)) != std::string::npos) {
+        cur = para.find(',', colon);
+        if (cur == std::string::npos) cur = para.find('}', colon);
+        if (cur == std::string::npos) {
+          LOG(WARNING) << "json format error";
+          break;
+        }
+        size_t valueHead = colon + 1;
+        size_t valueTail = cur - 1;
+        colon--;
+        TrimSpecial(para, prev, colon);
+        TrimSpecial(para, valueHead, valueTail);
+        kv[para.substr(prev, colon - prev + 1)]
+            = para.substr(valueHead, valueTail - valueHead + 1);
+        prev = cur + 1;
+      }
+    } else {
+      DLOG(INFO) << "content-type: application/x-www-form-urlencoded";
+      DLOG(INFO) << "para: " + para;
+      size_t cur = 0, prev = 0;
+      while ((cur = para.find('&', cur)) != std::string::npos) {
+        // LOG(WARNING) << para.substr(prev, cur-prev);
+        size_t ep = para.find('=', prev);
+        if (ep == std::string::npos || ep >= cur) {
+          LOG(WARNING) << "url format error";
+          break;
+        }
+        CHECK_LT(ep, cur);
+        kv[para.substr(prev, ep-prev)] = para.substr(ep+1, cur-ep-1);
+        cur++;
+        prev = cur;
+      }
+      size_t ep = para.find('=', prev);
+      if (ep != std::string::npos) {
+        CHECK_NE(ep, cur);
+        kv[para.substr(prev, ep-prev)] = para.substr(ep+1);
+      }
+    }
   }
   return kv;
 }

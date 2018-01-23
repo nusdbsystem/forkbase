@@ -166,16 +166,16 @@ class HttpRequest {
   inline void TrimSpecial(const string &buf, size_t& start, size_t& end) {
     while (start <= end && (buf[start] == ' ' || buf[start] == '\"'
         || buf[start] == '\n' || buf[start] == '\r'
-        || (buf[start] == '\\' && buf[start+1] == 'n') )) { 
-            if (buf[start] == '\\' && buf[start+1] == 'n') start++;
-            start++;
-        }
+        || (buf[start] == '\\' && buf[start+1] == 'n') )) {
+      if (buf[start] == '\\' && buf[start+1] == 'n') start++;
+      start++;
+    }
     while (end >= start && (buf[end] == ' ' || buf[end] == '\"'
         || buf[end] == '\n' || buf[end] == '\r'
-        || (buf[end-1] == '\\' && buf[end] == 'n') )) { 
-            if (buf[end-1] == '\\' && buf[end] == 'n') end--;
-            end--;
-        }
+        || (buf[end-1] == '\\' && buf[end] == 'n') )) {
+      if (buf[end-1] == '\\' && buf[end] == 'n') end--;
+      end--;
+    }
   }
 
   string method_;
