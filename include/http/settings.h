@@ -26,14 +26,15 @@ constexpr int kMaxHeaderSize = 10240;  // max http header size
  * it is ok since we have a dynamic strategy to decide the file size
  * and allocate the response buffer
  */
-constexpr int kMaxFileSize = 102400;
-constexpr int kMaxResponseSize = kMaxHeaderSize + kMaxFileSize;
+constexpr int kMaxOutputSize = 1 << 30;  // max response message size
+constexpr int kMaxResponseSize = kMaxHeaderSize + kMaxOutputSize;
 
 /*
  * default receive buffer size
  * TODO: if data is larger than the kDefaultRecvSize, how to handle?
  */
-constexpr int kDefaultRecvSize = kMaxResponseSize;
+constexpr int kMaxInputSize = 1 << 20;  // max input message size
+constexpr int kDefaultRecvSize = kMaxHeaderSize + kMaxInputSize;
 
 }  // namespace ustore
 

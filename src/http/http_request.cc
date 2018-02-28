@@ -296,7 +296,6 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
   return ST_SUCCESS;
 }
 
-
 int HttpRequest::Respond(ClientSocket* socket, string&& response) {
   if (!(method_ == "post" || method_ == "get")) {
     if (unlikely(int(kBadRequest.length()) !=
@@ -320,7 +319,17 @@ int HttpRequest::Respond(ClientSocket* socket, string&& response) {
   // add CRLF ending
   response += CRLF;
 
-  char header[kMaxResponseSize];
+  int res_len;
+  if (response.length() > kMaxOutputSize) {
+    res_len = kMaxOutputSize;
+    LOG(WARNING) << "response length is too long: " << response.length()
+                 << ", cut it to " << res_len;
+  } else {
+    res_len = response.length();
+  }
+
+  // dynamic buffer allocation
+  char* header = new char[kMaxHeaderSize + res_len];
   int pos = 0;
 
   memcpy(header+pos, kHttpVersion.c_str(), kHttpVersion.length());
@@ -335,25 +344,14 @@ int HttpRequest::Respond(ClientSocket* socket, string&& response) {
   memcpy(header+pos, kContentLen.c_str(), kContentLen.length());
   pos += kContentLen.length();
   // end of header
-  pos += sprintf(header+pos, "%ld\r\n\r\n",
-           response.length() > kMaxFileSize ? kMaxFileSize : response.length());
+  pos += sprintf(header+pos, "%d\r\n\r\n", res_len);
 
-  int res_len;
-  if (response.length() > kMaxFileSize) {
-    res_len = kMaxFileSize;
-    LOG(WARNING) << "response length is too long: " << response.length()
-                 << ", cut it to " << res_len;
-  } else {
-    res_len = response.length();
-  }
   memcpy(header+pos, response.c_str(), res_len);
   pos += res_len;
 
-  if (unlikely(pos != socket->Send(header, pos))) {
-    return ST_ERROR;
-  } else {
-    return ST_SUCCESS;
-  }
+  int sent = socket->Send(header, pos);
+  delete[] header;
+  return sent == pos ? ST_SUCCESS : ST_ERROR;
 }
 
 }  // namespace ustore
