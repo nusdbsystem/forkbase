@@ -309,8 +309,7 @@ uint64_t NodeCursor::AdvanceSteps(uint64_t step) {
   bool initial_end = isEnd();
   if (!initial_end) {
     if (seq_node_->isLeaf()) {
-      uint64_t step2last = static_cast<uint64_t>(
-                            static_cast<int32_t>(seq_node_->numEntries()) - 1 - idx_);
+      uint64_t step2last = seq_node_->numEntries() - 1 - idx_;
       // Only advance cursor within leaf node is enough
       if (step <= step2last) {
         idx_ += static_cast<int32_t>(step);
@@ -433,7 +432,7 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
   // DLOG(INFO) << "# Entry: " << seq_node_->numEntries();
   // DLOG(INFO) << "  Before Index: " << idx_;
   bool initial_begin = isBegin();
-  if (!initial_begin){
+  if (!initial_begin) {
     if (seq_node_->isLeaf()) {
       // Max step to advance to the first element
       uint64_t step2first = static_cast<uint64_t>(idx_);
@@ -447,7 +446,6 @@ uint64_t NodeCursor::RetreatSteps(uint64_t step) {
         idx_ = -1;
       }  // end if step <= step2first
     } else {
-
       uint64_t entry_num_elements = 0;
       uint64_t prev_entry_num_elements = 0;
 

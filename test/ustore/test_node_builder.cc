@@ -594,8 +594,6 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
 
   void TestDoubleSplice(size_t idx1, size_t idx2,
                         bool isVerbose = false) {
-
-
     DLOG(INFO) << "\n\n Test on Double Splice.";
     verbose = isVerbose;
 

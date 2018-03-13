@@ -1,4 +1,4 @@
-
+// Copyright (c) 2017 The Ustore Authors.
 
 #ifndef USTORE_NODE_NODE_MERGER_H_
 #define USTORE_NODE_NODE_MERGER_H_
