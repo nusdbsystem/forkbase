@@ -25,7 +25,7 @@ SSet::SSet(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
     NodeBuilder nb(chunk_writer_, SetChunker::Instance(),
-                   MetaChunker::Instance(), false);
+                   MetaChunker::Instance());
     std::vector<Slice> items;
 
     for (size_t i : Utils::SortIndexes<Slice>(keys)) {
@@ -41,7 +41,7 @@ Hash SSet::Set(const Slice& key) const {
   CHECK(!empty());
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(), chunk_writer_,
-                 SetChunker::Instance(), MetaChunker::Instance(), false);
+                 SetChunker::Instance(), MetaChunker::Instance());
 
   // Try to find whether this key already exists
   NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
@@ -80,7 +80,7 @@ Hash SSet::Remove(const Slice& key) const {
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr), 0, {});
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
                  chunk_writer_, SetChunker::Instance(),
-                 MetaChunker::Instance(), false);
+                 MetaChunker::Instance());
   nb.SpliceElements(1, &seg);
   return nb.Commit();
 }
@@ -93,6 +93,6 @@ Hash SSet::Merge(const SSet& node1, const SSet& node2) const {
   }
   KeyMerger merger(hash(), chunk_loader_.get(), chunk_writer_);
   return merger.Merge(node1.hash(), node2.hash(),
-                      *SetChunker::Instance(), false);
+                      *SetChunker::Instance());
 }
 }  // namespace ustore

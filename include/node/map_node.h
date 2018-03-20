@@ -20,8 +20,13 @@ struct KVItem {
 class MapChunker : public Singleton<MapChunker>, public Chunker {
   friend class Singleton<MapChunker>;
  public:
-  ChunkInfo Make(const std::vector<const Segment*>& segments) const
-      override;
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const override;
+  inline std::unique_ptr<RollingHasher> GetRHasher() const override {
+    return std::unique_ptr<RollingHasher>(new RollingHasher());
+  }
+  inline bool isFixedEntryLen() const override {
+    return false;
+  }
 
  private:
   MapChunker() = default;

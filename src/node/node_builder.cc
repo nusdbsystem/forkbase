@@ -13,29 +13,26 @@
 namespace ustore {
 NodeBuilder::NodeBuilder(const Hash& root_hash, const OrderedKey& key,
                          ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-                         const Chunker* chunker, const Chunker* parent_chunker,
-                         bool isFixedEntryLen) noexcept
+                         const Chunker* chunker, const Chunker* parent_chunker) noexcept
     : NodeBuilder(std::unique_ptr<NodeCursor>(
                   new NodeCursor(root_hash, key, chunk_loader)),
-                  0, chunk_writer, chunker, parent_chunker, isFixedEntryLen) {}
+                  0, chunk_writer, chunker, parent_chunker) {}
 
 // Perform operation at idx-th element at leaf rooted at root_hash
 NodeBuilder::NodeBuilder(const Hash& root_hash, size_t idx,
                          ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-                         const Chunker* chunker, const Chunker* parent_chunker,
-                         bool isFixedEntryLen) noexcept
+                         const Chunker* chunker, const Chunker* parent_chunker) noexcept
     : NodeBuilder(std::unique_ptr<NodeCursor>(
                   new NodeCursor(root_hash, idx, chunk_loader)),
-                  0, chunk_writer, chunker, parent_chunker, isFixedEntryLen) {}
+                  0, chunk_writer, chunker, parent_chunker) {}
 
 NodeBuilder::NodeBuilder(ChunkWriter* chunk_writer, const Chunker* chunker,
-    const Chunker* parent_chunker, bool isFixedEntryLen) noexcept
-    : NodeBuilder(0, chunk_writer, chunker, parent_chunker, isFixedEntryLen) {}
+    const Chunker* parent_chunker) noexcept
+    : NodeBuilder(0, chunk_writer, chunker, parent_chunker) {}
 
 NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
                          ChunkWriter* chunk_writer, const Chunker* chunker,
-                         const Chunker* parent_chunker,
-                         bool isFixedEntryLen) noexcept
+                         const Chunker* parent_chunker) noexcept
     : cursor_(std::move(cursor)),
       parent_builder_(nullptr),
       appended_segs_(),
@@ -44,22 +41,21 @@ NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
 #ifdef TEST_NODEBUILDER
       rhasher_(RollingHasher::TestHasher()),
 #else
-      rhasher_(new RollingHasher()),
+      rhasher_(chunker->GetRHasher()),
 #endif
       commited_(true),
       num_skip_entries_(0),
       level_(level),
       chunk_writer_(chunk_writer),
       chunker_(chunker),
-      parent_chunker_(parent_chunker),
-      isFixedEntryLen_(isFixedEntryLen) {
+      parent_chunker_(parent_chunker) {
   if (cursor_->parent() != nullptr) {
     // copy this node builder's parent cursor
     std::unique_ptr<NodeCursor> parent_cr(new NodeCursor(*cursor_->parent()));
 
     // non-leaf builder must work on MetaNode, which is of var len entry
     parent_builder_.reset(new NodeBuilder(std::move(parent_cr), level + 1,
-        chunk_writer_, parent_chunker, parent_chunker, false));
+        chunk_writer_, parent_chunker, parent_chunker));
   }
   if (cursor_->node()->numEntries() > 0) {
     Resume();
@@ -67,8 +63,7 @@ NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
 }
 
 NodeBuilder::NodeBuilder(size_t level, ChunkWriter* chunk_writer,
-                         const Chunker* chunker, const Chunker* parent_chunker,
-                         bool isFixedEntryLen) noexcept
+                         const Chunker* chunker, const Chunker* parent_chunker) noexcept
     : cursor_(nullptr),
       parent_builder_(nullptr),
       appended_segs_(),
@@ -77,15 +72,14 @@ NodeBuilder::NodeBuilder(size_t level, ChunkWriter* chunk_writer,
 #ifdef TEST_NODEBUILDER
       rhasher_(RollingHasher::TestHasher()),
 #else
-      rhasher_(new RollingHasher()),
+      rhasher_(chunker->GetRHasher()),
 #endif
       commited_(true),
       num_skip_entries_(0),
       level_(level),
       chunk_writer_(chunk_writer),
       chunker_(chunker),
-      parent_chunker_(parent_chunker),
-      isFixedEntryLen_(isFixedEntryLen) {
+      parent_chunker_(parent_chunker) {
   // do nothing
 }
 
@@ -95,7 +89,7 @@ void NodeBuilder::Resume() {
   cursor_->seek(0);
   pre_cursor_seg_ = SegAtCursor();
 
-  if (isFixedEntryLen_) {
+  if (chunker_->isFixedEntryLen()) {
     // if the entry is fixed length, no need to prolong each previous
     // entry one by one, we can prolong the segment from the head of the chunk
     // to the original_idx directly.
@@ -198,7 +192,7 @@ void NodeBuilder::SpliceElements(size_t num_delete,
 NodeBuilder* NodeBuilder::parent_builder() {
   if (parent_builder_ == nullptr) {
     parent_builder_.reset(new NodeBuilder(level_ + 1, chunk_writer_,
-                          parent_chunker_, parent_chunker_, false));
+                          parent_chunker_, parent_chunker_));
   }
   return parent_builder_.get();
 }
@@ -415,7 +409,7 @@ Hash NodeBuilder::commit() {
 
 Segment* NodeBuilder::SegAtCursor() {
   Segment* seg;
-  if (isFixedEntryLen_) {
+  if (chunker_->isFixedEntryLen()) {
     seg = new FixedSegment(cursor_->current(), cursor_->numCurrentBytes());
   } else {
     seg = new VarSegment(cursor_->current());
@@ -520,22 +514,19 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
 
 // Return the root hash of the updated tree
 //   the hash owns its internal data
-Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
-                                 bool isFixedEntryLen) {
+Hash AdvancedNodeBuilder::Commit(const Chunker& chunker) {
   if (root_.empty()) {
     if (operands_.size() == 0) {
       // Create an empty object
 
       NodeBuilder nb(writer_, &chunker,
-                     MetaChunker::Instance(),
-                     isFixedEntryLen);
+                     MetaChunker::Instance());
       nb.SpliceElements(0, {});
       return nb.Commit();
     } else if (operands_.size() == 1) {
       // Init the object with a single operand
       NodeBuilder nb(writer_, &chunker,
-                     MetaChunker::Instance(),
-                     isFixedEntryLen);
+                     MetaChunker::Instance());
       nb.SpliceElements(operands_.begin()->num_delete,
                         operands_.begin()->appended_segs);
       return nb.Commit();
@@ -557,8 +548,7 @@ Hash AdvancedNodeBuilder::Commit(const Chunker& chunker,
     // Traverse the list in reverse order
     NodeBuilder nb(base, operand_it->start_idx,
                    &chunk_cacher, &chunk_cacher,
-                   &persistentLeafChunker, &persistentMetaChunker,
-                   isFixedEntryLen);
+                   &persistentLeafChunker, &persistentMetaChunker);
 
     nb.SpliceElements(operand_it->num_delete, operand_it->appended_segs);
     base = nb.Commit();

@@ -26,7 +26,7 @@ SMap::SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
     NodeBuilder nb(chunk_writer_, MapChunker::Instance(),
-                   MetaChunker::Instance(), false);
+                   MetaChunker::Instance());
     std::vector<KVItem> kv_items;
 
     for (size_t i : Utils::SortIndexes<Slice>(keys)) {
@@ -43,7 +43,7 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
   const OrderedKey orderedKey = OrderedKey::FromSlice(key);
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
                  chunk_writer_, MapChunker::Instance(),
-                 MetaChunker::Instance(), false);
+                 MetaChunker::Instance());
 
   // Try to find whether this key already exists
   NodeCursor cursor(hash(), orderedKey, chunk_loader_.get());
@@ -84,7 +84,7 @@ Hash SMap::Set(const std::vector<Slice>& keys,
     nb.Splice(idxForKey, num_delete, std::move(segs));
   }
 
-  return nb.Commit(*MapChunker::Instance(), false);
+  return nb.Commit(*MapChunker::Instance());
 }
 
 Hash SMap::Remove(const Slice& key) const {
@@ -107,7 +107,7 @@ Hash SMap::Remove(const Slice& key) const {
   VarSegment seg(std::unique_ptr<const byte_t[]>(nullptr), 0, {});
   NodeBuilder nb(hash(), orderedKey, chunk_loader_.get(),
                  chunk_writer_, MapChunker::Instance(),
-                 MetaChunker::Instance(), false);
+                 MetaChunker::Instance());
   nb.SpliceElements(1, &seg);
   return nb.Commit();
 }
@@ -121,7 +121,7 @@ Hash SMap::Merge(const SMap& node1, const SMap& node2) const {
 
   KeyMerger merger(hash(), chunk_loader_.get(), chunk_writer_);
   return merger.Merge(node1.hash(), node2.hash(),
-                      *MapChunker::Instance(), false);
+                      *MapChunker::Instance());
 }
 
 }  // namespace ustore

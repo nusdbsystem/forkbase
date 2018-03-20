@@ -158,7 +158,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, num_original_bytes_);
 
     const ustore::BlobChunker* chunker = ustore::BlobChunker::Instance();
-    ustore::NodeBuilder builder(writer_, chunker, ustore::MetaChunker::Instance(), true);
+    ustore::NodeBuilder builder(writer_, chunker, ustore::MetaChunker::Instance());
     ustore::FixedSegment seg(original_content_, num_original_bytes_, 1);
     builder.SpliceElements(0, &seg);
     root_chunk = loader_->Load(builder.Commit());
@@ -170,7 +170,7 @@ class NodeBuilderSimple : public NodeBuilderEnv {
     verbose = isVerbose;
     ustore::NodeBuilder b(root_chunk->hash(), splice_idx, loader_, writer_,
                           ustore::BlobChunker::Instance(),
-                          ustore::MetaChunker::Instance(), true);
+                          ustore::MetaChunker::Instance());
 
     ustore::FixedSegment seg(insert_bytes, num_insert_bytes, 1);
 
@@ -310,7 +310,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     std::memcpy(original_content_, raw_data, original_num_bytes_);
 
     const ustore::Chunker* chunker = ustore::BlobChunker::Instance();
-    ustore::NodeBuilder builder(writer_, chunker, ustore::MetaChunker::Instance(), true);
+    ustore::NodeBuilder builder(writer_, chunker, ustore::MetaChunker::Instance());
 
     ustore::FixedSegment seg(original_content_, original_num_bytes_, 1);
 
@@ -329,7 +329,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
 
     ustore::FixedSegment sseg(special_content_, special_num_bytes_, 1);
     ustore::NodeBuilder abuilder(writer_, chunker,
-                                 ustore::MetaChunker::Instance(), true);
+                                 ustore::MetaChunker::Instance());
 
     abuilder.SpliceElements(0, &sseg);
     special_root_ = loader_->Load(abuilder.Commit());
@@ -342,7 +342,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
 
     ustore::NodeBuilder b(
         root_hash, splice_idx, loader_, writer_,
-        chunker, ustore::MetaChunker::Instance(), true);
+        chunker, ustore::MetaChunker::Instance());
 
     ustore::FixedSegment seg(append_data, append_num_bytes, 1);
 
@@ -445,7 +445,7 @@ class AdvancedNodeBuilderEmpty : public NodeBuilderEnv {
     verbose = false;
 
     ustore::AdvancedNodeBuilder builder(writer_);
-    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
+    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance());
   }
 
   virtual void TearDown() {
@@ -479,7 +479,7 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
   builder1.Insert(0, std::move(segs));
 
   const ustore::Hash hash1 =
-      builder1.Commit(*ustore::BlobChunker::Instance(), true);
+      builder1.Commit(*ustore::BlobChunker::Instance());
 
   Test_Tree_Integrity(hash1, loader_);
   Test_Same_Content(hash1, loader_, inserted_data);
@@ -500,7 +500,7 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
   builder2.Splice(0, num_bytes_removed, std::move(segs));
 
   const ustore::Hash hash2 =
-      builder2.Commit(*ustore::BlobChunker::Instance(), true);
+      builder2.Commit(*ustore::BlobChunker::Instance());
 
   Test_Tree_Integrity(hash2, loader_);
   Test_Same_Content(hash2, loader_, spliced_data);
@@ -510,7 +510,7 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
   builder3.Remove(0, 4);
 
   const ustore::Hash hash3 =
-      builder3.Commit(*ustore::BlobChunker::Instance(), true);
+      builder3.Commit(*ustore::BlobChunker::Instance());
 
   const ustore::Chunk* chunk = loader_->Load(hash3);
   auto node = ustore::SeqNode::CreateFromChunk(chunk);
@@ -538,7 +538,7 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
     std::vector<std::unique_ptr<const ustore::Segment>> segs;
     segs.push_back(std::move(seg));
     builder.Splice(0, 0, std::move(segs));
-    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
+    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance());
   }
 
   virtual void TearDown() {
@@ -579,7 +579,7 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
     builder.Splice(idx, num_bytes_removed, std::move(segs));
 
     const ustore::Hash result_hash =
-        builder.Commit(*ustore::BlobChunker::Instance(), true);
+        builder.Commit(*ustore::BlobChunker::Instance());
 
     std::string expected_str(
         reinterpret_cast<const char*>(expected_result),
@@ -644,7 +644,7 @@ class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
     builder.Splice(idx2, num_bytes_removed2, std::move(segs));
 
     const ustore::Hash result_hash =
-        builder.Commit(*ustore::BlobChunker::Instance(), true);
+        builder.Commit(*ustore::BlobChunker::Instance());
 
     std::string expected_str(
         reinterpret_cast<const char*>(expected_result),
@@ -745,7 +745,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
     std::vector<std::unique_ptr<const ustore::Segment>> segs;
     segs.push_back(std::move(seg));
     builder.Splice(0, 0, std::move(segs));
-    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance(), true);
+    root_hash_ = builder.Commit(*ustore::BlobChunker::Instance());
   }
 
   virtual void TearDown() {
@@ -787,7 +787,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
         builder.Remove(idx1, num_bytes_removed1)
                .Remove(idx2, num_bytes_removed2)
                .Remove(idx3, num_bytes_removed3)
-               .Commit(*ustore::BlobChunker::Instance(), true);
+               .Commit(*ustore::BlobChunker::Instance());
 
     Test_Same_Content(result_hash, loader_, expected_result);
     Test_Tree_Integrity(result_hash, loader_);
@@ -872,7 +872,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
         builder.Splice(idx1, num_bytes_removed1, std::move(segs1))
                .Splice(idx2, num_bytes_removed2, std::move(segs2))
                .Splice(idx3, num_bytes_removed3, std::move(segs3))
-               .Commit(*ustore::BlobChunker::Instance(), true);
+               .Commit(*ustore::BlobChunker::Instance());
 
     Test_Same_Content(result_hash, loader_, expected_result);
     Test_Tree_Integrity(result_hash, loader_);
@@ -954,7 +954,7 @@ class AdvancedNodeBuilderComplex : public NodeBuilderEnv {
         builder.Insert(idx1, std::move(segs1))
                .Insert(idx2, std::move(segs2))
                .Insert(idx3, std::move(segs3))
-               .Commit(*ustore::BlobChunker::Instance(), true);
+               .Commit(*ustore::BlobChunker::Instance());
 
 
     Test_Same_Content(result_hash, loader_, expected_result);

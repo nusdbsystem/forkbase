@@ -119,8 +119,7 @@ Usage:
 
   // Return empty hash if merging fails.
   Hash Merge(const Hash& node1, const Hash& node2,
-             const Chunker& chunker,
-             bool isFixedEntryLen) const;
+             const Chunker& chunker) const;
 
  private:
   // Flip the index range maps of identical elements
@@ -354,8 +353,7 @@ uint64_t NodeMerger<Mapper>::numElements(const Hash& hash) const {
 
 template <class Mapper>
 Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
-                               const Chunker& chunker,
-                               bool isFixedEntryLen) const {
+                               const Chunker& chunker) const {
   uint64_t base_num_elements = numElements(base_);
   uint64_t node1_num_elements = numElements(node1);
   uint64_t node2_num_elements = numElements(node2);
@@ -493,7 +491,7 @@ Hash NodeMerger<Mapper>::Merge(const Hash& node1, const Hash& node2,
                    base_range.num_subsequent,
                    std::move(segs));
   }  // end while
-  Hash result = builder.Commit(chunker, isFixedEntryLen);
+  Hash result = builder.Commit(chunker);
 
   return result;
 }

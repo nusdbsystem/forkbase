@@ -9,6 +9,8 @@
 #include "chunk/chunk.h"
 #include "chunk/segment.h"
 
+#include "node/rolling_hash.h"
+
 namespace ustore {
 
 struct ChunkInfo {
@@ -23,6 +25,8 @@ class Chunker {
  public:
   virtual ChunkInfo Make(
       const std::vector<const Segment*>& segments) const = 0;
+  virtual std::unique_ptr<RollingHasher> GetRHasher() const = 0;
+  virtual bool isFixedEntryLen() const = 0;
   virtual ~Chunker() {}
 };
 }  // namespace ustore

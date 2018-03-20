@@ -16,7 +16,7 @@ class IndexComparatorSmallEnv : public ::testing::Test {
 
     ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::BlobChunker::Instance(),
-                           ustore::MetaChunker::Instance(), true);
+                           ustore::MetaChunker::Instance());
 
     ustore::FixedSegment seg(rhs_data, 20, 1);
     nb.SpliceElements(0, &seg);
@@ -45,7 +45,7 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
   ustore::LocalChunkWriter writer;
   ustore::NodeBuilder nb1(rhs_root_, 10, loader_.get(), &writer,
                           ustore::BlobChunker::Instance(),
-                          ustore::MetaChunker::Instance(), true);
+                          ustore::MetaChunker::Instance());
 
   constexpr ustore::byte_t lhs_data1[] = "xxx";
   ustore::FixedSegment seg1(lhs_data1, 3, 1);
@@ -54,7 +54,7 @@ TEST_F(IndexComparatorSmallEnv, Basic) {
 
   ustore::NodeBuilder nb2(lhs_temporal, 18, loader_.get(), &writer,
                           ustore::BlobChunker::Instance(),
-                          ustore::MetaChunker::Instance(), true);
+                          ustore::MetaChunker::Instance());
 
   constexpr ustore::byte_t lhs_data2[] = "y";
   ustore::FixedSegment seg2(lhs_data2, 1, 1);
@@ -90,7 +90,7 @@ TEST_F(IndexComparatorSmallEnv, Insertion) {
   // lhs is constructed by inserting 3 elements at 10th of rhs with xxx
   ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(), &writer,
                          ustore::BlobChunker::Instance(),
-                         ustore::MetaChunker::Instance(), true);
+                         ustore::MetaChunker::Instance());
 
   constexpr ustore::byte_t lhs_data[] = "xxx";
   ustore::FixedSegment seg(lhs_data, 3, 1);
@@ -120,7 +120,7 @@ TEST_F(IndexComparatorSmallEnv, Deletion) {
   // lhs is constructed by removing 3 elements at 10th of rhs with xxx
   ustore::NodeBuilder nb(rhs_root_, 10, loader_.get(), &writer,
                          ustore::BlobChunker::Instance(),
-                         ustore::MetaChunker::Instance(), true);
+                         ustore::MetaChunker::Instance());
 
   constexpr ustore::byte_t* lhs_data = nullptr;
   ustore::FixedSegment seg(lhs_data, 0, 1);
@@ -186,7 +186,7 @@ class IndexComparatorBigEnv : public ::testing::Test {
 
     ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::BlobChunker::Instance(),
-                           ustore::MetaChunker::Instance(), true);
+                           ustore::MetaChunker::Instance());
 
     rhs_len_ = sizeof(rhs_data) - 1;
     ustore::FixedSegment seg(rhs_data, rhs_len_, 1);
@@ -217,7 +217,7 @@ TEST_F(IndexComparatorBigEnv, Basic) {
   //   And removing the last 5 elements in the end and append 10
   ustore::NodeBuilder nb1(rhs_root_, 60, loader_.get(), &writer,
                           ustore::BlobChunker::Instance(),
-                          ustore::MetaChunker::Instance(), true);
+                          ustore::MetaChunker::Instance());
 
   constexpr ustore::byte_t lhs_data1[] = "9999999999";  // 10 9s
   ustore::FixedSegment seg1(lhs_data1, 10, 1);
@@ -227,7 +227,7 @@ TEST_F(IndexComparatorBigEnv, Basic) {
   ustore::NodeBuilder nb2(lhs_temporal, rhs_len_ - 5,
                           loader_.get(), &writer,
                           ustore::BlobChunker::Instance(),
-                          ustore::MetaChunker::Instance(), true);
+                          ustore::MetaChunker::Instance());
 
   constexpr ustore::byte_t lhs_data2[] = "9999999999";  // 10 9s
   ustore::FixedSegment seg2(lhs_data2, 10, 1);
@@ -292,7 +292,7 @@ class KeyComparatorSmallEnv : public ::testing::Test {
 
     ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::MapChunker::Instance(),
-                           ustore::MetaChunker::Instance(), false);
+                           ustore::MetaChunker::Instance());
 
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
@@ -363,7 +363,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 // replacing k2 with new v2, remove kv3
   ustore::NodeBuilder nb1(rhs_root_, key2, loader_.get(), &writer,
                           ustore::MapChunker::Instance(),
-                          ustore::MetaChunker::Instance(), false);
+                          ustore::MetaChunker::Instance());
 
   std::unique_ptr<const ustore::Segment> seg1 =
       ustore::MapNode::Encode({new_kv2});
@@ -376,7 +376,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 // replace kv5 with new_kv5
   ustore::NodeBuilder nb2(lhs_t1, key5, loader_.get(), &writer,
                           ustore::MapChunker::Instance(),
-                          ustore::MetaChunker::Instance(), false);
+                          ustore::MetaChunker::Instance());
 
   std::unique_ptr<const ustore::Segment> seg2 =
       ustore::MapNode::Encode({new_kv5});
@@ -388,7 +388,7 @@ TEST_F(KeyComparatorSmallEnv, Basic) {
 
   ustore::NodeBuilder nb3(lhs_t2, key7, loader_.get(), &writer,
                           ustore::MapChunker::Instance(),
-                          ustore::MetaChunker::Instance(), false);
+                          ustore::MetaChunker::Instance());
 
   std::unique_ptr<const ustore::Segment> seg3 =
       ustore::MapNode::Encode({kv8, kv9});
@@ -486,7 +486,7 @@ class KeyComparatorBigEnv : public ::testing::Test {
 
     ustore::LocalChunkWriter writer;
     ustore::NodeBuilder nb(&writer, ustore::MapChunker::Instance(),
-                           ustore::MetaChunker::Instance(), false);
+                           ustore::MetaChunker::Instance());
 
     nb.SpliceElements(0, seg.get());
     rhs_root_ = nb.Commit();
@@ -544,7 +544,7 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
   ustore::NodeBuilder nb1(rhs_root_, key400, loader_.get(), &writer,
                           ustore::MapChunker::Instance(),
-                          ustore::MetaChunker::Instance(), false);
+                          ustore::MetaChunker::Instance());
 
   nb1.SpliceElements(100, seg1.get());
   ustore::Hash lhs_t = nb1.Commit();
@@ -554,7 +554,7 @@ TEST_F(KeyComparatorBigEnv, Basic) {
 
   ustore::NodeBuilder nb2(lhs_t, key100, loader_.get(), &writer,
                           ustore::MapChunker::Instance(),
-                          ustore::MetaChunker::Instance(), false);
+                          ustore::MetaChunker::Instance());
   ustore::VarSegment seg2(nullptr, 0, {});
 
   nb2.SpliceElements(200, &seg2);
@@ -651,12 +651,12 @@ Result Map: LHS => RHS
   auto loader = std::make_shared<ustore::LocalChunkLoader>();
 
   ustore::NodeBuilder lhs_nb(&writer, ustore::ListChunker::Instance(),
-                             ustore::MetaChunker::Instance(), false);
+                             ustore::MetaChunker::Instance());
   lhs_nb.SpliceElements(0, lhs_init_seg.get());
   const ustore::Hash lhs_root = lhs_nb.Commit();
 
   ustore::NodeBuilder rhs_nb(&writer, ustore::ListChunker::Instance(),
-                             ustore::MetaChunker::Instance(), false);
+                             ustore::MetaChunker::Instance());
   rhs_nb.SpliceElements(0, rhs_init_seg.get());
   const ustore::Hash rhs_root = rhs_nb.Commit();
 
@@ -742,12 +742,12 @@ Final Result Map: LHS => RHS
   auto loader = std::make_shared<ustore::LocalChunkLoader>();
 
   ustore::NodeBuilder lhs_nb(&writer, ustore::ListChunker::Instance(),
-                             ustore::MetaChunker::Instance(), false);
+                             ustore::MetaChunker::Instance());
   lhs_nb.SpliceElements(0, lhs_init_seg.get());
   const ustore::Hash lhs_root = lhs_nb.Commit();
 
   ustore::NodeBuilder rhs_nb(&writer, ustore::ListChunker::Instance(),
-                             ustore::MetaChunker::Instance(), false);
+                             ustore::MetaChunker::Instance());
   rhs_nb.SpliceElements(0, rhs_init_seg.get());
   const ustore::Hash rhs_root = rhs_nb.Commit();
 

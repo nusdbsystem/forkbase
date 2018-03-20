@@ -473,7 +473,7 @@ TEST(NodeCursor, MultiStep) {
 
   ustore::LocalChunkWriter writer;
   ustore::NodeBuilder builder(&writer, ustore::BlobChunker::Instance(),
-                              ustore::MetaChunker::Instance(), true);
+                              ustore::MetaChunker::Instance());
 
   ustore::FixedSegment seg(content, num_bytes, 1);
 

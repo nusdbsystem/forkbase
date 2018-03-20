@@ -24,7 +24,7 @@ SList::SList(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     SetNodeForHash(chunk_info.chunk.hash());
   } else {
     NodeBuilder nb(chunk_writer_, ListChunker::Instance(),
-                   MetaChunker::Instance(), false);
+                   MetaChunker::Instance());
     std::unique_ptr<const Segment> seg = ListNode::Encode(elements);
     nb.SpliceElements(0, seg.get());
     SetNodeForHash(nb.Commit());
@@ -35,7 +35,7 @@ Hash SList::Splice(size_t start_idx, size_t num_to_delete,
                    const std::vector<Slice>& entries) const {
   CHECK(!empty());
   NodeBuilder nb(hash(), start_idx, chunk_loader_.get(), chunk_writer_,
-                 ListChunker::Instance(), MetaChunker::Instance(), false);
+                 ListChunker::Instance(), MetaChunker::Instance());
   // TODO(pingcheng): can directly init a segment instance instead of unique_ptr
   //   only need to make SplicElements take const seqment& as parameter
   //   hance we can avoid `new` operation
@@ -52,7 +52,7 @@ Hash SList::Merge(const SList& node1, const SList& node2) const {
   }
   IndexMerger merger(hash(), chunk_loader_.get(), chunk_writer_);
   return merger.Merge(node1.hash(), node2.hash(),
-                      *ListChunker::Instance(), false);
+                      *ListChunker::Instance());
 }
 
 }  // namespace ustore

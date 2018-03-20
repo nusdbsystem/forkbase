@@ -23,19 +23,16 @@ class NodeBuilder : private Noncopyable {
   // Perform operation at element with key at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, const OrderedKey& key,
               ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-              const Chunker* chunker, const Chunker* parent_chunker,
-              bool isFixedEntryLen) noexcept;
+              const Chunker* chunker, const Chunker* parent_chunker) noexcept;
 
   // Perform operation at idx-th element at leaf rooted at root_hash
   NodeBuilder(const Hash& root_hash, size_t idx,
               ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-              const Chunker* chunker, const Chunker* parent_chunker,
-              bool isFixedEntryLen) noexcept;
+              const Chunker* chunker, const Chunker* parent_chunker) noexcept;
 
   // Construct a node builder to construct a fresh new Prolly Tree
   NodeBuilder(ChunkWriter* chunk_writer, const Chunker* chunker,
-              const Chunker* parent_chunker,
-              bool isFixedEntryLen) noexcept;
+              const Chunker* parent_chunker) noexcept;
 
   ~NodeBuilder() = default;
 
@@ -58,12 +55,10 @@ class NodeBuilder : private Noncopyable {
   // is_leaf shall set to FALSE
   NodeBuilder(std::unique_ptr<NodeCursor>&& cursor,
               size_t level, ChunkWriter* chunk_writer,
-              const Chunker* chunker, const Chunker* parent_chunker,
-              bool isFixedEntryLen) noexcept;
+              const Chunker* chunker, const Chunker* parent_chunker) noexcept;
 
   NodeBuilder(size_t level, ChunkWriter* chunk_writer,
-              const Chunker* chunker, const Chunker* parent_chunker,
-              bool isFixedEntryLen) noexcept;
+              const Chunker* chunker, const Chunker* parent_chunker) noexcept;
 
   // Commit the uncommited operation in recursive manner
   // Create and dump the chunk into storage
@@ -121,9 +116,6 @@ class NodeBuilder : private Noncopyable {
   ChunkWriter* const chunk_writer_;
   const Chunker* const chunker_;
   const Chunker* const parent_chunker_;
-  // whether the built entry is fixed length
-  // type blob: true
-  const bool isFixedEntryLen_;
 };
 
 
@@ -173,7 +165,7 @@ To work on an existing prolly tree:
   AdvancedNodeBuilder& Splice(uint64_t start_idx, uint64_t num_delete,
                               std::vector<std::unique_ptr<const Segment>> segs);
 
-  Hash Commit(const Chunker& chunker, bool isFixedEntryLen);
+  Hash Commit(const Chunker& chunker);
 
  private:
   class PersistentChunker : public Chunker {
@@ -193,6 +185,13 @@ To work on an existing prolly tree:
       created_chunks_.push_back(std::move(chunk_info.chunk));
       Chunk new_chunk(created_chunks_.rbegin()->head());
       return {std::move(new_chunk), std::move(chunk_info.meta_seg)};
+    }
+
+    inline std::unique_ptr<RollingHasher> GetRHasher() const override {
+      return chunker_->GetRHasher();
+    }
+    inline bool isFixedEntryLen() const override {
+      return chunker_->isFixedEntryLen();
     }
 
    private:
