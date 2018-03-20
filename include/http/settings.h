@@ -16,9 +16,9 @@ namespace ustore {
  * if defined, use cache
  */
 #define USE_CACHE
-constexpr int kDefaultCacheSize = 100;  // default cache size
+constexpr size_t kDefaultCacheSize = 100;  // default cache size
 
-constexpr int kMaxHeaderSize = 10240;  // max http header size
+constexpr size_t kMaxHeaderSize = 10240;  // max http header size
 
 /*
  * max file size
@@ -26,15 +26,15 @@ constexpr int kMaxHeaderSize = 10240;  // max http header size
  * it is ok since we have a dynamic strategy to decide the file size
  * and allocate the response buffer
  */
-constexpr int kMaxOutputSize = 1 << 30;  // max response message size
-constexpr int kMaxResponseSize = kMaxHeaderSize + kMaxOutputSize;
+constexpr size_t kMaxOutputSize = 1UL << 35;  // max response message size
+constexpr size_t kMaxResponseSize = kMaxHeaderSize + kMaxOutputSize;
 
 /*
  * default receive buffer size
  * TODO: if data is larger than the kDefaultRecvSize, how to handle?
  */
-constexpr int kMaxInputSize = 1 << 20;  // max input message size
-constexpr int kDefaultRecvSize = kMaxHeaderSize + kMaxInputSize;
+constexpr size_t kMaxInputSize = 1UL << 20;  // max input message size
+constexpr size_t kDefaultRecvSize = kMaxHeaderSize + kMaxInputSize;
 
 }  // namespace ustore
 

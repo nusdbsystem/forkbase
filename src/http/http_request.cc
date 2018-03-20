@@ -319,7 +319,7 @@ int HttpRequest::Respond(ClientSocket* socket, string&& response) {
   // add CRLF ending
   response += CRLF;
 
-  int res_len;
+  size_t res_len;
   if (response.length() > kMaxOutputSize) {
     res_len = kMaxOutputSize;
     LOG(WARNING) << "response length is too long: " << response.length()
@@ -344,7 +344,7 @@ int HttpRequest::Respond(ClientSocket* socket, string&& response) {
   memcpy(header+pos, kContentLen.c_str(), kContentLen.length());
   pos += kContentLen.length();
   // end of header
-  pos += sprintf(header+pos, "%d\r\n\r\n", res_len);
+  pos += sprintf(header+pos, "%zu\r\n\r\n", res_len);
 
   memcpy(header+pos, response.c_str(), res_len);
   pos += res_len;
