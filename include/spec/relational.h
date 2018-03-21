@@ -11,7 +11,6 @@
 #include <atomic>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 #include "spec/object_db.h"

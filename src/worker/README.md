@@ -4,7 +4,7 @@
 
 ### RocksDB ###
 
-Since [RocksDB v5.8](http://rocksdb.org/blog/2017/09/28/rocksdb-5-8-released.html), the library compiled with release mode is built with `-fno-rtti`, whereas that with debug mode is without it. However, abandoning the RTTI information with release build may cause the "Undefined Reference to Typeinfo" error. Therefore, when building the RocksDB library, the**`USE_RTTI`** environmental variable should be set to 1 prior to launch the `make` command. For example, 
+Since [RocksDB v5.8](http://rocksdb.org/blog/2017/09/28/rocksdb-5-8-released.html), the library compiled with release mode is built with `-fno-rtti`, whereas that with debug mode is without it. However, abandoning the RTTI information with release build may cause the "Undefined Reference to Typeinfo" error. Therefore, when building the RocksDB library, the `USE_RTTI` environmental variable should be set to 1 prior to launch the `make` command. For example, 
 
     $ USE_RTTI=1 bash -c 'make shared_lib' && sudo make install-shared
 

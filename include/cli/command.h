@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "spec/blob_store.h"
 #include "spec/object_db.h"
 #include "spec/relational.h"
 #include "utils/timer.h"
@@ -140,6 +141,18 @@ class Command {
                              const VList& list,
                              size_t ignored_pos = Utils::max_size_t);
 
+  ErrorCode ExecCreateDataset();
+  ErrorCode ExecDeleteDataset();
+  ErrorCode ExecGetDataset();
+  ErrorCode ExecBranchDataset();
+  ErrorCode ExecListDatasetBranch();
+  ErrorCode ExecDiffDataset();
+  ErrorCode ExecPutDataEntry();
+  ErrorCode ExecDeleteDataEntry();
+  ErrorCode ExecGetDataEntry();
+
+  ErrorCode PrepareDataEntryName(const std::string& cmd);
+
   ErrorCode ExecGetStoreSize();
 
   static const size_t kDefaultLimitPrintElems;
@@ -147,6 +160,7 @@ class Command {
 
   ObjectDB odb_;
   ColumnStore cs_;
+  BlobStore bs_;
 };
 
 }  // namespace cli

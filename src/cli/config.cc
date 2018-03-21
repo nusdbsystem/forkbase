@@ -173,13 +173,13 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("ref-version,u", po::value<std::string>()->default_value(""),
    "the referring version")
   ("table,t", po::value<std::string>()->default_value(""),
-   "the operating table")
+   "the operating table or dataset")
   ("ref-table,s", po::value<std::string>()->default_value(""),
-   "the referring table")
+   "the referring table or dataset")
   ("column,m", po::value<std::string>()->default_value(""),
-   "the operating column")
+   "the operating column or data entry")
   ("ref-column,n", po::value<std::string>()->default_value(""),
-   "the referring column")
+   "the referring column or data entry")
   ("position,i", po::value<int64_t>(), "the operating positional index")
   ("ref-position,j", po::value<int64_t>(), "the referring positional index")
   ("num-elements,d", po::value<int32_t>()->default_value(1),

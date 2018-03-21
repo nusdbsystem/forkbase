@@ -12,7 +12,7 @@ namespace cli {
 const size_t Command::kDefaultLimitPrintElems(10);
 size_t Command::limit_print_elems(kDefaultLimitPrintElems);
 
-Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
+Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   // basic commands
   CMD_HANDLER("GET", ExecGet());
   CMD_HANDLER("GET_ALL", ExecGetAll());
@@ -114,7 +114,6 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("DELETE_TABLE", "DROPTABLE");
   CMD_ALIAS("DELETE_TABLE", "DROP_TAB");
   CMD_ALIAS("DELETE_TABLE", "DROP-TAB");
-  CMD_ALIAS("DELETE_TABLE", "DROPTAB");
   CMD_ALIAS("DELETE_TABLE", "DROP");
   CMD_HANDLER("GET_COLUMN", ExecGetColumn());
   CMD_ALIAS("GET_COLUMN", "GET-COLUMN");
@@ -206,6 +205,59 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db) {
   CMD_ALIAS("DUMP_CSV", "DUMP-CSV");
   CMD_ALIAS("DUMP_CSV", "DUMPCSV");
   CMD_ALIAS("DUMP_CSV", "DUMP");
+  // blob store commands
+  CMD_HANDLER("CREATE_DATASET", ExecCreateDataset());
+  CMD_ALIAS("CREATE_DATASET", "CREATE-DATASET");
+  CMD_ALIAS("CREATE_DATASET", "CREATE_DS");
+  CMD_ALIAS("CREATE_DATASET", "CREATE-DS");
+  CMD_HANDLER("DELETE_DATASET", ExecDeleteDataset());
+  CMD_ALIAS("DELETE_DATASET", "DELETE-DATASET");
+  CMD_ALIAS("DELETE_DATASET", "DELETE-DATASET");
+  CMD_ALIAS("DELETE_DATASET", "DELETE_DS");
+  CMD_ALIAS("DELETE_DATASET", "DELETE-DS");
+  CMD_ALIAS("DELETE_DATASET", "DEL_DATASET");
+  CMD_ALIAS("DELETE_DATASET", "DEL-DATASET");
+  CMD_ALIAS("DELETE_DATASET", "DEL-DATASET");
+  CMD_ALIAS("DELETE_DATASET", "DEL_DS");
+  CMD_ALIAS("DELETE_DATASET", "DEL-DS");
+  CMD_ALIAS("DELETE_DATASET", "DROP_DATASET");
+  CMD_ALIAS("DELETE_DATASET", "DROP-DATASET");
+  CMD_ALIAS("DELETE_DATASET", "DROP_DS");
+  CMD_ALIAS("DELETE_DATASET", "DROP-DS");
+  CMD_HANDLER("GET_DATASET", ExecGetDataset());
+  CMD_ALIAS("GET_DATASET", "GET-DATASET");
+  CMD_ALIAS("GET_DATASET", "GET_DS");
+  CMD_ALIAS("GET_DATASET", "GET-DS");
+  CMD_HANDLER("BRANCH_DATASET", ExecBranchDataset());
+  CMD_ALIAS("BRANCH_DATASET", "BRANCH-DATASET");
+  CMD_ALIAS("BRANCH_DATASET", "BRANCH_DS");
+  CMD_ALIAS("BRANCH_DATASET", "BRANCH-DS");
+  CMD_HANDLER("LIST_DATASET_BRANCH", ExecListDatasetBranch());
+  CMD_ALIAS("LIST_DATASET_BRANCH", "LIST-DATASET-BRANCH");
+  CMD_ALIAS("LIST_DATASET_BRANCH", "LIST_DS_BRANCH");
+  CMD_ALIAS("LIST_DATASET_BRANCH", "LIST-DS-BRANCH");
+  CMD_ALIAS("LIST_DATASET_BRANCH", "LS_DS_BRANCH");
+  CMD_ALIAS("LIST_DATASET_BRANCH", "LS-DS-BRANCH");
+  CMD_HANDLER("DIFF_DATASET", ExecDiffDataset());
+  CMD_ALIAS("DIFF_DATASET", "DIFF-DATASET");
+  CMD_ALIAS("DIFF_DATASET", "DIFF_DS");
+  CMD_ALIAS("DIFF_DATASET", "DIFF-DS");
+  CMD_HANDLER("PUT_DATA_ENTRY", ExecPutDataEntry());
+  CMD_ALIAS("PUT_DATA_ENTRY", "PUT-DATA-ENTRY");
+  CMD_ALIAS("PUT_DATA_ENTRY", "PUT_DE");
+  CMD_ALIAS("PUT_DATA_ENTRY", "PUT-DE");
+  CMD_HANDLER("GET_DATA_ENTRY", ExecGetDataEntry());
+  CMD_ALIAS("GET_DATA_ENTRY", "GET-DATA-ENTRY");
+  CMD_ALIAS("GET_DATA_ENTRY", "GET_DE");
+  CMD_ALIAS("GET_DATA_ENTRY", "GET-DE");
+  CMD_HANDLER("DELETE_DATA_ENTRY", ExecDeleteDataEntry());
+  CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE-DATA-ENTRY");
+  CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE_DE");
+  CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE-DE");
+  CMD_ALIAS("DELETE_DATA_ENTRY", "DEL_DATA_ENTRY");
+  CMD_ALIAS("DELETE_DATA_ENTRY", "DEL-DATA-ENTRY");
+  CMD_ALIAS("DELETE_DATA_ENTRY", "DEL_DE");
+  CMD_ALIAS("DELETE_DATA_ENTRY", "DEL-DE");
   // utility commands
   CMD_HANDLER("HELP", ExecHelp());
   CMD_HANDLER("INFO", ExecInfo());
@@ -689,16 +741,15 @@ ErrorCode Command::ExecPut() {
   if (key.empty() || val.empty() || !(branch.empty() || ref_ver.empty())) {
     std::cout << BOLD_RED("[INVALID ARGS: PUT] ")
               << "Type: \"" << type << "\", "
-              << "Key: \"" << key << "\", ";
-
+              << "Key: \"" << key << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Ref. Version: " << ref_ver << ", ";
     if (file_path.empty()) {
-      std::cout << "Value: \"" << val << "\", ";
+      std::cout << "Value: \"" << val << "\"";
     } else {
-      std::cout << "File: \"" << file_path << "\", ";
+      std::cout << "File: \"" << file_path << "\"";
     }
-
-    std::cout << "Branch: \"" << branch << "\", "
-              << "Ref. Version: " << ref_ver << std::endl;
+    std::cout << std::endl;
     return ErrorCode::kInvalidCommandArgument;
   }
   ErrorCode ec(ErrorCode::kUnknownOp);
@@ -804,6 +855,7 @@ ErrorCode Command::ExecAppend() {
 
 ErrorCode Command::ExecAppend(VBlob& blob) {
   USTORE_GUARD(PrepareValue("APPEND"));
+
   const auto& val = Config::value;
   // conditional execution
   if (val.empty()) {
@@ -2614,6 +2666,384 @@ ErrorCode Command::ExecGetStoreSize() {
   }
 
   f_rpt_success(n_bytes, n_chunks);
+  return ErrorCode::kOK;
+}
+
+ErrorCode Command::ExecCreateDataset() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: CREATE_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&]() {
+    std::cout << BOLD_GREEN("[SUCCESS: CREATE_DATASET] ")
+              << "Dataset \"" << ds_name << "\" has been created for Branch \""
+              << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: CREATE_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto ec = bs_.CreateDataset(ds_name, branch);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecDeleteDataset() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&]() {
+    std::cout << BOLD_GREEN("[SUCCESS: DELETE_DATASET] ")
+              << "Dataset \"" << ds_name << "\" of Branch \"" << branch
+              << "\" has been deleted" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: DELETE_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto ec = bs_.DeleteDataset(ds_name, branch);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecGetDataset() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const Dataset & ds) {
+    if (Config::is_vert_list) {
+      for (auto it = ds.Scan(); !it.end(); it.next()) {
+        std::cout << "[" << Utils::ToHash(it.value()) << "]  "
+                  << it.key() << std::endl;
+      }
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET] ") << "Entries: ";
+      Utils::PrintKeys(ds, "[", "]", ", ", true);
+      std::cout << std::endl;
+    }
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  Dataset ds;
+  auto ec = bs_.GetDataset(ds_name, branch, &ds);
+  ec == ErrorCode::kOK ? f_rpt_success(ds) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::PrepareDataEntryName(const std::string& cmd) {
+  auto& entry_name = Config::column;
+  auto& file_path = Config::file;
+  // conditional execution
+  if (entry_name.empty() && file_path.empty()) {
+    std::cout << BOLD_RED("[INVALID ARGS: " << cmd << "] ")
+              << "Entry: \"" << entry_name << "\", "
+              << "File: \"" << file_path << "\"" << std::endl;
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (entry_name.empty() && !file_path.empty()) entry_name = file_path;
+  return ErrorCode::kOK;
+}
+
+ErrorCode Command::ExecPutDataEntry() {
+  USTORE_GUARD(PrepareDataEntryName("PUT_DATA_ENTRY"));
+  USTORE_GUARD(PrepareValue("PUT_DATA_ENTRY"));
+
+  const auto& ds_name = Config::table;
+  const auto& entry_name = Config::column;
+  const auto& branch = Config::branch;
+  const auto& val = Config::value;
+  const auto& file_path = Config::column;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", ";
+    if (file_path.empty()) {
+      std::cout << "Entry: \"" << entry_name << "\", "
+                << "Value: \"" << val << "\"";
+    } else {
+      std::cout << "File: \"" << file_path << "\"";
+    }
+    std::cout << std::endl;
+  };
+  const auto f_rpt_success = [&](const Hash & entry_ver) {
+    std::cout << BOLD_GREEN("[SUCCESS: PUT_DATA_ENTRY] ")
+              << "Entry Version: " << entry_ver << std::endl;
+    Config::AddHistoryVersion(entry_ver);
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Entry: \"" << entry_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || entry_name.empty() || val.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  Hash entry_ver;
+  auto ec = bs_.PutDataEntry(ds_name, branch, entry_name, val, &entry_ver);
+  ec == ErrorCode::kOK ? f_rpt_success(entry_ver) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecGetDataEntry() {
+  USTORE_GUARD(PrepareDataEntryName("GET_DATA_ENTRY"));
+
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& entry_name = Config::column;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATA_ENTRY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Entry: \"" << entry_name << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](const DataEntry & entry) {
+    auto& file_path = Config::file;
+    std::ofstream ofs(file_path, std::ios::out | std::ios::binary);
+    if (!file_path.empty() && !ofs) {
+      std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY] ")
+                << "Failed to open file: " << file_path << std::endl;
+      return;
+    }
+    std::ostream& val_os = file_path.empty() ? std::cout : ofs;
+    const std::string quote(file_path.empty() ? "\"" : "");
+    // output data entry
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY] ")
+              << "Value: ";
+    val_os << quote << entry << quote;
+    // indicate output file path
+    if (!file_path.empty()) {
+      std::cout << "--> " << file_path;
+      ofs.close();
+    }
+    std::cout << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Entry: \"" << entry_name << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  if (ds_name.empty() || branch.empty() || entry_name.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  DataEntry entry;
+  auto ec = bs_.GetDataEntry(ds_name, branch, entry_name, &entry);
+  ec == ErrorCode::kOK ? f_rpt_success(entry) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecDeleteDataEntry() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& entry_name = Config::column;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: DELETE_DATA_ENTRY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Entry: \"" << entry_name << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&]() {
+    std::cout << BOLD_GREEN("[SUCCESS: DELETE_DATA_ENTRY] ")
+              << "Entry \"" << entry_name
+              << "\" has been deleted in Dataset \"" << ds_name
+              << "\" of Branch \"" << branch << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: DELETE_DATA_ENTRY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Entry: \"" << entry_name << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || entry_name.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto ec = bs_.DeleteDataEntry(ds_name, branch, entry_name);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecBranchDataset() {
+  const auto& ds_name = Config::table;
+  const auto& tgt_branch = Config::branch;
+  const auto& ref_branch = Config::ref_branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: BRANCH_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Target Branch: \"" << tgt_branch << "\", "
+              << "Referring Branch: \"" << ref_branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&]() {
+    std::cout << BOLD_GREEN("[SUCCESS: BRANCH_DATASET] ")
+              << "Branch \"" << tgt_branch
+              << "\" has been created for Dataset \"" << ds_name << "\""
+              << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: BRANCH_DATASET] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Target Branch: \"" << tgt_branch << "\", "
+              << "Referring Branch: \"" << ref_branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || tgt_branch.empty() || ref_branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto ec = bs_.BranchDataset(ds_name, ref_branch, tgt_branch);
+  ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecListDatasetBranch() {
+  const auto& ds_name = Config::table;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: LIST_DATASET_BRANCH] ")
+              << "Dataset: \"" << ds_name << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const std::vector<std::string>& branches) {
+    if (Config::is_vert_list) {
+      for (auto& b : branches) std::cout << b << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LIST_DATASET_BRANCH] ")
+                << "Branches: ";
+      Utils::Print(branches, "[", "]", ", ", true);
+      std::cout << std::endl;
+    }
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: LIST_DATASET_BRANCH] ")
+              << "Dataset: \"" << ds_name << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::vector<std::string> branches;
+  auto ec = bs_.ListDatasetBranch(ds_name, &branches);
+  ec == ErrorCode::kOK ? f_rpt_success(branches) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecDiffDataset() {
+  const auto& lhs_ds_name = Config::table;
+  const auto& lhs_branch = Config::branch;
+  auto& rhs_ds_name = Config::ref_table;
+  const auto& rhs_branch = Config::ref_branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: DIFF_DATASET] ")
+              << "Dataset: \"" << lhs_ds_name << "\", "
+              << "Branch: \"" << lhs_branch << "\", "
+              << "Dataset (2nd): \"" << rhs_ds_name << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](DatasetDiffIterator & it_diff) {
+    if (Config::is_vert_list) {
+      for (; !it_diff.end(); it_diff.next())
+        std::cout << it_diff.key() << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: DIFF_DATASET] ")
+                << "Different Entries: ";
+      Utils::PrintDiff(it_diff, false, true);
+      std::cout << std::endl;
+    }
+  };
+  const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATASET] ")
+              << "Dataset: \"" << lhs_ds_name << "\", "
+              << "Branch: \"" << lhs_branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATASET] ")
+              << "Dataset (2nd): \"" << rhs_ds_name << "\", "
+              << "Branch (2nd): \"" << rhs_branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (lhs_ds_name.empty() || lhs_branch.empty() || rhs_branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (rhs_ds_name.empty()) rhs_ds_name = lhs_ds_name;
+  Dataset lhs_ds;
+  auto ec = bs_.GetDataset(lhs_ds_name, lhs_branch, &lhs_ds);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail_get_lhs(ec);
+    return ec;
+  }
+  Dataset rhs_ds;
+  ec = bs_.GetDataset(rhs_ds_name, rhs_branch, &rhs_ds);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail_get_rhs(ec);
+    return ec;
+  }
+  auto it_diff = cs_.DiffTable(lhs_ds, rhs_ds);
+  f_rpt_success(it_diff);
   return ErrorCode::kOK;
 }
 

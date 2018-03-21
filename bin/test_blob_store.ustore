@@ -1,0 +1,27 @@
+# Init: comment out the following lines for the first run
+drop-ds -t ds1 -b master
+drop-ds -t ds1 -b dev
+drop-ds -t ds2 -b master
+
+# Basic operations
+create-ds -t ds1 -b master
+put-de -t ds1 -b master /etc/hosts
+put-de -t ds1 -b master -x "Hello, world!" -m f1
+get-ds -t ds1 -b master
+get-de -t ds1 -b master -m f1
+get-de -t ds1 -b master -m f1 /tmp/f1.ustore_test
+
+# Branch dataset
+branch-ds -t ds1 -b dev -c master --time
+ls-ds-branch -t ds1
+put-de -t ds1 -b dev /etc/networks
+del-de -t ds1 -b dev -m f1
+get-ds -t ds1 -b dev
+diff-ds -t ds1 -b master -c dev
+
+# Diff datasets
+create-ds -t ds2 -b master
+put-de -t ds2 -b master /etc/hosts
+put-de -t ds2 -b master -m f1 -x "foo"
+diff-ds -t ds1 -b master -s ds2 -c master
+

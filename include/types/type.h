@@ -119,7 +119,12 @@ enum class ErrorCode : byte_t {
   kMapKeyNotExists = 66,
   kMapKeyExists = 66,
   kElementExists = 67,
-  kUnexpectedSuccess = 68
+  kUnexpectedSuccess = 68,
+  // blob store
+  kDatasetNotExists = 70,
+  kEmptyDataset = 71,
+  kNotEmptyDataset = 72,
+  kDataEntryNotExists = 73
 };
 
 }  // namespace ustore
