@@ -803,6 +803,7 @@ ErrorCode Command::ExecAppend() {
 }
 
 ErrorCode Command::ExecAppend(VBlob& blob) {
+  USTORE_GUARD(PrepareValue("APPEND"));
   const auto& val = Config::value;
   // conditional execution
   if (val.empty()) {
