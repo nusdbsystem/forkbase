@@ -112,6 +112,9 @@ Value WorkerService::ValueFromRequest(const ValuePayload& payload) {
   return val;
 }
 
+// used for access log
+static const std::string empty = "null";
+
 void WorkerService::HandlePutRequest(const UMessage& umsg,
                                      ResponsePayload* response) {
   auto request = umsg.request_payload();
@@ -124,6 +127,8 @@ void WorkerService::HandlePutRequest(const UMessage& umsg,
     : worker_.Put(Slice(request.key()), value, Hash::Convert(request.version()),
                   &new_version);
   lock_.unlock();
+  access_.Append("PUT", request.key(), request.has_branch() ? request.branch()
+      : Hash::Convert(request.version()).ToBase32(), new_version.ToBase32());
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;
   response->set_value(new_version.value(), Hash::kByteLength);
@@ -138,6 +143,8 @@ void WorkerService::HandleGetRequest(const UMessage& umsg,
     ? worker_.Get(Slice(request.key()), Slice(request.branch()), &val)
     : worker_.Get(Slice(request.key()), Hash::Convert(request.version()), &val);
   lock_.unlock();
+  access_.Append("GET", request.key(), request.has_branch() ? request.branch()
+      : Hash::Convert(request.version()).ToBase32(), empty);
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;
   response->set_value(val.chunk().head(), val.chunk().numBytes());
@@ -255,6 +262,9 @@ void WorkerService::HandleBranchRequest(const UMessage& umsg,
     : worker_.Branch(Slice(request.key()), Hash::Convert(request.ref_version()),
                      Slice(request.branch()));
   lock_.unlock();
+  access_.Append("BRANCH", request.key(), request.has_ref_branch()
+      ? request.ref_branch() : Hash::Convert(request.ref_version()).ToBase32(),
+      request.branch());
   response->set_stat(static_cast<int>(code));
 }
 
@@ -265,6 +275,8 @@ void WorkerService::HandleRenameRequest(const UMessage& umsg,
   ErrorCode code = worker_.Rename(Slice(request.key()),
       Slice(request.ref_branch()), Slice(request.branch()));
   lock_.unlock();
+  access_.Append("RENAME", request.key(), request.ref_branch(),
+      request.branch());
   response->set_stat(static_cast<int>(code));
 }
 
@@ -275,6 +287,7 @@ void WorkerService::HandleDeleteRequest(const UMessage& umsg,
   ErrorCode code = worker_.Delete(Slice(request.key()),
                                   Slice(request.branch()));
   lock_.unlock();
+  access_.Append("DELETE", request.key(), request.branch(), empty);
   response->set_stat(static_cast<int>(code));
 }
 

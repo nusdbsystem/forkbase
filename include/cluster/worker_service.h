@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <mutex>
+#include "cluster/access_logging.h"
 #include "cluster/chunk_service.h"
 #include "cluster/host_service.h"
 #include "cluster/partitioner.h"
@@ -26,7 +27,8 @@ class WorkerService : public HostService {
       ptt_(Env::Instance()->config().worker_file(), addr),
       worker_(ptt_.id(),
               Env::Instance()->config().enable_dist_store() ? &ptt_ : nullptr,
-              persist) {
+              persist),
+      access_(Env::Instance()->config().access_log_dir(), addr) {
       auto& config = Env::Instance()->config();
       // only need chunk service when other worker or client need it
       if (config.enable_dist_store() || config.get_chunk_bypass_worker())
@@ -63,6 +65,7 @@ class WorkerService : public HostService {
   Worker worker_;  // where the logic happens
   std::mutex lock_;
   std::unique_ptr<ChunkService> ck_svc_;
+  AccessLogging access_;
 };
 }  // namespace ustore
 

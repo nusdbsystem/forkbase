@@ -164,7 +164,8 @@ void ClientZmqNet::Start() {
     // expired
     if (rc == 0 && is_running_ && !(timeout_counter_--)
         && request_counter_)
-       LOG(FATAL) << "Connection timed out. Server may not be ready yet!";
+       LOG(FATAL) << "Connection timed out. \
+                      Server may not be ready yet or has crashed!";
 
     // all well
     if (items[0].revents & ZMQ_POLLIN) {

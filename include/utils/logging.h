@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "type_traits.h"
 
@@ -78,7 +79,7 @@ class LogMessageFatal : public LogMessage {
 // CHECK* macros. It's not encouraged though.
 
 // SFINAE to differentiate between integeral and non-integral parameters
-template <typename T, 
+template <typename T,
          typename = ::ustore::not_integral_t<
             ::ustore::remove_cv_t<::ustore::remove_reference_t<T>>>>
 inline const T& GetReferenceableValue(const T& t) {
@@ -265,6 +266,6 @@ T&& CheckNotNull(const char* file, int line, const char* exprtext, T&& t) {
 }
 
 }  // namespace logging
-}  // namespace ustore 
+}  // namespace ustore
 
 #endif  // USTORE_UTILS_LOGGING_H_
