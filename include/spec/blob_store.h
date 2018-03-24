@@ -12,7 +12,6 @@ namespace ustore {
 
 using Dataset = VMap;
 using DataEntry = VBlob;
-using DatasetDiffIterator = DuallyDiffKeyIterator;
 
 class BlobStore {
  public:
@@ -37,13 +36,17 @@ class BlobStore {
   ErrorCode ListDatasetBranch(const std::string& ds_name,
                               std::vector<std::string>* branches);
 
-  inline DatasetDiffIterator DiffDataset(const Dataset& lhs,
-                                         const Dataset& rhs) {
-    return UMap::DuallyDiff(lhs, rhs);
-  }
+  ErrorCode DiffDataset(const std::string& lhs_ds_name,
+                        const std::string& lhs_branch,
+                        const std::string& rhs_ds_name,
+                        const std::string& rhs_branch,
+                        std::vector<std::string>* diff_keys);
 
   ErrorCode DeleteDataset(const std::string& ds_name,
                           const std::string& branch);
+
+  ErrorCode ExistsDataEntry(const std::string& ds_name,
+                            const std::string& entry_name, bool* exists);
 
   ErrorCode ExistsDataEntry(const std::string& ds_name,
                             const std::string& branch,
@@ -71,6 +74,10 @@ class BlobStore {
                             const std::string& branch,
                             const std::string& entry_name);
 
+  ErrorCode ListDataEntryBranch(const std::string& ds_name,
+                                const std::string& entry_name,
+                                std::vector<std::string>* branches);
+
   template<class T1, class T2>
   static inline std::string GlobalKey(const T1& ds_name,
                                       const T2& entry_name) {
@@ -79,6 +86,11 @@ class BlobStore {
 
  private:
   ErrorCode ReadDataset(const Slice& ds_name, const Slice& branch, Dataset* ds);
+
+  ErrorCode ReadDataEntryHash(const std::string& ds_name,
+                              const std::string& entry_name,
+                              const Hash& entry_ver,
+                              Hash* entry_hash);
 
   ErrorCode ReadDataEntry(const std::string& ds_name,
                           const std::string& entry_name, const Hash& entry_ver,

@@ -224,6 +224,14 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("DELETE_DATASET", "DROP-DATASET");
   CMD_ALIAS("DELETE_DATASET", "DROP_DS");
   CMD_ALIAS("DELETE_DATASET", "DROP-DS");
+  CMD_HANDLER("EXISTS_DATASET", ExecExistsDataset());
+  CMD_ALIAS("EXISTS_DATASET", "EXISTS-DATASET");
+  CMD_ALIAS("EXISTS_DATASET", "EXISTS_DS");
+  CMD_ALIAS("EXISTS_DATASET", "EXISTS-DS");
+  CMD_ALIAS("EXISTS_DATASET", "EXIST_DATASET");
+  CMD_ALIAS("EXISTS_DATASET", "EXIST-DATASET");
+  CMD_ALIAS("EXISTS_DATASET", "EXIST_DS");
+  CMD_ALIAS("EXISTS_DATASET", "EXIST-DS");
   CMD_HANDLER("GET_DATASET", ExecGetDataset());
   CMD_ALIAS("GET_DATASET", "GET-DATASET");
   CMD_ALIAS("GET_DATASET", "GET_DS");
@@ -246,6 +254,14 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("PUT_DATA_ENTRY", "PUT-DATA-ENTRY");
   CMD_ALIAS("PUT_DATA_ENTRY", "PUT_DE");
   CMD_ALIAS("PUT_DATA_ENTRY", "PUT-DE");
+  CMD_HANDLER("EXISTS_DATA_ENTRY", ExecExistsDataEntry());
+  CMD_ALIAS("EXISTS_DATA_ENTRY", "EXISTS-DATA-ENTRY");
+  CMD_ALIAS("EXISTS_DATA_ENTRY", "EXISTS_DE");
+  CMD_ALIAS("EXISTS_DATA_ENTRY", "EXISTS-DE");
+  CMD_ALIAS("EXISTS_DATA_ENTRY", "EXIST_DATA_ENTRY");
+  CMD_ALIAS("EXISTS_DATA_ENTRY", "EXIST-DATA-ENTRY");
+  CMD_ALIAS("EXISTS_DATA_ENTRY", "EXIST_DE");
+  CMD_ALIAS("EXISTS_DATA_ENTRY", "EXIST-DE");
   CMD_HANDLER("GET_DATA_ENTRY", ExecGetDataEntry());
   CMD_ALIAS("GET_DATA_ENTRY", "GET-DATA-ENTRY");
   CMD_ALIAS("GET_DATA_ENTRY", "GET_DE");
@@ -2133,11 +2149,7 @@ ErrorCode Command::ExecExistsTable() {
               << "Table: \"" << tab << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
-  const auto f_rpt_success_by_tab = [](const bool exist) {
-    std::cout << BOLD_GREEN("[SUCCESS: EXISTS TABLE] ")
-              << (exist ? "True" : "False") << std::endl;
-  };
-  const auto f_rpt_success_by_branch = [](const bool exist) {
+  const auto f_rpt_success = [](const bool exist) {
     std::cout << BOLD_GREEN("[SUCCESS: EXISTS TABLE] ")
               << (exist ? "True" : "False") << std::endl;
   };
@@ -2156,12 +2168,12 @@ ErrorCode Command::ExecExistsTable() {
   if (branch.empty()) {
     bool exist;
     auto ec = cs_.ExistsTable(tab, &exist);
-    ec == ErrorCode::kOK ? f_rpt_success_by_tab(exist) : f_rpt_fail(ec);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
     return ec;
   } else {
     bool exist;
     auto ec = cs_.ExistsTable(tab, branch, &exist);
-    ec == ErrorCode::kOK ? f_rpt_success_by_branch(exist) : f_rpt_fail(ec);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
     return ec;
   }
 }
@@ -2177,11 +2189,7 @@ ErrorCode Command::ExecExistsColumn() {
               << "Branch: \"" << branch << "\", "
               << "Column: \"" << col_name << "\"" << std::endl;
   };
-  const auto f_rpt_success_by_col = [](const bool exist) {
-    std::cout << BOLD_GREEN("[SUCCESS: EXISTS COLUMN] ")
-              << (exist ? "True" : "False") << std::endl;
-  };
-  const auto f_rpt_success_by_branch = [](const bool exist) {
+  const auto f_rpt_success = [](const bool exist) {
     std::cout << BOLD_GREEN("[SUCCESS: EXISTS COLUMN] ")
               << (exist ? "True" : "False") << std::endl;
   };
@@ -2201,12 +2209,12 @@ ErrorCode Command::ExecExistsColumn() {
   if (branch.empty()) {
     bool exist;
     auto ec = cs_.ExistsColumn(tab, col_name, &exist);
-    ec == ErrorCode::kOK ? f_rpt_success_by_col(exist) : f_rpt_fail(ec);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
     return ec;
   } else {
     bool exist;
     auto ec = cs_.ExistsColumn(tab, branch, col_name, &exist);
-    ec == ErrorCode::kOK ? f_rpt_success_by_branch(exist) : f_rpt_fail(ec);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
     return ec;
   }
 }
@@ -2700,6 +2708,44 @@ ErrorCode Command::ExecCreateDataset() {
   return ec;
 }
 
+ErrorCode Command::ExecExistsDataset() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: EXISTS] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const bool exist) {
+    std::cout << BOLD_GREEN("[SUCCESS: EXISTS DATASET] ")
+              << (exist ? "True" : "False") << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: EXISTS] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (branch.empty()) {
+    bool exist;
+    auto ec = bs_.ExistsDataset(ds_name, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
+    return ec;
+  } else {
+    bool exist;
+    auto ec = bs_.ExistsDataset(ds_name, branch, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
+    return ec;
+  }
+}
+
 ErrorCode Command::ExecDeleteDataset() {
   const auto& ds_name = Config::table;
   const auto& branch = Config::branch;
@@ -2828,6 +2874,49 @@ ErrorCode Command::ExecPutDataEntry() {
   auto ec = bs_.PutDataEntry(ds_name, branch, entry_name, val, &entry_ver);
   ec == ErrorCode::kOK ? f_rpt_success(entry_ver) : f_rpt_fail(ec);
   return ec;
+}
+
+ErrorCode Command::ExecExistsDataEntry() {
+  USTORE_GUARD(PrepareDataEntryName("EXISTS_DATA_ENTRY"));
+
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& entry_name = Config::column;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: EXISTS] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Entry: \"" << entry_name << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const bool exist) {
+    std::cout << BOLD_GREEN("[SUCCESS: EXISTS DATA ENTRY] ")
+              << (exist ? "True" : "False") << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: EXISTS] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Entry: \"" << entry_name << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || entry_name.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (branch.empty()) {
+    bool exist;
+    auto ec = bs_.ExistsDataEntry(ds_name, entry_name, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
+    return ec;
+  } else {
+    bool exist;
+    auto ec = bs_.ExistsDataEntry(ds_name, branch, entry_name, &exist);
+    ec == ErrorCode::kOK ? f_rpt_success(exist) : f_rpt_fail(ec);
+    return ec;
+  }
 }
 
 ErrorCode Command::ExecGetDataEntry() {
@@ -2999,26 +3088,20 @@ ErrorCode Command::ExecDiffDataset() {
               << "Dataset (2nd): \"" << rhs_ds_name << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\"" << std::endl;
   };
-  const auto f_rpt_success = [](DatasetDiffIterator & it_diff) {
+  const auto f_rpt_success = [](const std::vector<std::string>& diff_keys) {
     if (Config::is_vert_list) {
-      for (; !it_diff.end(); it_diff.next())
-        std::cout << it_diff.key() << std::endl;
+      for (auto& key : diff_keys) std::cout << key << std::endl;
     } else {
       std::cout << BOLD_GREEN("[SUCCESS: DIFF_DATASET] ")
                 << "Different Entries: ";
-      Utils::PrintDiff(it_diff, false, true);
+      Utils::Print(diff_keys, "[", "]", ", ", true);
       std::cout << std::endl;
     }
   };
-  const auto f_rpt_fail_get_lhs = [&](const ErrorCode & ec) {
-    std::cout << BOLD_RED("[FAILED: GET_DATASET] ")
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: DIFF_DATASET] ")
               << "Dataset: \"" << lhs_ds_name << "\", "
               << "Branch: \"" << lhs_branch << "\""
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  const auto f_rpt_fail_get_rhs = [&](const ErrorCode & ec) {
-    std::cout << BOLD_RED("[FAILED: GET_DATASET] ")
               << "Dataset (2nd): \"" << rhs_ds_name << "\", "
               << "Branch (2nd): \"" << rhs_branch << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -3030,21 +3113,11 @@ ErrorCode Command::ExecDiffDataset() {
     return ErrorCode::kInvalidCommandArgument;
   }
   if (rhs_ds_name.empty()) rhs_ds_name = lhs_ds_name;
-  Dataset lhs_ds;
-  auto ec = bs_.GetDataset(lhs_ds_name, lhs_branch, &lhs_ds);
-  if (ec != ErrorCode::kOK) {
-    f_rpt_fail_get_lhs(ec);
-    return ec;
-  }
-  Dataset rhs_ds;
-  ec = bs_.GetDataset(rhs_ds_name, rhs_branch, &rhs_ds);
-  if (ec != ErrorCode::kOK) {
-    f_rpt_fail_get_rhs(ec);
-    return ec;
-  }
-  auto it_diff = cs_.DiffTable(lhs_ds, rhs_ds);
-  f_rpt_success(it_diff);
-  return ErrorCode::kOK;
+  std::vector<std::string> diff_keys;
+  auto ec = bs_.DiffDataset(
+              lhs_ds_name, lhs_branch, rhs_ds_name, rhs_branch, &diff_keys);
+  ec == ErrorCode::kOK ? f_rpt_success(diff_keys) : f_rpt_fail(ec);
+  return ec;
 }
 
 }  // namespace cli

@@ -20,6 +20,7 @@
 #include "types/server/slist.h"
 #include "types/server/smap.h"
 #include "types/server/sset.h"
+#include "types/ucell.h"
 
 namespace ustore {
 

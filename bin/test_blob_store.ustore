@@ -5,8 +5,11 @@ drop-ds -t ds2 -b master
 
 # Basic operations
 create-ds -t ds1 -b master
+exists-ds -t ds1 -b master
 put-de -t ds1 -b master /etc/hosts
+exists-de -t ds1 -b master /etc/hosts
 put-de -t ds1 -b master -x "Hello, world!" -m f1
+exists-de -t ds1 -m f1
 get-ds -t ds1 -b master
 get-de -t ds1 -b master -m f1
 get-de -t ds1 -b master -m f1 /tmp/f1.ustore_test
@@ -20,6 +23,7 @@ get-ds -t ds1 -b dev
 diff-ds -t ds1 -b master -c dev
 
 # Diff datasets
+exist-ds -t ds2 -b master
 create-ds -t ds2 -b master
 put-de -t ds2 -b master /etc/hosts
 put-de -t ds2 -b master -m f1 -x "foo"

@@ -142,14 +142,16 @@ class Command {
                              size_t ignored_pos = Utils::max_size_t);
 
   ErrorCode ExecCreateDataset();
+  ErrorCode ExecExistsDataset();
   ErrorCode ExecDeleteDataset();
   ErrorCode ExecGetDataset();
   ErrorCode ExecBranchDataset();
   ErrorCode ExecListDatasetBranch();
   ErrorCode ExecDiffDataset();
   ErrorCode ExecPutDataEntry();
-  ErrorCode ExecDeleteDataEntry();
+  ErrorCode ExecExistsDataEntry();
   ErrorCode ExecGetDataEntry();
+  ErrorCode ExecDeleteDataEntry();
 
   ErrorCode PrepareDataEntryName(const std::string& cmd);
 
