@@ -17,6 +17,7 @@ get-de -t ds1 -b master -m f1 /tmp/f1.ustore_test
 # Branch dataset
 branch-ds -t ds1 -b dev -c master --time
 ls-ds-branch -t ds1
+ls-de-branch -t ds1 -m f1
 put-de -t ds1 -b dev /etc/networks
 del-de -t ds1 -b dev -m f1
 get-ds -t ds1 -b dev

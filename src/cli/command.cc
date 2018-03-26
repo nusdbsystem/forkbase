@@ -274,6 +274,12 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("DELETE_DATA_ENTRY", "DEL-DATA-ENTRY");
   CMD_ALIAS("DELETE_DATA_ENTRY", "DEL_DE");
   CMD_ALIAS("DELETE_DATA_ENTRY", "DEL-DE");
+  CMD_HANDLER("LIST_DATA_ENTRY_BRANCH", ExecListDataEntryBranch());
+  CMD_ALIAS("LIST_DATA_ENTRY_BRANCH", "LIST-DATA_ENTRY-BRANCH");
+  CMD_ALIAS("LIST_DATA_ENTRY_BRANCH", "LIST_DE_BRANCH");
+  CMD_ALIAS("LIST_DATA_ENTRY_BRANCH", "LIST-DE-BRANCH");
+  CMD_ALIAS("LIST_DATA_ENTRY_BRANCH", "LS_DE_BRANCH");
+  CMD_ALIAS("LIST_DATA_ENTRY_BRANCH", "LS-DE-BRANCH");
   // utility commands
   CMD_HANDLER("HELP", ExecHelp());
   CMD_HANDLER("INFO", ExecInfo());
@@ -287,10 +293,12 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
 
 const int kPrintBasicCmdWidth = 15;
 const int kPrintRelationalCmdWidth = 19;
+const int kPrintBlobStoreCmdWidth = 23;
 const int kPrintUtilCmdWidth = 12;
 
 #define FORMAT_BASIC_CMD(cmd)       FORMAT_CMD(cmd, kPrintBasicCmdWidth)
 #define FORMAT_RELATIONAL_CMD(cmd)  FORMAT_CMD(cmd, kPrintRelationalCmdWidth)
+#define FORMAT_BLOB_STORE_CMD(cmd)  FORMAT_CMD(cmd, kPrintBlobStoreCmdWidth)
 #define FORMAT_UTIL_CMD(cmd)        FORMAT_CMD(cmd, kPrintUtilCmdWidth)
 
 void Command::PrintCommandHelp(std::ostream& os) {
@@ -393,6 +401,35 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "<file> -t <table> -b <branch>" << std::endl
      << FORMAT_RELATIONAL_CMD("DUMP_CSV")
      << "<file> -t <table> -b <branch>" << std::endl
+     << std::endl
+     << BLUE("UStore Blob Store Commands") << ":"
+     << std::endl
+     << FORMAT_BLOB_STORE_CMD("CREATE_DATASET")
+     << "-t <dataset> -b <branch>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("EXISTS_DATASET")
+     << "-t <dataset> {-b <branch>}" << std::endl
+     << FORMAT_BLOB_STORE_CMD("GET_DATASET")
+     << "-t <dataset> -b <branch>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("BRANCH_DATASET")
+     << "-t <dataset> -b <target_branch> -c <refer_branch>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("LIST_DATASET_BRANCH")
+     << "-t <dataset>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("DELETE_DATASET")
+     << "-t <dataset> -b <branch>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("DIFF_DATASET")
+     << "-t <dataset> -b <branch> -c <branch_2> {-s <dataset_2>}" << std::endl
+     << FORMAT_BLOB_STORE_CMD("EXISTS_DATA_ENTRY")
+     << "-t <dataset> -m <entry> {-b <branch>}" << std::endl
+     << FORMAT_BLOB_STORE_CMD("GET_DATA_ENTRY")
+     << "-t <dataset> -b <branch> [-m <column> | <file>]" << std::endl
+     << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY")
+     << "-t <dataset> -b <branch>"
+     << std::endl << std::setw(kPrintBlobStoreCmdWidth + 3) << ""
+     << "[-m <entry> -x <value | <file> | -m <entry> <file>]" << std::endl
+     << FORMAT_BLOB_STORE_CMD("LIST_DATA_ENTRY_BRANCH")
+     << "-t <dataset> -m <entry>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("DELETE_DATA_ENTRY")
+     << "-t <dataset> -b <branch> -m <entry>" << std::endl
      << std::endl
      << BLUE("UStore Utility Commands") << ":"
      << std::endl
@@ -3117,6 +3154,43 @@ ErrorCode Command::ExecDiffDataset() {
   auto ec = bs_.DiffDataset(
               lhs_ds_name, lhs_branch, rhs_ds_name, rhs_branch, &diff_keys);
   ec == ErrorCode::kOK ? f_rpt_success(diff_keys) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecListDataEntryBranch() {
+  const auto& ds_name = Config::table;
+  const auto& entry_name = Config::column;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: LIST_DATA_ENTRY_BRANCH] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Entry: \"" << entry_name << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const std::vector<std::string>& branches) {
+    if (Config::is_vert_list) {
+      for (auto& b : branches) std::cout << b << std::endl;
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LIST_DATA_ENTRY_BRANCH] ")
+                << "Branches: ";
+      Utils::Print(branches, "[", "]", ", ", true);
+      std::cout << std::endl;
+    }
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: LIST_DATA_ENTRY_BRANCH] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Entry: \"" << entry_name << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || entry_name.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::vector<std::string> branches;
+  auto ec = bs_.ListDataEntryBranch(ds_name, entry_name, &branches);
+  ec == ErrorCode::kOK ? f_rpt_success(branches) : f_rpt_fail(ec);
   return ec;
 }
 

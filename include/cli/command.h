@@ -152,6 +152,7 @@ class Command {
   ErrorCode ExecExistsDataEntry();
   ErrorCode ExecGetDataEntry();
   ErrorCode ExecDeleteDataEntry();
+  ErrorCode ExecListDataEntryBranch();
 
   ErrorCode PrepareDataEntryName(const std::string& cmd);
 
