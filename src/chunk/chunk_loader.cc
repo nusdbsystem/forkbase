@@ -26,7 +26,7 @@ Chunk PartitionedChunkLoader::GetChunk(const Hash& key) {
   } else {
     Chunk c;
     auto stat = client_->Get(key, &c);
-    CHECK(stat == ErrorCode::kOK) << "Failed to load remote chunk";
+    CHECK(stat == ErrorCode::kOK) << "Failed to load remote chunk " << key;
     return c;
   }
   LOG(FATAL) << "Failed to load chunk";
@@ -37,8 +37,8 @@ Chunk ClientChunkLoader::GetChunk(const Hash& key) {
   Chunk chunk;
   ErrorCode code = db_->GetChunk(Slice(key_), key, &chunk);
   if (code != ErrorCode::kOK)
-    LOG(WARNING) << "Failed to fetch chunk, error code: "
-                 << static_cast<int>(code);
+    LOG(ERROR) << "Failed to fetch chunk " << key
+               << ", error code: " << static_cast<int>(code);
   return chunk;
 }
 

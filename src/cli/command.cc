@@ -402,7 +402,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_RELATIONAL_CMD("DUMP_CSV")
      << "<file> -t <table> -b <branch>" << std::endl
      << std::endl
-     << BLUE("UStore Blob Store Commands") << ":"
+     << BLUE("UStore Dataset Management Commands") << ":"
      << std::endl
      << FORMAT_BLOB_STORE_CMD("CREATE_DATASET")
      << "-t <dataset> -b <branch>" << std::endl
