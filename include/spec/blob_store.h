@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <boost/filesystem.hpp>
 #include "spec/object_db.h"
 #include "utils/utils.h"
 
@@ -68,6 +69,18 @@ class BlobStore {
                                 const std::string& entry_val) {
     Hash entry_ver;
     return PutDataEntry(ds_name, branch, entry_name, entry_val, &entry_ver);
+  }
+
+  ErrorCode PutDataEntryBatch(const std::string& ds_name,
+                              const std::string& branch,
+                              const boost::filesystem::path& dir_path,
+                              size_t* n_entries);
+
+  inline ErrorCode PutDataEntryBatch(const std::string& ds_name,
+                                     const std::string& branch,
+                                     const boost::filesystem::path& dir_path) {
+    size_t n_entries;
+    return PutDataEntryBatch(ds_name, branch, dir_path, &n_entries);
   }
 
   ErrorCode DeleteDataEntry(const std::string& ds_name,

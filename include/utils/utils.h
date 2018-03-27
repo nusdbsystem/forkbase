@@ -255,6 +255,7 @@ class Utils {
                         const std::string& rsymbol = "]",
                         const std::string& sep = ", ",
                         bool elem_in_quote = false,
+                        size_t limit = max_size_t,
                         std::ostream& os = std::cout);
 
   static void PrintKeys(const USet& set, const std::string& lsymbol = "[",

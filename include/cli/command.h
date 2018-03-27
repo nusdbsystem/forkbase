@@ -104,11 +104,6 @@ class Command {
   ErrorCode ExecInsert();
   ErrorCode ExecDelete();
 
-  ErrorCode ExecGetAll();
-  ErrorCode ExecListKeyAll();
-  ErrorCode ExecLatestAll();
-  ErrorCode ExecGetColumnAll();
-
   ErrorCode ExecManipMeta(
     const std::function<ErrorCode(const VMeta&)>& f_output_meta);
 
@@ -149,12 +144,20 @@ class Command {
   ErrorCode ExecListDatasetBranch();
   ErrorCode ExecDiffDataset();
   ErrorCode ExecPutDataEntry();
+  ErrorCode ExecPutDataEntryBatch();
   ErrorCode ExecExistsDataEntry();
   ErrorCode ExecGetDataEntry();
   ErrorCode ExecDeleteDataEntry();
   ErrorCode ExecListDataEntryBranch();
 
   ErrorCode PrepareDataEntryName(const std::string& cmd);
+
+
+  ErrorCode ExecGetAll();
+  ErrorCode ExecListKeyAll();
+  ErrorCode ExecLatestAll();
+  ErrorCode ExecGetColumnAll();
+  ErrorCode ExecGetDatasetAll();
 
   ErrorCode ExecGetStoreSize();
 

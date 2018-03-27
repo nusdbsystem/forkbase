@@ -1,6 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <fstream>
 #include <limits>
 #include "cli/console.h"
@@ -11,6 +12,8 @@ namespace cli {
 
 const size_t Command::kDefaultLimitPrintElems(10);
 size_t Command::limit_print_elems(kDefaultLimitPrintElems);
+
+namespace boost_fs = boost::filesystem;
 
 Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   // basic commands
@@ -254,6 +257,12 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("PUT_DATA_ENTRY", "PUT-DATA-ENTRY");
   CMD_ALIAS("PUT_DATA_ENTRY", "PUT_DE");
   CMD_ALIAS("PUT_DATA_ENTRY", "PUT-DE");
+  CMD_HANDLER("PUT_DATA_ENTRY_BATCH", ExecPutDataEntryBatch());
+  CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT-DATA-ENTRY-BATCH");
+  CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT_DE_BATCH");
+  CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT-DE-BATCH");
+  CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT_DE_BAT");
+  CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT-DE-BAT");
   CMD_HANDLER("EXISTS_DATA_ENTRY", ExecExistsDataEntry());
   CMD_ALIAS("EXISTS_DATA_ENTRY", "EXISTS-DATA-ENTRY");
   CMD_ALIAS("EXISTS_DATA_ENTRY", "EXISTS_DE");
@@ -408,7 +417,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-t <dataset> -b <branch>" << std::endl
      << FORMAT_BLOB_STORE_CMD("EXISTS_DATASET")
      << "-t <dataset> {-b <branch>}" << std::endl
-     << FORMAT_BLOB_STORE_CMD("GET_DATASET")
+     << FORMAT_BLOB_STORE_CMD("GET_DATASET{_ALL}")
      << "-t <dataset> -b <branch>" << std::endl
      << FORMAT_BLOB_STORE_CMD("BRANCH_DATASET")
      << "-t <dataset> -b <target_branch> -c <refer_branch>" << std::endl
@@ -421,11 +430,15 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BLOB_STORE_CMD("EXISTS_DATA_ENTRY")
      << "-t <dataset> -m <entry> {-b <branch>}" << std::endl
      << FORMAT_BLOB_STORE_CMD("GET_DATA_ENTRY")
-     << "-t <dataset> -b <branch> [-m <column> | <file>]" << std::endl
+     << "-t <dataset> -b <branch>"
+     << std::endl << std::setw(kPrintBlobStoreCmdWidth + 3) << ""
+     << "[-m <entry> | <file> | -m <entry> <file>]" << std::endl
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY")
      << "-t <dataset> -b <branch>"
      << std::endl << std::setw(kPrintBlobStoreCmdWidth + 3) << ""
      << "[-m <entry> -x <value | <file> | -m <entry> <file>]" << std::endl
+     << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY_BATCH")
+     << "-t <dataset> -b <branch> <dir>" << std::endl
      << FORMAT_BLOB_STORE_CMD("LIST_DATA_ENTRY_BRANCH")
      << "-t <dataset> -m <entry>" << std::endl
      << FORMAT_BLOB_STORE_CMD("DELETE_DATA_ENTRY")
@@ -2674,46 +2687,6 @@ ErrorCode Command::ExecMeta() {
   return ec; \
 } while (0)
 
-ErrorCode Command::ExecGetAll() { PRINT_ALL(ExecGet()); }
-
-ErrorCode Command::ExecListKeyAll() { PRINT_ALL(ExecListKey()); }
-
-ErrorCode Command::ExecLatestAll() { PRINT_ALL(ExecLatest()); }
-
-ErrorCode Command::ExecGetColumnAll() { PRINT_ALL(ExecGetColumn()); }
-
-ErrorCode Command::ExecGetStoreSize() {
-  // screen printing
-  const auto f_rpt_success = [](const size_t n_bytes, const size_t n_chunks) {
-    std::cout << BOLD_GREEN("[SUCCESS:: STORE_SIZE] ")
-              << "Total: " << Utils::StorageSizeString(n_bytes)
-              << BLUE("  [Chunks: " << n_chunks << "]") << std::endl;
-  };
-  const auto f_rpt_fail = [](const ErrorCode & ec) {
-    std::cout << BOLD_RED("[FAILED: STORE_SIZE] ")
-              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
-              << std::endl;
-  };
-  // execution
-  size_t n_bytes, n_chunks;
-  ErrorCode ec(ErrorCode::kUnknownOp);
-
-  ec = cs_.GetStorageBytes(&n_bytes);
-  if (ec != ErrorCode::kOK) {
-    f_rpt_fail(ec);
-    return ec;
-  }
-
-  ec = cs_.GetStorageChunks(&n_chunks);
-  if (ec != ErrorCode::kOK) {
-    f_rpt_fail(ec);
-    return ec;
-  }
-
-  f_rpt_success(n_bytes, n_chunks);
-  return ErrorCode::kOK;
-}
-
 ErrorCode Command::ExecCreateDataset() {
   const auto& ds_name = Config::table;
   const auto& branch = Config::branch;
@@ -2831,7 +2804,7 @@ ErrorCode Command::ExecGetDataset() {
       }
     } else {
       std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET] ") << "Entries: ";
-      Utils::PrintKeys(ds, "[", "]", ", ", true);
+      Utils::PrintKeys(ds, "[", "]", ", ", true, limit_print_elems);
       std::cout << std::endl;
     }
   };
@@ -3192,6 +3165,84 @@ ErrorCode Command::ExecListDataEntryBranch() {
   auto ec = bs_.ListDataEntryBranch(ds_name, entry_name, &branches);
   ec == ErrorCode::kOK ? f_rpt_success(branches) : f_rpt_fail(ec);
   return ec;
+}
+
+ErrorCode Command::ExecPutDataEntryBatch() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& dir_path = Config::file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BATCH] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Directory: \"" << dir_path << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](const size_t n_entries) {
+    std::cout << BOLD_GREEN("[SUCCESS: PUT_DATA_ENTRY_BATCH] ")
+              << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+              << " updated" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BATCH] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Directory: \"" << dir_path << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || dir_path.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  size_t n_entries;
+  auto ec = bs_.PutDataEntryBatch(
+              ds_name, branch, boost_fs::path(dir_path.c_str()), &n_entries);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecGetAll() { PRINT_ALL(ExecGet()); }
+
+ErrorCode Command::ExecListKeyAll() { PRINT_ALL(ExecListKey()); }
+
+ErrorCode Command::ExecLatestAll() { PRINT_ALL(ExecLatest()); }
+
+ErrorCode Command::ExecGetColumnAll() { PRINT_ALL(ExecGetColumn()); }
+
+ErrorCode Command::ExecGetDatasetAll() { PRINT_ALL(ExecGetDataset()); }
+
+ErrorCode Command::ExecGetStoreSize() {
+  // screen printing
+  const auto f_rpt_success = [](const size_t n_bytes, const size_t n_chunks) {
+    std::cout << BOLD_GREEN("[SUCCESS:: STORE_SIZE] ")
+              << "Total: " << Utils::StorageSizeString(n_bytes)
+              << BLUE("  [Chunks: " << n_chunks << "]") << std::endl;
+  };
+  const auto f_rpt_fail = [](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: STORE_SIZE] ")
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // execution
+  size_t n_bytes, n_chunks;
+  ErrorCode ec(ErrorCode::kUnknownOp);
+
+  ec = cs_.GetStorageBytes(&n_bytes);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+
+  ec = cs_.GetStorageChunks(&n_chunks);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+
+  f_rpt_success(n_bytes, n_chunks);
+  return ErrorCode::kOK;
 }
 
 }  // namespace cli

@@ -241,14 +241,19 @@ void Utils::Print(const USet& set, const std::string& lsymbol,
 
 void Utils::PrintKeys(const UMap& map, const std::string& lsymbol,
                       const std::string& rsymbol, const std::string& sep,
-                      bool elem_in_quote, std::ostream& os) {
+                      bool elem_in_quote, size_t limit, std::ostream& os) {
   const auto quote = elem_in_quote ? "\"" : "";
   auto it = map.Scan();
   os << lsymbol;
   if (!it.end()) {
     os << quote << it.key() << quote;
-    for (it.next(); !it.end(); it.next()) {
+    size_t cnt(1);
+    for (it.next(); !it.end() && cnt++ < limit; it.next()) {
       os << sep << quote << it.key() << quote;
+    }
+    size_t n_elems = map.numElements();
+    if (n_elems > limit) {
+      os << sep << "...(and " << (n_elems - limit) << " more)";
     }
   }
   os << rsymbol;

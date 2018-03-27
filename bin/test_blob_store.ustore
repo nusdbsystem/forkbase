@@ -20,7 +20,7 @@ ls-ds-branch -t ds1
 ls-de-branch -t ds1 -m f1
 put-de -t ds1 -b dev /etc/networks
 del-de -t ds1 -b dev -m f1
-get-ds -t ds1 -b dev
+get-ds -t ds1 -b dev -1
 diff-ds -t ds1 -b master -c dev
 
 # Diff datasets
@@ -30,3 +30,7 @@ put-de -t ds2 -b master /etc/hosts
 put-de -t ds2 -b master -m f1 -x "foo"
 diff-ds -t ds1 -b master -s ds2 -c master
 
+# Batch operation
+put-de-bat -t ds2 -b master /etc/init --time
+get-ds -t ds2 -b master 
+get-de -t ds2 -b master -m hostname.conf

@@ -74,6 +74,8 @@ enum class ErrorCode : byte_t {
   // common
   kOK = 0,
   kUnknownOp = 1,
+  kIOFault = 2,
+  kInvalidPath = 3,
   // key/branch/version
   kKeyNotExists = 10,
   kKeyExists = 11,
