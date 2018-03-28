@@ -684,7 +684,9 @@ ErrorCode Command::ExecGet() {
     }
     if (!Config::is_vert_list && file_path.empty()) val_os << std::endl;
     if (!file_path.empty()) {
-      std::cout << "--> " << file_path << std::endl;
+      std::cout << "--> " << file_path
+                << BLUE("  [" << Utils::StorageSizeString(ofs.tellp()) << "]")
+                << std::endl;
       ofs.close();
       limit_print_elems = kDefaultLimitPrintElems;
     }
@@ -2958,7 +2960,8 @@ ErrorCode Command::ExecGetDataEntry() {
     val_os << quote << entry << quote;
     // indicate output file path
     if (!file_path.empty()) {
-      std::cout << "--> " << file_path;
+      std::cout << "--> " << file_path
+                << BLUE("  [" << Utils::StorageSizeString(ofs.tellp()) << "]");
       ofs.close();
     }
     std::cout << std::endl;
@@ -3198,7 +3201,7 @@ ErrorCode Command::ExecPutDataEntryBatch() {
   }
   size_t n_entries;
   auto ec = bs_.PutDataEntryBatch(
-              ds_name, branch, boost_fs::path(dir_path.c_str()), &n_entries);
+              ds_name, branch, boost_fs::path(dir_path), &n_entries);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries) : f_rpt_fail(ec);
   return ec;
 }
