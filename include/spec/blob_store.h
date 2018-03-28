@@ -57,6 +57,11 @@ class BlobStore {
                          const std::string& branch,
                          const std::string& entry_name, DataEntry* entry);
 
+  ErrorCode GetDataEntryBatch(const std::string& ds_name,
+                              const std::string& branch,
+                              const boost::filesystem::path& dir_path,
+                              size_t* n_entries);
+
   ErrorCode PutDataEntry(const std::string& ds_name,
                          const std::string& branch,
                          const std::string& entry_name,

@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The UStore Authors.
 
+#include <fstream>
 #include "spec/blob_store.h"
 
 namespace ustore {
@@ -158,9 +159,10 @@ ErrorCode BlobStore::ReadDataEntry(const std::string& ds_name,
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::GetDataEntry(
-  const std::string& ds_name, const std::string& branch,
-  const std::string& entry_name, DataEntry* entry) {
+ErrorCode BlobStore::GetDataEntry(const std::string& ds_name,
+                                  const std::string& branch,
+                                  const std::string& entry_name,
+                                  DataEntry* entry) {
   // fetch version of data entry
   Dataset ds;
   USTORE_GUARD(
@@ -174,6 +176,44 @@ ErrorCode BlobStore::GetDataEntry(
   }
   // read data entry
   return ReadDataEntry(ds_name, entry_name, entry_ver, entry);
+}
+
+ErrorCode BlobStore::GetDataEntryBatch(const std::string& ds_name,
+                                       const std::string& branch,
+                                       const boost_fs::path& dir_path,
+                                       size_t* n_entries) {
+  *n_entries = 0;
+  // retrieve the operating dataset
+  Dataset ds;
+  USTORE_GUARD(
+    ReadDataset(Slice(ds_name), Slice(branch), &ds));
+  try {
+    boost_fs::create_directories(dir_path);
+    // iterate the dataset
+    for (auto it = ds.Scan(); !it.end(); it.next()) {
+      // retrieve data entry
+      const auto entry_name = it.key().ToString();
+      const auto entry_ver = Utils::ToHash(it.value());
+      DCHECK(!entry_ver.empty());
+      DataEntry entry;
+      USTORE_GUARD(
+        ReadDataEntry(ds_name, entry_name, entry_ver, &entry));
+      // output data entry to file
+      const boost_fs::path filename(entry_name);
+      if (filename.has_parent_path()) {
+        boost_fs::create_directories(dir_path / filename.parent_path());
+      }
+      std::ofstream ofs((dir_path / filename).native(),
+                        std::ios::out | std::ios::trunc);
+      ofs << entry;
+      ofs.close();
+    }
+    *n_entries = ds.numElements();
+    return ErrorCode::kOK;
+  } catch (const boost_fs::filesystem_error& e) {
+    LOG(ERROR) << e.what();
+    return ErrorCode::kIOFault;
+  }
 }
 
 ErrorCode BlobStore::WriteDataEntry(const std::string& ds_name,

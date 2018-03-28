@@ -34,3 +34,4 @@ diff-ds -t ds1 -b master -s ds2 -c master
 put-de-bat -t ds2 -b master /etc/init --time
 get-ds -t ds2 -b master 
 get-de -t ds2 -b master -m hostname.conf
+get-de-bat -t ds2 -b master /tmp/ds2.ustore_test --time

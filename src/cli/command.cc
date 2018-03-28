@@ -275,6 +275,12 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("GET_DATA_ENTRY", "GET-DATA-ENTRY");
   CMD_ALIAS("GET_DATA_ENTRY", "GET_DE");
   CMD_ALIAS("GET_DATA_ENTRY", "GET-DE");
+  CMD_HANDLER("GET_DATA_ENTRY_BATCH", ExecGetDataEntryBatch());
+  CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET-DATA-ENTRY-BATCH");
+  CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET_DE_BATCH");
+  CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET-DE-BATCH");
+  CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET_DE_BAT");
+  CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET-DE-BAT");
   CMD_HANDLER("DELETE_DATA_ENTRY", ExecDeleteDataEntry());
   CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE-DATA-ENTRY");
   CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE_DE");
@@ -433,6 +439,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-t <dataset> -b <branch>"
      << std::endl << std::setw(kPrintBlobStoreCmdWidth + 3) << ""
      << "[-m <entry> | <file> | -m <entry> <file>]" << std::endl
+     << FORMAT_BLOB_STORE_CMD("GET_DATA_ENTRY_BATCH")
+     << "-t <dataset> -b <branch> <dir>" << std::endl
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY")
      << "-t <dataset> -b <branch>"
      << std::endl << std::setw(kPrintBlobStoreCmdWidth + 3) << ""
@@ -2981,6 +2989,42 @@ ErrorCode Command::ExecGetDataEntry() {
   DataEntry entry;
   auto ec = bs_.GetDataEntry(ds_name, branch, entry_name, &entry);
   ec == ErrorCode::kOK ? f_rpt_success(entry) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecGetDataEntryBatch() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& dir_path = Config::file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATA_ENTRY_BATCH] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Directory: \"" << dir_path << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](const size_t n_entries) {
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_BATCH] ")
+              << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+              << " retrieved" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_BATCH] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Directory: \"" << dir_path << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || dir_path.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  size_t n_entries;
+  auto ec = bs_.GetDataEntryBatch(
+              ds_name, branch, boost_fs::path(dir_path), &n_entries);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries) : f_rpt_fail(ec);
   return ec;
 }
 

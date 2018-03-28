@@ -147,6 +147,7 @@ class Command {
   ErrorCode ExecPutDataEntryBatch();
   ErrorCode ExecExistsDataEntry();
   ErrorCode ExecGetDataEntry();
+  ErrorCode ExecGetDataEntryBatch();
   ErrorCode ExecDeleteDataEntry();
   ErrorCode ExecListDataEntryBranch();
 
