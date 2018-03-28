@@ -7,10 +7,13 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 #include "http/net.h"
 #include "http/settings.h"
 
 namespace ustore {
+
+using string = std::string;
 
 const string CRLF = "\r\n";
 const string kContentLen = "Content-Length: ";
@@ -39,6 +42,7 @@ enum class CommandType {
   kExists,
   kIsBranchHead,
   kIsLatestVersion,
+  kGetDataset,
   kError
 };
 
@@ -56,10 +60,12 @@ class HttpRequest {
   int ReadAndParse(ClientSocket* socket);
 
   /*
+   * response could be a list of messages
+   *
    * based on the header fields
    * get the required resource and respond to the client
    */
-  int Respond(ClientSocket* socket, string&& response);
+  int Respond(ClientSocket* socket, std::vector<string>& response);
 
   // whether or not close the socket
   inline bool KeepAlive() { return keep_alive_; }

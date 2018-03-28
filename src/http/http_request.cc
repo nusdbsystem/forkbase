@@ -22,7 +22,8 @@ const unordered_map<string, CommandType> HttpRequest::cmddict_ = {
     {"/latest", CommandType::kLatest},
     {"/exists", CommandType::kExists},
     {"/islatestversion", CommandType::kIsLatestVersion},
-    {"/isbranchhead", CommandType::kIsBranchHead}
+    {"/isbranchhead", CommandType::kIsBranchHead},
+    {"/get-ds", CommandType::kGetDataset}
 };
 
 int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
@@ -296,58 +297,88 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
   return ST_SUCCESS;
 }
 
-int HttpRequest::Respond(ClientSocket* socket, string&& response) {
+int HttpRequest::Respond(ClientSocket* socket, std::vector<string>& response) {
   if (!(method_ == "post" || method_ == "get")) {
     if (unlikely(int(kBadRequest.length()) !=
-        socket->Send(kBadRequest.c_str(), kBadRequest.length()))) {
+        socket->Send(kBadRequest.data(), kBadRequest.length()))) {
       return ST_ERROR;
     }
-    LOG(WARNING) << "unsupported method: " << method_.c_str();
+    LOG(WARNING) << "unsupported method: " << method_;
     return ST_SUCCESS;
   }
 
+  string prefix, suffix;
   // handle accept type
   if (headers_.count("accept")) {
     string& accept = headers_["accept"];
-    if (accept == "application/xml")
-      response = "<?xml version=\"1.0\" ?>" + CRLF + "<result>"
-          + response + "</result>";
-    else if (accept == "application/json")
-      response = "{\"result\": \"" + response + "\"}";
+    if (accept == "application/xml") {
+      // response = "<?xml version=\"1.0\" ?>" + CRLF + "<result>"
+      //     + response + "</result>";
+      prefix = "<?xml version=\"1.0\" ?>" + CRLF + "<result>";
+      suffix = "</result>";
+    } else if (accept == "application/json") {
+      // response = "{\"result\": \"" + response + "\"}";
+      prefix = "{\"result\": ";
+      suffix = " }";
+      // return a json array
+      if (response.size() > 1) {
+        prefix += "[";
+        suffix = "]" + suffix;
+      }
+      // wrap elements
+      for (size_t i = 0; i < response.size(); ++i) {
+        response[i] = "\"" + response[i] + "\"";
+        if (i+1 < response.size()) response[i] += ",";
+      }
+    }
   }
 
-  // add CRLF ending
-  response += CRLF;
+  // add CRLF ending for each line
+  if (prefix.length()) prefix += CRLF;
+  if (suffix.length()) suffix += CRLF;
+  size_t res_len = prefix.length() + suffix.length();
+  for (auto& s : response) {
+    if (s.length()) s += CRLF;
+    res_len += s.length();
+  }
 
-  size_t res_len;
-  if (response.length() > kMaxOutputSize) {
+  // bound large message
+  if (res_len > kMaxOutputSize) {
+    LOG(WARNING) << "response length is too long: " << res_len
+                 << ", cut it to " << kMaxOutputSize;
     res_len = kMaxOutputSize;
-    LOG(WARNING) << "response length is too long: " << response.length()
-                 << ", cut it to " << res_len;
-  } else {
-    res_len = response.length();
   }
 
   // dynamic buffer allocation
   char* header = new char[kMaxHeaderSize + res_len];
   int pos = 0;
 
-  memcpy(header+pos, kHttpVersion.c_str(), kHttpVersion.length());
+  memcpy(header+pos, kHttpVersion.data(), kHttpVersion.length());
   pos += kHttpVersion.length();
-
-  memcpy(header+pos, status_.c_str(), status_.length());
+  memcpy(header+pos, status_.data(), status_.length());
   pos += status_.length();
-
-  memcpy(header+pos, kOtherHeaders.c_str(), kOtherHeaders.length());
+  memcpy(header+pos, kOtherHeaders.data(), kOtherHeaders.length());
   pos += kOtherHeaders.length();
-
-  memcpy(header+pos, kContentLen.c_str(), kContentLen.length());
+  memcpy(header+pos, kContentLen.data(), kContentLen.length());
   pos += kContentLen.length();
+
   // end of header
   pos += sprintf(header+pos, "%zu\r\n\r\n", res_len);
 
-  memcpy(header+pos, response.c_str(), res_len);
-  pos += res_len;
+  // copy message body
+  memcpy(header+pos, prefix.data(), prefix.length());
+  pos += prefix.length();
+  size_t remain = res_len - prefix.length() - suffix.length();
+  for (const auto& s : response) {
+    if (!remain) break;
+    size_t len = s.length();
+    if (len > remain) len = remain;
+    memcpy(header+pos, s.data(), len);
+    pos += len;
+    remain -= len;
+  }
+  memcpy(header+pos, suffix.data(), suffix.length());
+  pos += suffix.length();
 
   int sent = socket->Send(header, pos);
   delete[] header;

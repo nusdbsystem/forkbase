@@ -42,6 +42,9 @@ class AccessLogging {
   void Append(const char* op, const std::string& key, const std::string& branch,
               const std::string& version) {
     if (file_) {
+      // TODO(wangsh): in order to support dataset management, we ignore all
+      //    keys in XX::XX format in an ad-hoc way
+      if (key.find("::") != std::string::npos) return;
       time_t rw_time = time(nullptr);
       struct tm tm_time;
       localtime_r(&rw_time, &tm_time);

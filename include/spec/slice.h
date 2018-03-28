@@ -76,7 +76,10 @@ class Slice {
   }
 
   friend inline std::ostream& operator<<(std::ostream& os, const Slice& obj) {
-    os << obj.ToString();
+    // avoid memory copy here
+    // os << obj.ToString();
+    const char* ptr = reinterpret_cast<const char*>(obj.data_);
+    for (size_t i = 0; i < obj.len_; ++i) os << *(ptr++);
     return os;
   }
 

@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include "hash/murmurhash.h"
+#include "spec/slice.h"
 #include "types/type.h"
 #include "utils/logging.h"
 
@@ -41,6 +42,8 @@ class Hash {
   Hash(const Hash& hash) noexcept : value_(hash.value_) {}
   // use existing byte array
   explicit Hash(const byte_t* hash) noexcept : value_(hash) {}
+  // use existing slice
+  explicit Hash(const Slice& slice) noexcept : value_(slice.data()) {}
   // use existing string
   explicit Hash(const std::string& str) noexcept
     : value_(reinterpret_cast<const byte_t*>(str.c_str())) {}
