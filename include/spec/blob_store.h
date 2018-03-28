@@ -3,9 +3,9 @@
 #ifndef USTORE_SPEC_BLOB_STORE_H_
 #define USTORE_SPEC_BLOB_STORE_H_
 
+#include <boost/filesystem.hpp>
 #include <string>
 #include <vector>
-#include <boost/filesystem.hpp>
 #include "spec/object_db.h"
 #include "utils/utils.h"
 
