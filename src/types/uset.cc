@@ -50,8 +50,9 @@ USet::Iterator USet::Diff(const USet& rhs) const {
   } else if (rhs.numElements() == 0) {
     return USet::Iterator(hash(), {{0, numElements()}}, chunk_loader_.get());
   } else {
-    KeyDiffer differ(rhs.hash(), chunk_loader_.get());
-    return USet::Iterator(hash(), differ.Compare(hash()), chunk_loader_.get());
+    KeyDiffer differ(rhs.hash(), rhs.chunk_loader_.get());
+    auto ranges = differ.Compare(hash(), chunk_loader_.get());
+    return USet::Iterator(hash(), ranges, chunk_loader_.get());
   }
 }
 
@@ -60,7 +61,8 @@ USet::Iterator USet::Intersect(const USet& rhs) const {
   if (this->numElements() == 0 || rhs.numElements() == 0) {
     return USet::Iterator(hash(), {}, chunk_loader_.get());
   } else {
-    KeyIntersector intersector(rhs.hash(), chunk_loader_.get());
+    KeyIntersector intersector(rhs.hash(), rhs.chunk_loader_.get());
+    auto ranges = intersector.Compare(hash(), chunk_loader_.get());
     return USet::Iterator(hash(), intersector.Compare(hash()),
                           chunk_loader_.get());
   }

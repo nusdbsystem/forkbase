@@ -82,12 +82,12 @@ struct Intersector {
   }
 
   static ResultType IterateLeaves(
-      const SeqNode* lhs, uint64_t lhs_start_idx,
-      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
+      const SeqNode* lhs, uint64_t lhs_start_idx, ChunkLoader* lloader,
+      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* rloader) {
     std::vector<IndexRange> results;
 
-    NodeCursor lhs_cursor(lhs->hash(), 0, loader);
-    NodeCursor rhs_cursor(rhs->hash(), 0, loader);
+    NodeCursor lhs_cursor(lhs->hash(), 0, lloader);
+    NodeCursor rhs_cursor(rhs->hash(), 0, rloader);
 
     uint64_t lhs_idx = lhs_start_idx;
     uint64_t rhs_idx = rhs_start_idx;
@@ -166,16 +166,16 @@ lhs elements that DOES NOT occur in rhs*/
   }
 
   static ResultType IterateLeaves(
-      const SeqNode* lhs, uint64_t lhs_start_idx,
-      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader*loader) {
+      const SeqNode* lhs, uint64_t lhs_start_idx, ChunkLoader* lloader,
+      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* rloader) {
     // DLOG(INFO) << "Iterate Diff: \n"
     //            << "LHS: " << lhs << " Start_Idx: " << lhs_start_idx << "\n"
     //            << "RHS: " << rhs << " Start_Idx: " << rhs_start_idx;
 
     std::vector<IndexRange> results;
 
-    NodeCursor lhs_cursor(lhs->hash(), 0, loader);
-    NodeCursor rhs_cursor(rhs->hash(), 0, loader);
+    NodeCursor lhs_cursor(lhs->hash(), 0, lloader);
+    NodeCursor rhs_cursor(rhs->hash(), 0, rloader);
 
     uint64_t lhs_idx = lhs_start_idx;
     uint64_t rhs_idx = rhs_start_idx;
@@ -283,12 +283,12 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
   }
 
   static ResultType IterateLeaves(
-      const SeqNode* lhs, uint64_t lhs_start_idx,
-      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* loader) {
+      const SeqNode* lhs, uint64_t lhs_start_idx, ChunkLoader* lloader,
+      const SeqNode* rhs, uint64_t rhs_start_idx, ChunkLoader* rloader) {
     ResultType results;
 
-    NodeCursor lhs_cursor(lhs->hash(), 0, loader);
-    NodeCursor rhs_cursor(rhs->hash(), 0, loader);
+    NodeCursor lhs_cursor(lhs->hash(), 0, lloader);
+    NodeCursor rhs_cursor(rhs->hash(), 0, rloader);
 
     uint64_t lhs_idx = lhs_start_idx;
     uint64_t rhs_idx = rhs_start_idx;
@@ -400,13 +400,14 @@ KeyTrait specifies the key for traversing, either can be prolly index or ordered
 */
  public:
   using ReturnType = typename Traverser<KeyTrait>::ResultType;
-// loader is used for both lhs and rhs
   NodeComparator(const Hash& rhs,
-                 ChunkLoader* loader) noexcept;
+                 ChunkLoader* rloader) noexcept;
 
   virtual ~NodeComparator() = default;
 
-  ReturnType Compare(const Hash& lhs) const;
+  // if lloader is not provided (nullptr),
+  //   rloader_ is used to load chunks for lhs.
+  ReturnType Compare(const Hash& lhs, ChunkLoader* lloader = nullptr) const;
 
  private:
   // This function starts to search for this deepest seq node from rhs_seq_node
@@ -418,27 +419,31 @@ KeyTrait specifies the key for traversing, either can be prolly index or ordered
   // Compare the lhs tree with rhs in preorder format
   ReturnType Compare(
       const SeqNode* lhs, uint64_t lhs_start_idx, const OrderedKey& lhs_min_key,
-      std::shared_ptr<const SeqNode> rhs_root_node,
+      ChunkLoader* lloader, std::shared_ptr<const SeqNode> rhs_root_node,
       uint64_t rhs_start_idx) const;
 
   // loader for both lhs and rhs
-  mutable ChunkLoader* loader_;
+  mutable ChunkLoader* rloader_;
 
   std::shared_ptr<const SeqNode> rhs_root_;
 };
 
 template <class KeyTrait, template<class> class Traverser>
 NodeComparator<KeyTrait, Traverser>::NodeComparator(const Hash& rhs,
-    ChunkLoader* loader) noexcept : loader_(loader) {
-  const Chunk* chunk = loader_->Load(rhs);
+    ChunkLoader* rloader) noexcept : rloader_(rloader) {
+  const Chunk* chunk = rloader_->Load(rhs);
   rhs_root_ = SeqNode::CreateFromChunk(chunk);
 }
 
 template <class KeyTrait, template<class> class Traverser>
 typename NodeComparator<KeyTrait, Traverser>::ReturnType
-  NodeComparator<KeyTrait, Traverser> ::Compare(const Hash& lhs) const {
+  NodeComparator<KeyTrait, Traverser> ::Compare(const Hash& lhs,
+                                                ChunkLoader* lloader) const {
+  if (lloader == nullptr) {
+    lloader = rloader_;
+  }
   std::unique_ptr<const SeqNode> lhs_root =
-        SeqNode::CreateFromChunk(loader_->Load(lhs));
+        SeqNode::CreateFromChunk(lloader->Load(lhs));
 
   uint64_t lhs_start_idx = 0;
   uint64_t rhs_start_idx = 0;
@@ -446,6 +451,7 @@ typename NodeComparator<KeyTrait, Traverser>::ReturnType
   return IndexRange::Compact(Compare(lhs_root.get(),
                              lhs_start_idx,
                              KeyTrait::MinKey(),
+                             lloader,
                              rhs_root_,
                              rhs_start_idx));
 }
@@ -454,6 +460,7 @@ template <class KeyTrait, template<class> class Traverser>
 typename NodeComparator<KeyTrait, Traverser>::ReturnType
   NodeComparator<KeyTrait, Traverser>::Compare(
     const SeqNode* lhs, uint64_t lhs_start_idx, const OrderedKey& lhs_min_key,
+    ChunkLoader* lloader,
     const std::shared_ptr<const SeqNode> rhs_node,
     uint64_t rhs_start_idx) const {
   // rhs_root_node is guaranteed to contain all the elements rooted in lhs
@@ -487,10 +494,10 @@ typename NodeComparator<KeyTrait, Traverser>::ReturnType
   }
 
   if (lhs->isLeaf() || rhs_deepest_node->isLeaf()) {
-    return Traverser<KeyTrait>::IterateLeaves(lhs, lhs_start_idx,
+    return Traverser<KeyTrait>::IterateLeaves(lhs, lhs_start_idx, lloader,
                                               rhs_deepest_node.get(),
                                               deepest_start_idx,
-                                              loader_);
+                                              rloader_);
   }  // end if
 
   // Preorder Traversal
@@ -502,12 +509,13 @@ typename NodeComparator<KeyTrait, Traverser>::ReturnType
     MetaEntry lhs_me(lhs_meta->data(i));
 
     std::unique_ptr<const SeqNode> lhs_child_node =
-        SeqNode::CreateFromChunk(loader_->Load(lhs_me.targetHash()));
+        SeqNode::CreateFromChunk(lloader->Load(lhs_me.targetHash()));
 
     ReturnType child_results =
         Compare(lhs_child_node.get(),
                 lhs_child_start_idx,
                 lhs_child_min_key,
+                lloader,
                 rhs_deepest_node,
                 deepest_start_idx);
 
@@ -532,7 +540,7 @@ NodeComparator<KeyTrait, Traverser>::SmallestOverlap(
                                                 rhs_node,
                                             uint64_t rhs_start_idx,
                                             uint64_t* closest_start_idx) const {
-  // Precondition, seq_node shall at least contain the range
+  // Precondition, rhs_node shall at least contain the range
   // CHECK_LE(rhs_start_idx, lhs_lower);
   if (!rhs_node->isLeaf()) {
     const MetaNode* meta_node = dynamic_cast<const MetaNode*>(rhs_node.get());
@@ -542,7 +550,7 @@ NodeComparator<KeyTrait, Traverser>::SmallestOverlap(
     // accumalated start idx for each metaentry
     uint64_t rhs_me_start_idx = rhs_start_idx;
 
-    OrderedKey rhs_me_lower;
+    OrderedKey rhs_me_lower;  // me is in short for metaentry
     OrderedKey rhs_me_upper;
 
     for (size_t i = 0; i < numEntries; ++i) {
@@ -555,7 +563,7 @@ NodeComparator<KeyTrait, Traverser>::SmallestOverlap(
 
       if (i == numEntries - 1 || rhs_me_upper >= lhs_upper) {
         // Find a deeper overlap
-        const Chunk* rhs_child_chunk = loader_->Load(rhs_me.targetHash());
+        const Chunk* rhs_child_chunk = rloader_->Load(rhs_me.targetHash());
         std::shared_ptr<const SeqNode> rhs_child =
                          SeqNode::CreateFromChunk(rhs_child_chunk);
 
@@ -594,13 +602,13 @@ class LevenshteinMapper : private Noncopyable {
  public:
 // loader is used for both lhs and rhs
   LevenshteinMapper(const Hash& rhs,
-                    ChunkLoader* loader) noexcept :
-      rhs_(rhs), loader_(loader) {}
+                    ChunkLoader* rloader) noexcept :
+      rhs_(rhs), rloader_(rloader) {}
 
   virtual ~LevenshteinMapper() = default;
 
   // Return the index maps from lhs to rhs
-  RangeMaps Compare(const Hash& lhs) const;
+  RangeMaps Compare(const Hash& lhs, ChunkLoader* lloader = nullptr) const;
 
  private:
   enum class EditMarker : unsigned char {
@@ -638,7 +646,7 @@ class LevenshteinMapper : private Noncopyable {
 
   const Hash rhs_;
   // loader for both lhs and rhs
-  mutable ChunkLoader* loader_;
+  mutable ChunkLoader* rloader_;
 };
 }  // namespace ustore
 

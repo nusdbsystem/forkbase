@@ -9,9 +9,14 @@
 #include "node/node_comparator.h"
 
 namespace ustore {
-RangeMaps LevenshteinMapper::Compare(const ustore::Hash &lhs) const {
-  const Chunk* lhs_chunk = loader_->Load(lhs);
-  const Chunk* rhs_chunk = loader_->Load(rhs_);
+RangeMaps LevenshteinMapper::Compare(const ustore::Hash &lhs,
+                                     ChunkLoader* lloader) const {
+
+  if (lloader == nullptr) {
+    lloader = rloader_;
+  }
+  const Chunk* lhs_chunk = lloader->Load(lhs);
+  const Chunk* rhs_chunk = rloader_->Load(rhs_);
 
   auto lhs_node = SeqNode::CreateFromChunk(lhs_chunk);
   auto rhs_node = SeqNode::CreateFromChunk(rhs_chunk);
@@ -23,8 +28,8 @@ RangeMaps LevenshteinMapper::Compare(const ustore::Hash &lhs) const {
     return {};
   }
 
-  std::unique_ptr<NodeCursor> lhs_cr(new NodeCursor(lhs, 0, loader_));
-  std::unique_ptr<NodeCursor> rhs_cr(new NodeCursor(rhs_, 0, loader_));
+  std::unique_ptr<NodeCursor> lhs_cr(new NodeCursor(lhs, 0, lloader));
+  std::unique_ptr<NodeCursor> rhs_cr(new NodeCursor(rhs_, 0, rloader_));
 
   return map(std::move(lhs_cr), {0, lhs_num_elements},
              std::move(rhs_cr), {0, rhs_num_elements});
