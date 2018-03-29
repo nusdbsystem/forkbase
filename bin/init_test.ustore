@@ -1,0 +1,4 @@
+# For test_blob_store.ustore
+create-ds -t ds1 -b master
+create-ds -t ds1 -b dev
+create-ds -t ds2 -b master
