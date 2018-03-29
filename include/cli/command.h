@@ -136,6 +136,7 @@ class Command {
                              const VList& list,
                              size_t ignored_pos = Utils::max_size_t);
 
+  ErrorCode ExecListDataset();
   ErrorCode ExecCreateDataset();
   ErrorCode ExecExistsDataset();
   ErrorCode ExecDeleteDataset();
@@ -158,6 +159,7 @@ class Command {
   ErrorCode ExecListKeyAll();
   ErrorCode ExecLatestAll();
   ErrorCode ExecGetColumnAll();
+  ErrorCode ExecListDatasetAll();
   ErrorCode ExecGetDatasetAll();
 
   ErrorCode ExecGetStoreSize();

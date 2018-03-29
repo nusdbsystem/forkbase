@@ -5,6 +5,7 @@ drop-ds -t ds2 -b master
 
 # Basic operations
 create-ds -t ds1 -b master
+ls-ds
 exists-ds -t ds1 -b master
 put-de -t ds1 -b master /etc/hosts
 exists-de -t ds1 -b master /etc/hosts
@@ -26,6 +27,7 @@ diff-ds -t ds1 -b master -c dev
 # Diff datasets
 exist-ds -t ds2 -b master
 create-ds -t ds2 -b master
+lsds -1
 put-de -t ds2 -b master /etc/hosts
 put-de -t ds2 -b master -m f1 -x "foo"
 diff-ds -t ds1 -b master -s ds2 -c master

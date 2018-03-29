@@ -209,6 +209,13 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("DUMP_CSV", "DUMPCSV");
   CMD_ALIAS("DUMP_CSV", "DUMP");
   // blob store commands
+  CMD_HANDLER("LIST_DATASET", ExecListDataset());
+  CMD_ALIAS("LIST_DATASET", "LIST-DATASET");
+  CMD_ALIAS("LIST_DATASET", "LS_DATASET");
+  CMD_ALIAS("LIST_DATASET", "LS-DATASET");
+  CMD_ALIAS("LIST_DATASET", "LS_DS");
+  CMD_ALIAS("LIST_DATASET", "LS-DS");
+  CMD_ALIAS("LIST_DATASET", "LSDS");
   CMD_HANDLER("CREATE_DATASET", ExecCreateDataset());
   CMD_ALIAS("CREATE_DATASET", "CREATE-DATASET");
   CMD_ALIAS("CREATE_DATASET", "CREATE_DS");
@@ -365,7 +372,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-k <key> -v <version>" << std::endl
      << FORMAT_BASIC_CMD("LIST_BRANCH")
      << "-k <key>" << std::endl
-     << FORMAT_BASIC_CMD("LIST_KEY{_ALL}") << std::endl
+     << FORMAT_BASIC_CMD("LIST_KEY{_ALL}") 
+     << std::endl
      << FORMAT_BASIC_CMD("META")
      << "-k <key> [-b <branch> | -v <version>]" << std::endl
      << std::endl
@@ -418,6 +426,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "<file> -t <table> -b <branch>" << std::endl
      << std::endl
      << BLUE("UStore Dataset Management Commands") << ":"
+     << std::endl
+     << FORMAT_BLOB_STORE_CMD("LIST_DATASET{_ALL}")
      << std::endl
      << FORMAT_BLOB_STORE_CMD("CREATE_DATASET")
      << "-t <dataset> -b <branch>" << std::endl
@@ -2697,6 +2707,37 @@ ErrorCode Command::ExecMeta() {
   return ec; \
 } while (0)
 
+ErrorCode Command::ExecListDataset() {
+  // screen printing
+  const auto f_rpt_success = [this](const std::vector<std::string>& ds_list) {
+    if (Config::is_vert_list) {
+      // for (auto& ds_name : ds_list) std::cout << ds_name << std::endl;
+      std::vector<std::string> branches;
+      for (auto& ds_name : ds_list) {
+        auto ec = bs_.ListDatasetBranch(ds_name, &branches);
+        CHECK(ec == ErrorCode::kOK);
+        std::cout << ds_name << "  ";
+        Utils::Print(branches, "[", "]", ", ", true);
+        std::cout << std::endl;
+      }
+    } else {
+      std::cout << BOLD_GREEN("[SUCCESS: LIST_DATASET] ") << "Datasets: ";
+      Utils::Print(ds_list, "[", "]", ", ", true, limit_print_elems);
+      std::cout << std::endl;
+    }
+  };
+  const auto f_rpt_fail = [](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: LIST_DATASET] ")
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // execution
+  std::vector<std::string> ds_list;
+  auto ec = bs_.ListDataset(&ds_list);
+  ec == ErrorCode::kOK ? f_rpt_success(ds_list) : f_rpt_fail(ec);
+  return ec;
+}
+
 ErrorCode Command::ExecCreateDataset() {
   const auto& ds_name = Config::table;
   const auto& branch = Config::branch;
@@ -3257,6 +3298,8 @@ ErrorCode Command::ExecListKeyAll() { PRINT_ALL(ExecListKey()); }
 ErrorCode Command::ExecLatestAll() { PRINT_ALL(ExecLatest()); }
 
 ErrorCode Command::ExecGetColumnAll() { PRINT_ALL(ExecGetColumn()); }
+
+ErrorCode Command::ExecListDatasetAll() { PRINT_ALL(ExecListDataset()); }
 
 ErrorCode Command::ExecGetDatasetAll() { PRINT_ALL(ExecGetDataset()); }
 

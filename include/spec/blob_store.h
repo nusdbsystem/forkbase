@@ -19,6 +19,8 @@ class BlobStore {
   explicit BlobStore(DB* db) noexcept : odb_(db) {}
   ~BlobStore() = default;
 
+  ErrorCode ListDataset(std::vector<std::string>* datasets);
+
   ErrorCode ExistsDataset(const std::string& ds_name, bool* exists);
 
   ErrorCode ExistsDataset(const std::string& ds_name,
@@ -103,6 +105,10 @@ class BlobStore {
   }
 
  private:
+  ErrorCode GetDatasetList(VSet* ds_list);
+
+  ErrorCode UpdateDatasetList(const Slice& ds_name, bool to_delete = false);
+
   ErrorCode ReadDataset(const Slice& ds_name, const Slice& branch, Dataset* ds);
 
   ErrorCode ReadDataEntryHash(const std::string& ds_name,
