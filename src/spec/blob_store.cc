@@ -321,25 +321,40 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
     if (boost_fs::exists(dir_path) && boost_fs::is_directory(dir_path)) {
       std::vector<std::string> ds_entry_names;
       std::vector<Hash> ds_entry_vers;
-      // iterate the directory containing data entry files
-      for (auto && file_entry : boost_fs::directory_iterator(dir_path)) {
-        // construct data entry name and value
-        const auto file_path = file_entry.path();
-        const std::string entry_name(file_path.filename().native());
-        std::string entry_val;
-        USTORE_GUARD(
-          Utils::GetFileContents(file_path.native(), &entry_val));
-        // fetch existing version of the data entry
-        auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
-        if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
-        // write the data entry to storage
-        Hash entry_ver;
-        USTORE_GUARD(WriteDataEntry(ds_name, entry_name, entry_val,
-                                    prev_entry_ver, &entry_ver));
-        // archive updates
-        ds_entry_names.push_back(std::move(entry_name));
-        ds_entry_vers.push_back(std::move(entry_ver));
-      }
+      // iterate the directory recursively and add files to storage
+      const std::function<ErrorCode(
+        const boost_fs::path&, const boost_fs::path&)> f_put =
+      [&](const boost_fs::path & path, const boost_fs::path & rlt_path) {
+        if (boost_fs::is_directory(path)) {
+          // recursion: iterate sub-directory
+          for (auto && file_entry : boost_fs::directory_iterator(path)) {
+            const auto file_path = file_entry.path();
+            USTORE_GUARD(
+              f_put(file_path, rlt_path / file_path.filename()));
+          }
+        } else if (boost_fs::is_regular_file(path)) {
+          // construct data entry name and value
+          const auto entry_name = rlt_path.native();
+          std::string entry_val;
+          USTORE_GUARD(
+            Utils::GetFileContents(path.native(), &entry_val));
+          // fetch existing version of the data entry
+          auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+          if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
+          // write the data entry to storage
+          Hash entry_ver;
+          USTORE_GUARD(WriteDataEntry(ds_name, entry_name, entry_val,
+                                      prev_entry_ver, &entry_ver));
+          // archive updates
+          ds_entry_names.push_back(std::move(entry_name));
+          ds_entry_vers.push_back(std::move(entry_ver));
+        } else {
+          LOG(WARNING) << path << " is not a regular file or directory";
+        }
+        return ErrorCode::kOK;
+      };
+      USTORE_GUARD(
+        f_put(dir_path, boost_fs::path()));
       // update dataset
       std::vector<Slice> ds_entry_names_slice;
       for (auto& en : ds_entry_names) {
