@@ -124,9 +124,7 @@ enum class ErrorCode : byte_t {
   kUnexpectedSuccess = 68,
   // blob store
   kDatasetNotExists = 70,
-  kEmptyDataset = 71,
-  kNotEmptyDataset = 72,
-  kDataEntryNotExists = 73
+  kDataEntryNotExists = 71
 };
 
 }  // namespace ustore

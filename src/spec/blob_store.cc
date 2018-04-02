@@ -322,71 +322,46 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
   Dataset ds;
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
-  try {
-    if (boost_fs::exists(dir_path) && boost_fs::is_directory(dir_path)) {
-      std::vector<std::string> ds_entry_names;
-      std::vector<Hash> ds_entry_vers;
-      // iterate the directory recursively and add files to storage
-      const std::function<ErrorCode(
-        const boost_fs::path&, const boost_fs::path&)> f_put =
-      [&](const boost_fs::path & path, const boost_fs::path & rlt_path) {
-        if (boost_fs::is_symlink(path)) {
-          USTORE_GUARD(
-            f_put(boost_fs::canonical(path), rlt_path));
-        } else if (boost_fs::is_directory(path)) {
-          // recursion: iterate sub-directory
-          for (auto && file_entry : boost_fs::directory_iterator(path)) {
-            const auto file_path = file_entry.path();
-            USTORE_GUARD(
-              f_put(file_path, rlt_path / file_path.filename()));
-          }
-        } else if (boost_fs::is_regular_file(path)) {
-          // construct data entry name and value
-          const auto entry_name = rlt_path.native();
-          std::string entry_val;
-          USTORE_GUARD(
-            Utils::GetFileContents(path.native(), &entry_val));
-          // fetch existing version of the data entry
-          auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
-          if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
-          // write the data entry to storage
-          Hash entry_ver;
-          USTORE_GUARD(WriteDataEntry(ds_name, entry_name, entry_val,
-                                      prev_entry_ver, &entry_ver));
-          // archive updates
-          ds_entry_names.push_back(std::move(entry_name));
-          ds_entry_vers.push_back(std::move(entry_ver));
-          *n_bytes += entry_val.size();
-        } else {
-          LOG(WARNING) << path
-                       << " is not a directory, regular file or symbolic link";
-        }
-        return ErrorCode::kOK;
-      };
-      USTORE_GUARD(
-        f_put(dir_path, boost_fs::path()));
-      // update dataset
-      std::vector<Slice> ds_entry_names_slice;
-      for (auto& en : ds_entry_names) {
-        ds_entry_names_slice.emplace_back(Slice(en));
-      }
-      std::vector<Slice> ds_entry_vers_slice;
-      for (auto& ev : ds_entry_vers) {
-        ds_entry_vers_slice.emplace_back(Utils::ToSlice(ev));
-      }
-      ds.Set(ds_entry_names_slice, ds_entry_vers_slice);
-      USTORE_GUARD(
-        odb_.Put(ds_name_slice, ds, branch_slice).stat);
-      *n_entries = ds_entry_names.size();
-      return ErrorCode::kOK;
-    } else {
-      LOG(ERROR) << "Invalid directory: " << dir_path;
-      return ErrorCode::kInvalidPath;
-    }
-  } catch (const boost_fs::filesystem_error& e) {
-    LOG(ERROR) << e.what();
-    return ErrorCode::kIOFault;
+  // procedure: put single file (i.e. a data entry) to storage
+  std::vector<std::string> ds_entry_names;
+  std::vector<Hash> ds_entry_vers;
+  const auto f_put_file =
+  [&](const boost_fs::path & path, const boost_fs::path & rlt_path) {
+    // construct data entry name and value
+    const auto entry_name = rlt_path.native();
+    std::string entry_val;
+    USTORE_GUARD(
+      Utils::GetFileContents(path.native(), &entry_val));
+    // fetch existing version of the data entry
+    auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+    if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
+    // write the data entry to storage
+    Hash entry_ver;
+    USTORE_GUARD(WriteDataEntry(
+                   ds_name, entry_name, entry_val, prev_entry_ver, &entry_ver));
+    // archive updates
+    ds_entry_names.push_back(std::move(entry_name));
+    ds_entry_vers.push_back(std::move(entry_ver));
+    *n_bytes += entry_val.size();
+    return ErrorCode::kOK;
+  };
+  // iterate the directory and put each file as a data entry
+  USTORE_GUARD(
+    Utils::IterateDirectory(dir_path, f_put_file, ""));
+  // update dataset
+  std::vector<Slice> ds_entry_names_slice;
+  for (auto& en : ds_entry_names) {
+    ds_entry_names_slice.emplace_back(Slice(en));
   }
+  std::vector<Slice> ds_entry_vers_slice;
+  for (auto& ev : ds_entry_vers) {
+    ds_entry_vers_slice.emplace_back(Utils::ToSlice(ev));
+  }
+  ds.Set(ds_entry_names_slice, ds_entry_vers_slice);
+  USTORE_GUARD(
+    odb_.Put(ds_name_slice, ds, branch_slice).stat);
+  *n_entries = ds_entry_names.size();
+  return ErrorCode::kOK;
 }
 
 ErrorCode BlobStore::DeleteDataEntry(const std::string& ds_name,

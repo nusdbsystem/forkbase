@@ -9,6 +9,8 @@
 
 namespace ustore {
 
+namespace boost_fs = boost::filesystem;
+
 const size_t Utils::max_size_t(std::numeric_limits<size_t>::max());
 
 static std::unordered_map<std::string, UType> str2type = {
@@ -44,6 +46,8 @@ std::string Utils::ToString(const UType& type) {
 static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kOK, "success"},
   {ErrorCode::kUnknownOp, "unknown operation"},
+  {ErrorCode::kIOFault, "I/O fault"},
+  {ErrorCode::kInvalidPath, "invalid path"},
   {ErrorCode::kInvalidRange, "invalid value range"},
   {ErrorCode::kBranchExists, "branch already exists"},
   {ErrorCode::kBranchNotExists, "branch does not exist"},
@@ -83,7 +87,9 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kMapKeyNotExists, "key of map entry does not exist"},
   {ErrorCode::kMapKeyExists, "key of map entry already exists"},
   {ErrorCode::kElementExists, "element already exists"},
-  {ErrorCode::kUnexpectedSuccess, "unexpected success of command execution"}
+  {ErrorCode::kUnexpectedSuccess, "unexpected success of command execution"},
+  {ErrorCode::kDatasetNotExists, "dataset does not exist"},
+  {ErrorCode::kDataEntryNotExists, "data entry does not exist"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {
@@ -392,6 +398,49 @@ ErrorCode Utils::GetFileContents(const std::string& file_path,
   ifs.read(&(buf->at(0)), sz);
   ifs.close();
   return ErrorCode::kOK;
+}
+
+ErrorCode Utils::IterateDirectory(
+  const boost_fs::path& dir_path,
+  const std::function<ErrorCode(
+    const boost_fs::path& file_path,
+    const boost_fs::path& rlt_path)>& f_manip_file,
+  const boost_fs::path& init_rlt_path) {
+  // define recursion
+  const std::function<ErrorCode(
+    const boost_fs::path&, const boost_fs::path&)> f_manip =
+  [&](const boost_fs::path & path, const boost_fs::path & rlt_path) {
+    if (boost_fs::is_symlink(path)) {
+      USTORE_GUARD(
+        f_manip(boost_fs::canonical(path), rlt_path));
+    } else if (boost_fs::is_directory(path)) {
+      // iterate sub-directory
+      for (auto && file_entry : boost_fs::directory_iterator(path)) {
+        const auto file_path = file_entry.path();
+        USTORE_GUARD(
+          f_manip(file_path, rlt_path / file_path.filename()));
+      }
+    } else if (boost_fs::is_regular_file(path)) {
+      USTORE_GUARD(
+        f_manip_file(path, rlt_path));
+    } else {
+      LOG(WARNING) << path
+                   << " is not a directory, regular file or symbolic link";
+    }
+    return ErrorCode::kOK;
+  };
+  // launch recursion
+  try {
+    if (boost_fs::exists(dir_path) && boost_fs::is_directory(dir_path)) {
+      return f_manip(dir_path, init_rlt_path);
+    } else {
+      LOG(ERROR) << "Invalid directory: " << dir_path;
+      return ErrorCode::kInvalidPath;
+    }
+  } catch (const boost_fs::filesystem_error& e) {
+    LOG(ERROR) << e.what();
+    return ErrorCode::kIOFault;
+  }
 }
 
 }  // namespace ustore

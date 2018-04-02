@@ -4,6 +4,7 @@
 #define USTORE_UTILS_UTILS_H_
 
 #include <algorithm>
+#include <boost/filesystem.hpp>
 #include <chrono>
 #include <list>
 #include <numeric>
@@ -304,6 +305,13 @@ class Utils {
 
   static ErrorCode GetFileContents(const std::string& file_path,
                                    std::string* container);
+
+  static ErrorCode IterateDirectory(
+    const boost::filesystem::path& dir_path,
+    const std::function<ErrorCode(
+      const boost::filesystem::path& file_path,
+      const boost::filesystem::path& rlt_path)>& f_manip_file,
+    const boost::filesystem::path& init_rlt_path = boost::filesystem::path());
 
  private:
   template<typename T>
