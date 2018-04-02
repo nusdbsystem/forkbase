@@ -62,7 +62,14 @@ class BlobStore {
   ErrorCode GetDataEntryBatch(const std::string& ds_name,
                               const std::string& branch,
                               const boost::filesystem::path& dir_path,
-                              size_t* n_entries);
+                              size_t* n_entries, size_t* n_bytes);
+
+  inline ErrorCode GetDataEntryBatch(const std::string& ds_name,
+                                     const std::string& branch,
+                                     const boost::filesystem::path& dir_path) {
+    size_t n_entries, n_bytes;
+    return GetDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
+  }
 
   ErrorCode PutDataEntry(const std::string& ds_name,
                          const std::string& branch,
@@ -81,13 +88,13 @@ class BlobStore {
   ErrorCode PutDataEntryBatch(const std::string& ds_name,
                               const std::string& branch,
                               const boost::filesystem::path& dir_path,
-                              size_t* n_entries);
+                              size_t* n_entries, size_t* n_bytes);
 
   inline ErrorCode PutDataEntryBatch(const std::string& ds_name,
                                      const std::string& branch,
                                      const boost::filesystem::path& dir_path) {
-    size_t n_entries;
-    return PutDataEntryBatch(ds_name, branch, dir_path, &n_entries);
+    size_t n_entries, n_bytes;
+    return PutDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
 
   ErrorCode DeleteDataEntry(const std::string& ds_name,

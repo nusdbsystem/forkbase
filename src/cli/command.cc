@@ -3044,10 +3044,12 @@ ErrorCode Command::ExecGetDataEntryBatch() {
               << "Branch: \"" << branch << "\", "
               << "Directory: \"" << dir_path << "\"" << std::endl;
   };
-  const auto f_rpt_success = [&](const size_t n_entries) {
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
     std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_BATCH] ")
               << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
-              << " retrieved" << std::endl;
+              << " retrieved  "
+              << BLUE("[" << Utils::StorageSizeString(n_bytes) << "]")
+              << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_BATCH] ")
@@ -3062,10 +3064,10 @@ ErrorCode Command::ExecGetDataEntryBatch() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  size_t n_entries;
+  size_t n_entries, n_bytes;
   auto ec = bs_.GetDataEntryBatch(
-              ds_name, branch, boost_fs::path(dir_path), &n_entries);
-  ec == ErrorCode::kOK ? f_rpt_success(n_entries) : f_rpt_fail(ec);
+              ds_name, branch, boost_fs::path(dir_path), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }
 
@@ -3266,10 +3268,12 @@ ErrorCode Command::ExecPutDataEntryBatch() {
               << "Branch: \"" << branch << "\", "
               << "Directory: \"" << dir_path << "\"" << std::endl;
   };
-  const auto f_rpt_success = [&](const size_t n_entries) {
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
     std::cout << BOLD_GREEN("[SUCCESS: PUT_DATA_ENTRY_BATCH] ")
               << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
-              << " updated" << std::endl;
+              << " updated  "
+              << BLUE("[" << Utils::StorageSizeString(n_bytes) << "]")
+              << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BATCH] ")
@@ -3284,10 +3288,10 @@ ErrorCode Command::ExecPutDataEntryBatch() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  size_t n_entries;
+  size_t n_entries, n_bytes;
   auto ec = bs_.PutDataEntryBatch(
-              ds_name, branch, boost_fs::path(dir_path), &n_entries);
-  ec == ErrorCode::kOK ? f_rpt_success(n_entries) : f_rpt_fail(ec);
+              ds_name, branch, boost_fs::path(dir_path), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }
 

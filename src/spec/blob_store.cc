@@ -237,8 +237,10 @@ ErrorCode BlobStore::GetDataEntry(const std::string& ds_name,
 ErrorCode BlobStore::GetDataEntryBatch(const std::string& ds_name,
                                        const std::string& branch,
                                        const boost_fs::path& dir_path,
-                                       size_t* n_entries) {
+                                       size_t* n_entries,
+                                       size_t* n_bytes) {
   *n_entries = 0;
+  *n_bytes = 0;
   // retrieve the operating dataset
   Dataset ds;
   USTORE_GUARD(
@@ -262,6 +264,7 @@ ErrorCode BlobStore::GetDataEntryBatch(const std::string& ds_name,
       std::ofstream ofs((dir_path / filename).native(),
                         std::ios::out | std::ios::trunc);
       ofs << entry;
+      *n_bytes += ofs.tellp();
       ofs.close();
     }
     *n_entries = ds.numElements();
@@ -310,8 +313,10 @@ ErrorCode BlobStore::PutDataEntry(const std::string& ds_name,
 ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
                                        const std::string& branch,
                                        const boost_fs::path& dir_path,
-                                       size_t* n_entries) {
+                                       size_t* n_entries,
+                                       size_t* n_bytes) {
   *n_entries = 0;
+  *n_bytes = 0;
   const Slice ds_name_slice(ds_name), branch_slice(branch);
   // retrieve the operating dataset
   Dataset ds;
@@ -351,6 +356,7 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
           // archive updates
           ds_entry_names.push_back(std::move(entry_name));
           ds_entry_vers.push_back(std::move(entry_ver));
+          *n_bytes += entry_val.size();
         } else {
           LOG(WARNING) << path
                        << " is not a directory, regular file or symbolic link";
