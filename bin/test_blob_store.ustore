@@ -34,6 +34,13 @@ diff-ds -t ds1 -b master -s ds2 -c master
 
 # Batch operation
 put-de-bat -t ds2 -b master /etc/init --time
-get-ds -t ds2 -b master
 get-de -t ds2 -b master -m hostname.conf
+### For Debug ###
+#put-de-bat -t ds2 -b master /etc/network --time
+#get-de -t ds2 -b master -m system/syslog.service
+#
+#put-de-bat -t ds2 -b master /etc/systemd --time
+#get-de -t ds2 -b master -m interfaces
+#################
+get-ds -t ds2 -b master
 get-de-bat -t ds2 -b master /tmp/ds2.ustore_test --time

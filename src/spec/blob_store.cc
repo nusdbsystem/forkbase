@@ -325,7 +325,10 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
       const std::function<ErrorCode(
         const boost_fs::path&, const boost_fs::path&)> f_put =
       [&](const boost_fs::path & path, const boost_fs::path & rlt_path) {
-        if (boost_fs::is_directory(path)) {
+        if (boost_fs::is_symlink(path)) {
+          USTORE_GUARD(
+            f_put(boost_fs::canonical(path), rlt_path));
+        } else if (boost_fs::is_directory(path)) {
           // recursion: iterate sub-directory
           for (auto && file_entry : boost_fs::directory_iterator(path)) {
             const auto file_path = file_entry.path();
@@ -349,7 +352,8 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
           ds_entry_names.push_back(std::move(entry_name));
           ds_entry_vers.push_back(std::move(entry_ver));
         } else {
-          LOG(WARNING) << path << " is not a regular file or directory";
+          LOG(WARNING) << path
+                       << " is not a directory, regular file or symbolic link";
         }
         return ErrorCode::kOK;
       };
