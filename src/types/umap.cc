@@ -53,7 +53,8 @@ UMap::Iterator UMap::Diff(const UMap& rhs) const {
     return UMap::Iterator(hash(), {{0, numElements()}}, chunk_loader_.get());
   } else {
     KeyDiffer differ(rhs.hash(), rhs.chunk_loader_.get());
-    std::vector<IndexRange> ranges = differ.Compare(hash(), chunk_loader_.get());
+    std::vector<IndexRange> ranges = differ.Compare(hash(),
+                                                    chunk_loader_.get());
     return UMap::Iterator(hash(), ranges, chunk_loader_.get());
   }
 }
@@ -64,7 +65,8 @@ UMap::Iterator UMap::Intersect(const UMap& rhs) const {
     return UMap::Iterator(hash(), {}, chunk_loader_.get());
   } else {
     KeyIntersector intersector(rhs.hash(), rhs.chunk_loader_.get());
-    std::vector<IndexRange> ranges = intersector.Compare(hash(), chunk_loader_.get());
+    std::vector<IndexRange> ranges = intersector.Compare(hash(),
+                                                         chunk_loader_.get());
     return UMap::Iterator(hash(), ranges, chunk_loader_.get());
   }
 }

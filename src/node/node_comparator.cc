@@ -11,7 +11,6 @@
 namespace ustore {
 RangeMaps LevenshteinMapper::Compare(const ustore::Hash &lhs,
                                      ChunkLoader* lloader) const {
-
   if (lloader == nullptr) {
     lloader = rloader_;
   }
