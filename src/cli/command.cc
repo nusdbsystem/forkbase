@@ -372,7 +372,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-k <key> -v <version>" << std::endl
      << FORMAT_BASIC_CMD("LIST_BRANCH")
      << "-k <key>" << std::endl
-     << FORMAT_BASIC_CMD("LIST_KEY{_ALL}") 
+     << FORMAT_BASIC_CMD("LIST_KEY{_ALL}")
      << std::endl
      << FORMAT_BASIC_CMD("META")
      << "-k <key> [-b <branch> | -v <version>]" << std::endl
