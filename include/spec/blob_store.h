@@ -3,6 +3,8 @@
 #ifndef USTORE_SPEC_BLOB_STORE_H_
 #define USTORE_SPEC_BLOB_STORE_H_
 
+#define __BLOB_STORE_USE_MAP_MULTI_SET_OP__
+
 #include <boost/filesystem.hpp>
 #include <string>
 #include <vector>

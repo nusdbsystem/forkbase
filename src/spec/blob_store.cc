@@ -357,9 +357,22 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
   for (auto& ev : ds_entry_vers) {
     ds_entry_vers_slice.emplace_back(Utils::ToSlice(ev));
   }
+#if defined(__BLOB_STORE_USE_MAP_MULTI_SET_OP__)
   ds.Set(ds_entry_names_slice, ds_entry_vers_slice);
   USTORE_GUARD(
     odb_.Put(ds_name_slice, ds, branch_slice).stat);
+#else
+  for (size_t i = 0; i < ds_entry_names.size(); ++i) {
+    Dataset ds_update;
+    USTORE_GUARD(
+      ReadDataset(ds_name_slice, branch_slice, &ds_update));
+    auto& entry_name = ds_entry_names_slice[i];
+    auto& entry_ver = ds_entry_vers_slice[i];
+    ds_update.Set(entry_name, entry_ver);
+    USTORE_GUARD(
+      odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
+  }
+#endif
   *n_entries = ds_entry_names.size();
   return ErrorCode::kOK;
 }

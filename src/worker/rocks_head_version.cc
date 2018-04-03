@@ -193,9 +193,7 @@ class LatestVersionUpdater : public rocksdb::AssociativeMergeOperator {
     // that become obsolete along with this Merge operation
     // NOTE: The given latest versions are not necessary to be the
     //       current latest.
-    for (size_t i = 0;
-         i < old_versions_len && !(found_prev_ver1 && found_prev_ver2);
-         i += kVersionSizeBytes) {
+    for (size_t i = 0; i < old_versions_len; i += kVersionSizeBytes) {
       const auto lv_data = &old_versions[i];
       if (!found_prev_ver1 &&
           std::memcmp(lv_data, prev_ver1_data, kVersionSizeBytes) == 0) {
@@ -210,6 +208,10 @@ class LatestVersionUpdater : public rocksdb::AssociativeMergeOperator {
         f_cpy(i);
         new_versions_len -= Hash::kByteLength;
         continue;
+      }
+      if (std::memcmp(lv_data, value_data, kVersionSizeBytes) == 0) {
+        f_cpy(i);
+        new_versions_len -= Hash::kByteLength;
       }
     } {  // copy the residual versions
       size_t n_bytes = old_versions_len - cpy_from;
