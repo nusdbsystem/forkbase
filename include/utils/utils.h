@@ -3,8 +3,8 @@
 #ifndef USTORE_UTILS_UTILS_H_
 #define USTORE_UTILS_UTILS_H_
 
-#include <algorithm>
 #include <boost/filesystem.hpp>
+#include <algorithm>
 #include <chrono>
 #include <list>
 #include <numeric>
