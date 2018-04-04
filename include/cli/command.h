@@ -141,6 +141,7 @@ class Command {
   ErrorCode ExecExistsDataset();
   ErrorCode ExecDeleteDataset();
   ErrorCode ExecGetDataset();
+  ErrorCode ExecExportDatasetBinary();
   ErrorCode ExecBranchDataset();
   ErrorCode ExecListDatasetBranch();
   ErrorCode ExecDiffDataset();

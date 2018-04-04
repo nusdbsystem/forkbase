@@ -246,6 +246,10 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("GET_DATASET", "GET-DATASET");
   CMD_ALIAS("GET_DATASET", "GET_DS");
   CMD_ALIAS("GET_DATASET", "GET-DS");
+  CMD_HANDLER("EXPORT_DATASET_BINARY", ExecExportDatasetBinary());
+  CMD_ALIAS("EXPORT_DATASET_BINARY", "EXPORT-DATASET-BINARY");
+  CMD_ALIAS("EXPORT_DATASET_BINARY", "EXPORT_DS_BIN");
+  CMD_ALIAS("EXPORT_DATASET_BINARY", "EXPORT-DS-BIN");
   CMD_HANDLER("BRANCH_DATASET", ExecBranchDataset());
   CMD_ALIAS("BRANCH_DATASET", "BRANCH-DATASET");
   CMD_ALIAS("BRANCH_DATASET", "BRANCH_DS");
@@ -435,6 +439,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-t <dataset> {-b <branch>}" << std::endl
      << FORMAT_BLOB_STORE_CMD("GET_DATASET{_ALL}")
      << "-t <dataset> -b <branch>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("EXPORT_DATASET_BINARY")
+     << "-t <dataset> -b <branch> <file>" << std::endl
      << FORMAT_BLOB_STORE_CMD("BRANCH_DATASET")
      << "-t <dataset> -b <target_branch> -c <refer_branch>" << std::endl
      << FORMAT_BLOB_STORE_CMD("LIST_DATASET_BRANCH")
@@ -2874,6 +2880,44 @@ ErrorCode Command::ExecGetDataset() {
   Dataset ds;
   auto ec = bs_.GetDataset(ds_name, branch, &ds);
   ec == ErrorCode::kOK ? f_rpt_success(ds) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecExportDatasetBinary() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& file_path = Config::file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: EXPORT_DATASET_BINARY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Directory: \"" << file_path << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
+    std::cout << BOLD_GREEN("[SUCCESS: EXPORT_DATASET_BINARY] ")
+              << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+              << " exported  "
+              << BLUE("[" << Utils::StorageSizeString(n_bytes) << "]")
+              << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: EXPORT_DATASET_BINARY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Directory: \"" << file_path << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || file_path.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  size_t n_entries, n_bytes;
+  auto ec = bs_.ExportDatasetBinary(
+              ds_name, branch, boost_fs::path(file_path), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }
 

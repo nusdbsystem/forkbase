@@ -34,6 +34,19 @@ class BlobStore {
   ErrorCode GetDataset(const std::string& ds_name, const std::string& branch,
                        Dataset* ds);
 
+  ErrorCode ExportDatasetBinary(const std::string& ds_name,
+                                const std::string& branch,
+                                const boost::filesystem::path& file_path,
+                                size_t* n_entries, size_t* n_bytes);
+
+  inline ErrorCode ExportDatasetBinary(
+    const std::string& ds_name, const std::string& branch,
+    const boost::filesystem::path& file_path) {
+    size_t n_entries, n_bytes;
+    return ExportDatasetBinary(
+             ds_name, branch, file_path, &n_entries, &n_bytes);
+  }
+
   ErrorCode BranchDataset(const std::string& ds_name,
                           const std::string& old_branch,
                           const std::string& new_branch);

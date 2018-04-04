@@ -44,3 +44,4 @@ get-de -t ds2 -b master -m hostname.conf
 #################
 get-ds -t ds2 -b master
 get-de-bat -t ds2 -b master /tmp/ds2.ustore_test --time
+export-ds-bin -t ds2 -b master /tmp/ds2.ustore_test.bin

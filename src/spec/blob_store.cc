@@ -80,11 +80,6 @@ ErrorCode BlobStore::CreateDataset(const std::string& ds_name,
   }
 }
 
-ErrorCode BlobStore::GetDataset(const std::string& ds_name,
-                                const std::string& branch, Dataset* ds) {
-  return ReadDataset(Slice(ds_name), Slice(branch), ds);
-}
-
 ErrorCode BlobStore::ReadDataset(const Slice& ds_name, const Slice& branch,
                                  Dataset* ds) {
   auto rst = odb_.Get(ds_name, branch);
@@ -95,6 +90,49 @@ ErrorCode BlobStore::ReadDataset(const Slice& ds_name, const Slice& branch,
     ERROR_CODE_FWD(ec, kKeyNotExists, kDatasetNotExists);
   }
   return ec;
+}
+
+ErrorCode BlobStore::GetDataset(const std::string& ds_name,
+                                const std::string& branch, Dataset* ds) {
+  return ReadDataset(Slice(ds_name), Slice(branch), ds);
+}
+
+ErrorCode BlobStore::ExportDatasetBinary(
+  const std::string& ds_name,
+  const std::string& branch,
+  const boost::filesystem::path& file_path,
+  size_t* n_entries,
+  size_t* n_bytes) {
+  *n_entries = 0;
+  *n_bytes = 0;
+  // open the output file
+  try {
+    boost_fs::create_directories(file_path.parent_path());
+  } catch (const boost_fs::filesystem_error& e) {
+    LOG(ERROR) << e.what();
+    return ErrorCode::kIOFault;
+  }
+  std::ofstream ofs(file_path.native(), std::ios::out | std::ios::trunc);
+  // retrieve the operating dataset
+  Dataset ds;
+  USTORE_GUARD(
+    GetDataset(ds_name, branch, &ds));
+  // iterate the dataset
+  for (auto it = ds.Scan(); !it.end(); it.next()) {
+    // retrieve data entry
+    const auto entry_name = it.key().ToString();
+    const auto entry_ver = Utils::ToHash(it.value());
+    DCHECK(!entry_ver.empty());
+    DataEntry entry;
+    USTORE_GUARD(
+      ReadDataEntry(ds_name, entry_name, entry_ver, &entry));
+    // output data entry to file
+    ofs << entry;
+    *n_bytes += entry.size();
+  }
+  ofs.close();
+  *n_entries = ds.numElements();
+  return ErrorCode::kOK;
 }
 
 ErrorCode BlobStore::BranchDataset(const std::string& ds_name,
