@@ -5,7 +5,7 @@
 
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/../bin/ustore_env.sh
-[ -n $USTORE_HOME ] || exit 0
+[ $USTORE_HOME ] || exit 0
 cd $USTORE_HOME
 
 # config file paths
@@ -49,6 +49,17 @@ echo "Pack webui ..."
 cp -r $USTORE_HOME/webui $release_dir
 echo "Pack docs ..."
 cp -r $USTORE_HOME/doc $release_dir
+
+# add commit log info
+echo "Pack version info ..."
+if [ "$(command -v git)" ]; then
+  echo "[Latest Commit]" > $release_dir/VERSION
+  git log -1 >> $release_dir/VERSION
+  echo -e "\n[Commit Log]" >> $release_dir/VERSION
+  git log --oneline -20 >> $release_dir/VERSION
+else
+  echo "Not in a git repository"
+fi
 
 # create tarball
 echo "Create tarball ..."

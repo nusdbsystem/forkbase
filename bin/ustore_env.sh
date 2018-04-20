@@ -47,6 +47,9 @@ if [ -z $USTORE_LOG ]; then
   USTORE_LOG=$USTORE_HOME/log
 fi
 
+# check command existence
+[ "$(command -v killall)" ] || echo "WARNING: killall command not found"
+
 # function for killing process
 wait_and_fkill() {
     fkill=$1
