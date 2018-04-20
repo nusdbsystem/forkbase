@@ -1,4 +1,7 @@
 #! /usr/bin/env bash
+#
+# export depedent libs from an executable into a folder
+#
 
 if [ $# -ge 2 ]; then
     bin=$1
@@ -8,9 +11,10 @@ else
     exit
 fi
 
-mkdir $lib_dir
+mkdir -p $lib_dir
+
 for lib in `ldd $bin | cut -d '=' -f2 | cut -d ' ' -f2 | grep so`
 do
-    echo "copy $lib to $lib_dir"
+    echo "Copy $lib to $lib_dir"
     cp $lib $lib_dir
 done

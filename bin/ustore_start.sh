@@ -55,5 +55,3 @@ cd $USTORE_HOME
 $http_run >> $USTORE_LOG/ustore_http.log 2>&1 &
 sleep 1
 echo "----------- All processes started ------------"
-
-# IFS=$old_IFS
