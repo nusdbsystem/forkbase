@@ -15,18 +15,8 @@ namespace ustore {
 class SetChunker : public Singleton<SetChunker>, public Chunker {
   friend class Singleton<SetChunker>;
  public:
-  ChunkInfo Make(const std::vector<const Segment*>& segments) const
-      override;
-  inline std::unique_ptr<RollingHasher> GetRHasher() const override {
-#ifdef TEST_NODEBUILDER
-    return std::unique_ptr<RollingHasher>(RollingHasher::TestHasher());
-#else
-    return std::unique_ptr<RollingHasher>(new RollingHasher());
-#endif
-  }
-  inline bool isFixedEntryLen() const override {
-    return false;
-  }
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const override;
+  inline bool isFixedEntryLen() const override { return false; }
 
  private:
   SetChunker() = default;
@@ -69,7 +59,7 @@ class SetNode : public LeafNode {
   explicit SetNode(const Chunk* chunk) : LeafNode(chunk) {
     PrecomputeOffsets();
   }
-  ~SetNode() override {}
+  ~SetNode() = default;
 
   const byte_t* data(size_t idx) const override;
   // return the byte len of the idx-th entry

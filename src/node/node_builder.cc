@@ -12,16 +12,16 @@
 
 namespace ustore {
 NodeBuilder::NodeBuilder(const Hash& root_hash, const OrderedKey& key,
-                         ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-                         const Chunker* chunker, const Chunker* parent_chunker) noexcept
+  ChunkLoader* chunk_loader, ChunkWriter* chunk_writer, const Chunker* chunker,
+  const Chunker* parent_chunker) noexcept
     : NodeBuilder(std::unique_ptr<NodeCursor>(
                   new NodeCursor(root_hash, key, chunk_loader)),
                   0, chunk_writer, chunker, parent_chunker) {}
 
 // Perform operation at idx-th element at leaf rooted at root_hash
 NodeBuilder::NodeBuilder(const Hash& root_hash, size_t idx,
-                         ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
-                         const Chunker* chunker, const Chunker* parent_chunker) noexcept
+  ChunkLoader* chunk_loader, ChunkWriter* chunk_writer, const Chunker* chunker,
+  const Chunker* parent_chunker) noexcept
     : NodeBuilder(std::unique_ptr<NodeCursor>(
                   new NodeCursor(root_hash, idx, chunk_loader)),
                   0, chunk_writer, chunker, parent_chunker) {}
@@ -38,11 +38,7 @@ NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
       appended_segs_(),
       created_segs_(),
       pre_cursor_seg_(nullptr),
-#ifdef TEST_NODEBUILDER
-      rhasher_(RollingHasher::TestHasher()),
-#else
       rhasher_(chunker->GetRHasher()),
-#endif
       commited_(true),
       num_skip_entries_(0),
       level_(level),
@@ -63,17 +59,13 @@ NodeBuilder::NodeBuilder(std::unique_ptr<NodeCursor>&& cursor, size_t level,
 }
 
 NodeBuilder::NodeBuilder(size_t level, ChunkWriter* chunk_writer,
-                         const Chunker* chunker, const Chunker* parent_chunker) noexcept
+  const Chunker* chunker, const Chunker* parent_chunker) noexcept
     : cursor_(nullptr),
       parent_builder_(nullptr),
       appended_segs_(),
       created_segs_(),
       pre_cursor_seg_(nullptr),
-#ifdef TEST_NODEBUILDER
-      rhasher_(RollingHasher::TestHasher()),
-#else
       rhasher_(chunker->GetRHasher()),
-#endif
       commited_(true),
       num_skip_entries_(0),
       level_(level),

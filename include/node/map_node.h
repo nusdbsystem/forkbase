@@ -21,16 +21,7 @@ class MapChunker : public Singleton<MapChunker>, public Chunker {
   friend class Singleton<MapChunker>;
  public:
   ChunkInfo Make(const std::vector<const Segment*>& segments) const override;
-  inline std::unique_ptr<RollingHasher> GetRHasher() const override {
-#ifdef TEST_NODEBUILDER
-    return std::unique_ptr<RollingHasher>(RollingHasher::TestHasher());
-#else
-    return std::unique_ptr<RollingHasher>(new RollingHasher());
-#endif
-  }
-  inline bool isFixedEntryLen() const override {
-    return false;
-  }
+  inline bool isFixedEntryLen() const override { return false; }
 
  private:
   MapChunker() = default;
@@ -78,7 +69,7 @@ class MapNode : public LeafNode {
   explicit MapNode(const Chunk* chunk) : LeafNode(chunk) {
     PrecomputeOffsets();
   }
-  ~MapNode() override {}
+  ~MapNode() = default;
 
   const byte_t* data(size_t idx) const override;
   // return the byte len of the idx-th entry

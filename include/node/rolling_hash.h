@@ -13,6 +13,8 @@ namespace ustore {
 
 class RollingHasher : private Noncopyable {
  public:
+  // NOTE: these default values are not used by chunkers,
+  //       as they have own default values
   // 4KB -- expect boundary pattern
   static constexpr uint32_t kDefaultChunkPattern = (1 << 12) - 1;
   static constexpr size_t kDefaultChunkWindow = 256;

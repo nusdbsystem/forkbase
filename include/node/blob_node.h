@@ -14,23 +14,12 @@ class BlobChunker : public Singleton<BlobChunker>, public Chunker {
   friend class Singleton<BlobChunker>;
 
  public:
-  ChunkInfo Make(const std::vector<const Segment*>& segments) const
-      override;
-  inline std::unique_ptr<RollingHasher> GetRHasher() const override {
-#ifdef TEST_NODEBUILDER
-    return std::unique_ptr<RollingHasher>(RollingHasher::TestHasher());
-#else
-    return std::unique_ptr<RollingHasher>(
-        new RollingHasher(uint32_t((1 << 6) - 1), 32, 1 << 9));
-#endif
-  }
-  inline bool isFixedEntryLen() const override {
-    return true;
-  }
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const override;
+  inline bool isFixedEntryLen() const override { return true; }
 
  private:
-  BlobChunker() {}
-  ~BlobChunker() {}
+  BlobChunker() = default;
+  ~BlobChunker() = default;
 };
 
 class BlobNode : public LeafNode {
@@ -44,7 +33,7 @@ class BlobNode : public LeafNode {
   */
  public:
   explicit BlobNode(const Chunk* chunk) : LeafNode(chunk) {}
-  ~BlobNode() override {}
+  ~BlobNode() = default;
 
   const byte_t* data(size_t idx) const override { return chunk_->data() + idx; }
   // return the byte len of the idx-th entry

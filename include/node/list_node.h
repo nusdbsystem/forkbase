@@ -14,18 +14,8 @@ class ListChunker : public Singleton<ListChunker>, public Chunker {
   friend class Singleton<ListChunker>;
 
  public:
-  ChunkInfo Make(const std::vector<const Segment*>& segments) const
-      override;
-  inline std::unique_ptr<RollingHasher> GetRHasher() const override {
-#ifdef TEST_NODEBUILDER
-    return std::unique_ptr<RollingHasher>(RollingHasher::TestHasher());
-#else
-    return std::unique_ptr<RollingHasher>(new RollingHasher());
-#endif
-  }
-  inline bool isFixedEntryLen() const override {
-    return false;
-  }
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const override;
+  inline bool isFixedEntryLen() const override { return false; }
 
  private:
   ListChunker() = default;
@@ -49,7 +39,7 @@ class ListNode : public LeafNode {
   explicit ListNode(const Chunk* chunk) : LeafNode(chunk) {
     PrecomputeOffsets();
   }
-  ~ListNode() override {}
+  ~ListNode() = default;
 
   const byte_t* data(size_t idx) const override;
   // return the byte len of the idx-th entry

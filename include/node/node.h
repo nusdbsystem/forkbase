@@ -75,7 +75,7 @@ class MetaNode : public SeqNode {
   */
  public:
   explicit MetaNode(const Chunk* chunk) : SeqNode(chunk) { PrecomputeOffset(); }
-  ~MetaNode() override {}
+  ~MetaNode() = default;
 
   inline bool isLeaf() const override { return false; }
   size_t numEntries() const override;
@@ -130,18 +130,12 @@ class MetaChunker : public Singleton<MetaChunker>, public Chunker {
   friend class Singleton<MetaChunker>;
 
  public:
-  ChunkInfo Make(const std::vector<const Segment*>& segments) const
-      override;
-  inline std::unique_ptr<RollingHasher> GetRHasher() const override {
-    return std::unique_ptr<RollingHasher>(new RollingHasher());
-  }
-  inline bool isFixedEntryLen() const override {
-    return false;
-  }
+  ChunkInfo Make(const std::vector<const Segment*>& segments) const override;
+  inline bool isFixedEntryLen() const override { return false; }
 
  private:
-  MetaChunker() {}
-  ~MetaChunker() {}
+  MetaChunker() = default;
+  ~MetaChunker() = default;
 };
 
 class MetaEntry {
