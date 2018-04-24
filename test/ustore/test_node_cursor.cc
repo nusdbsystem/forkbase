@@ -492,11 +492,15 @@ TEST(NodeCursor, MultiStep) {
 
 /////////////////////////////////////////
 // Test on Advancing
+#ifdef TEST_NODEBUILDER
+  // This test depends on the exact tree structure,
+  //   which is determined by the special testing rollinghasher
   ustore::NodeCursor cr1(root, 0, &loader);
 
   // Advance to the third leaf chunk first element
   ASSERT_EQ(size_t(67 + 38), cr1.AdvanceSteps(67 + 38));
   ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38, cr1.current(), 193));
+#endif
 
   ustore::NodeCursor cr2(root, 0, &loader);
 
@@ -506,11 +510,15 @@ TEST(NodeCursor, MultiStep) {
   ASSERT_EQ(raw_data[step], *cr2.current());
 
   // Advance 1 step across chunk boundary
+#ifdef TEST_NODEBUILDER
+  // This test depends on the exact tree structure,
+  //   which is determined by the special testing rollinghasher
   ustore::NodeCursor cr3(root, 67 + 37, &loader);
 
   // Advance to the third leaf chunk first element
   ASSERT_EQ(size_t(1), cr3.AdvanceSteps(1));
   ASSERT_EQ(0, std::memcmp(raw_data + 67 + 38, cr3.current(), 193));
+#endif
 
   // Advance from first to the last element
   ustore::NodeCursor cr4(root, 0, &loader);
@@ -540,12 +548,18 @@ TEST(NodeCursor, MultiStep) {
   ASSERT_EQ(size_t(1), cr7.RetreatSteps(1));
   ASSERT_EQ(raw_data[67 + 37], *cr7.current());
 
+
+#ifdef TEST_NODEBUILDER
+  // The following two tests depend on the exact tree structure,
+  //   which is determined by the special testing rollinghasher
+
   // Place cursor at first element of third leaf chunk
   ustore::NodeCursor cr8(root, 67 + 38, &loader);
 
   // Retreat 38 step to first element of the second chunk
   ASSERT_EQ(size_t(38), cr8.RetreatSteps(38));
   ASSERT_EQ(0, std::memcmp(raw_data + 67, cr8.current(), 38));
+
 
   // Place cursor at seq end
   ustore::NodeCursor cr9(root, num_bytes, &loader);
@@ -554,6 +568,7 @@ TEST(NodeCursor, MultiStep) {
   // Retreat to first element of the first chunk
   ASSERT_EQ(num_bytes, cr9.RetreatSteps(num_bytes));
   ASSERT_EQ(0, std::memcmp(raw_data, cr9.current(), 67));
+#endif
 
   // Place cursor at seq end
   ustore::NodeCursor cr10(root, num_bytes, &loader);
