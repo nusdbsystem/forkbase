@@ -31,9 +31,9 @@ Env::Env() {
       new google::protobuf::io::FileInputStream(fd), &config_);
   LOG(INFO) << "Loaded config:" << std::endl << config_.DebugString();
   // handle relative paths for data_dir and worker_file
-  if (config_.data_dir()[0] != '/')
+  if (home_path && config_.data_dir()[0] != '/')
     config_.set_data_dir(home_path + std::string("/") + config_.data_dir());
-  if (config_.worker_file()[0] != '/')
+  if (home_path && config_.worker_file()[0] != '/')
     config_.set_worker_file(home_path + std::string("/")
                             + config_.worker_file());
   close(fd);
