@@ -3,6 +3,7 @@
 #include "types/server/sblob.h"
 
 #include "node/blob_node.h"
+#include "node/meta_node.h"
 #include "node/node_builder.h"
 
 namespace ustore {

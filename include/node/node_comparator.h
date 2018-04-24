@@ -10,6 +10,7 @@
 #include "chunk/chunk_loader.h"
 #include "hash/hash.h"
 #include "node/cursor.h"
+#include "node/meta_node.h"
 #include "types/type.h"
 #include "utils/noncopyable.h"
 

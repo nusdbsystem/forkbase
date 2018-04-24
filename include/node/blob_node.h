@@ -10,6 +10,7 @@
 #include "utils/singleton.h"
 
 namespace ustore {
+
 class BlobChunker : public Singleton<BlobChunker>, public Chunker {
   friend class Singleton<BlobChunker>;
 

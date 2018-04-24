@@ -14,7 +14,6 @@
 #include "node/orderedkey.h"
 #include "node/node.h"
 #include "types/type.h"
-#include "utils/logging.h"
 
 namespace ustore {
 

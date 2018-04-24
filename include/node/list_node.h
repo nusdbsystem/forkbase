@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "node/node.h"
+#include "utils/singleton.h"
 
 namespace ustore {
 

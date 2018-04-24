@@ -5,6 +5,7 @@
 #include <cstring>
 #include "chunk/chunker.h"
 #include "node/blob_node.h"
+#include "node/meta_node.h"
 #include "node/cursor.h"
 #include "utils/logging.h"
 

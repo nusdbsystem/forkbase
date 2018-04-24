@@ -4,7 +4,7 @@
 
 #include <cstring>  // for memcpy
 #include "hash/hash.h"
-#include "node/node.h"
+#include "node/meta_node.h"
 #include "node/orderedkey.h"
 
 #include "utils/debug.h"

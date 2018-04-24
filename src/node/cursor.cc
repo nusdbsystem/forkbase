@@ -6,8 +6,7 @@
 #include "node/blob_node.h"
 #include "node/list_node.h"
 #include "node/map_node.h"
-#include "node/node.h"
-#include "node/orderedkey.h"
+#include "node/meta_node.h"
 #include "utils/logging.h"
 
 namespace ustore {

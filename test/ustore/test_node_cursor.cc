@@ -8,6 +8,7 @@
 #include "node/cursor.h"
 #include "node/blob_node.h"
 #include "node/map_node.h"
+#include "node/meta_node.h"
 #include "node/node_builder.h"
 
 TEST(NodeCursor, EmptyNode) {
