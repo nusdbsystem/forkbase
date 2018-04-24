@@ -18,7 +18,11 @@ class SetChunker : public Singleton<SetChunker>, public Chunker {
   ChunkInfo Make(const std::vector<const Segment*>& segments) const
       override;
   inline std::unique_ptr<RollingHasher> GetRHasher() const override {
+#ifdef TEST_NODEBUILDER
+    return std::unique_ptr<RollingHasher>(RollingHasher::TestHasher());
+#else
     return std::unique_ptr<RollingHasher>(new RollingHasher());
+#endif
   }
   inline bool isFixedEntryLen() const override {
     return false;
