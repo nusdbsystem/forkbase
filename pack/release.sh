@@ -51,6 +51,8 @@ cp -r $USTORE_HOME/webui $release_root
 echo "Pack docs ..."
 cp -r $USTORE_HOME/doc $release_root
 cp -r $USTORE_HOME/pack/INSTALL.md $release_root
+echo "Pack compilation info ..."
+cp $build_dir/CMakeCache.txt $release_root
 
 # add commit log info
 echo "Pack version info ..."
