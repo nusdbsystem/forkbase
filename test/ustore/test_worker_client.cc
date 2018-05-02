@@ -43,6 +43,10 @@ const string values[] = {"where is the wisdome in knowledge",
                          "where is the knowledge in information",
                          "the brown fox",
                          "jump over"};
+const string contexts[] = {"this is first key",
+                           "this is second key",
+                           "this is third key",
+                           "this is last key"};
 
 // i^th thread issue requests from i*(nthreads/nreqs) to
 // (i+1)*(nthreads/nreqs)
@@ -66,6 +70,8 @@ void TestClientRequest(WorkerClient* client, int idx, int len) {
     list_val.type = UType::kList;
     list_val.vals.push_back(Slice(values[0]));
     list_val.vals.push_back(Slice(values[idx]));
+    // set application specific context
+    list_val.ctx = Slice(contexts[idx]);
     Hash version_list;
     EXPECT_EQ(client->Put(Slice(keys[idx]), list_val, HEAD_VERSION,
               &version_list), ErrorCode::kOK);
@@ -83,6 +89,7 @@ void TestClientRequest(WorkerClient* client, int idx, int len) {
     EXPECT_EQ(client->Get(Slice(keys[idx]), version_list, &list_value),
               ErrorCode::kOK);
     EXPECT_EQ(list_value.type(), UType::kList);
+    EXPECT_EQ(list_value.context(), contexts[idx]);
     DLOG(INFO) << "GET datahash (list): " <<  list_value.dataHash().ToBase32();
 
     // check GetChunk

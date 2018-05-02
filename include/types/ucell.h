@@ -22,11 +22,11 @@ class UCell : private Moveable {
   // Create the chunk data and dump to storage
   // Return the UCell instance
   static UCell Create(UType type, const Slice& key, const Slice& data,
-                      const Hash& preHash1, const Hash& preHash2);
-                      // ChunkWriter* writer);
+                      const Slice& ctx, const Hash& preHash1,
+                      const Hash& preHash2);
   static UCell Create(UType type, const Slice& key, const Hash& data,
-                      const Hash& preHash1, const Hash& preHash2);
-                      // ChunkWriter* writer);
+                      const Slice& ctx, const Hash& preHash1,
+                      const Hash& preHash2);
   static UCell Load(const Hash& unode_hash);
 
   UCell() = default;
@@ -42,9 +42,14 @@ class UCell : private Moveable {
   inline Hash preHash(bool second = false) const {
     return second ? node_->preHash(1) : node_->preHash(0);
   }
-  inline Slice key() const { return Slice(node_->key(), node_->keyLength()); }
+  inline Slice key() const {
+    return Slice(node_->key(), node_->keyLength());
+  }
   inline Slice data() const {
     return Slice(node_->data(), node_->dataLength());
+  }
+  inline Slice context() const {
+    return Slice(node_->ctx(), node_->ctxLength());
   }
   inline Hash dataHash() const {
     if (type() == UType::kBlob || type() == UType::kList

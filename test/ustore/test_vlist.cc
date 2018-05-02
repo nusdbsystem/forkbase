@@ -17,6 +17,7 @@ using ustore::Hash;
 
 const char key_vlist[] = "key_vlist";
 const char branch_vlist[] = "branch_vlist";
+const char ctx_vlist[] = "ctx_vlist";
 
 ustore::Worker& worker_vlist() {
   static ustore::Worker* worker = new ustore::Worker(1992, nullptr, false);
@@ -66,12 +67,15 @@ TEST(VList, CreateNewVList) {
   for (const auto& s : slist_data) slice_data.push_back(Slice(s));
   // create buffered new list
   ustore::VList list(slice_data);
+  list.SetContext(Slice(ctx_vlist));
   // put new list
   auto put = db.Put(Slice(key_vlist), list, Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get list
   auto get = db.Get(Slice(key_vlist), Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  // check context
+  EXPECT_EQ(Slice(ctx_vlist), get.value.cell().context());
   auto v = get.value.List();
   // check data
   auto it = v.Scan();
@@ -95,11 +99,14 @@ TEST(VList, UpdateExistingVList) {
   std::string delta = " delta";
   slice_data.push_back(Slice(delta));
   v.Append({Slice(delta)});
+  v.SetContext(Slice(ctx_vlist));
   auto update = db.Put(Slice(key_vlist), v, Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated list
   auto get = db.Get(Slice(key_vlist), Slice(branch_vlist));
   EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  // check context
+  EXPECT_EQ(Slice(ctx_vlist), get.value.cell().context());
   v = get.value.List();
   // check data
   auto it = v.Scan();

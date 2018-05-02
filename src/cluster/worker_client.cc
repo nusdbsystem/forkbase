@@ -10,14 +10,7 @@ namespace ustore {
 using std::vector;
 using std::string;
 
-void WorkerClient::CreatePutMessage(const Slice &key, const Value &value,
-                                    UMessage* msg) const {
-  // header
-  msg->set_type(UMessage::PUT_REQUEST);
-  // request
-  auto request = msg->mutable_request_payload();
-  request->set_key(key.data(), key.len());
-  auto payload = msg->mutable_value_payload();
+void FillValuePayload(const Value& value, ValuePayload* payload) {
   payload->set_type(static_cast<int>(value.type));
   if (!value.base.empty())
     payload->set_base(value.base.value(), Hash::kByteLength);
@@ -27,6 +20,18 @@ void WorkerClient::CreatePutMessage(const Slice &key, const Value &value,
     payload->add_values(s.data(), s.len());
   for (const Slice& s : value.keys)
     payload->add_keys(s.data(), s.len());
+  payload->set_ctx(value.ctx.data(), value.ctx.len());
+}
+
+void WorkerClient::CreatePutMessage(const Slice &key, const Value &value,
+                                    UMessage* msg) const {
+  // header
+  msg->set_type(UMessage::PUT_REQUEST);
+  // request
+  auto request = msg->mutable_request_payload();
+  request->set_key(key.data(), key.len());
+  auto payload = msg->mutable_value_payload();
+  FillValuePayload(value, payload);
 }
 
 ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
@@ -182,15 +187,7 @@ void WorkerClient::CreateMergeMessage(const Slice &key, const Value &value,
   auto request = msg->mutable_request_payload();
   request->set_key(key.data(), key.len());
   auto payload = msg->mutable_value_payload();
-  payload->set_type(static_cast<int>(value.type));
-  if (!value.base.empty())
-    payload->set_base(value.base.value(), Hash::kByteLength);
-  payload->set_pos(value.pos);
-  payload->set_dels(value.dels);
-  for (const Slice& s : value.vals)
-    payload->add_values(s.data(), s.len());
-  for (const Slice& s : value.keys)
-    payload->add_keys(s.data(), s.len());
+  FillValuePayload(value, payload);
 }
 
 ErrorCode WorkerClient::Merge(const Slice& key, const Value& value,

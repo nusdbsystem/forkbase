@@ -31,6 +31,9 @@ struct Value {
   std::vector<Slice> vals;
   // Only used my Map, and has keys.size() = vals.size()
   std::vector<Slice> keys;
+
+  // Application specific context
+  Slice ctx;
 };
 
 }  // namespace ustore

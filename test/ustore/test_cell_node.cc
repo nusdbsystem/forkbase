@@ -11,9 +11,11 @@ TEST(CellNode, NewCellNode) {
 
   ustore::UType type = ustore::UType::kString;
   std::string cell_key("cell_key");
+  std::string cell_ctx("cell_ctx");
   ustore::Slice key(cell_key);
-  auto chunk = ustore::CellNode::NewChunk(type, key, data, ustore::Hash::kNull,
-                                          ustore::Hash());
+  ustore::Slice ctx(cell_ctx);
+  auto chunk = ustore::CellNode::NewChunk(type, key, data, ctx,
+                                          ustore::Hash::kNull, ustore::Hash());
   ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
@@ -23,6 +25,8 @@ TEST(CellNode, NewCellNode) {
   EXPECT_TRUE(cnode.preHash(1).empty());
   EXPECT_EQ(key.len(), cnode.keyLength());
   EXPECT_EQ(key, ustore::Slice(cnode.key(), cnode.keyLength()));
+  EXPECT_EQ(ctx.len(), cnode.ctxLength());
+  EXPECT_EQ(ctx, ustore::Slice(cnode.ctx(), cnode.ctxLength()));
 }
 
 TEST(CellNode, SinglePreHash) {
@@ -32,8 +36,11 @@ TEST(CellNode, SinglePreHash) {
 
   ustore::UType type = ustore::UType::kString;
   std::string cell_key("cell_key");
+  std::string cell_ctx("cell_ctx");
   ustore::Slice key(cell_key);
-  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, data, h2, h3);
+  ustore::Slice ctx(cell_ctx);
+  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, data, ctx, h2,
+                                                   h3);
   ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
@@ -43,6 +50,8 @@ TEST(CellNode, SinglePreHash) {
   EXPECT_TRUE(cnode.preHash(1).empty());
   EXPECT_EQ(key.len(), cnode.keyLength());
   EXPECT_EQ(key, ustore::Slice(cnode.key(), cnode.keyLength()));
+  EXPECT_EQ(ctx.len(), cnode.ctxLength());
+  EXPECT_EQ(ctx, ustore::Slice(cnode.ctx(), cnode.ctxLength()));
 }
 
 TEST(CellNode, DoublePreHash) {
@@ -51,9 +60,12 @@ TEST(CellNode, DoublePreHash) {
   auto h3 = ustore::Hash::FromBase32("46UPXMYH26AJI2OKTK6LACBOJ6GVMUPE");
 
   std::string cell_key("cell_key");
+  std::string cell_ctx("cell_ctx");
   ustore::Slice key(cell_key);
+  ustore::Slice ctx(cell_ctx);
   ustore::UType type = ustore::UType::kString;
-  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, data, h2, h3);
+  ustore::Chunk chunk = ustore::CellNode::NewChunk(type, key, data, ctx, h2,
+                                                   h3);
   ustore::CellNode cnode(std::move(chunk));
 
   EXPECT_EQ(type, cnode.type());
@@ -63,4 +75,6 @@ TEST(CellNode, DoublePreHash) {
   EXPECT_EQ(h3, cnode.preHash(1));
   EXPECT_EQ(key.len(), cnode.keyLength());
   EXPECT_EQ(key, ustore::Slice(cnode.key(), cnode.keyLength()));
+  EXPECT_EQ(ctx.len(), cnode.ctxLength());
+  EXPECT_EQ(ctx, ustore::Slice(cnode.ctx(), cnode.ctxLength()));
 }

@@ -109,6 +109,7 @@ Value WorkerService::ValueFromRequest(const ValuePayload& payload) {
   int keys_size = payload.keys_size();
   for (int i = 0; i < keys_size; i++)
     val.keys.emplace_back(payload.keys(i));
+  val.ctx = Slice(payload.ctx());
   return val;
 }
 

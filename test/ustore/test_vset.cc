@@ -19,6 +19,7 @@ using ustore::Hash;
 
 const char key_vset[] = "key_vset";
 const char branch_vset[] = "branch_vset";
+const char ctx_vset[] = "ctx_vset";
 
 ustore::Worker& worker_vset() {
   static ustore::Worker* worker = new ustore::Worker(1994, nullptr, false);
@@ -67,12 +68,15 @@ TEST(VSet, CreateNewVset) {
   for (const auto& s : sset_key) slice_key.push_back(Slice(s));
   // create buffered new set
   ustore::VSet set(slice_key);
+  set.SetContext(Slice(ctx_vset));
   // put new set
   auto put = db.Put(Slice(key_vset), set, Slice(branch_vset));
   EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get set
   auto get = db.Get(Slice(key_vset), Slice(branch_vset));
   EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  // check context
+  EXPECT_EQ(Slice(ctx_vset), get.value.cell().context());
   auto v = get.value.Set();
   // check data
   auto it = v.Scan();

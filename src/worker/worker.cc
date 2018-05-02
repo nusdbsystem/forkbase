@@ -177,17 +177,19 @@ ErrorCode Worker::WriteBlob(const Slice& key, const Value& val,
       LOG(ERROR) << "Failed to create SBlob for Key \"" << key << "\"";
       return ErrorCode::kFailedCreateSBlob;
     }
-    return CreateUCell(key, UType::kBlob, sblob.hash(), prev_ver1, prev_ver2,
-                       ver);
+    return CreateUCell(key, UType::kBlob, sblob.hash(), val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else if (!val.dels && val.vals.empty()) {  // origin
-    return CreateUCell(key, UType::kBlob, val.base, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kBlob, val.base, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else {  // update
     if (val.vals.size() > 1) return ErrorCode::kInvalidValue;
     SBlob sblob = factory_.Load<SBlob>(val.base);
     Slice slice = val.vals.empty() ? Slice() : val.vals.front();
     auto data_hash = sblob.Splice(val.pos, val.dels, slice.data(), slice.len());
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySBlob;
-    return CreateUCell(key, UType::kBlob, data_hash, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kBlob, data_hash, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   }
 }
 
@@ -197,8 +199,8 @@ ErrorCode Worker::WriteString(const Slice& key, const Value& val,
   DCHECK(val.type == UType::kString);
   if (val.base.empty()) {  // new insertion
     if (val.vals.size() != 1) return ErrorCode::kInvalidValue;
-    return CreateUCell(key, UType::kString, val.vals.front(), prev_ver1,
-                       prev_ver2, ver);
+    return CreateUCell(key, UType::kString, val.vals.front(), val.ctx,
+                       prev_ver1, prev_ver2, ver);
   } else if (!val.dels && val.vals.empty()) {  // origin
     LOG(WARNING) << "String type does not support loading original value";
     return ErrorCode::kInvalidValue;
@@ -218,15 +220,17 @@ ErrorCode Worker::WriteList(const Slice& key, const Value& val,
       LOG(ERROR) << "Failed to create SList for Key \"" << key << "\"";
       return ErrorCode::kFailedCreateSList;
     }
-    return CreateUCell(key, UType::kList, list.hash(), prev_ver1, prev_ver2,
-                       ver);
+    return CreateUCell(key, UType::kList, list.hash(), val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else if (!val.dels && val.vals.empty()) {  // origin
-    return CreateUCell(key, UType::kList, val.base, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kList, val.base, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else {  // update
     SList list = factory_.Load<SList>(val.base);
     auto data_hash = list.Splice(val.pos, val.dels, val.vals);
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySList;
-    return CreateUCell(key, UType::kList, data_hash, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kList, data_hash, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   }
 }
 
@@ -241,17 +245,19 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
       LOG(ERROR) << "Failed to create SMap for Key \"" << key << "\"";
       return ErrorCode::kFailedCreateSMap;
     }
-    return CreateUCell(key, UType::kMap, map.hash(), prev_ver1, prev_ver2,
-                       ver);
+    return CreateUCell(key, UType::kMap, map.hash(), val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else if (!val.dels && val.vals.empty()) {  // origin
-    return CreateUCell(key, UType::kMap, val.base, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kMap, val.base, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else if (val.keys.size() > 1) {  // update multiple entries
     if (val.keys.size() != val.vals.size() || val.dels)
       return ErrorCode::kInvalidValue;
     SMap map = factory_.Load<SMap>(val.base);
     Hash data_hash = map.Set(val.keys, val.vals);
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
-    return CreateUCell(key, UType::kMap, data_hash, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kMap, data_hash, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else {  // update single entry
     if (val.keys.size() != 1 || val.keys.size() < val.vals.size())
       return ErrorCode::kInvalidValue;
@@ -265,7 +271,8 @@ ErrorCode Worker::WriteMap(const Slice& key, const Value& val,
       data_hash = map.Set(mkey, val.vals.front());
     }
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
-    return CreateUCell(key, UType::kMap, data_hash, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kMap, data_hash, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   }
 }
 
@@ -279,10 +286,11 @@ ErrorCode Worker::WriteSet(const Slice& key, const Value& val,
       LOG(ERROR) << "Failed to create SSet for Key \"" << key << "\"";
       return ErrorCode::kFailedCreateSSet;
     }
-    return CreateUCell(key, UType::kSet, set.hash(), prev_ver1, prev_ver2,
-                       ver);
+    return CreateUCell(key, UType::kSet, set.hash(), val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else if (!val.dels && val.keys.empty()) {  // origin
-    return CreateUCell(key, UType::kSet, val.base, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kSet, val.base, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   } else {  // update
     if (val.keys.size() != 1)
       return ErrorCode::kInvalidValue;
@@ -296,14 +304,15 @@ ErrorCode Worker::WriteSet(const Slice& key, const Value& val,
       data_hash = set.Set(mkey);
     }
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySSet;
-    return CreateUCell(key, UType::kSet, data_hash, prev_ver1, prev_ver2, ver);
+    return CreateUCell(key, UType::kSet, data_hash, val.ctx, prev_ver1,
+                       prev_ver2, ver);
   }
 }
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
-                              const Slice& utype_data, const Hash& prev_ver1,
-                              const Hash& prev_ver2, Hash* ver) {
-  UCell ucell(UCell::Create(utype, key, utype_data, prev_ver1, prev_ver2));
+    const Slice& utype_data, const Slice& ctx, const Hash& prev_ver1,
+    const Hash& prev_ver2, Hash* ver) {
+  UCell ucell(UCell::Create(utype, key, utype_data, ctx, prev_ver1, prev_ver2));
   if (ucell.empty()) {
     LOG(ERROR) << "Failed to create UCell(Primitive) for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
@@ -314,9 +323,9 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
 }
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
-                              const Hash& utype_hash, const Hash& prev_ver1,
-                              const Hash& prev_ver2, Hash* ver) {
-  UCell ucell(UCell::Create(utype, key, utype_hash, prev_ver1, prev_ver2));
+    const Hash& utype_hash, const Slice& ctx, const Hash& prev_ver1,
+    const Hash& prev_ver2, Hash* ver) {
+  UCell ucell(UCell::Create(utype, key, utype_hash, ctx, prev_ver1, prev_ver2));
   if (ucell.empty()) {
     LOG(ERROR) << "Failed to create UCell(Chunkable) for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;

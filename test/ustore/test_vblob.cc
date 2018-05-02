@@ -16,6 +16,7 @@ using ustore::Hash;
 
 const char key_vblob[] = "key_vblob";
 const char branch_vblob[] = "branch_vblob";
+const char ctx_vblob[] = "ctx_vblob";
 
 ustore::Worker& worker_vblob() {
   static ustore::Worker* worker = new ustore::Worker(1991, nullptr, false);
@@ -64,12 +65,15 @@ TEST(VBlob, CreateNewVBlob) {
   ustore::ObjectDB db(&worker_vblob());
   // create buffered new blob
   ustore::VBlob blob{Slice(raw_data)};
+  blob.SetContext(Slice(ctx_vblob));
   // put new blob
   auto put = db.Put(Slice(key_vblob), blob, Slice(branch_vblob));
   EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get blob
   auto get = db.Get(Slice(key_vblob), Slice(branch_vblob));
   EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  // check context
+  EXPECT_EQ(Slice(ctx_vblob), get.value.cell().context());
   auto v = get.value.Blob();
   // check data
   byte_t* buf = new byte_t[v.size()];
@@ -92,11 +96,14 @@ TEST(VBlob, UpdateExistingVBlob) {
   s += delta;
   v.Append(
     reinterpret_cast<const byte_t*>(s.data() + v.size()), delta.length());
+  v.SetContext(Slice(ctx_vblob));
   auto update = db.Put(Slice(key_vblob), v, Slice(branch_vblob));
   EXPECT_TRUE(ErrorCode::kOK == update.stat);
   // get updated blob
   auto get = db.Get(Slice(key_vblob), Slice(branch_vblob));
   EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  // check context
+  EXPECT_EQ(Slice(ctx_vblob), get.value.cell().context());
   v = get.value.Blob();
   // check data
   ustore::byte_t* buf = new ustore::byte_t[v.size()];

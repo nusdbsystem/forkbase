@@ -19,6 +19,7 @@ using ustore::Hash;
 
 const char key_vmap[] = "key_vmap";
 const char branch_vmap[] = "branch_vmap";
+const char ctx_vmap[] = "ctx_vmap";
 
 ustore::Worker& worker_vmap() {
   static ustore::Worker* worker = new ustore::Worker(1993, nullptr, false);
@@ -70,12 +71,15 @@ TEST(VMap, CreateNewVMap) {
   for (const auto& s : smap_val) slice_val.push_back(Slice(s));
   // create buffered new map
   ustore::VMap map(slice_key, slice_val);
+  map.SetContext(Slice(ctx_vmap));
   // put new map
   auto put = db.Put(Slice(key_vmap), map, Slice(branch_vmap));
   EXPECT_TRUE(ErrorCode::kOK == put.stat);
   // get map
   auto get = db.Get(Slice(key_vmap), Slice(branch_vmap));
   EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  // check context
+  EXPECT_EQ(Slice(ctx_vmap), get.value.cell().context());
   auto v = get.value.Map();
   // check data
   auto it = v.Scan();

@@ -62,6 +62,8 @@ message ValuePayload {
   optional int32 dels = 4;
   repeated bytes values = 5;  // vector<Slice> vals
   repeated bytes keys = 6;  // vector<Slice> keys
+
+  optional bytes ctx = 10;  // Slice context
 }
 
 message ResponsePayload {

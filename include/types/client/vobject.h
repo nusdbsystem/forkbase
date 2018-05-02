@@ -12,9 +12,11 @@ class VObject {
   VObject() = default;
   virtual ~VObject() = default;
 
-  bool hasUpdate() const { return buffer_.type == UType::kUnknown; }
-  void Clear() { buffer_ = {}; }
+  bool empty() const { return buffer_.type == UType::kUnknown; }
   const Value& value() const { return buffer_; }
+
+  void SetContext(Slice ctx) { buffer_.ctx = ctx; }
+  void Clear() { buffer_ = {}; }
 
  protected:
   mutable Value buffer_;
