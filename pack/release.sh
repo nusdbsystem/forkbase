@@ -49,8 +49,10 @@ cp -r $build_dir/conf $release_build
 echo "Pack webui ..."
 cp -r $USTORE_HOME/webui $release_root
 echo "Pack docs ..."
-cp -r $USTORE_HOME/doc $release_root
+cp -r $USTORE_HOME/docs $release_root
 cp -r $USTORE_HOME/pack/INSTALL.md $release_root
+echo "Pack docker ..."
+cp -r $USTORE_HOME/docker $release_root
 echo "Pack compilation info ..."
 cp $build_dir/CMakeCache.txt $release_root
 

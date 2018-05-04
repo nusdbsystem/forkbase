@@ -1,17 +1,17 @@
 # USTORE
 
-[Introduction](doc/intro.md)
+[Introduction](docs/intro.md)
 
-[Architecture](doc/arch.md)
+[Architecture](docs/arch.md)
 
-[Dependencies](doc/depend.md)
+[Dependencies](docs/depend.md)
 
-[Usage Guide](doc/guide.md)
+[Usage Guide](docs/guide.md)
 
-[Commandline Console API](doc/api_cmd.md)
+[Commandline Console API](docs/api_cmd.md)
 
-[Http RESTful API](doc/api_http.md)
+[Http RESTful API](docs/api_http.md)
 
-[Pull Request Guide](doc/pr_guide.md)
+[Pull Request Guide](docs/pr_guide.md)
 
 [Binary Release](http://epic.d1.comp.nus.edu.sg/~zhanghao/USTORE.bin.tar.gz)
