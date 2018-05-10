@@ -16,12 +16,10 @@ class CellNode {
   /* CellNode contains a UCell
     | Type  | Num Pre Hash |
     | Utype | uint8_t      |
-    | Key Length | Key Offset | Data Length | Data Offset |
-    | uint16_t   | uint16_t   | uint16_t    | uint16_t    |
-    | Context Length | Context Offset |
-    | uint16_t       | uint16_t       |
+    | Key Length | Data Length | Context Length |
+    | uint16_t   | uint16_t    | uint16_t       |
     | Pre Hash 1 | Pre Hash 2 | ... | Pre Hash k |
-    | Hash::kByteLength * k                      |
+    | Hash::kByteLength * Num Pre Hash           |
     | Key        | Data        | Context        |
     | Key Length | Data Length | Context Length |
   */
@@ -29,8 +27,11 @@ class CellNode {
   static Chunk NewChunk(UType type, const Slice& key, const Slice& data,
       const Slice& ctx, const Hash& preHash1, const Hash& preHash2);
 
-  explicit CellNode(Chunk&& chunk) : chunk_(std::move(chunk)) {}
-  // cell node does not have chunkloader, need to delete chunk
+  explicit CellNode(Chunk&& chunk) : chunk_(std::move(chunk)) {
+    key_offset_ = ComputeKeyOffset(numPreHash());
+    data_offset_ = key_offset_ + keyLength();
+    ctx_offset_ = data_offset_ + dataLength();
+  }
   ~CellNode() = default;
 
   inline UType type() const {
@@ -42,24 +43,19 @@ class CellNode {
   inline size_t keyLength() const {
     return *reinterpret_cast<const uint16_t*>(chunk_.data() + kKeyLengthPos);
   }
-  inline size_t keyOffset() const {
-    return *reinterpret_cast<const uint16_t*>(chunk_.data() + kKeyOffsetPos);
-  }
   inline size_t dataLength() const {
     return *reinterpret_cast<const int16_t*>(chunk_.data() + kDataLengthPos);
-  }
-  inline size_t dataOffset() const {
-    return *reinterpret_cast<const int16_t*>(chunk_.data() + kDataOffsetPos);
   }
   inline size_t ctxLength() const {
     return *reinterpret_cast<const int16_t*>(chunk_.data() + kCtxLengthPos);
   }
-  inline size_t ctxOffset() const {
-    return *reinterpret_cast<const int16_t*>(chunk_.data() + kCtxOffsetPos);
-  }
+  inline size_t keyOffset() const { return key_offset_; }
+  inline size_t dataOffset() const { return data_offset_; }
+  inline size_t ctxOffset() const { return ctx_offset_; }
+
   inline Hash preHash(size_t idx) const {
     if (idx >= numPreHash()) return Hash();
-    return Hash(chunk_.data() + kPreHashPos + Hash::kByteLength*idx);
+    return Hash(chunk_.data() + ComputePreHashOffset(idx));
   }
   inline const byte_t* key() const {
     return keyLength() ? chunk_.data() + keyOffset() : nullptr;
@@ -70,20 +66,19 @@ class CellNode {
   inline const byte_t* ctx() const {
     return ctxLength() ? chunk_.data() + ctxOffset() : nullptr;
   }
+
   // hash of this node
   inline Hash hash() const { return chunk_.hash(); }
   inline const Chunk& chunk() const { return chunk_; }
 
  private:
+  static constexpr size_t kFieldMaxLength = 1<<16;
   static constexpr size_t kUTypePos = 0;
   static constexpr size_t kNumPreHashPos = kUTypePos + sizeof(UType);
   static constexpr size_t kKeyLengthPos = kNumPreHashPos + sizeof(uint8_t);
-  static constexpr size_t kKeyOffsetPos = kKeyLengthPos + sizeof(uint16_t);
-  static constexpr size_t kDataLengthPos = kKeyOffsetPos + sizeof(uint16_t);
-  static constexpr size_t kDataOffsetPos = kDataLengthPos + sizeof(uint16_t);
-  static constexpr size_t kCtxLengthPos = kDataOffsetPos + sizeof(uint16_t);
-  static constexpr size_t kCtxOffsetPos = kCtxLengthPos + sizeof(uint16_t);
-  static constexpr size_t kPreHashPos = kCtxOffsetPos + sizeof(uint16_t);
+  static constexpr size_t kDataLengthPos = kKeyLengthPos + sizeof(uint16_t);
+  static constexpr size_t kCtxLengthPos = kDataLengthPos + sizeof(uint16_t);
+  static constexpr size_t kPreHashPos = kCtxLengthPos + sizeof(uint16_t);
 
   inline static size_t ComputePreHashOffset(size_t idx) {
     return kPreHashPos + Hash::kByteLength * idx;
@@ -91,18 +86,10 @@ class CellNode {
   inline static size_t ComputeKeyOffset(size_t num_pre_hash) {
     return ComputePreHashOffset(num_pre_hash);
   }
-  inline static size_t ComputeDataOffset(size_t num_pre_hash, size_t key_len) {
-    return ComputeKeyOffset(num_pre_hash) + key_len;
-  }
-  inline static size_t ComputeCtxOffset(size_t num_pre_hash, size_t key_len,
-                                        size_t data_len) {
-    return ComputeDataOffset(num_pre_hash, key_len) + data_len;
-  }
-  inline static size_t ComputeTotalLength(size_t num_pre_hash, size_t key_len,
-                                          size_t data_len, size_t ctx_len) {
-    return ComputeCtxOffset(num_pre_hash, key_len, data_len) + ctx_len;
-  }
 
+  size_t key_offset_;
+  size_t data_offset_;
+  size_t ctx_offset_;
   Chunk chunk_;
 };
 
