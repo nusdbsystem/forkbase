@@ -207,7 +207,17 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
     return Merge(key, val, ref_ver1, ref_ver2, &ver);
   }
 
-  ErrorCode GetChunk(const Slice& key, const Hash& ver,
+  /**
+   * @brief Write a new object without attaching a key
+   *
+   * @param value   Value to write.
+   * @param version Returned version.
+   * @return        Error code. (ErrorCode::kOK for success)
+   */
+  ErrorCode PutUnkeyed(const Slice& ptt_key, const Value& value,
+                       Hash* version) override;
+
+  ErrorCode GetChunk(const Slice& ptt_key, const Hash& ver,
                      Chunk* chunk) const override;
 
   ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const override;

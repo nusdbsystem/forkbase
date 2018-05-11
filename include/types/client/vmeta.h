@@ -5,45 +5,42 @@
 
 #include <memory>
 #include <utility>
-#include "spec/db.h"
-#include "spec/value.h"
 #include "types/ucell.h"
-#include "types/client/vblob.h"
-#include "types/client/vlist.h"
-#include "types/client/vmap.h"
-#include "types/client/vset.h"
-#include "types/client/vstring.h"
+#include "types/client/vinit.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
 
 // TODO(wangsh): modify DB api and remove version in VMeta
-class VMeta : private Moveable {
+class VMeta : public VInit, private Moveable {
  public:
   VMeta() = default;
+  VMeta(DB* db, UCell&& cell) : VInit(db), cell_(std::move(cell)) {}
   VMeta(DB* db, UCell&& cell, std::shared_ptr<ChunkLoader> loader)
-    : db_(db), cell_(std::move(cell)), loader_(loader) {}
-  VMeta(DB* db, UCell&& cell) : db_(db), cell_(std::move(cell)) {}
+    : VInit(db, loader), cell_(std::move(cell)) {}
   VMeta(VMeta&&) = default;
   VMeta& operator=(VMeta&&) = default;
   ~VMeta() = default;
 
-  inline bool empty() const { return cell_.empty(); }
-  inline UType type() const { return cell_.type(); }
+  UType type() const override { return cell_.type(); }
+  Hash dataHash() const override { return cell_.dataHash(); }
+  Slice partitionKey() const override { return cell_.key(); }
+
   inline const UCell& cell() const { return cell_; }
 
-  VBlob Blob() const;
-  VString String() const;
-  VList List() const;
-  VMap Map() const;
-  VSet Set() const;
+  VString String() const override {
+    if (!empty() && type() == UType::kString) return VString(cell_);
+    LOG(WARNING) << "Get empty VString, actual type: " << type();
+    return VString();
+  }
 
-  friend std::ostream& operator<<(std::ostream& os, const VMeta& obj);
+  friend std::ostream& operator<<(std::ostream& os, const VMeta& obj) {
+    os << static_cast<const VInit&>(obj);
+    return os;
+  }
 
  private:
-  DB* db_;
   UCell cell_;
-  std::shared_ptr<ChunkLoader> loader_;
 };
 
 }  // namespace ustore

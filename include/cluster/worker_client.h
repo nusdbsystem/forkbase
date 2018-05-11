@@ -94,7 +94,9 @@ class WorkerClient : public Client, public DB {
                    const Slice& new_branch) override;
   ErrorCode Delete(const Slice& key, const Slice& branch) override;
 
-  ErrorCode GetChunk(const Slice& key, const Hash& version,
+  ErrorCode PutUnkeyed(const Slice& ptt_key, const Value& value,
+                       Hash* version) override;
+  ErrorCode GetChunk(const Slice& ptt_key, const Hash& version,
                      Chunk* chunk) const override;
 
   ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const override;

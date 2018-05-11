@@ -11,7 +11,7 @@
 namespace ustore {
 
 class VSet : public USet, public VObject {
-  friend class VMeta;
+  friend class VInit;
 
  public:
   VSet() noexcept : VSet(std::vector<Slice>()) {}

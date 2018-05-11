@@ -85,6 +85,27 @@ TEST(VList, CreateNewVList) {
   }
 }
 
+TEST(VList, CreateUnkeyedVList) {
+  ustore::ObjectDB db(&worker_vlist());
+  std::vector<Slice> slice_data;
+  for (const auto& s : slist_data) slice_data.push_back(Slice(s));
+  // create buffered new list
+  ustore::VList list(slice_data);
+  // put new list
+  auto put = db.PutUnkeyed(Slice(key_vlist), list);
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
+  // get list
+  auto get = db.GetUnkeyed(Slice(key_vlist), ustore::UType::kList, put.value);
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.List();
+  // check data
+  auto it = v.Scan();
+  for (const auto& s : slice_data) {
+    EXPECT_EQ(s, it.value());
+    it.next();
+  }
+}
+
 TEST(VList, UpdateExistingVList) {
   ustore::ObjectDB db(&worker_vlist());
   std::vector<Slice> slice_data;

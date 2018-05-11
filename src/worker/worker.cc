@@ -151,16 +151,9 @@ ErrorCode Worker::WriteCell(const Slice& key, const Value& val,
                        prev_ver2, ver);
   }
   // chunkable types
+  static Slice unused;
   Hash root;
-  switch (val.type) {
-    case UType::kBlob: ec = WriteBlob(val, &root); break;
-    case UType::kList: ec = WriteList(val, &root); break;
-    case UType::kMap:  ec = WriteMap(val, &root); break;
-    case UType::kSet:  ec = WriteSet(val, &root); break;
-    default:
-      ec = ErrorCode::kTypeUnsupported;
-      LOG(WARNING) << "Unsupported data type: " << static_cast<int>(val.type);
-  }
+  ec = PutUnkeyed(unused, val, &root);
   if (ec != ErrorCode::kOK) return ec;
   // create UCell
   return CreateUCell(key, val.type, root, val.ctx, prev_ver1, prev_ver2, ver);
@@ -370,8 +363,21 @@ ErrorCode Worker::Delete(const Slice& key, const Slice& branch) {
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::GetChunk(const Slice& key, const Hash& ver, Chunk* chunk)
-const {
+ErrorCode Worker::PutUnkeyed(const Slice& ptt_key, const Value& value,
+                             Hash* version) {
+  switch (value.type) {
+    case UType::kBlob: return WriteBlob(value, version);
+    case UType::kList: return WriteList(value, version);
+    case UType::kMap: return WriteMap(value, version);
+    case UType::kSet: return WriteSet(value, version);
+    default:
+      LOG(WARNING) << "Unsupported data type: " << static_cast<int>(value.type);
+      return ErrorCode::kTypeUnsupported;
+  }
+}
+
+ErrorCode Worker::GetChunk(const Slice& ptt_key, const Hash& ver, Chunk* chunk)
+    const {
   static const auto chunk_store = store::GetChunkStore();
   *chunk = chunk_store->Get(ver);
   if (chunk->empty()) return ErrorCode::kChunkNotExists;

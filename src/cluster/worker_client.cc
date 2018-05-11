@@ -90,46 +90,6 @@ ErrorCode WorkerClient::Get(const Slice& key, const Hash& version, UCell* meta)
   return GetUCellResponse(meta);
 }
 
-ErrorCode WorkerClient::GetChunk(const Slice& key, const Hash& version,
-                                 Chunk* chunk) const {
-  // NOTE(wangsh):
-  // With local chunk store - ask worker computed from key
-  // With partitioned chunk store - ask worker computed from version
-  static bool dist = Env::Instance()->config().enable_dist_store();
-  // NOTE(wangsh):
-  // Can bypass worker if chunk cli is available
-  static bool bypass = ck_cli_.size();
-
-  if (bypass) {  // Get via chunk service
-    if (dist) return ck_cli_[0].Get(version, chunk);
-    return ck_cli_[0].Get(key, version, chunk);
-  } else {  // Get via worker service
-    UMessage msg;
-    // header
-    msg.set_type(UMessage::GET_CHUNK_REQUEST);
-    // request
-    auto request = msg.mutable_request_payload();
-    request->set_key(key.data(), key.len());
-    request->set_version(version.value(), Hash::kByteLength);
-    // send
-    Send(&msg, dist ? ptt_->GetDestAddr(version) : ptt_->GetDestAddr(key));
-    return GetChunkResponse(chunk);
-  }
-}
-
-ErrorCode WorkerClient::GetStorageInfo(std::vector<StoreInfo>* info) const {
-  UMessage msg;
-  // header
-  msg.set_type(UMessage::GET_INFO_REQUEST);
-  // go through all workers to retrieve keys
-  for (const auto& dest : ptt_->destAddrs()) {
-    Send(&msg, dest);
-    ErrorCode err = GetInfoResponse(info);
-    if (err != ErrorCode::kOK) return err;
-  }
-  return ErrorCode::kOK;
-}
-
 void WorkerClient::CreateBranchMessage(const Slice &key,
     const Slice &new_branch, UMessage* msg) const {
   // header
@@ -350,6 +310,52 @@ ErrorCode WorkerClient::Delete(const Slice& key, const Slice& branch) {
   // send
   Send(&msg, ptt_->GetDestAddr(key));
   return GetEmptyResponse();
+}
+
+ErrorCode WorkerClient::PutUnkeyed(const Slice& ptt_key, const Value& value,
+                                   Hash* version) {
+  LOG(WARNING) << "Unimplemented";
+  return ErrorCode::kOK;
+}
+
+ErrorCode WorkerClient::GetChunk(const Slice& ptt_key, const Hash& version,
+                                 Chunk* chunk) const {
+  // NOTE(wangsh):
+  // With local chunk store - ask worker computed from key
+  // With partitioned chunk store - ask worker computed from version
+  static bool dist = Env::Instance()->config().enable_dist_store();
+  // NOTE(wangsh):
+  // Can bypass worker if chunk cli is available
+  static bool bypass = ck_cli_.size();
+
+  if (bypass) {  // Get via chunk service
+    if (dist) return ck_cli_[0].Get(version, chunk);
+    return ck_cli_[0].Get(ptt_key, version, chunk);
+  } else {  // Get via worker service
+    UMessage msg;
+    // header
+    msg.set_type(UMessage::GET_CHUNK_REQUEST);
+    // request
+    auto request = msg.mutable_request_payload();
+    request->set_key(ptt_key.data(), ptt_key.len());
+    request->set_version(version.value(), Hash::kByteLength);
+    // send
+    Send(&msg, dist ? ptt_->GetDestAddr(version) : ptt_->GetDestAddr(ptt_key));
+    return GetChunkResponse(chunk);
+  }
+}
+
+ErrorCode WorkerClient::GetStorageInfo(std::vector<StoreInfo>* info) const {
+  UMessage msg;
+  // header
+  msg.set_type(UMessage::GET_INFO_REQUEST);
+  // go through all workers to retrieve keys
+  for (const auto& dest : ptt_->destAddrs()) {
+    Send(&msg, dest);
+    ErrorCode err = GetInfoResponse(info);
+    if (err != ErrorCode::kOK) return err;
+  }
+  return ErrorCode::kOK;
 }
 
 }  // namespace ustore

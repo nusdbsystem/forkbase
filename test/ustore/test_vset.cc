@@ -86,6 +86,28 @@ TEST(VSet, CreateNewVset) {
   }
 }
 
+TEST(VSet, CreateUnkeyedVset) {
+  ustore::ObjectDB db(&worker_vset());
+  std::sort(sset_key.begin(), sset_key.end());
+  std::vector<Slice> slice_key;
+  for (const auto& s : sset_key) slice_key.push_back(Slice(s));
+  // create buffered new set
+  ustore::VSet set(slice_key);
+  // put new set
+  auto put = db.PutUnkeyed(Slice(key_vset), set);
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
+  // get set
+  auto get = db.GetUnkeyed(Slice(key_vset), ustore::UType::kSet, put.value);
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.Set();
+  // check data
+  auto it = v.Scan();
+  for (size_t i = 0; i < slice_key.size(); ++i) {
+    EXPECT_EQ(slice_key[i], it.key());
+    it.next();
+  }
+}
+
 TEST(VSet, AddToExistingVset) {
   ustore::ObjectDB db(&worker_vset());
   std::sort(sset_key.begin(), sset_key.end());

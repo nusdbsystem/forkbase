@@ -16,7 +16,7 @@ namespace ustore {
 class UNode {
  public:
   explicit UNode(const Chunk* chunk) : chunk_(chunk) {}
-  inline Hash hash() const { return chunk_->hash(); }
+  inline const Hash& hash() const { return chunk_->hash(); }
 
  protected:
   const Chunk* chunk_;

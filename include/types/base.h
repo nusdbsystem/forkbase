@@ -30,8 +30,8 @@ class ChunkableType : public BaseType {
   // all other types shall inherit from this
  public:
   inline bool empty() const override { return root_node_.get() == nullptr; }
-  inline const Hash hash() const {
-    return empty() ? Hash() : root_node_->hash();
+  inline const Hash& hash() const {
+    return empty() ? Hash::kNull : root_node_->hash();
   }
   inline uint64_t numElements() const {
     CHECK(!empty());

@@ -90,6 +90,30 @@ TEST(VMap, CreateNewVMap) {
   }
 }
 
+TEST(VMap, CreateUnkeyedVMap) {
+  ustore::ObjectDB db(&worker_vmap());
+  std::sort(smap_key.begin(), smap_key.end());
+  std::vector<Slice> slice_key, slice_val;
+  for (const auto& s : smap_key) slice_key.push_back(Slice(s));
+  for (const auto& s : smap_val) slice_val.push_back(Slice(s));
+  // create buffered new map
+  ustore::VMap map(slice_key, slice_val);
+  // put new map
+  auto put = db.PutUnkeyed(Slice(key_vmap), map);
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
+  // get map
+  auto get = db.GetUnkeyed(Slice(key_vmap), ustore::UType::kMap, put.value);
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.Map();
+  // check data
+  auto it = v.Scan();
+  for (size_t i = 0; i < slice_key.size(); ++i) {
+    EXPECT_EQ(slice_key[i], it.key());
+    EXPECT_EQ(slice_val[i], it.value());
+    it.next();
+  }
+}
+
 TEST(VMap, AddToExistingVMap) {
   ustore::ObjectDB db(&worker_vmap());
   std::sort(smap_key.begin(), smap_key.end());

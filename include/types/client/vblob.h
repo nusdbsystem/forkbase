@@ -10,7 +10,7 @@
 namespace ustore {
 
 class VBlob : public UBlob, public VObject {
-  friend class VMeta;
+  friend class VInit;
 
  public:
   VBlob() noexcept : VBlob(Slice()) {}

@@ -82,6 +82,24 @@ TEST(VBlob, CreateNewVBlob) {
   delete[] buf;
 }
 
+TEST(VBlob, CreateUnkeyedVBlob) {
+  ustore::ObjectDB db(&worker_vblob());
+  // create buffered new blob
+  ustore::VBlob blob{Slice(raw_data)};
+  // put new blob
+  auto put = db.PutUnkeyed(Slice(key_vblob), blob);
+  EXPECT_TRUE(ErrorCode::kOK == put.stat);
+  // get blob
+  auto get = db.GetUnkeyed(Slice(key_vblob), ustore::UType::kBlob, put.value);
+  EXPECT_TRUE(ErrorCode::kOK == get.stat);
+  auto v = get.value.Blob();
+  // check data
+  byte_t* buf = new byte_t[v.size()];
+  v.Read(0, v.size(), buf);
+  EXPECT_EQ(0, memcmp(raw_data, buf, v.size()));
+  delete[] buf;
+}
+
 TEST(VBlob, UpdateExistingVBlob) {
   ustore::ObjectDB db(&worker_vblob());
   // create buffered new blob

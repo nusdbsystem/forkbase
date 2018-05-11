@@ -10,6 +10,7 @@
 namespace ustore {
 
 class VString : public UString, public VObject {
+  friend class VInit;
   friend class VMeta;
 
  public:
