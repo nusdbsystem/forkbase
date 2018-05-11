@@ -96,7 +96,7 @@ void WorkerService::HandleRequest(const void *msg, int size,
 Value WorkerService::ValueFromRequest(const ValuePayload& payload) {
   Value val;
   val.type = static_cast<UType>(payload.type());
-  val.base = payload.has_base() ? Hash::Convert(payload.base()) : Hash();
+  val.base = payload.has_base() ? Hash(payload.base()) : Hash();
   val.pos = payload.pos();
   val.dels = payload.dels();
   // TODO(anh): a lot of memory copy in the following
@@ -125,11 +125,11 @@ void WorkerService::HandlePutRequest(const UMessage& umsg,
   ErrorCode code = request.has_branch()
     ? worker_.Put(Slice(request.key()), value, Slice(request.branch()),
                   &new_version)
-    : worker_.Put(Slice(request.key()), value, Hash::Convert(request.version()),
+    : worker_.Put(Slice(request.key()), value, Hash(request.version()),
                   &new_version);
   lock_.unlock();
   access_.Append("PUT", request.key(), request.has_branch() ? request.branch()
-      : Hash::Convert(request.version()).ToBase32(), new_version.ToBase32());
+      : Hash(request.version()).ToBase32(), new_version.ToBase32());
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;
   response->set_value(new_version.value(), Hash::kByteLength);
@@ -142,10 +142,10 @@ void WorkerService::HandleGetRequest(const UMessage& umsg,
   lock_.lock();
   ErrorCode code = request.has_branch()
     ? worker_.Get(Slice(request.key()), Slice(request.branch()), &val)
-    : worker_.Get(Slice(request.key()), Hash::Convert(request.version()), &val);
+    : worker_.Get(Slice(request.key()), Hash(request.version()), &val);
   lock_.unlock();
   access_.Append("GET", request.key(), request.has_branch() ? request.branch()
-      : Hash::Convert(request.version()).ToBase32(), empty);
+      : Hash(request.version()).ToBase32(), empty);
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;
   response->set_value(val.chunk().head(), val.chunk().numBytes());
@@ -159,11 +159,11 @@ void WorkerService::HandleMergeRequest(const UMessage& umsg,
   lock_.lock();
   ErrorCode code = request.has_version()
     ? worker_.Merge(Slice(request.key()), value,
-                    Hash::Convert(request.version()),
-                    Hash::Convert(request.ref_version()), &new_version)
+                    Hash(request.version()),
+                    Hash(request.ref_version()), &new_version)
     : (request.has_ref_version()
         ? worker_.Merge(Slice(request.key()), value, Slice(request.branch()),
-          Hash::Convert(request.ref_version()), &new_version)
+          Hash(request.ref_version()), &new_version)
         : worker_.Merge(Slice(request.key()), value, Slice(request.branch()),
           Slice(request.ref_branch()), &new_version));
   lock_.unlock();
@@ -220,7 +220,7 @@ void WorkerService::HandleIsBranchHeadRequest(const UMessage& umsg,
   bool is_head;
   lock_.lock();
   ErrorCode code = worker_.IsBranchHead(Slice(request.key()),
-      Slice(request.branch()), Hash::Convert(request.version()), &is_head);
+      Slice(request.branch()), Hash(request.version()), &is_head);
   lock_.unlock();
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;
@@ -246,7 +246,7 @@ void WorkerService::HandleIsLatestVersionRequest(const UMessage& umsg,
   bool is_latest;
   lock_.lock();
   ErrorCode code = worker_.IsLatestVersion(Slice(request.key()),
-      Hash::Convert(request.version()), &is_latest);
+      Hash(request.version()), &is_latest);
   lock_.unlock();
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;
@@ -260,11 +260,11 @@ void WorkerService::HandleBranchRequest(const UMessage& umsg,
   ErrorCode code = request.has_ref_branch()
     ? worker_.Branch(Slice(request.key()), Slice(request.ref_branch()),
                      Slice(request.branch()))
-    : worker_.Branch(Slice(request.key()), Hash::Convert(request.ref_version()),
+    : worker_.Branch(Slice(request.key()), Hash(request.ref_version()),
                      Slice(request.branch()));
   lock_.unlock();
   access_.Append("BRANCH", request.key(), request.has_ref_branch()
-      ? request.ref_branch() : Hash::Convert(request.ref_version()).ToBase32(),
+      ? request.ref_branch() : Hash(request.ref_version()).ToBase32(),
       request.branch());
   response->set_stat(static_cast<int>(code));
 }
@@ -298,7 +298,7 @@ void WorkerService::HandleGetChunkRequest(const UMessage& umsg,
   Chunk c;
   lock_.lock();
   ErrorCode code = worker_.GetChunk(Slice(request.key()),
-                                    Hash::Convert(request.version()), &c);
+                                    Hash(request.version()), &c);
   lock_.unlock();
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;

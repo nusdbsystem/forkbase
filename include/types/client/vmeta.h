@@ -3,6 +3,7 @@
 #ifndef USTORE_TYPES_CLIENT_VMETA_H_
 #define USTORE_TYPES_CLIENT_VMETA_H_
 
+#include <memory>
 #include <utility>
 #include "spec/db.h"
 #include "spec/value.h"
@@ -19,6 +20,7 @@ namespace ustore {
 // TODO(wangsh): modify DB api and remove version in VMeta
 class VMeta : private Moveable {
  public:
+  VMeta() = default;
   VMeta(DB* db, UCell&& cell, std::shared_ptr<ChunkLoader> loader)
     : db_(db), cell_(std::move(cell)), loader_(loader) {}
   VMeta(DB* db, UCell&& cell) : db_(db), cell_(std::move(cell)) {}
@@ -26,6 +28,7 @@ class VMeta : private Moveable {
   VMeta& operator=(VMeta&&) = default;
   ~VMeta() = default;
 
+  inline bool empty() const { return cell_.empty(); }
   inline UType type() const { return cell_.type(); }
   inline const UCell& cell() const { return cell_; }
 

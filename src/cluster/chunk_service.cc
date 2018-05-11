@@ -56,8 +56,7 @@ void ChunkService::HandlePutChunkRequest(const UMessage& umsg,
                                          ResponsePayload* response) {
   auto request = umsg.request_payload();
   auto value = umsg.value_payload().base();
-
-  Hash hash = Hash::Convert(request.version());
+  Hash hash(request.version());
   Chunk c(reinterpret_cast<const byte_t*>(value.data()));
   if (store_->Put(hash, c))
     response->set_stat(static_cast<int>(ErrorCode::kOK));
@@ -68,7 +67,7 @@ void ChunkService::HandlePutChunkRequest(const UMessage& umsg,
 void ChunkService::HandleGetChunkRequest(const UMessage& umsg,
                                          ResponsePayload* response) {
   auto request = umsg.request_payload();
-  Hash hash = Hash::Convert(request.version());
+  Hash hash(request.version());
   Chunk c = store_->Get(hash);
   if (c.empty()) {
     response->set_stat(static_cast<int>(ErrorCode::kChunkNotExists));
@@ -81,7 +80,7 @@ void ChunkService::HandleGetChunkRequest(const UMessage& umsg,
 void ChunkService::HandleExistChunkRequest(const UMessage& umsg,
                                            ResponsePayload* response) {
   auto request = umsg.request_payload();
-  Hash hash = Hash::Convert(request.version());
+  Hash hash(request.version());
   response->set_stat(static_cast<int>(ErrorCode::kOK));
   response->set_bvalue(store_->Exists(hash));
 }

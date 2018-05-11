@@ -30,10 +30,6 @@ class Hash {
   // if do so, must allocate own value
   static Hash ComputeFrom(const byte_t* data, size_t len);
   static Hash ComputeFrom(const std::string& data);
-  // reuse data stored in std::String
-  static inline Hash Convert(const std::string& request) {
-    return Hash(reinterpret_cast<const byte_t*>(request.data()));
-  }
 
   Hash() = default;
   // movable
@@ -46,7 +42,7 @@ class Hash {
   explicit Hash(const Slice& slice) noexcept : value_(slice.data()) {}
   // use existing string
   explicit Hash(const std::string& str) noexcept
-    : value_(reinterpret_cast<const byte_t*>(str.c_str())) {}
+    : value_(reinterpret_cast<const byte_t*>(str.data())) {}
   ~Hash() = default;
 
   // copy and move assignment

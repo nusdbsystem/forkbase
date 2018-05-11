@@ -45,7 +45,7 @@ ErrorCode Client::GetVersionResponse(Hash* version) const {
   auto response = msg->response_payload();
   ErrorCode err = static_cast<ErrorCode>(response.stat());
   if (err == ErrorCode::kOK) {
-    *version = Hash::Convert(response.value()).Clone();
+    *version = Hash(response.value()).Clone();
   }
   return err;
 }
@@ -96,7 +96,7 @@ ErrorCode Client::GetVersionListResponse(vector<Hash>* versions) const {
   if (err == ErrorCode::kOK) {
     size_t size = response.lvalue_size();
     for (size_t i = 0; i < size; i++)
-      versions->push_back(Hash::Convert(response.lvalue(i)).Clone());
+      versions->push_back(Hash(response.lvalue(i)).Clone());
   }
   return err;
 }
