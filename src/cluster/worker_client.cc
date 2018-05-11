@@ -314,8 +314,15 @@ ErrorCode WorkerClient::Delete(const Slice& key, const Slice& branch) {
 
 ErrorCode WorkerClient::PutUnkeyed(const Slice& ptt_key, const Value& value,
                                    Hash* version) {
-  LOG(WARNING) << "Unimplemented";
-  return ErrorCode::kOK;
+  UMessage msg;
+  // header
+  msg.set_type(UMessage::PUT_UNKEYED_REQUEST);
+  // value
+  auto payload = msg.mutable_value_payload();
+  FillValuePayload(value, payload);
+  // send
+  Send(&msg, ptt_->GetDestAddr(ptt_key));
+  return GetVersionResponse(version);
 }
 
 ErrorCode WorkerClient::GetChunk(const Slice& ptt_key, const Hash& version,
@@ -337,7 +344,6 @@ ErrorCode WorkerClient::GetChunk(const Slice& ptt_key, const Hash& version,
     msg.set_type(UMessage::GET_CHUNK_REQUEST);
     // request
     auto request = msg.mutable_request_payload();
-    request->set_key(ptt_key.data(), ptt_key.len());
     request->set_version(version.value(), Hash::kByteLength);
     // send
     Send(&msg, dist ? ptt_->GetDestAddr(version) : ptt_->GetDestAddr(ptt_key));

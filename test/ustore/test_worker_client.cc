@@ -98,6 +98,15 @@ void TestClientRequest(WorkerClient* client, int idx, int len) {
               ErrorCode::kOK);
     EXPECT_EQ(chunk.numBytes(), list_value.chunk().numBytes());
 
+    // put unkeyed blob
+    Value blob_val;
+    blob_val.type = UType::kBlob;
+    blob_val.vals.push_back(Slice(values[idx]));
+    Hash version_blob;
+    EXPECT_EQ(client->PutUnkeyed(Slice(keys[idx]), blob_val, &version_blob),
+              ErrorCode::kOK);
+    DLOG(INFO) << "PUT unkeyed (blob): " << version_blob.ToBase32();
+
     // branch from head
     string new_branch = "branch_"+std::to_string(idx);
     EXPECT_EQ(client->Branch(Slice(keys[idx]),

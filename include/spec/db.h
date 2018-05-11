@@ -5,7 +5,6 @@
 
 #include <string>
 #include <vector>
-
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"

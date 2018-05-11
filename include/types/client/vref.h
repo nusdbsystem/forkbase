@@ -30,11 +30,9 @@ class VRef : public VInit {
   }
 
  private:
-  DB* db_ = nullptr;
   Slice ptt_key_;
   UType type_;
   Hash hash_;
-  std::shared_ptr<ChunkLoader> loader_;
 };
 
 }  // namespace ustore

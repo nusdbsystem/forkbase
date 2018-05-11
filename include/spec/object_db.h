@@ -6,7 +6,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "spec/db.h"
 #include "types/type.h"
 #include "types/client/vmeta.h"

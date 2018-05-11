@@ -75,6 +75,9 @@ void WorkerService::HandleRequest(const void *msg, int size,
     case UMessage::DELETE_REQUEST:
       HandleDeleteRequest(umsg, response.mutable_response_payload());
       break;
+    case UMessage::PUT_UNKEYED_REQUEST:
+      HandlePutUnkeyedRequest(umsg, response.mutable_response_payload());
+      break;
     case UMessage::GET_CHUNK_REQUEST:
       HandleGetChunkRequest(umsg, response.mutable_response_payload());
       break;
@@ -292,13 +295,24 @@ void WorkerService::HandleDeleteRequest(const UMessage& umsg,
   response->set_stat(static_cast<int>(code));
 }
 
+void WorkerService::HandlePutUnkeyedRequest(const UMessage& umsg,
+                                            ResponsePayload* response) {
+  Value value = ValueFromRequest(umsg.value_payload());
+  Hash new_version;
+  lock_.lock();
+  ErrorCode code = worker_.PutUnkeyed(Slice(), value, &new_version);
+  lock_.unlock();
+  response->set_stat(static_cast<int>(code));
+  if (code != ErrorCode::kOK) return;
+  response->set_value(new_version.value(), Hash::kByteLength);
+}
+
 void WorkerService::HandleGetChunkRequest(const UMessage& umsg,
                                           ResponsePayload* response) {
   auto request = umsg.request_payload();
   Chunk c;
   lock_.lock();
-  ErrorCode code = worker_.GetChunk(Slice(request.key()),
-                                    Hash(request.version()), &c);
+  ErrorCode code = worker_.GetChunk(Slice(), Hash(request.version()), &c);
   lock_.unlock();
   response->set_stat(static_cast<int>(code));
   if (code != ErrorCode::kOK) return;

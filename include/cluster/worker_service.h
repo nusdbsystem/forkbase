@@ -58,6 +58,7 @@ class WorkerService : public HostService {
   void HandleBranchRequest(const UMessage& umsg, ResponsePayload* response);
   void HandleRenameRequest(const UMessage& umsg, ResponsePayload* response);
   void HandleDeleteRequest(const UMessage& umsg, ResponsePayload* response);
+  void HandlePutUnkeyedRequest(const UMessage& umsg, ResponsePayload* response);
   void HandleGetChunkRequest(const UMessage& umsg, ResponsePayload* response);
   void HandleGetInfoRequest(const UMessage& umsg, UMessage* response);
 
