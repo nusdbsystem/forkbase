@@ -317,6 +317,9 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
 #endif
 
  private:
+  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
+                const Hash& prev_ver, Hash* ver);
+
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Slice& utype_data, const Slice& ctx,
                       const Hash& prev_ver1, const Hash& prev_ver2, Hash* ver);
@@ -325,30 +328,14 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
                         const Hash& utype_hash, const Slice& ctx,
                       const Hash& prev_ver1, const Hash& prev_ver2, Hash* ver);
 
-  ErrorCode Write(const Slice& key, const Value& val, const Hash& prev_ver1,
-                  const Hash& prev_ver2, Hash* ver);
-
-  ErrorCode WriteBlob(const Slice& key, const Value& val, const Hash& prev_ver1,
+  ErrorCode WriteCell(const Slice& key, const Value& val, const Hash& prev_ver1,
                       const Hash& prev_ver2, Hash* ver);
 
-  ErrorCode WriteString(const Slice& key, const Value& val,
-                        const Hash& prev_ver1, const Hash& prev_ver2,
-                        Hash* ver);
-
-  ErrorCode WriteList(const Slice& key, const Value& val,
-                      const Hash& prev_ver1, const Hash& prev_ver2,
-                      Hash* ver);
-
-  ErrorCode WriteMap(const Slice& key, const Value& val,
-                     const Hash& prev_ver1, const Hash& prev_ver2,
-                     Hash* ver);
-
-  ErrorCode WriteSet(const Slice& key, const Value& val,
-                     const Hash& prev_ver1, const Hash& prev_ver2,
-                     Hash* ver);
-
-  ErrorCode Put(const Slice& key, const Value& val, const Slice& branch,
-                const Hash& prev_ver, Hash* ver);
+  ErrorCode CheckString(const Value& val);
+  ErrorCode WriteBlob(const Value& val, Hash* ver);
+  ErrorCode WriteList(const Value& val, Hash* ver);
+  ErrorCode WriteMap(const Value& val, Hash* ver);
+  ErrorCode WriteSet(const Value& val, Hash* ver);
 
   inline void UpdateLatestVersion(const UCell& ucell) {
     const auto& prev_ver1 = ucell.preHash();

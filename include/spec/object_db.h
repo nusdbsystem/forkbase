@@ -3,6 +3,7 @@
 #ifndef USTORE_SPEC_OBJECT_DB_H_
 #define USTORE_SPEC_OBJECT_DB_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -66,6 +67,7 @@ class ObjectDB {
   // TODO(wangsh): tmp use only
   void Share(std::shared_ptr<ChunkLoader>&& loader) { loader_ = loader; }
   void Clean() { loader_.reset(); }
+
  private:
   DB* db_;
   std::shared_ptr<ChunkLoader> loader_;
