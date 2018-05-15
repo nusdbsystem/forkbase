@@ -181,16 +181,16 @@ ErrorCode Worker::WriteBlob(const Value& val, Hash* ver) {
       LOG(ERROR) << "Failed to create SBlob";
       return ErrorCode::kFailedCreateSBlob;
     }
-    *ver = sblob.hash().Clone();
+    *ver = sblob.hash().Clone();  // need to clone a full copy
   } else if (!val.dels && val.vals.empty()) {  // origin
-    *ver = val.base;  // no need to clone base hash
+    *ver = val.base;
   } else {  // update
     if (val.vals.size() > 1) return ErrorCode::kInvalidValue;
     auto sblob = factory_.Load<SBlob>(val.base);
     auto slice = val.vals.empty() ? Slice() : val.vals.front();
     auto data_hash = sblob.Splice(val.pos, val.dels, slice.data(), slice.len());
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySBlob;
-    *ver = data_hash.Clone();
+    *ver = std::move(data_hash);
   }
   return ErrorCode::kOK;
 }
@@ -203,14 +203,14 @@ ErrorCode Worker::WriteList(const Value& val, Hash* ver) {
       LOG(ERROR) << "Failed to create SList";
       return ErrorCode::kFailedCreateSList;
     }
-    *ver = list.hash().Clone();
+    *ver = list.hash().Clone();  // need to clone a full copy
   } else if (!val.dels && val.vals.empty()) {  // origin
-    *ver = val.base;  // no need to clone base hash
+    *ver = val.base;
   } else {  // update
     auto list = factory_.Load<SList>(val.base);
     auto data_hash = list.Splice(val.pos, val.dels, val.vals);
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySList;
-    *ver = data_hash.Clone();
+    *ver = std::move(data_hash);
   }
   return ErrorCode::kOK;
 }
@@ -224,16 +224,16 @@ ErrorCode Worker::WriteMap(const Value& val, Hash* ver) {
       LOG(ERROR) << "Failed to create SMap";
       return ErrorCode::kFailedCreateSMap;
     }
-    *ver = map.hash().Clone();
+    *ver = map.hash().Clone();  // need to clone a full copy
   } else if (!val.dels && val.vals.empty()) {  // origin
-    *ver = val.base;  // no need to clone base hash
+    *ver = val.base;
   } else if (val.keys.size() > 1) {  // update multiple entries
     if (val.keys.size() != val.vals.size() || val.dels)
       return ErrorCode::kInvalidValue;
     auto map = factory_.Load<SMap>(val.base);
     auto data_hash = map.Set(val.keys, val.vals);
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
-    *ver = data_hash.Clone();
+    *ver = std::move(data_hash);
   } else {  // update single entry
     if (val.keys.size() != 1 || val.keys.size() < val.vals.size())
       return ErrorCode::kInvalidValue;
@@ -247,7 +247,7 @@ ErrorCode Worker::WriteMap(const Value& val, Hash* ver) {
       data_hash = map.Set(mkey, val.vals.front());
     }
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
-    *ver = data_hash.Clone();
+    *ver = std::move(data_hash);
   }
   return ErrorCode::kOK;
 }
@@ -260,9 +260,9 @@ ErrorCode Worker::WriteSet(const Value& val, Hash* ver) {
       LOG(ERROR) << "Failed to create SSet";
       return ErrorCode::kFailedCreateSSet;
     }
-    *ver = set.hash().Clone();
+    *ver = set.hash().Clone();  // need to clone a full copy
   } else if (!val.dels && val.keys.empty()) {  // origin
-    *ver = val.base;  // no need to clone base hash
+    *ver = val.base;
     // TODO(pingcheng): Support updating multiple entries
   } else {  // update single entry
     if (val.keys.size() != 1)
@@ -277,7 +277,7 @@ ErrorCode Worker::WriteSet(const Value& val, Hash* ver) {
       data_hash = set.Set(mkey);
     }
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySSet;
-    *ver = data_hash.Clone();
+    *ver = std::move(data_hash);
   }
   return ErrorCode::kOK;
 }
@@ -292,7 +292,7 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                << key << "\"";
     return ErrorCode::kFailedCreateUCell;
   }
-  *ver = ucell.hash().Clone();
+  *ver = ucell.hash().Clone();  // need to clone a full copy
   UpdateLatestVersion(ucell);
   return ErrorCode::kOK;
 }
@@ -306,7 +306,7 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
     LOG(ERROR) << "Failed to create UCell(Chunkable) for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
   }
-  *ver = ucell.hash().Clone();
+  *ver = ucell.hash().Clone();  // need to clone a full copy
   UpdateLatestVersion(ucell);
   return ErrorCode::kOK;
 }
