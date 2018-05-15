@@ -332,16 +332,19 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
 
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Slice& utype_data, const Slice& ctx,
-                      const Hash& prev_ver1, const Hash& prev_ver2, Hash* ver);
+                        const Hash& prev_ver1, const Hash& prev_ver2,
+                        Hash* ver);
 
   ErrorCode CreateUCell(const Slice& key, const UType& utype,
                         const Hash& utype_hash, const Slice& ctx,
-                      const Hash& prev_ver1, const Hash& prev_ver2, Hash* ver);
+                        const Hash& prev_ver1, const Hash& prev_ver2,
+                        Hash* ver);
 
-  ErrorCode WriteCell(const Slice& key, const Value& val, const Hash& prev_ver1,
-                      const Hash& prev_ver2, Hash* ver);
+  ErrorCode WriteUCell(const Slice& key, const Value& val,
+                       const Hash& prev_ver1, const Hash& prev_ver2, 
+                       Hash* ver);
 
-  ErrorCode CheckString(const Value& val);
+  ErrorCode CheckString(const Value& val) const;
   ErrorCode WriteBlob(const Value& val, Hash* ver);
   ErrorCode WriteList(const Value& val, Hash* ver);
   ErrorCode WriteMap(const Value& val, Hash* ver);

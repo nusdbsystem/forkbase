@@ -11,6 +11,7 @@
 #include "types/server/sstring.h"
 #include "utils/env.h"
 #include "utils/logging.h"
+#include "utils/utils.h"
 
 namespace ustore {
 
@@ -103,7 +104,7 @@ ErrorCode Worker::Put(const Slice& key, const Value& val, const Hash& prev_ver,
                       Hash* ver) {
   static Hash empty_hash;
   return (prev_ver == Hash::kNull || Exists(prev_ver))
-         ? WriteCell(key, val, prev_ver, empty_hash, ver)
+         ? WriteUCell(key, val, prev_ver, empty_hash, ver)
          : ErrorCode::kReferringVersionNotExist;
 }
 
@@ -136,30 +137,28 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
 ErrorCode Worker::Merge(const Slice& key, const Value& val,
                         const Hash& ref_ver1, const Hash& ref_ver2, Hash* ver) {
   return (Exists(ref_ver1) && Exists(ref_ver2))
-         ? WriteCell(key, val, ref_ver1, ref_ver2, ver)
+         ? WriteUCell(key, val, ref_ver1, ref_ver2, ver)
          : ErrorCode::kReferringVersionNotExist;
 }
 
-ErrorCode Worker::WriteCell(const Slice& key, const Value& val,
-    const Hash& prev_ver1, const Hash& prev_ver2, Hash* ver) {
-  ErrorCode ec;
-  // primitive types
-  if (val.type == UType::kString) {  // primitive types
-    ec = CheckString(val);
-    if (ec != ErrorCode::kOK) return ec;
+ErrorCode Worker::WriteUCell(const Slice& key, const Value& val,
+                            const Hash& prev_ver1, const Hash& prev_ver2, 
+                            Hash* ver) {
+  // for primitive types
+  if (val.type == UType::kString) {
+    USTORE_GUARD(CheckString(val));
     return CreateUCell(key, val.type, val.vals.front(), val.ctx, prev_ver1,
                        prev_ver2, ver);
   }
-  // chunkable types
+  // for chunkable types
   static Slice unused;
   Hash root;
-  ec = PutUnkeyed(unused, val, &root);
-  if (ec != ErrorCode::kOK) return ec;
+  USTORE_GUARD(PutUnkeyed(unused, val, &root));
   // create UCell
   return CreateUCell(key, val.type, root, val.ctx, prev_ver1, prev_ver2, ver);
 }
 
-ErrorCode Worker::CheckString(const Value& val) {
+ErrorCode Worker::CheckString(const Value& val) const {
   DCHECK(val.type == UType::kString);
   if (val.base.empty()) {  // new insertion
     if (val.vals.size() != 1) return ErrorCode::kInvalidValue;
@@ -177,7 +176,7 @@ ErrorCode Worker::WriteBlob(const Value& val, Hash* ver) {
   DCHECK(val.type == UType::kBlob);
   if (val.base.empty()) {  // new insertion
     if (val.vals.size() != 1) return ErrorCode::kInvalidValue;
-    SBlob sblob = factory_.Create<SBlob>(val.vals.front());
+    auto sblob = factory_.Create<SBlob>(val.vals.front());
     if (sblob.empty()) {
       LOG(ERROR) << "Failed to create SBlob";
       return ErrorCode::kFailedCreateSBlob;
@@ -187,8 +186,8 @@ ErrorCode Worker::WriteBlob(const Value& val, Hash* ver) {
     *ver = val.base;  // no need to clone base hash
   } else {  // update
     if (val.vals.size() > 1) return ErrorCode::kInvalidValue;
-    SBlob sblob = factory_.Load<SBlob>(val.base);
-    Slice slice = val.vals.empty() ? Slice() : val.vals.front();
+    auto sblob = factory_.Load<SBlob>(val.base);
+    auto slice = val.vals.empty() ? Slice() : val.vals.front();
     auto data_hash = sblob.Splice(val.pos, val.dels, slice.data(), slice.len());
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySBlob;
     *ver = data_hash.Clone();
@@ -199,7 +198,7 @@ ErrorCode Worker::WriteBlob(const Value& val, Hash* ver) {
 ErrorCode Worker::WriteList(const Value& val, Hash* ver) {
   DCHECK(val.type == UType::kList);
   if (val.base.empty()) {  // new insertion
-    SList list = factory_.Create<SList>(val.vals);
+    auto list = factory_.Create<SList>(val.vals);
     if (list.empty()) {
       LOG(ERROR) << "Failed to create SList";
       return ErrorCode::kFailedCreateSList;
@@ -208,7 +207,7 @@ ErrorCode Worker::WriteList(const Value& val, Hash* ver) {
   } else if (!val.dels && val.vals.empty()) {  // origin
     *ver = val.base;  // no need to clone base hash
   } else {  // update
-    SList list = factory_.Load<SList>(val.base);
+    auto list = factory_.Load<SList>(val.base);
     auto data_hash = list.Splice(val.pos, val.dels, val.vals);
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySList;
     *ver = data_hash.Clone();
@@ -220,7 +219,7 @@ ErrorCode Worker::WriteMap(const Value& val, Hash* ver) {
   DCHECK(val.type == UType::kMap);
   if (val.base.empty()) {  // new insertion
     if (val.keys.size() != val.vals.size()) return ErrorCode::kInvalidValue;
-    SMap map = factory_.Create<SMap>(val.keys, val.vals);
+    auto map = factory_.Create<SMap>(val.keys, val.vals);
     if (map.empty()) {
       LOG(ERROR) << "Failed to create SMap";
       return ErrorCode::kFailedCreateSMap;
@@ -231,15 +230,15 @@ ErrorCode Worker::WriteMap(const Value& val, Hash* ver) {
   } else if (val.keys.size() > 1) {  // update multiple entries
     if (val.keys.size() != val.vals.size() || val.dels)
       return ErrorCode::kInvalidValue;
-    SMap map = factory_.Load<SMap>(val.base);
-    Hash data_hash = map.Set(val.keys, val.vals);
+    auto map = factory_.Load<SMap>(val.base);
+    auto data_hash = map.Set(val.keys, val.vals);
     if (data_hash == Hash::kNull) return ErrorCode::kFailedModifySMap;
     *ver = data_hash.Clone();
   } else {  // update single entry
     if (val.keys.size() != 1 || val.keys.size() < val.vals.size())
       return ErrorCode::kInvalidValue;
     auto mkey = val.keys.front();
-    SMap map = factory_.Load<SMap>(val.base);
+    auto map = factory_.Load<SMap>(val.base);
     Hash data_hash;
     if (val.dels) {
       data_hash = map.Remove(mkey);
@@ -256,7 +255,7 @@ ErrorCode Worker::WriteMap(const Value& val, Hash* ver) {
 ErrorCode Worker::WriteSet(const Value& val, Hash* ver) {
   DCHECK(val.type == UType::kSet);
   if (val.base.empty()) {  // new insertion
-    SSet set = factory_.Create<SSet>(val.keys);
+    auto set = factory_.Create<SSet>(val.keys);
     if (set.empty()) {
       LOG(ERROR) << "Failed to create SSet";
       return ErrorCode::kFailedCreateSSet;
@@ -264,12 +263,12 @@ ErrorCode Worker::WriteSet(const Value& val, Hash* ver) {
     *ver = set.hash().Clone();
   } else if (!val.dels && val.keys.empty()) {  // origin
     *ver = val.base;  // no need to clone base hash
-  // TODO(pingcheng): Support updating multiple entries
+    // TODO(pingcheng): Support updating multiple entries
   } else {  // update single entry
     if (val.keys.size() != 1)
       return ErrorCode::kInvalidValue;
     auto mkey = val.keys.front();
-    SSet set = factory_.Load<SSet>(val.base);
+    auto set = factory_.Load<SSet>(val.base);
     Hash data_hash;
     if (val.dels) {
       data_hash = set.Remove(mkey);
@@ -284,11 +283,12 @@ ErrorCode Worker::WriteSet(const Value& val, Hash* ver) {
 }
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
-    const Slice& utype_data, const Slice& ctx, const Hash& prev_ver1,
-    const Hash& prev_ver2, Hash* ver) {
-  UCell ucell(UCell::Create(utype, key, utype_data, ctx, prev_ver1, prev_ver2));
+                              const Slice& utype_data, const Slice& ctx,
+                              const Hash& prev_ver1, const Hash& prev_ver2,
+                              Hash* ver) {
+  auto ucell(UCell::Create(utype, key, utype_data, ctx, prev_ver1, prev_ver2));
   if (ucell.empty()) {
-    LOG(ERROR) << "Failed to create UCell(Primitive) for Key \"" << key << "\"";
+    LOG(ERROR) << "Failed to create UCell (Primitive) for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
   }
   *ver = ucell.hash().Clone();
@@ -297,9 +297,10 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
 }
 
 ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
-    const Hash& utype_hash, const Slice& ctx, const Hash& prev_ver1,
-    const Hash& prev_ver2, Hash* ver) {
-  UCell ucell(UCell::Create(utype, key, utype_hash, ctx, prev_ver1, prev_ver2));
+                              const Hash& utype_hash, const Slice& ctx,
+                              const Hash& prev_ver1, const Hash& prev_ver2,
+                              Hash* ver) {
+  auto ucell(UCell::Create(utype, key, utype_hash, ctx, prev_ver1, prev_ver2));
   if (ucell.empty()) {
     LOG(ERROR) << "Failed to create UCell(Chunkable) for Key \"" << key << "\"";
     return ErrorCode::kFailedCreateUCell;
@@ -376,8 +377,8 @@ ErrorCode Worker::PutUnkeyed(const Slice& ptt_key, const Value& value,
   }
 }
 
-ErrorCode Worker::GetChunk(const Slice& ptt_key, const Hash& ver, Chunk* chunk)
-    const {
+ErrorCode Worker::GetChunk(const Slice& ptt_key, const Hash& ver,
+                           Chunk* chunk) const {
   static const auto chunk_store = store::GetChunkStore();
   *chunk = chunk_store->Get(ver);
   if (chunk->empty()) return ErrorCode::kChunkNotExists;
