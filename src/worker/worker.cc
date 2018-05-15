@@ -142,8 +142,8 @@ ErrorCode Worker::Merge(const Slice& key, const Value& val,
 }
 
 ErrorCode Worker::WriteUCell(const Slice& key, const Value& val,
-                            const Hash& prev_ver1, const Hash& prev_ver2, 
-                            Hash* ver) {
+                             const Hash& prev_ver1, const Hash& prev_ver2,
+                             Hash* ver) {
   // for primitive types
   if (val.type == UType::kString) {
     USTORE_GUARD(CheckString(val));
@@ -288,7 +288,8 @@ ErrorCode Worker::CreateUCell(const Slice& key, const UType& utype,
                               Hash* ver) {
   auto ucell(UCell::Create(utype, key, utype_data, ctx, prev_ver1, prev_ver2));
   if (ucell.empty()) {
-    LOG(ERROR) << "Failed to create UCell (Primitive) for Key \"" << key << "\"";
+    LOG(ERROR) << "Failed to create UCell (Primitive) for Key \""
+               << key << "\"";
     return ErrorCode::kFailedCreateUCell;
   }
   *ver = ucell.hash().Clone();
@@ -364,7 +365,7 @@ ErrorCode Worker::Delete(const Slice& key, const Slice& branch) {
   return ErrorCode::kOK;
 }
 
-ErrorCode Worker::PutUnkeyed(const Slice& ptt_key, const Value& value,
+ErrorCode Worker::PutUnkeyed(const Slice& route_key, const Value& value,
                              Hash* version) {
   switch (value.type) {
     case UType::kBlob: return WriteBlob(value, version);
@@ -377,7 +378,7 @@ ErrorCode Worker::PutUnkeyed(const Slice& ptt_key, const Value& value,
   }
 }
 
-ErrorCode Worker::GetChunk(const Slice& ptt_key, const Hash& ver,
+ErrorCode Worker::GetChunk(const Slice& route_key, const Hash& ver,
                            Chunk* chunk) const {
   static const auto chunk_store = store::GetChunkStore();
   *chunk = chunk_store->Get(ver);

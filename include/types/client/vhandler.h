@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_TYPES_CLIENT_VINIT_H_
-#define USTORE_TYPES_CLIENT_VINIT_H_
+#ifndef USTORE_TYPES_CLIENT_VHANDLER_H_
+#define USTORE_TYPES_CLIENT_VHANDLER_H_
 
 #include <memory>
 #include <utility>
@@ -18,13 +18,13 @@ namespace ustore {
 /*
  * Main entry for initializing objects in all types.
  */
-class VInit {
+class VHandler {
  public:
-  VInit() = default;
-  explicit VInit(DB* db) : db_(db) {}
-  VInit(DB* db, std::shared_ptr<ChunkLoader> loader)
+  VHandler() = default;
+  explicit VHandler(DB* db) : db_(db) {}
+  VHandler(DB* db, std::shared_ptr<ChunkLoader> loader)
     : db_(db), loader_(loader) {}
-  virtual ~VInit() = default;
+  virtual ~VHandler() = default;
 
   inline bool empty() const { return !db_; }
   virtual UType type() const = 0;
@@ -40,7 +40,7 @@ class VInit {
   VMap Map() const;
   VSet Set() const;
 
-  friend std::ostream& operator<<(std::ostream& os, const VInit& obj);
+  friend std::ostream& operator<<(std::ostream& os, const VHandler& obj);
 
  private:
   DB* db_ = nullptr;
@@ -49,4 +49,4 @@ class VInit {
 
 }  // namespace ustore
 
-#endif  //  USTORE_TYPES_CLIENT_VINIT_H_
+#endif  //  USTORE_TYPES_CLIENT_VHANDLER_H_

@@ -217,23 +217,23 @@ class DB {
    * @brief Write a new object without attaching a key
    *
    * TODO(wangsh): remove key later, when chunk store is partitioned by hash
-   * @param ptt_key Key for partition purpose only.
+   * @param route_key Key for routing purpose only.
    * @param value   Value to write.
    * @param version Returned version.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode PutUnkeyed(const Slice& ptt_key, const Value& value,
+  virtual ErrorCode PutUnkeyed(const Slice& route_key, const Value& value,
                                Hash* version) = 0;
   /**
    * @brief Read a chunk from a chunk id.
    *
    * TODO(wangsh): remove key later, when chunk store is partitioned by hash
-   * @param ptt_key Key for partition purpose only.
+   * @param route_key Key for routing purpose only.
    * @param versin  Version to read.
    * @param chunk   Returned chunk.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  virtual ErrorCode GetChunk(const Slice& ptt_key, const Hash& version,
+  virtual ErrorCode GetChunk(const Slice& route_key, const Hash& version,
                              Chunk* chunk) const = 0;
   /**
    * @brief Read storage information.

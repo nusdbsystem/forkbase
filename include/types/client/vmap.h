@@ -11,7 +11,7 @@
 namespace ustore {
 
 class VMap : public UMap, public VObject {
-  friend class VInit;
+  friend class VHandler;
 
  public:
   VMap() noexcept : VMap(std::vector<Slice>(), std::vector<Slice>()) {}

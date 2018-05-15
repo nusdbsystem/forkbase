@@ -128,17 +128,18 @@ ErrorCode ObjectDB::Delete(const Slice& key, const Slice& branch) {
   return db_->Delete(key, branch);
 }
 
-Result<Hash> ObjectDB::PutUnkeyed(const Slice& ptt_key, const VObject& object) {
+Result<Hash> ObjectDB::PutUnkeyed(const Slice& route_key,
+                                  const VObject& object) {
   Hash hash;
-  ErrorCode code = db_->PutUnkeyed(ptt_key, object.value(), &hash);
+  ErrorCode code = db_->PutUnkeyed(route_key, object.value(), &hash);
   return {std::move(hash), code};
 }
 
-Result<VRef> ObjectDB::GetUnkeyed(const Slice& ptt_key, const UType type,
+Result<VRef> ObjectDB::GetUnkeyed(const Slice& route_key, const UType type,
                                   const Hash& version) const {
   if (loader_)
-    return {VRef(db_, ptt_key, type, version, loader_), ErrorCode::kOK};
-  return {VRef(db_, ptt_key, type, version), ErrorCode::kOK};
+    return {VRef(db_, route_key, type, version, loader_), ErrorCode::kOK};
+  return {VRef(db_, route_key, type, version), ErrorCode::kOK};
 }
 
 Result<std::vector<StoreInfo>> ObjectDB::GetStorageInfo() const {

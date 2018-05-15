@@ -6,18 +6,18 @@
 #include <memory>
 #include <utility>
 #include "types/ucell.h"
-#include "types/client/vinit.h"
+#include "types/client/vhandler.h"
 #include "utils/noncopyable.h"
 
 namespace ustore {
 
 // TODO(wangsh): modify DB api and remove version in VMeta
-class VMeta : public VInit, private Moveable {
+class VMeta : public VHandler, private Moveable {
  public:
   VMeta() = default;
-  VMeta(DB* db, UCell&& cell) : VInit(db), cell_(std::move(cell)) {}
+  VMeta(DB* db, UCell&& cell) : VHandler(db), cell_(std::move(cell)) {}
   VMeta(DB* db, UCell&& cell, std::shared_ptr<ChunkLoader> loader)
-    : VInit(db, loader), cell_(std::move(cell)) {}
+    : VHandler(db, loader), cell_(std::move(cell)) {}
   VMeta(VMeta&&) = default;
   VMeta& operator=(VMeta&&) = default;
   ~VMeta() = default;
@@ -35,7 +35,7 @@ class VMeta : public VInit, private Moveable {
   }
 
   friend std::ostream& operator<<(std::ostream& os, const VMeta& obj) {
-    os << static_cast<const VInit&>(obj);
+    os << static_cast<const VHandler&>(obj);
     return os;
   }
 

@@ -63,9 +63,9 @@ class ObjectDB {
   // Delete Branch
   ErrorCode Delete(const Slice& key, const Slice& branch);
   // Put Unkeyed Object
-  Result<Hash> PutUnkeyed(const Slice& ptt_key, const VObject& object);
+  Result<Hash> PutUnkeyed(const Slice& route_key, const VObject& object);
   // Get Unkeyed Object
-  Result<VRef> GetUnkeyed(const Slice& ptt_key, const UType type,
+  Result<VRef> GetUnkeyed(const Slice& route_key, const UType type,
                           const Hash& version) const;
   // Get Storage Info
   Result<std::vector<StoreInfo>> GetStorageInfo() const;

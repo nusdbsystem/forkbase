@@ -312,7 +312,7 @@ ErrorCode WorkerClient::Delete(const Slice& key, const Slice& branch) {
   return GetEmptyResponse();
 }
 
-ErrorCode WorkerClient::PutUnkeyed(const Slice& ptt_key, const Value& value,
+ErrorCode WorkerClient::PutUnkeyed(const Slice& route_key, const Value& value,
                                    Hash* version) {
   UMessage msg;
   // header
@@ -321,11 +321,11 @@ ErrorCode WorkerClient::PutUnkeyed(const Slice& ptt_key, const Value& value,
   auto payload = msg.mutable_value_payload();
   FillValuePayload(value, payload);
   // send
-  Send(&msg, ptt_->GetDestAddr(ptt_key));
+  Send(&msg, ptt_->GetDestAddr(route_key));
   return GetVersionResponse(version);
 }
 
-ErrorCode WorkerClient::GetChunk(const Slice& ptt_key, const Hash& version,
+ErrorCode WorkerClient::GetChunk(const Slice& route_key, const Hash& version,
                                  Chunk* chunk) const {
   // NOTE(wangsh):
   // With local chunk store - ask worker computed from key
@@ -337,7 +337,7 @@ ErrorCode WorkerClient::GetChunk(const Slice& ptt_key, const Hash& version,
 
   if (bypass) {  // Get via chunk service
     if (dist) return ck_cli_[0].Get(version, chunk);
-    return ck_cli_[0].Get(ptt_key, version, chunk);
+    return ck_cli_[0].Get(route_key, version, chunk);
   } else {  // Get via worker service
     UMessage msg;
     // header
@@ -346,7 +346,8 @@ ErrorCode WorkerClient::GetChunk(const Slice& ptt_key, const Hash& version,
     auto request = msg.mutable_request_payload();
     request->set_version(version.value(), Hash::kByteLength);
     // send
-    Send(&msg, dist ? ptt_->GetDestAddr(version) : ptt_->GetDestAddr(ptt_key));
+    Send(&msg, dist ? ptt_->GetDestAddr(version)
+                    : ptt_->GetDestAddr(route_key));
     return GetChunkResponse(chunk);
   }
 }

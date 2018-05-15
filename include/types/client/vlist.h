@@ -11,7 +11,7 @@
 namespace ustore {
 
 class VList : public UList, public VObject {
-  friend class VInit;
+  friend class VHandler;
 
  public:
   VList() noexcept : VList(std::vector<Slice>()) {}

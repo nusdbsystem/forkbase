@@ -214,10 +214,10 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
    * @param version Returned version.
    * @return        Error code. (ErrorCode::kOK for success)
    */
-  ErrorCode PutUnkeyed(const Slice& ptt_key, const Value& value,
+  ErrorCode PutUnkeyed(const Slice& route_key, const Value& value,
                        Hash* version) override;
 
-  ErrorCode GetChunk(const Slice& ptt_key, const Hash& ver,
+  ErrorCode GetChunk(const Slice& route_key, const Hash& ver,
                      Chunk* chunk) const override;
 
   ErrorCode GetStorageInfo(std::vector<StoreInfo>* info) const override;
@@ -341,7 +341,7 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
                         Hash* ver);
 
   ErrorCode WriteUCell(const Slice& key, const Value& val,
-                       const Hash& prev_ver1, const Hash& prev_ver2, 
+                       const Hash& prev_ver1, const Hash& prev_ver2,
                        Hash* ver);
 
   ErrorCode CheckString(const Value& val) const;
