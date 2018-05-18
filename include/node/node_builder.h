@@ -63,7 +63,7 @@ class NodeBuilder : private Noncopyable {
   // Commit the uncommited operation in recursive manner
   // Create and dump the chunk into storage
   // @return The hash (a.k.a. the key) of the newly commited root chunk.
-  Hash commit();
+  Hash RecursiveCommit();
 
   // Remove elements from cursor
   // Return the number of elements actually removed

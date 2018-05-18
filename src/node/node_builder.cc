@@ -204,7 +204,7 @@ Chunk NodeBuilder::HandleBoundary(const std::vector<const Segment*>& segments) {
 }
 
 Hash NodeBuilder::Commit() {
-  Hash root = commit();
+  Hash root = RecursiveCommit();
   if (cursor_) {
     //  The tree is NOT constructed from scratch but updated on an existing tree
     //  It is possible that its height shall be reduced for removing elements.
@@ -215,17 +215,16 @@ Hash NodeBuilder::Commit() {
 
     while (!root_node->isLeaf() && root_node->numEntries() == 1) {
       const MetaNode* mnode = dynamic_cast<const MetaNode*>(root_node.get());
-      root = mnode->GetChildHashByEntry(0).Clone();
+      root = mnode->GetChildHashByEntry(0);
       root_chunk = cursor_->loader()->Load(root);
       root_node = SeqNode::CreateFromChunk(root_chunk);
     }  // end while
   }  // end if cursor_
 
-  CHECK(root.own());
-  return root;
+  return root.Clone();
 }
 
-Hash NodeBuilder::commit() {
+Hash NodeBuilder::RecursiveCommit() {
   CHECK(!commited_);
   // As we are about to make new chunk,
   // parent metaentry that points the old chunk
@@ -395,7 +394,7 @@ Hash NodeBuilder::commit() {
   Hash root_hash(last_created_chunk.hash().Clone());
   if (parent_builder()->cursor_ != nullptr ||
       parent_builder()->numAppendSegs() > 1) {
-    root_hash = parent_builder()->commit();
+    root_hash = parent_builder()->RecursiveCommit();
   }  // end if parent_builder
   return root_hash;
 }
