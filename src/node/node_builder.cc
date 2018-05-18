@@ -215,12 +215,13 @@ Hash NodeBuilder::Commit() {
 
     while (!root_node->isLeaf() && root_node->numEntries() == 1) {
       const MetaNode* mnode = dynamic_cast<const MetaNode*>(root_node.get());
-      root = mnode->GetChildHashByEntry(0);
+      root = mnode->GetChildHashByEntry(0).Clone();
       root_chunk = cursor_->loader()->Load(root);
       root_node = SeqNode::CreateFromChunk(root_chunk);
     }  // end while
   }  // end if cursor_
 
+  CHECK(root.own());
   return root;
 }
 
@@ -394,7 +395,7 @@ Hash NodeBuilder::commit() {
   Hash root_hash(last_created_chunk.hash().Clone());
   if (parent_builder()->cursor_ != nullptr ||
       parent_builder()->numAppendSegs() > 1) {
-    root_hash = parent_builder()->Commit();
+    root_hash = parent_builder()->commit();
   }  // end if parent_builder
   return root_hash;
 }
@@ -549,6 +550,7 @@ Hash AdvancedNodeBuilder::Commit(const Chunker& chunker) {
   PreorderDump(base, &chunk_cacher);
   operands_.clear();
   all_operand_segs_.clear();
+  CHECK(base.own());
   return base;
 }
 
