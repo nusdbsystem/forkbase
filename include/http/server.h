@@ -17,8 +17,8 @@ namespace ustore {
  */
 class HttpServer {
  public:
-  explicit HttpServer(DB* db, int port,
-                      const string& bind_addr = "", int backlog = TCP_BACKLOG);
+  HttpServer(DB* db, int port, const string& bind_addr = "",
+             int backlog = TCP_BACKLOG);
   ~HttpServer();
 
   /*

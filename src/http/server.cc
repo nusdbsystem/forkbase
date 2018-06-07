@@ -5,7 +5,7 @@
 #include <string>
 #include "http/net.h"
 #include "http/event.h"
-#include "http/http_request.h"
+#include "http/request.h"
 #include "http/server.h"
 #include "spec/blob_store.h"
 #include "utils/logging.h"
@@ -30,7 +30,7 @@ void ProcessTcpClientHandle(EventLoop *el, int fd, void *data, int mask) {
   ClientSocket* cs = hserver->GetClientSocket(fd);
   // LOG(LOG_WARNING, "Process client = %d", cs->GetFD());
 
-  HttpRequest request;
+  Request request;
   int status = request.ReadAndParse(cs);
   if (status == ST_CLOSED) {
     hserver->Close(cs);

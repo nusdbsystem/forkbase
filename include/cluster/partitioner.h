@@ -3,9 +3,9 @@
 #ifndef USTORE_CLUSTER_PARTITIONER_H_
 #define USTORE_CLUSTER_PARTITIONER_H_
 
+#include <functional>
 #include <string>
 #include <vector>
-#include <functional>
 #include "cluster/port_helper.h"
 #include "hash/hash.h"
 #include "spec/slice.h"

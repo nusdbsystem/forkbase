@@ -11,7 +11,7 @@
 #include "utils/logging.h"
 #include "http/server.h"
 #include "http/net.h"
-#include "http/http_request.h"
+#include "http/request.h"
 #include "utils/utils.h"
 
 using namespace ustore;

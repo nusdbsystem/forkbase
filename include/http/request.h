@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_HTTP_HTTP_REQUEST_H_
-#define USTORE_HTTP_HTTP_REQUEST_H_
+#ifndef USTORE_HTTP_REQUEST_H_
+#define USTORE_HTTP_REQUEST_H_
 
 #include <unordered_map>
 #include <iostream>
@@ -50,10 +50,10 @@ enum class CommandType {
 /*
  * used to parse the http request and prepare the response
  */
-class HttpRequest {
+class Request {
  public:
-  HttpRequest() = default;
-  ~HttpRequest() = default;
+  Request() = default;
+  ~Request() = default;
 
   // parse the data read from socket to
   // fill the necessary header fields in this object
@@ -197,4 +197,4 @@ class HttpRequest {
 
 }  // namespace ustore
 
-#endif  // USTORE_HTTP_HTTP_REQUEST_H_
+#endif  // USTORE_HTTP_REQUEST_H_

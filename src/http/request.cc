@@ -4,13 +4,13 @@
 #include <algorithm>
 #include <cassert>
 #include "utils/utils.h"
-#include "http/http_request.h"
+#include "http/request.h"
 
 namespace ustore {
 
 using std::unordered_map;
 
-const unordered_map<string, CommandType> HttpRequest::cmddict_ = {
+const unordered_map<string, CommandType> Request::cmddict_ = {
     {"/get", CommandType::kGet},
     {"/put", CommandType::kPut},
     {"/merge", CommandType::kMerge},
@@ -26,7 +26,7 @@ const unordered_map<string, CommandType> HttpRequest::cmddict_ = {
     {"/get-ds", CommandType::kGetDataset}
 };
 
-int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
+int Request::ParseFirstLine(char* buf, int start, int end) {
   int pos = start;
   int is, ie;  // start and end position of each item
 
@@ -80,7 +80,7 @@ int HttpRequest::ParseFirstLine(char* buf, int start, int end) {
   return ST_SUCCESS;
 }
 
-int HttpRequest::ParseOneLine(char* buf, int start, int end) {
+int Request::ParseOneLine(char* buf, int start, int end) {
   TrimSpace(buf, start, end);
   if (unlikely(start > end)) return ST_ERROR;
 
@@ -109,7 +109,7 @@ int HttpRequest::ParseOneLine(char* buf, int start, int end) {
   return ST_SUCCESS;
 }
 
-int HttpRequest::ParseLastLine(char* buf, int start, int end) {
+int Request::ParseLastLine(char* buf, int start, int end) {
   TrimSpace(buf, start, end);
   if (unlikely(start > end)) return ST_ERROR;
 
@@ -152,7 +152,7 @@ int HttpRequest::ParseLastLine(char* buf, int start, int end) {
 }
 
 
-unordered_map<string, string> HttpRequest::ParseParameters() {
+unordered_map<string, string> Request::ParseParameters() {
   unordered_map<string, string> kv;
   if (headers_.count(kParaKey)) {
     string& para = headers_[kParaKey];
@@ -247,7 +247,7 @@ unordered_map<string, string> HttpRequest::ParseParameters() {
   return kv;
 }
 
-int HttpRequest::ReadAndParse(ClientSocket* socket) {
+int Request::ReadAndParse(ClientSocket* socket) {
   char buf[kMaxHeaderSize];
   int nread = socket->Recv(buf, kMaxHeaderSize);
   if (unlikely(nread <= 0)) {  // remote has close the socket
@@ -297,7 +297,7 @@ int HttpRequest::ReadAndParse(ClientSocket* socket) {
   return ST_SUCCESS;
 }
 
-int HttpRequest::Respond(ClientSocket* socket, std::vector<string>& response) {
+int Request::Respond(ClientSocket* socket, std::vector<string>& response) {
   if (!(method_ == "post" || method_ == "get")) {
     if (unlikely(int(kBadRequest.length()) !=
         socket->Send(kBadRequest.data(), kBadRequest.length()))) {
