@@ -10,7 +10,6 @@
 #include "spec/blob_store.h"
 #include "utils/logging.h"
 
-
 namespace ustore {
 
 using std::string;

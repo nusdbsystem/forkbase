@@ -88,6 +88,7 @@ class HttpServer {
   EventLoop** el_ = nullptr;
   std::unordered_map<int, ClientSocket*> clients_;
 };
+
 }  // namespace ustore
 
 #endif  // USTORE_HTTP_SERVER_H_
