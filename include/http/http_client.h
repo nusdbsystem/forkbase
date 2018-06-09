@@ -17,11 +17,11 @@ class HttpClient {
   /*
    *  Connect to a http server in host:port format
    */
-  bool Connect(const std::string& host, int port);
+  bool Connect(const std::string& host, const std::string& port);
   /*
    *  Send request of type verb to http://host:port/url
    */
-  bool Send(const std::string& url, Verb verb, const Request& request);
+  bool Send(const std::string& target, const Verb verb, Request* request);
   /*
    *  Get response message from server
    */
@@ -30,6 +30,11 @@ class HttpClient {
    *  Shutdown the connection
    */
   bool Shutdown();
+ 
+ protected:
+  boost::asio::io_context io_context_;
+  boost::asio::ip::tcp::socket socket_{io_context_};
+  std::string host_;
 };
 
 }  // namespace http
