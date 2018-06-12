@@ -26,7 +26,7 @@ bool HttpClient::Connect(const std::string& host, const std::string& port) {
 bool HttpClient::Send(Request* request) {
   try {
     // initialize payload
-    request->req_.prepare_payload();
+    request->PreparePayload();
     beast::write(socket_, request->req_);
     return true;
   } catch(std::exception const& e) {

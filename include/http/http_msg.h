@@ -38,15 +38,20 @@ class Request {
   ~Request() = default;
 
   // Set target
-  inline void SetTarget(const std::string& target) { req_.target(target); }
+  inline void SetTarget(const std::string& target) { target_ = target; }
   // Set method verb
   void SetMethod(Verb method);
   // Add customized header fields
   inline void SetHeaderField(const std::string& fld, const std::string& val) {
     req_.set(fld, val);
   }
+  inline void AddParameter(const std::string& key, const std::string& val) {
+    param_.insert({key, val});
+  }
   // Set data body
-  inline void SetBody(const std::string& data, Format format);
+  void SetBody(const std::string& data, Format format);
+  // Prepare payload
+  void PreparePayload();
 
  private:
   static constexpr int kDefaultHttpVersion = 11;
@@ -56,6 +61,8 @@ class Request {
   void SetDefaultFields();
 
   beast::request<beast::string_body> req_;
+  std::string target_;
+  std::map<std::string, std::string> param_;
 };
 
 class Response {

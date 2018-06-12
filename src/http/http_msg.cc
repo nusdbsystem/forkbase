@@ -26,7 +26,7 @@ void Request::SetMethod(Verb method) {
   }
 }
 
-void Request::SetBody(const std::string& data, const Format content_type) {
+void Request::SetBody(const std::string& data, Format content_type) {
   switch (content_type) {
     case Format::kPlain:
       req_.set(beast::field::content_type, "text/plain");
@@ -36,6 +36,23 @@ void Request::SetBody(const std::string& data, const Format content_type) {
       break;
   }
   req_.body() = data;
+}
+
+void Request::PreparePayload() {
+  if (!param_.empty()) {
+    bool first = true;
+    for (auto const& entry : param_) {
+      if (!first) {
+        target_ += "&";
+      } else {
+        target_ += "?";
+        first = false;
+      }
+      target_ += entry.first + "=" + entry.second;
+    }
+  }
+  req_.target(target_);
+  req_.prepare_payload();
 }
 
 void Request::SetDefaultFields() {
