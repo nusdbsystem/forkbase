@@ -3,6 +3,7 @@
 #ifndef USTORE_HTTP_HTTP_CLIENT_H_
 #define USTORE_HTTP_HTTP_CLIENT_H_
 
+#include <boost/asio/ip/tcp.hpp>
 #include <string>
 #include "http/http_msg.h"
 
@@ -21,7 +22,7 @@ class HttpClient {
   /*
    *  Send request of type verb to http://host:port/url
    */
-  bool Send(const std::string& target, const Verb verb, Request* request);
+  bool Send(Request* request);
   /*
    *  Get response message from server
    */
@@ -30,8 +31,8 @@ class HttpClient {
    *  Shutdown the connection
    */
   bool Shutdown();
- 
- protected:
+
+ private:
   boost::asio::io_context io_context_;
   boost::asio::ip::tcp::socket socket_{io_context_};
   std::string host_;

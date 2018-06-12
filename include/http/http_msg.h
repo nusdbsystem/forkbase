@@ -3,72 +3,76 @@
 #ifndef USTORE_HTTP_HTTP_MSG_H_
 #define USTORE_HTTP_HTTP_MSG_H_
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
 #include <map>
 #include <string>
-#include <boost/beast/http.hpp>
-#include <boost/beast/core.hpp>
 
 namespace ustore {
 namespace http {
 
 namespace beast = boost::beast::http;
-#define DEFAULT_HTTP_VERSION 11
 
 enum class Verb {
- kGet = 0,
- kPut = 1,
- kPost = 2
+  kGet = 0,
+  kPut = 1,
+  kPost = 2
 };
 
 enum class Format {
- plain = 0,
- json = 1
+  kPlain = 0,
+  kJson = 1
 };
 
 class Request {
+  friend class HttpClient;
+
  public:
-  Request() { SetDefaultFields(); }
+  Request() {
+    SetDefaultFields();
+  }
+  Request(const std::string& target, Verb method) : Request() {
+    SetTarget(target);
+    SetMethod(method);
+  }
   ~Request() = default;
 
-  // Set target and http method
-  void SetTargetNMethod(const std::string& target, const Verb method);
+  // Set target
+  inline void SetTarget(const std::string& target) { req_.target(target); }
+  // Set method verb
+  void SetMethod(Verb method);
+  // Add customized header fields
+  inline void SetHeaderField(const std::string& fld, const std::string& val) {
+    req_.set(fld, val);
+  }
+  // Set data body
+  inline void SetBody(const std::string& data, Format format);
 
-  // add customized header fields
-  inline void SetHeaderField(const std::string& fld, const std::string& val)
-      { req_.set(fld, val); }
-  
-  // set data to body
-  void SetBody(const std::string& data, const Format format);
-
-  // getter
-  inline beast::request<beast::string_body> GetReq() { return req_; }
-  
  private:
-  // Data member
-  beast::request<beast::string_body> req_;
-  
+  static constexpr int kDefaultHttpVersion = 11;
+
   // add default header fields
   // called by constructor
   void SetDefaultFields();
+
+  beast::request<beast::string_body> req_;
 };
 
 class Response {
+  friend class HttpClient;
+
  public:
   Response() = default;
   ~Response() = default;
 
-  const std::map<std::string, std::string> headers();
-  
-  const std::string& body();
-  
-  inline beast::response<beast::string_body>& GetRes()
-      { return res_; }
-  
-  inline boost::beast::flat_buffer& GetBuffer() { return buffer_; }
- 
+  const std::map<std::string, std::string>& headers();
+  inline const std::string& body() { return res_.body(); }
+  inline int code() { return res_.result_int(); }
+
  private:
   beast::response<beast::string_body> res_;
   boost::beast::flat_buffer buffer_;
+  std::map<std::string, std::string> headers_;  // to hold header strings
 };
 
 }  // namespace http
