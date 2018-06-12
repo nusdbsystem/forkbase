@@ -46,12 +46,10 @@ class Request {
     req_.set(fld, val);
   }
   inline void AddParameter(const std::string& key, const std::string& val) {
-    param_.insert({key, val});
+    param_[key] = val;
   }
   // Set data body
   void SetBody(const std::string& data, Format format);
-  // Prepare payload
-  void PreparePayload();
 
  private:
   static constexpr int kDefaultHttpVersion = 11;
@@ -59,6 +57,8 @@ class Request {
   // add default header fields
   // called by constructor
   void SetDefaultFields();
+  // Prepare payload
+  void PreparePayload();
 
   beast::request<beast::string_body> req_;
   std::string target_;

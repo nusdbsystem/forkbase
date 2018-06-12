@@ -39,19 +39,13 @@ void Request::SetBody(const std::string& data, Format content_type) {
 }
 
 void Request::PreparePayload() {
-  if (!param_.empty()) {
-    bool first = true;
-    for (auto const& entry : param_) {
-      if (!first) {
-        target_ += "&";
-      } else {
-        target_ += "?";
-        first = false;
-      }
-      target_ += entry.first + "=" + entry.second;
-    }
+  // append parameters to target in the form: /target?k1=v1&k2=v2&...
+  int cnt = 0;
+  std::string param_str;
+  for (auto const& entry : param_) {
+    param_str += (cnt++ ? "?" : "&") + entry.first + "=" + entry.second;
   }
-  req_.target(target_);
+  req_.target(target_ + param_str);
   req_.prepare_payload();
 }
 
