@@ -19,11 +19,6 @@ enum class Verb {
   kPost = 2
 };
 
-enum class Format {
-  kPlain = 0,
-  kJson = 1
-};
-
 class Request {
   friend class HttpClient;
 
@@ -49,7 +44,7 @@ class Request {
     param_[key] = val;
   }
   // Set data body
-  void SetBody(const std::string& data, Format format);
+  inline void SetBody(const std::string& data) { req_.body() = data; }
 
  private:
   static constexpr int kDefaultHttpVersion = 11;

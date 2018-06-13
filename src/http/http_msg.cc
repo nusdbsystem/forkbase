@@ -5,6 +5,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
+
 #include "utils/logging.h"
 
 namespace ustore {
@@ -26,24 +27,12 @@ void Request::SetMethod(Verb method) {
   }
 }
 
-void Request::SetBody(const std::string& data, Format content_type) {
-  switch (content_type) {
-    case Format::kPlain:
-      req_.set(beast::field::content_type, "text/plain");
-      break;
-    case Format::kJson:
-      req_.set(beast::field::content_type, "application/json");
-      break;
-  }
-  req_.body() = data;
-}
-
 void Request::PreparePayload() {
   // append parameters to target in the form: /target?k1=v1&k2=v2&...
   int cnt = 0;
   std::string param_str;
   for (auto const& entry : param_) {
-    param_str += (cnt++ ? "?" : "&") + entry.first + "=" + entry.second;
+    param_str += (cnt++ ? "&" : "?") + entry.first + "=" + entry.second;
   }
   req_.target(target_ + param_str);
   req_.prepare_payload();
