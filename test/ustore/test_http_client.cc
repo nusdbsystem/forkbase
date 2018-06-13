@@ -20,7 +20,6 @@ void StartServer(HttpServer* server) {
 }
 
 void setHeaders(http::Request* req) {
-  req->SetHeaderField("host", "localhost");
   req->SetHeaderField("accept",
       "text/html, application/xhtml+xml, application/xml");
   req->SetHeaderField("accept_language", "en-US, en");
