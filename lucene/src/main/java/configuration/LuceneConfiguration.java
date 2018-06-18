@@ -8,8 +8,8 @@ import service.IndexServiceImpl;
 
 @Configuration
 public class LuceneConfiguration {
-	@Bean
-	public IndexService indexService() {
-		return new IndexServiceImpl();
-	}
+  @Bean
+  public IndexService indexService() {
+    return new IndexServiceImpl();
+  }
 }

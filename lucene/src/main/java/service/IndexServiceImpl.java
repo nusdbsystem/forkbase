@@ -26,48 +26,47 @@ import pojo.SearchResponse;
 
 @Service
 public class IndexServiceImpl implements IndexService {
-	
-	@Autowired
-	AsyncService service;
 
-	@Override
-	public void indexFile(String dir) throws IOException {
-		final Path docDir = Paths.get(dir);
-		if (!Files.isReadable(docDir)) {
-			throw new IOException("Document directory does not exist or is not readable");
-		}
+  @Autowired AsyncService service;
 
-		service.asyncIndexFile(docDir);
-	}
+  @Override
+  public void indexFile(String dir) throws IOException {
+    final Path docDir = Paths.get(dir);
+    if (!Files.isReadable(docDir)) {
+      throw new IOException("Document directory does not exist or is not readable");
+    }
 
-	@Override
-	public SearchResponse searchFile(String queryString) throws Exception {
-		IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(Const.INDEX_DIR)));
-		IndexSearcher searcher = new IndexSearcher(reader);
-		QueryParser parser = new QueryParser(Const.FIELD_VALUE, new StandardAnalyzer());
+    service.asyncIndexFile(docDir);
+  }
 
-		if (queryString == null || queryString.length() == -1) {
-			throw new Exception("Invalid query");
-		}
-		queryString = queryString.trim();
-		if (queryString.length() == 0) {
-			throw new Exception("Invalid query");
-		}
+  @Override
+  public SearchResponse searchFile(String queryString) throws Exception {
+    IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(Const.INDEX_DIR)));
+    IndexSearcher searcher = new IndexSearcher(reader);
+    QueryParser parser = new QueryParser(Const.FIELD_VALUE, new StandardAnalyzer());
 
-		Query query = parser.parse(queryString);
+    if (queryString == null || queryString.length() == -1) {
+      throw new Exception("Invalid query");
+    }
+    queryString = queryString.trim();
+    if (queryString.length() == 0) {
+      throw new Exception("Invalid query");
+    }
 
-		TopDocs results = searcher.search(query, reader.numDocs());
-		ScoreDoc[] hits = results.scoreDocs;
+    Query query = parser.parse(queryString);
 
-		List<SearchResult> keys = new ArrayList<>();
-		for (int i = 0; i < hits.length; i++) {
-			Document doc = searcher.doc(hits[i].doc);
-			SearchResult result = new SearchResult(doc.get(Const.FIELD_KEY));
-			keys.add(result);
-		}	
-		SearchResponse res = new SearchResponse(Const.SUCCESS, "", keys);
+    TopDocs results = searcher.search(query, reader.numDocs());
+    ScoreDoc[] hits = results.scoreDocs;
 
-		reader.close();
-		return res;
-	}
+    List<SearchResult> keys = new ArrayList<>();
+    for (int i = 0; i < hits.length; i++) {
+      Document doc = searcher.doc(hits[i].doc);
+      SearchResult result = new SearchResult(doc.get(Const.FIELD_KEY));
+      keys.add(result);
+    }
+    SearchResponse res = new SearchResponse(Const.SUCCESS, "", keys);
+
+    reader.close();
+    return res;
+  }
 }
