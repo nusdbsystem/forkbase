@@ -36,6 +36,11 @@ build/
 perfmon/logs/
 perfmon/tmp/
 
+# Lucene files
+lucene/index/
+lucene/logs/
+lucene/target/
+
 # Project files
 *sublime*
 
