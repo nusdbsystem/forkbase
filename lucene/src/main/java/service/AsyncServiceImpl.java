@@ -1,6 +1,7 @@
 package service;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,12 +35,12 @@ public class AsyncServiceImpl implements AsyncService {
 
   @Async
   @Override
-  public void asyncIndexFile(Path path) {
+  public void asyncIndexFile(Path path, String dataset, String branch) {
     try {
-      Directory directory = FSDirectory.open(Paths.get(Const.INDEX_DIR));
+      Directory indexDir = FSDirectory.open(Paths.get(Const.INDEX_ROOT + dataset + "/" + branch));
       IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
 
-      iwc.setOpenMode(OpenMode.CREATE);
+      iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
 
       // Optional: for better indexing performance, if you
       // are indexing many documents, increase the RAM
@@ -48,7 +49,7 @@ public class AsyncServiceImpl implements AsyncService {
       //
       // iwc.setRAMBufferSizeMB(256.0);
 
-      IndexWriter writer = new IndexWriter(directory, iwc);
+      IndexWriter writer = new IndexWriter(indexDir, iwc);
       indexDocs(writer, path);
 
       // NOTE: if you want to maximize search performance,
@@ -60,6 +61,7 @@ public class AsyncServiceImpl implements AsyncService {
       // writer.forceMerge(1);
 
       writer.close();
+      Files.walk(path).filter(Files::isRegularFile).map(Path::toFile).forEach(File::delete);
     } catch (IOException e) {
       logger.error("Indexing failed!", e);
     }
@@ -102,8 +104,8 @@ public class AsyncServiceImpl implements AsyncService {
     while ((line = in.readLine()) != null) {
       Document doc = new Document();
       doc.add(
-          new TextField(Const.FIELD_KEY, line.substring(0, line.indexOf(" ")), Field.Store.YES));
-      doc.add(new TextField(Const.FIELD_VALUE, line.substring(line.indexOf(" ")), Field.Store.NO));
+          new TextField(Const.FIELD_KEY, line.substring(0, line.indexOf(",")), Field.Store.YES));
+      doc.add(new TextField(Const.FIELD_VALUE, line.substring(line.indexOf(",")), Field.Store.NO));
       writer.updateDocument(new Term(Const.FIELD_KEY, doc.get(Const.FIELD_KEY)), doc);
     }
   }

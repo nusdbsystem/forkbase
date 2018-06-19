@@ -13,8 +13,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.google.gson.Gson;
 
 import pojo.Const;
+import pojo.IndexRequest;
 import pojo.IndexResponse;
-import pojo.RequestParam;
+import pojo.SearchRequest;
 import pojo.SearchResponse;
 import service.IndexService;
 
@@ -31,10 +32,10 @@ public class IndexController {
    */
   @RequestMapping(value = "/index", method = RequestMethod.POST)
   @ResponseBody
-  public String indexFiles(@RequestBody RequestParam param) {
+  public String indexFiles(@RequestBody IndexRequest param) {
     Gson gson = new Gson();
     try {
-      service.indexFile(param.getParam());
+      service.indexFile(param);
       return gson.toJson(new IndexResponse(Const.SUCCESS, ""));
     } catch (IOException e) {
       return gson.toJson(new IndexResponse(Const.FAIL, e.getMessage()));
@@ -49,10 +50,10 @@ public class IndexController {
    */
   @RequestMapping(value = "/search", method = RequestMethod.POST)
   @ResponseBody
-  public String searchFiles(@RequestBody RequestParam param) {
+  public String searchFiles(@RequestBody SearchRequest param) {
     Gson gson = new Gson();
     try {
-      SearchResponse result = service.searchFile(param.getParam());
+      SearchResponse result = service.searchFile(param);
       return gson.toJson(result);
     } catch (IOException e) {
       return gson.toJson(new SearchResponse(Const.FAIL, e.getMessage()));

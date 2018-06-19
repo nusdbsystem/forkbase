@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import pojo.Const;
+import pojo.IndexRequest;
+import pojo.SearchRequest;
 import pojo.SearchResult;
 import pojo.SearchResponse;
 
@@ -30,21 +32,23 @@ public class IndexServiceImpl implements IndexService {
   @Autowired AsyncService service;
 
   @Override
-  public void indexFile(String dir) throws IOException {
-    final Path docDir = Paths.get(dir);
+  public void indexFile(IndexRequest req) throws IOException {
+    final Path docDir = Paths.get(req.getDir());
     if (!Files.isReadable(docDir)) {
       throw new IOException("Document directory does not exist or is not readable");
     }
 
-    service.asyncIndexFile(docDir);
+    service.asyncIndexFile(docDir, req.getDataset(), req.getBranch());
   }
 
   @Override
-  public SearchResponse searchFile(String queryString) throws Exception {
-    IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(Const.INDEX_DIR)));
+  public SearchResponse searchFile(SearchRequest req) throws Exception {
+    String indexDir = Const.INDEX_ROOT + req.getDataset() + "/" + req.getBranch();
+    IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)));
     IndexSearcher searcher = new IndexSearcher(reader);
     QueryParser parser = new QueryParser(Const.FIELD_VALUE, new StandardAnalyzer());
 
+    String queryString = req.getQuery();
     if (queryString == null || queryString.length() == -1) {
       throw new Exception("Invalid query");
     }
