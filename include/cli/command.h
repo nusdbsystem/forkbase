@@ -147,6 +147,7 @@ class Command {
   ErrorCode ExecDiffDataset();
   ErrorCode ExecPutDataEntry();
   ErrorCode ExecPutDataEntryBatch();
+  ErrorCode ExecPutDataEntryByCSV();
   ErrorCode ExecExistsDataEntry();
   ErrorCode ExecGetDataEntry();
   ErrorCode ExecGetDataEntryBatch();

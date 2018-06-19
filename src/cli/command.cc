@@ -216,6 +216,13 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("LIST_DATASET", "LS_DS");
   CMD_ALIAS("LIST_DATASET", "LS-DS");
   CMD_ALIAS("LIST_DATASET", "LSDS");
+  CMD_HANDLER("LIST_DATASET_ALL", ExecListDatasetAll());
+  CMD_ALIAS("LIST_DATASET_ALL", "LIST-DATASET-ALL");
+  CMD_ALIAS("LIST_DATASET_ALL", "LS_DATASET_ALL");
+  CMD_ALIAS("LIST_DATASET_ALL", "LS-DATASET-ALL");
+  CMD_ALIAS("LIST_DATASET_ALL", "LS_DS_ALL");
+  CMD_ALIAS("LIST_DATASET_ALL", "LS-DS-ALL");
+  CMD_ALIAS("LIST_DATASET_ALL", "LSDSALL");
   CMD_HANDLER("CREATE_DATASET", ExecCreateDataset());
   CMD_ALIAS("CREATE_DATASET", "CREATE-DATASET");
   CMD_ALIAS("CREATE_DATASET", "CREATE_DS");
@@ -246,6 +253,10 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("GET_DATASET", "GET-DATASET");
   CMD_ALIAS("GET_DATASET", "GET_DS");
   CMD_ALIAS("GET_DATASET", "GET-DS");
+  CMD_HANDLER("GET_DATASET_ALL", ExecGetDatasetAll());
+  CMD_ALIAS("GET_DATASET_ALL", "GET-DATASET-ALL");
+  CMD_ALIAS("GET_DATASET_ALL", "GET_DS_ALL");
+  CMD_ALIAS("GET_DATASET_ALL", "GET-DS-ALL");
   CMD_HANDLER("EXPORT_DATASET_BINARY", ExecExportDatasetBinary());
   CMD_ALIAS("EXPORT_DATASET_BINARY", "EXPORT-DATASET-BINARY");
   CMD_ALIAS("EXPORT_DATASET_BINARY", "EXPORT_DS_BIN");
@@ -274,6 +285,10 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT-DE-BATCH");
   CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT_DE_BAT");
   CMD_ALIAS("PUT_DATA_ENTRY_BATCH", "PUT-DE-BAT");
+  CMD_HANDLER("PUT_DATA_ENTRY_BY_CSV", ExecPutDataEntryByCSV());
+  CMD_ALIAS("PUT_DATA_ENTRY_BY_CSV", "PUT-DATA-ENTRY-BY-CSV");
+  CMD_ALIAS("PUT_DATA_ENTRY_BY_CSV", "PUT_DE_BY_CSV");
+  CMD_ALIAS("PUT_DATA_ENTRY_BY_CSV", "PUT-DE-BY-CSV");
   CMD_HANDLER("EXISTS_DATA_ENTRY", ExecExistsDataEntry());
   CMD_ALIAS("EXISTS_DATA_ENTRY", "EXISTS-DATA-ENTRY");
   CMD_ALIAS("EXISTS_DATA_ENTRY", "EXISTS_DE");
@@ -460,9 +475,11 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY")
      << "-t <dataset> -b <branch>"
      << std::endl << std::setw(kPrintBlobStoreCmdWidth + 3) << ""
-     << "[-m <entry> -x <value | <file> | -m <entry> <file>]" << std::endl
+     << "[-m <entry> -x <value> | <file> | -m <entry> <file>]" << std::endl
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY_BATCH")
      << "-t <dataset> -b <branch> <dir>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY_BY_CSV")
+     << "<file> -t <dataset> -b <branch> -i <entry_name_index>" << std::endl
      << FORMAT_BLOB_STORE_CMD("LIST_DATA_ENTRY_BRANCH")
      << "-t <dataset> -m <entry>" << std::endl
      << FORMAT_BLOB_STORE_CMD("DELETE_DATA_ENTRY")
@@ -2940,10 +2957,10 @@ ErrorCode Command::ExecPutDataEntry() {
   USTORE_GUARD(PrepareValue("PUT_DATA_ENTRY"));
 
   const auto& ds_name = Config::table;
-  const auto& entry_name = Config::column;
   const auto& branch = Config::branch;
+  const auto& entry_name = Config::column;
   const auto& val = Config::value;
-  const auto& file_path = Config::column;
+  const auto& file_path = Config::file;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY] ")
@@ -3335,6 +3352,49 @@ ErrorCode Command::ExecPutDataEntryBatch() {
   size_t n_entries, n_bytes;
   auto ec = bs_.PutDataEntryBatch(
               ds_name, branch, boost_fs::path(dir_path), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecPutDataEntryByCSV() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& idx_entry_name = Config::position;
+  const auto& file_path = Config::file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Index of Entry Name: " << idx_entry_name << ", "
+              << "File: \"" << file_path << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
+    std::cout << BOLD_GREEN("[SUCCESS: PUT_DATA_ENTRY_BY_CSV] ")
+              << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+              << " updated  "
+              << BLUE("[" << Utils::StorageSizeString(n_bytes) << "]")
+              << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BY_CSV] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << "Index of Entry Name: " << idx_entry_name << ", "
+              << "File: \"" << file_path << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || file_path.empty()
+      || idx_entry_name < 0) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  size_t n_entries, n_bytes;
+  auto ec = bs_.PutDataEntryByCSV(
+              ds_name, branch, boost_fs::path(file_path), idx_entry_name,
+              &n_entries, &n_bytes);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }

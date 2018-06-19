@@ -313,205 +313,212 @@ class Utils {
       const boost::filesystem::path& rlt_path)>& f_manip_file,
     const boost::filesystem::path& init_rlt_path = boost::filesystem::path());
 
- private:
+  static ErrorCode IterateFileByLine(
+    const boost::filesystem::path& file_path,
+    const std::function<ErrorCode(const std::string& line)>& f_manip_line);
+
+  static ErrorCode ExtractElement(const std::string& str, const size_t idx_elem,
+                                  std::string* elem, const char delim = ',');
+
+private:
+    template<typename T>
+    static inline void SleepFor(size_t units) {
+      std::this_thread::sleep_for(T(units));
+    }
+  };
+
   template<typename T>
-  static inline void SleepFor(size_t units) {
-    std::this_thread::sleep_for(T(units));
+  std::string Utils::ToString(const T& obj) {
+    std::stringstream ss;
+    ss << obj;
+    return ss.str();
   }
-};
 
-template<typename T>
-std::string Utils::ToString(const T& obj) {
-  std::stringstream ss;
-  ss << obj;
-  return ss.str();
-}
+  template<typename T>
+  std::string Utils::ToStringPair(
+    const T& a, const T& b, const std::string& lsymbol,
+    const std::string& rsymbol, const std::string& sep) {
+    std::stringstream ss;
+    ss << lsymbol << a << sep << b << rsymbol;
+    return ss.str();
+  }
 
-template<typename T>
-std::string Utils::ToStringPair(
-  const T& a, const T& b, const std::string& lsymbol,
-  const std::string& rsymbol, const std::string& sep) {
-  std::stringstream ss;
-  ss << lsymbol << a << sep << b << rsymbol;
-  return ss.str();
-}
-
-template<typename T>
-std::string Utils::ToStringSeq(
-  const T& begin, const T& end, const std::string& lsymbol,
-  const std::string& rsymbol, const std::string& sep,
-  bool elem_in_quote) {
-  const auto quote = elem_in_quote ? "\"" : "";
-  std::stringstream ss;
-  ss << lsymbol;
-  auto it = begin;
-  if (it != end) {
-    ss << quote << *it++ << quote;
-    while (it != end) {
-      ss << sep << quote << *it++ << quote;
+  template<typename T>
+  std::string Utils::ToStringSeq(
+    const T& begin, const T& end, const std::string& lsymbol,
+    const std::string& rsymbol, const std::string& sep,
+    bool elem_in_quote) {
+    const auto quote = elem_in_quote ? "\"" : "";
+    std::stringstream ss;
+    ss << lsymbol;
+    auto it = begin;
+    if (it != end) {
+      ss << quote << *it++ << quote;
+      while (it != end) {
+        ss << sep << quote << *it++ << quote;
+      }
     }
+    ss << rsymbol;
+    return ss.str();
   }
-  ss << rsymbol;
-  return ss.str();
-}
 
-template<typename T>
-std::vector<T> Utils::ToVector(
-  const std::string& str,
-  const std::function<T(const std::string&)>& f_str_to_val,
-  const char* sep_chars) {
-  std::vector<T> vec;
-  for (const auto& t : Tokenize(str, sep_chars)) {
-    vec.emplace_back(f_str_to_val(t));
+  template<typename T>
+  std::vector<T> Utils::ToVector(
+    const std::string& str,
+    const std::function<T(const std::string&)>& f_str_to_val,
+    const char* sep_chars) {
+    std::vector<T> vec;
+    for (const auto& t : Tokenize(str, sep_chars)) {
+      vec.emplace_back(f_str_to_val(t));
+    }
+    return vec;
   }
-  return vec;
-}
 
-template<typename T>
-std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
-  std::vector<size_t> idx(v.size());
-  std::iota(idx.begin(), idx.end(), 0);
+  template<typename T>
+  std::vector<size_t> Utils::SortIndexes(const std::vector<T>& v) {
+    std::vector<size_t> idx(v.size());
+    std::iota(idx.begin(), idx.end(), 0);
 
-  // sort indexes based on comparing values in v
-  std::sort(idx.begin(), idx.end(),
-  [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+    // sort indexes based on comparing values in v
+    std::sort(idx.begin(), idx.end(),
+    [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
 
-  return idx;
-}
-
-template<typename T>
-void Utils::PrintSeq(const T& begin, const T& end,
-                     const std::string& lsymbol, const std::string& rsymbol,
-                     const std::string& sep, bool elem_in_quote,
-                     std::ostream& os) {
-  const auto quote = elem_in_quote ? "\"" : "";
-  os << lsymbol;
-  auto it = begin;
-  if (it != end) {
-    os << quote << *it++ << quote;
-    while (it != end) os << sep << quote << *it++ << quote;
+    return idx;
   }
-  os << rsymbol;
-}
 
-template<typename T>
-void Utils::Print(const std::vector<T> elems, const std::string& lsymbol,
-                  const std::string& rsymbol, const std::string& sep,
-                  bool elem_in_quote, size_t limit, std::ostream& os) {
-  auto seq_size = elems.size();
-  auto begin = elems.begin();
-  auto end = elems.end();
-  std::string tail("");
-  if (seq_size > limit) {
-    auto remain  = seq_size - limit;
-    tail = ", ...(and " + std::to_string(remain) + " more)";
-    end -= remain;
+  template<typename T>
+  void Utils::PrintSeq(const T& begin, const T& end,
+                       const std::string& lsymbol, const std::string& rsymbol,
+                       const std::string& sep, bool elem_in_quote,
+                       std::ostream& os) {
+    const auto quote = elem_in_quote ? "\"" : "";
+    os << lsymbol;
+    auto it = begin;
+    if (it != end) {
+      os << quote << *it++ << quote;
+      while (it != end) os << sep << quote << *it++ << quote;
+    }
+    os << rsymbol;
   }
-  PrintSeq(begin, end, lsymbol, tail + rsymbol, sep, elem_in_quote, os);
-}
 
-template<class T>
-void Utils::PrintDiff(T& it_diff, bool show_diff, bool elem_in_quote,
-                      std::ostream& os) {
-  const auto quote = elem_in_quote ? "\"" : "";
-  auto f_print_diff_key = [&os, &it_diff, &quote]() {
-    os << quote << it_diff.key() << quote;
-  };
-  auto f_print_diff = [&os, &it_diff, &quote]() {
-    os << quote << it_diff.key() << quote << ":(";
-    auto lhs = it_diff.lhs_value();
-    if (lhs.empty()) { os << "_"; } else { os << quote << lhs << quote; }
-    os << ',';
-    auto rhs = it_diff.rhs_value();
-    if (rhs.empty()) { os << "_"; } else { os << quote << rhs << quote; }
-    os << ')';
-  };
+  template<typename T>
+  void Utils::Print(const std::vector<T> elems, const std::string& lsymbol,
+                    const std::string& rsymbol, const std::string& sep,
+                    bool elem_in_quote, size_t limit, std::ostream& os) {
+    auto seq_size = elems.size();
+    auto begin = elems.begin();
+    auto end = elems.end();
+    std::string tail("");
+    if (seq_size > limit) {
+      auto remain  = seq_size - limit;
+      tail = ", ...(and " + std::to_string(remain) + " more)";
+      end -= remain;
+    }
+    PrintSeq(begin, end, lsymbol, tail + rsymbol, sep, elem_in_quote, os);
+  }
 
-  os << "[";
-  if (!it_diff.end()) {
-    show_diff ? f_print_diff() : f_print_diff_key();
-    for (it_diff.next(); !it_diff.end(); it_diff.next()) {
-      os << ", ";
+  template<class T>
+  void Utils::PrintDiff(T& it_diff, bool show_diff, bool elem_in_quote,
+                        std::ostream& os) {
+    const auto quote = elem_in_quote ? "\"" : "";
+    auto f_print_diff_key = [&os, &it_diff, &quote]() {
+      os << quote << it_diff.key() << quote;
+    };
+    auto f_print_diff = [&os, &it_diff, &quote]() {
+      os << quote << it_diff.key() << quote << ":(";
+      auto lhs = it_diff.lhs_value();
+      if (lhs.empty()) { os << "_"; } else { os << quote << lhs << quote; }
+      os << ',';
+      auto rhs = it_diff.rhs_value();
+      if (rhs.empty()) { os << "_"; } else { os << quote << rhs << quote; }
+      os << ')';
+    };
+
+    os << "[";
+    if (!it_diff.end()) {
       show_diff ? f_print_diff() : f_print_diff_key();
+      for (it_diff.next(); !it_diff.end(); it_diff.next()) {
+        os << ", ";
+        show_diff ? f_print_diff() : f_print_diff_key();
+      }
     }
+    os << "]";
   }
-  os << "]";
-}
 
-template<class T1, class T2>
-void Utils::Print(const std::unordered_map<T1, T2>& map,
-                  const std::string& lsymbol, const std::string& rsymbol,
-                  const std::string& sep, const std::string& lentry,
-                  const std::string& rentry, const std::string& entry_sep,
-                  bool elem_in_quote, std::ostream& os) {
-  const auto quote = elem_in_quote ? "\"" : "";
-  auto it = map.begin();
-  auto f_print_it = [&]() {
-    os << lentry << quote << it->first << quote << entry_sep << quote
-       << it->second << quote << rentry;
-  };
-  os << lsymbol;
-  if (it != map.end()) {
-    f_print_it();
-    while (++it != map.end()) {
-      os << sep;
+  template<class T1, class T2>
+  void Utils::Print(const std::unordered_map<T1, T2>& map,
+                    const std::string& lsymbol, const std::string& rsymbol,
+                    const std::string& sep, const std::string& lentry,
+                    const std::string& rentry, const std::string& entry_sep,
+                    bool elem_in_quote, std::ostream& os) {
+    const auto quote = elem_in_quote ? "\"" : "";
+    auto it = map.begin();
+    auto f_print_it = [&]() {
+      os << lentry << quote << it->first << quote << entry_sep << quote
+         << it->second << quote << rentry;
+    };
+    os << lsymbol;
+    if (it != map.end()) {
       f_print_it();
+      while (++it != map.end()) {
+        os << sep;
+        f_print_it();
+      }
     }
+    os << rsymbol;
   }
-  os << rsymbol;
-}
 
-template<class T1, class T2>
-void Utils::PrintKeys(const std::unordered_map<T1, T2>& map,
-                      const std::string& lsymbol, const std::string& rsymbol,
-                      const std::string& sep, bool elem_in_quote,
-                      std::ostream& os) {
-  const auto quote = elem_in_quote ? "\"" : "";
-  auto it = map.begin();
-  os << lsymbol;
-  if (it != map.end()) {
-    os << quote << it->first << quote;
-    while (++it != map.end()) {
-      os << sep << quote << it->first << quote;
+  template<class T1, class T2>
+  void Utils::PrintKeys(const std::unordered_map<T1, T2>& map,
+                        const std::string& lsymbol, const std::string& rsymbol,
+                        const std::string& sep, bool elem_in_quote,
+                        std::ostream& os) {
+    const auto quote = elem_in_quote ? "\"" : "";
+    auto it = map.begin();
+    os << lsymbol;
+    if (it != map.end()) {
+      os << quote << it->first << quote;
+      while (++it != map.end()) {
+        os << sep << quote << it->first << quote;
+      }
     }
+    os << rsymbol;
   }
-  os << rsymbol;
-}
 
-template<typename T>
-void Utils::Split(const std::string& s, char delim, T result) {
-  std::stringstream ss;
-  ss.str(s);
-  std::string item;
-  while (std::getline(ss, item, delim)) *(result++) = item;
-}
+  template<typename T>
+  void Utils::Split(const std::string& s, char delim, T result) {
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) *(result++) = item;
+  }
 
-inline std::ostream& operator<<(std::ostream& os, const UType& obj) {
-  os << Utils::ToString(obj);
-  return os;
-}
+  inline std::ostream& operator<<(std::ostream& os, const UType& obj) {
+    os << Utils::ToString(obj);
+    return os;
+  }
 
-inline std::ostream& operator<<(std::ostream& os, const ErrorCode& obj) {
-  os << static_cast<int>(obj);
-  return os;
-}
+  inline std::ostream& operator<<(std::ostream& os, const ErrorCode& obj) {
+    os << static_cast<int>(obj);
+    return os;
+  }
 
-inline std::ostream& operator<<(std::ostream& os, const UList& obj) {
-  Utils::Print(obj, "[", "]", ", ", false, Utils::max_size_t, os);
-  return os;
-}
+  inline std::ostream& operator<<(std::ostream& os, const UList& obj) {
+    Utils::Print(obj, "[", "]", ", ", false, Utils::max_size_t, os);
+    return os;
+  }
 
-inline std::ostream& operator<<(std::ostream& os, const UMap& obj) {
-  Utils::Print(
-    obj, "[", "]", ", ", "(", ")", "->", false, Utils::max_size_t, os);
-  return os;
-}
+  inline std::ostream& operator<<(std::ostream& os, const UMap& obj) {
+    Utils::Print(
+      obj, "[", "]", ", ", "(", ")", "->", false, Utils::max_size_t, os);
+    return os;
+  }
 
-inline std::ostream& operator<<(std::ostream& os, const USet& obj) {
-  Utils::Print(
-    obj, "[", "]", ", ", false, Utils::max_size_t, os);
-  return os;
-}
+  inline std::ostream& operator<<(std::ostream& os, const USet& obj) {
+    Utils::Print(
+      obj, "[", "]", ", ", false, Utils::max_size_t, os);
+    return os;
+  }
 
 }  // namespace ustore
 

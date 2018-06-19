@@ -443,4 +443,44 @@ ErrorCode Utils::IterateDirectory(
   }
 }
 
+ErrorCode Utils::IterateFileByLine(
+  const boost_fs::path& file_path,
+  const std::function<ErrorCode(const std::string& line)>& f_manip_line) {
+  try {
+    if (boost_fs::exists(file_path) && boost_fs::is_regular_file(file_path)) {
+      std::ifstream ifs(file_path.native());
+      auto ec = ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile;
+      USTORE_GUARD(ec);
+      std::string line;
+      while (std::getline(ifs, line) && ec == ErrorCode::kOK) {
+        ec = f_manip_line(line);
+      }
+      ifs.close();
+      return ec;
+    } else {
+      LOG(ERROR) << "Invalid file: " << file_path;
+      return ErrorCode::kInvalidPath;
+    }
+  } catch (const boost_fs::filesystem_error& e) {
+    LOG(ERROR) << e.what();
+    return ErrorCode::kIOFault;
+  }
+}
+
+ErrorCode Utils::ExtractElement(const std::string& str,
+                                const size_t idx_elem,
+                                std::string* elem,
+                                const char delim) {
+  auto elements = Split(str, delim);
+  if (idx_elem < elements.size()) {
+    *elem = std::move(elements[idx_elem]);
+    return ErrorCode::kOK;
+  } else {
+    LOG(ERROR) << "Failed to extract element in string : \"" << str << "\"";
+    return ErrorCode::kIndexOutOfRange;
+  }
+  // TODO (linqian): Replace the above approach by scanning the string and
+  //                 extract element in the target position.
+}
+
 }  // namespace ustore

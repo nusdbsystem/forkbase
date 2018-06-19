@@ -122,11 +122,12 @@ ErrorCode BlobStore::ExportDatasetBinary(const std::string& ds_name,
     USTORE_GUARD(
       ReadDataEntry(ds_name, entry_name, entry_ver, &entry));
     // output data entry to file
-    ofs << entry;
+    ofs << entry << std::endl;
     *n_bytes += entry.size();
   }
   ofs.close();
   *n_entries = ds.numElements();
+  *n_bytes += *n_entries;  // count for std::endl
   return ErrorCode::kOK;
 }
 
@@ -379,6 +380,70 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
   // iterate the directory and put each file as a data entry
   USTORE_GUARD(
     Utils::IterateDirectory(dir_path, f_put_file, ""));
+  // update dataset
+  std::vector<Slice> ds_entry_names_slice;
+  for (auto& en : ds_entry_names) {
+    ds_entry_names_slice.emplace_back(Slice(en));
+  }
+  std::vector<Slice> ds_entry_vers_slice;
+  for (auto& ev : ds_entry_vers) {
+    ds_entry_vers_slice.emplace_back(Utils::ToSlice(ev));
+  }
+#if defined(__BLOB_STORE_USE_MAP_MULTI_SET_OP__)
+  ds.Set(ds_entry_names_slice, ds_entry_vers_slice);
+  USTORE_GUARD(
+    odb_.Put(ds_name_slice, ds, branch_slice).stat);
+#else
+  for (size_t i = 0; i < ds_entry_names.size(); ++i) {
+    Dataset ds_update;
+    USTORE_GUARD(
+      ReadDataset(ds_name_slice, branch_slice, &ds_update));
+    auto& entry_name = ds_entry_names_slice[i];
+    auto& entry_ver = ds_entry_vers_slice[i];
+    ds_update.Set(entry_name, entry_ver);
+    USTORE_GUARD(
+      odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
+  }
+#endif
+  *n_entries = ds_entry_names.size();
+  return ErrorCode::kOK;
+}
+
+ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
+                                       const std::string& branch,
+                                       const boost::filesystem::path& file_path,
+                                       const int64_t idx_entry_name,
+                                       size_t* n_entries, size_t* n_bytes) {
+  *n_entries = 0;
+  *n_bytes = 0;
+  const Slice ds_name_slice(ds_name), branch_slice(branch);
+  // retrieve the operating dataset
+  Dataset ds;
+  USTORE_GUARD(
+    ReadDataset(ds_name_slice, branch_slice, &ds));
+  // procedure: put single line (i.e. a data entry) to storage
+  std::vector<std::string> ds_entry_names;
+  std::vector<Hash> ds_entry_vers;
+  const char delim(',');
+  const auto f_put_line = [&](const std::string & line) {
+    std::string entry_name;
+    USTORE_GUARD(
+      Utils::ExtractElement(line, idx_entry_name, &entry_name, delim));
+    // fetch existing version of the data entry
+    auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+    if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
+    // write the data entry to storage
+    Hash entry_ver;
+    USTORE_GUARD(WriteDataEntry(
+                   ds_name, entry_name, line, prev_entry_ver, &entry_ver));
+    // archive updates
+    ds_entry_names.push_back(std::move(entry_name));
+    ds_entry_vers.push_back(std::move(entry_ver));
+    *n_bytes += line.size();
+    return ErrorCode::kOK;
+  };
+  USTORE_GUARD(
+    Utils::IterateFileByLine(file_path, f_put_line));
   // update dataset
   std::vector<Slice> ds_entry_names_slice;
   for (auto& en : ds_entry_names) {

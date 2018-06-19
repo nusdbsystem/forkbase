@@ -112,6 +112,21 @@ class BlobStore {
     return PutDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
 
+  ErrorCode PutDataEntryByCSV(const std::string& ds_name,
+                              const std::string& branch,
+                              const boost::filesystem::path& file_path,
+                              const int64_t idx_entry_name,
+                              size_t* n_entries, size_t* n_bytes);
+
+  inline ErrorCode PutDataEntryByCSV(const std::string& ds_name,
+                                     const std::string& branch,
+                                     const boost::filesystem::path& file_path,
+                                     const int64_t idx_entry_name) {
+    size_t n_entries, n_bytes;
+    return PutDataEntryByCSV(ds_name, branch, file_path, idx_entry_name,
+                             &n_entries, &n_bytes);
+  }
+
   ErrorCode DeleteDataEntry(const std::string& ds_name,
                             const std::string& branch,
                             const std::string& entry_name);
