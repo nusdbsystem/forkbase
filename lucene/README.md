@@ -15,7 +15,7 @@ Request Body: JSON string
               {
                 "dir"    : "<path_of_files_to_be_indexed>",
                 "dataset": "<dataset_name>",
-                "branch" : "<branch_name"
+                "branch" : "<branch_name>"
               }
 Response    : JSON string with fields
                 status - 0: successful; 1: failed
