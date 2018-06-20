@@ -5,13 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-
+import java.util.Comparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -31,81 +28,72 @@ import pojo.Const;
 
 @Service
 public class AsyncServiceImpl implements AsyncService {
+
   private static final Logger logger = LogManager.getLogger(AsyncServiceImpl.class);
 
   @Async
   @Override
-  public void asyncIndexFile(Path path, String dataset, String branch) {
+  public void asyncIndexFile(Path docDir, String dataset, String branch) {
     try {
+      // Do not create index folder/files for empty documents
+      if (Files.isRegularFile(docDir) && Files.size(docDir) == 0
+          || Files.isDirectory(docDir)
+              && Files.walk(docDir)
+                      .filter(Files::isRegularFile)
+                      .filter(
+                          f -> {
+                            try {
+                              return Files.size(f) > 0;
+                            } catch (IOException e) {
+                              return false;
+                            }
+                          })
+                      .count()
+                  <= 0) {
+        logger.warn("No document or documents are empty. Indexing is skipped");
+        Files.walk(docDir)
+            .sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .forEach(File::delete);
+        return;
+      }
+
+      // Create index folders and index files
       Directory indexDir = FSDirectory.open(Paths.get(Const.INDEX_ROOT + dataset + "/" + branch));
       IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
-
       iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
 
-      // Optional: for better indexing performance, if you
-      // are indexing many documents, increase the RAM
-      // buffer. But if you do this, increase the max heap
-      // size to the JVM (eg add -Xmx512m or -Xmx1g):
-      //
-      // iwc.setRAMBufferSizeMB(256.0);
-
       IndexWriter writer = new IndexWriter(indexDir, iwc);
-      indexDocs(writer, path);
 
-      // NOTE: if you want to maximize search performance,
-      // you can optionally call forceMerge here. This can be
-      // a terribly costly operation, so generally it's only
-      // worth it when your index is relatively static (ie
-      // you're done adding documents to it):
-      //
-      // writer.forceMerge(1);
+      Files.walk(docDir)
+          .filter(Files::isRegularFile)
+          .forEach(
+              p -> {
+                try {
+                  indexDoc(p, writer);
+                } catch (Exception e) {
+                  logger.error("Indexing failed for file ", p.toString(), e);
+                }
+              });
 
       writer.close();
-      Files.walk(path).filter(Files::isRegularFile).map(Path::toFile).forEach(File::delete);
+      Files.walk(docDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
     } catch (IOException e) {
       logger.error("Indexing failed!", e);
     }
   }
 
-  /**
-   * Indexes the given file using the given writer, or if a directory is given, recurses over files
-   * and directories found under the given directory.
-   *
-   * @param writer Writer to the index where the given file/dir info will be stored
-   * @param path The file to index, or the directory to recurse into to find files to index
-   * @throws IOException If there is a low-level I/O error
-   */
-  static void indexDocs(final IndexWriter writer, Path path) throws IOException {
-    if (Files.isDirectory(path)) {
-      Files.walkFileTree(
-          path,
-          new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                throws IOException {
-              try {
-                indexDoc(writer, file);
-              } catch (IOException ignore) {
-                // don't index files that can't be read.
-              }
-              return FileVisitResult.CONTINUE;
-            }
-          });
-    } else {
-      indexDoc(writer, path);
-    }
-  }
-
   /** Indexes a single document */
-  static void indexDoc(IndexWriter writer, Path file) throws IOException {
+  private void indexDoc(Path file, IndexWriter writer) throws Exception {
     InputStream stream = Files.newInputStream(file);
     BufferedReader in = new BufferedReader(new InputStreamReader(stream));
     String line = null;
     while ((line = in.readLine()) != null) {
+      int delim = line.indexOf(",");
+      if (delim < 0) throw new Exception("File format is invalid.");
       Document doc = new Document();
-      doc.add(
-          new TextField(Const.FIELD_KEY, line.substring(0, line.indexOf(",")), Field.Store.YES));
-      doc.add(new TextField(Const.FIELD_VALUE, line.substring(line.indexOf(",")), Field.Store.NO));
+      doc.add(new TextField(Const.FIELD_KEY, line.substring(0, delim), Field.Store.YES));
+      doc.add(new TextField(Const.FIELD_VALUE, line.substring(delim), Field.Store.NO));
       writer.updateDocument(new Term(Const.FIELD_KEY, doc.get(Const.FIELD_KEY)), doc);
     }
   }

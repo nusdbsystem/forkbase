@@ -1,12 +1,12 @@
 package service;
 
-import java.io.IOException;
 import pojo.IndexRequest;
+import pojo.IndexResponse;
 import pojo.SearchRequest;
 import pojo.SearchResponse;
 
 public interface IndexService {
-  public void indexFile(IndexRequest param) throws IOException;
+  public IndexResponse indexFile(IndexRequest param);
 
-  public SearchResponse searchFile(SearchRequest param) throws Exception;
+  public SearchResponse searchFile(SearchRequest param);
 }

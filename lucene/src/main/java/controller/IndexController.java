@@ -1,8 +1,5 @@
 package controller;
 
-import java.io.IOException;
-
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,11 +9,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.google.gson.Gson;
 
-import pojo.Const;
 import pojo.IndexRequest;
-import pojo.IndexResponse;
 import pojo.SearchRequest;
-import pojo.SearchResponse;
 import service.IndexService;
 
 @Controller
@@ -34,12 +28,7 @@ public class IndexController {
   @ResponseBody
   public String indexFiles(@RequestBody IndexRequest param) {
     Gson gson = new Gson();
-    try {
-      service.indexFile(param);
-      return gson.toJson(new IndexResponse(Const.SUCCESS, ""));
-    } catch (IOException e) {
-      return gson.toJson(new IndexResponse(Const.FAIL, e.getMessage()));
-    }
+    return gson.toJson(service.indexFile(param));
   }
 
   /**
@@ -52,15 +41,6 @@ public class IndexController {
   @ResponseBody
   public String searchFiles(@RequestBody SearchRequest param) {
     Gson gson = new Gson();
-    try {
-      SearchResponse result = service.searchFile(param);
-      return gson.toJson(result);
-    } catch (IOException e) {
-      return gson.toJson(new SearchResponse(Const.FAIL, e.getMessage()));
-    } catch (ParseException e) {
-      return gson.toJson(new SearchResponse(Const.FAIL, e.getMessage()));
-    } catch (Exception e) {
-      return gson.toJson(new SearchResponse(Const.FAIL, e.getMessage()));
-    }
+    return gson.toJson(service.searchFile(param));
   }
 }
