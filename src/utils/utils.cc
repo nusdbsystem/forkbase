@@ -479,8 +479,8 @@ ErrorCode Utils::ExtractElement(const std::string& str,
     LOG(ERROR) << "Failed to extract element in string : \"" << str << "\"";
     return ErrorCode::kIndexOutOfRange;
   }
-  // TODO (linqian): Replace the above approach by scanning the string and
-  //                 extract element in the target position.
+  // TODO(linqian): Replace the above approach by scanning the string and
+  //                extract element in the target position.
 }
 
 }  // namespace ustore

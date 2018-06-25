@@ -124,7 +124,7 @@ enum class ErrorCode : byte_t {
   kUnexpectedSuccess = 68,
   // blob store
   kDatasetNotExists = 70,
-  kDataEntryNotExists = 71, 
+  kDataEntryNotExists = 71,
   kDataEntryNameNotFound = 72
 };
 
