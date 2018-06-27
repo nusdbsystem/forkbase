@@ -30,3 +30,8 @@ AUX_SOURCE_DIRECTORY(table_op example_table_op_source)
 ADD_EXECUTABLE(ustore_example_table_op "table_op/table_op_main.cc" ${example_table_op_source})
 ADD_DEPENDENCIES(ustore_example_table_op ustore)
 TARGET_LINK_LIBRARIES(ustore_example_table_op ustore)
+
+AUX_SOURCE_DIRECTORY(lucene_client lucene_client_source)
+ADD_EXECUTABLE(ustore_lucene_client "lucene_client/lucene_client_main.cc" ${lucene_client_source})
+ADD_DEPENDENCIES(ustore_lucene_client ustore)
+TARGET_LINK_LIBRARIES(ustore_lucene_client ustore)

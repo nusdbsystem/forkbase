@@ -10,21 +10,38 @@ static const std::string DATASET_LIST_BRANCH = "master";
 
 namespace boost_fs = boost::filesystem;
 
+#if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
 ErrorCode BlobStore::GetDatasetList(VSet* ds_list) {
+#else
+ErrorCode BlobStore::GetDatasetList(VMap* ds_list) {
+#endif
   static const Slice ds_list_name(DATASET_LIST_NAME);
   static const Slice ds_list_branch(DATASET_LIST_BRANCH);
   auto rst_ds_list = odb_.Get(ds_list_name, ds_list_branch);
   if (rst_ds_list.stat != ErrorCode::kOK) {
+#if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
     USTORE_GUARD(
       odb_.Put(ds_list_name, VSet(), ds_list_branch).stat);
+#else
+    USTORE_GUARD(
+      odb_.Put(ds_list_name, VMap(), ds_list_branch).stat);
+#endif
     return GetDatasetList(ds_list);
   }
+#if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
   *ds_list = rst_ds_list.value.Set();
+#else
+  *ds_list = rst_ds_list.value.Map();
+#endif
   return ErrorCode::kOK;
 }
 
 ErrorCode BlobStore::ListDataset(std::vector<std::string>* datasets) {
+#if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
   VSet ds_list;
+#else
+  VMap ds_list;
+#endif
   USTORE_GUARD(
     GetDatasetList(&ds_list));
   std::vector<std::string> dss;
@@ -52,11 +69,19 @@ ErrorCode BlobStore::UpdateDatasetList(const Slice& ds_name, bool to_delete) {
   static const Slice ds_list_name(DATASET_LIST_NAME);
   static const Slice ds_list_branch(DATASET_LIST_BRANCH);
   // retrieve dataset list
+#if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
   VSet ds_list;
+#else
+  VMap ds_list;
+#endif
   USTORE_GUARD(
     GetDatasetList(&ds_list));
   // update dataset list
+#if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
   to_delete ? ds_list.Remove(ds_name) : ds_list.Set(ds_name);
+#else
+  to_delete ? ds_list.Remove(ds_name) : ds_list.Set(ds_name, Slice(""));
+#endif
   return odb_.Put(ds_list_name, ds_list, ds_list_branch).stat;
 }
 
@@ -411,7 +436,7 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
 
 ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
                                        const std::string& branch,
-                                       const boost::filesystem::path& file_path,
+                                       const boost_fs::path& file_path,
                                        const int64_t idx_entry_name,
                                        size_t* n_entries, size_t* n_bytes) {
   *n_entries = 0;
