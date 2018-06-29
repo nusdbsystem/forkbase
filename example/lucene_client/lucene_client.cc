@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <vector>
 
 #include "lucene_client.h"
 
@@ -104,7 +105,7 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
 }
 
 ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
-  // TODO (linqian): implement the command
+  // TODO(linqian): implement the command
   std::cout << BOLD_CYAN("[TODO: GET_DATA_ENTRY_BY_INDEX_QUERY] ")
             << "..." << std::endl;
   return ErrorCode::kOK;

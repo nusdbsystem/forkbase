@@ -3,6 +3,9 @@
 #ifndef USTORE_EXAMPLE_LUCENE_CLIENT_LUCENE_BLOB_STORE_H_
 #define USTORE_EXAMPLE_LUCENE_CLIENT_LUCENE_BLOB_STORE_H_
 
+#include <string>
+#include <vector>
+
 #include "spec/blob_store.h"
 
 namespace ustore {

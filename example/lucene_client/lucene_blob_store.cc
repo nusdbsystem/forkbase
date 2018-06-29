@@ -2,6 +2,8 @@
 
 #include "lucene_blob_store.h"
 
+#include <utility>
+
 namespace ustore {
 namespace example {
 namespace lucene_client {
@@ -23,7 +25,7 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
   // create file of lucene index input
-  // TODO (yuecong): configure the path of the lucene index input file
+  // TODO(yuecong): configure the path of the lucene index input file
   const boost_fs::path lucene_index_input_path(
     "/tmp/ustore/lucene_client/lucene_index_input.csv");
   try {
@@ -105,7 +107,7 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
   const std::string& ds_name,
   const std::string& branch,
   const boost_fs::path& lucene_index_input_path) const {
-  // TODO (yuecong): implement the remote procedure call
+  // TODO(yuecong): implement the remote procedure call
   std::cout << CYAN("[TODO: Lucene RPC] ")
             << "Dataset: \"" << ds_name << "\", "
             << "Branch: \"" << branch << "\", "
