@@ -40,10 +40,9 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   std::vector<std::string> ds_entry_names;
   std::vector<Hash> ds_entry_vers;
   size_t line_cnt(0);
-  const char delim(',');
   const auto f_put_line = [&](const std::string & line) {
     ++line_cnt;
-    const auto elements = Utils::Split(line, delim);
+    const auto elements = Utils::Split(line, ',');
     if (idx_entry_name >= static_cast<int64_t>(elements.size())) {
       LOG(ERROR) << "Failed to extract entry name in line " << line_cnt
                  << ": \"" << line << "\"";
@@ -113,6 +112,57 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
             << "Branch: \"" << branch << "\", "
             << "Index Input: " << lucene_index_input_path.native()
             << std::endl;
+  return ErrorCode::kOK;
+}
+
+ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
+  const std::string& ds_name, const std::string& branch,
+  const std::vector<std::string>& query_keywords,
+  std::ostream& os, size_t* n_entries, size_t* n_bytes) const {
+  *n_entries = 0;
+  *n_bytes = 0;
+  // retrieve the operating dataset
+  Dataset ds;
+  USTORE_GUARD(
+    GetDataset(ds_name, branch, &ds));
+  // retrieve entry names associated with the query keywords
+  std::vector<std::string> ds_entry_names;
+  USTORE_GUARD(
+    LuceneQueryKeywords(ds_name, branch, query_keywords, &ds_entry_names));
+  // retrieve data entries
+  for (auto& entry_name : ds_entry_names) {
+    auto entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+    if (entry_ver.empty()) {
+      LOG(WARNING) << "Data Entry \"" << entry_name
+                   << "\" does not exist in Dataset \""
+                   << ds_name << "\" of Branch \"" << branch << "\"";
+      return ErrorCode::kDataEntryNotExists;
+    }
+    // read data entry
+    DataEntry entry;
+    USTORE_GUARD(
+      ReadDataEntry(ds_name, entry_name, entry_ver, &entry));
+    os << entry << std::endl;
+    ++(*n_entries);
+    *n_bytes += entry.size();
+  }
+  *n_bytes += *n_entries;  // count for std::endl
+  return ErrorCode::kOK;
+}
+
+ErrorCode LuceneBlobStore::LuceneQueryKeywords(
+  const std::string& ds_name, const std::string& branch,
+  const std::vector<std::string>& query_keywords,
+  std::vector<std::string>* entry_names) const {
+  // TODO(yuecong): implement the remote procedure call
+  std::cout << CYAN("[TODO: Lucene RPC] ")
+            << "Dataset: \"" << ds_name << "\", "
+            << "Branch: \"" << branch << "\", "
+            << "Query Keywords: ";
+  Utils::Print(query_keywords, "{", "}");
+  std::cout << std::endl;
+  std::vector<std::string> ds_entry_names = {"K-3", "K-5", "K-6"};
+  *entry_names = std::move(ds_entry_names);
   return ErrorCode::kOK;
 }
 

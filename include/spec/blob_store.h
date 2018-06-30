@@ -25,25 +25,27 @@ class BlobStore {
 
   virtual ErrorCode ListDataset(std::vector<std::string>* datasets);
 
-  virtual ErrorCode ExistsDataset(const std::string& ds_name, bool* exists);
+  virtual ErrorCode ExistsDataset(const std::string& ds_name,
+                                  bool* exists) const;
 
   virtual ErrorCode ExistsDataset(const std::string& ds_name,
-                                  const std::string& branch, bool* exists);
+                                  const std::string& branch,
+                                  bool* exists) const;
 
   virtual ErrorCode CreateDataset(const std::string& ds_name,
                                   const std::string& branch);
 
   virtual ErrorCode GetDataset(const std::string& ds_name,
-                               const std::string& branch, Dataset* ds);
+                               const std::string& branch, Dataset* ds) const;
 
   virtual ErrorCode ExportDatasetBinary(
     const std::string& ds_name, const std::string& branch,
     const boost::filesystem::path& file_path,
-    size_t* n_entries, size_t* n_bytes);
+    size_t* n_entries, size_t* n_bytes) const;
 
   inline virtual ErrorCode ExportDatasetBinary(
     const std::string& ds_name, const std::string& branch,
-    const boost::filesystem::path& file_path) {
+    const boost::filesystem::path& file_path) const {
     size_t n_entries, n_bytes;
     return ExportDatasetBinary(
              ds_name, branch, file_path, &n_entries, &n_bytes);
@@ -54,39 +56,40 @@ class BlobStore {
                                   const std::string& new_branch);
 
   virtual ErrorCode ListDatasetBranch(const std::string& ds_name,
-                                      std::vector<std::string>* branches);
+                                      std::vector<std::string>* branches) const;
 
   virtual ErrorCode DiffDataset(const std::string& lhs_ds_name,
                                 const std::string& lhs_branch,
                                 const std::string& rhs_ds_name,
                                 const std::string& rhs_branch,
-                                std::vector<std::string>* diff_keys);
+                                std::vector<std::string>* diff_keys) const;
 
   virtual ErrorCode DeleteDataset(const std::string& ds_name,
                                   const std::string& branch);
 
   virtual ErrorCode ExistsDataEntry(const std::string& ds_name,
                                     const std::string& entry_name,
-                                    bool* exists);
+                                    bool* exists) const;
 
   virtual ErrorCode ExistsDataEntry(const std::string& ds_name,
                                     const std::string& branch,
                                     const std::string& entry_name,
-                                    bool* exists);
+                                    bool* exists) const;
 
   virtual ErrorCode GetDataEntry(const std::string& ds_name,
                                  const std::string& branch,
                                  const std::string& entry_name,
-                                 DataEntry* entry);
+                                 DataEntry* entry) const;
 
   virtual ErrorCode GetDataEntryBatch(const std::string& ds_name,
                                       const std::string& branch,
                                       const boost::filesystem::path& dir_path,
-                                      size_t* n_entries, size_t* n_bytes);
+                                      size_t* n_entries,
+                                      size_t* n_bytes) const;
 
   inline virtual ErrorCode GetDataEntryBatch(const std::string& ds_name,
       const std::string& branch,
-      const boost::filesystem::path& dir_path) {
+      const boost::filesystem::path& dir_path) const {
     size_t n_entries, n_bytes;
     return GetDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
@@ -124,8 +127,7 @@ class BlobStore {
                                       size_t* n_entries, size_t* n_bytes);
 
   inline virtual ErrorCode PutDataEntryByCSV(const std::string& ds_name,
-      const std::string& branch,
-      const boost::filesystem::path& file_path,
+      const std::string& branch, const boost::filesystem::path& file_path,
       const int64_t idx_entry_name) {
     size_t n_entries, n_bytes;
     return PutDataEntryByCSV(ds_name, branch, file_path, idx_entry_name,
@@ -136,9 +138,9 @@ class BlobStore {
                                     const std::string& branch,
                                     const std::string& entry_name);
 
-  virtual ErrorCode ListDataEntryBranch(const std::string& ds_name,
-                                        const std::string& entry_name,
-                                        std::vector<std::string>* branches);
+  virtual ErrorCode ListDataEntryBranch(
+    const std::string& ds_name, const std::string& entry_name,
+    std::vector<std::string>* branches) const;
 
   template<class T1, class T2>
   static inline std::string GlobalKey(const T1& ds_name,
@@ -157,17 +159,17 @@ class BlobStore {
                                       bool to_delete = false);
 
   virtual ErrorCode ReadDataset(const Slice& ds_name, const Slice& branch,
-                                Dataset* ds);
+                                Dataset* ds) const;
 
   virtual ErrorCode ReadDataEntryHash(const std::string& ds_name,
                                       const std::string& entry_name,
                                       const Hash& entry_ver,
-                                      Hash* entry_hash);
+                                      Hash* entry_hash) const;
 
   virtual ErrorCode ReadDataEntry(const std::string& ds_name,
                                   const std::string& entry_name,
                                   const Hash& entry_ver,
-                                  DataEntry* entry_val);
+                                  DataEntry* entry_val) const;
 
   virtual ErrorCode WriteDataEntry(const std::string& ds_name,
                                    const std::string& entry_name,

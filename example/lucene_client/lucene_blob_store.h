@@ -24,10 +24,28 @@ class LuceneBlobStore : public BlobStore {
                               const std::vector<int64_t>& idxs_search,
                               size_t* n_entries, size_t* n_bytes);
 
+  ErrorCode GetDataEntryByIndexQuery(
+    const std::string& ds_name, const std::string& branch,
+    const std::vector<std::string>& query_keywords,
+    std::ostream& os, size_t* n_entries, size_t* n_bytes) const;
+
+  inline ErrorCode GetDataEntryByIndexQuery(
+    const std::string& ds_name, const std::string& branch,
+    const std::vector<std::string>& query_keywords, std::ostream& os) const {
+    size_t n_entries, n_bytes;
+    return GetDataEntryByIndexQuery(
+             ds_name, branch, query_keywords, os, &n_entries, &n_bytes);
+  }
+
  private:
   ErrorCode LuceneIndexDataEntries(
     const std::string& ds_name, const std::string& branch,
     const boost::filesystem::path& lucene_index_input_path) const;
+
+  ErrorCode LuceneQueryKeywords(
+    const std::string& ds_name, const std::string& branch,
+    const std::vector<std::string>& query_keywords,
+    std::vector<std::string>* entry_names) const;
 };
 
 }  // namespace lucene_client

@@ -11,10 +11,11 @@ static const std::string DATASET_LIST_BRANCH = "master";
 namespace boost_fs = boost::filesystem;
 
 #if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
-ErrorCode BlobStore::GetDatasetList(VSet* ds_list) {
+ErrorCode BlobStore::GetDatasetList(VSet* ds_list)
 #else
-ErrorCode BlobStore::GetDatasetList(VMap* ds_list) {
+ErrorCode BlobStore::GetDatasetList(VMap* ds_list)
 #endif
+{
   static const Slice ds_list_name(DATASET_LIST_NAME);
   static const Slice ds_list_branch(DATASET_LIST_BRANCH);
   auto rst_ds_list = odb_.Get(ds_list_name, ds_list_branch);
@@ -52,14 +53,16 @@ ErrorCode BlobStore::ListDataset(std::vector<std::string>* datasets) {
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::ExistsDataset(const std::string& ds_name, bool* exists) {
+ErrorCode BlobStore::ExistsDataset(const std::string& ds_name,
+                                   bool* exists) const {
   auto rst = odb_.ListBranches(Slice(ds_name));
   *exists = !rst.value.empty();
   return rst.stat;
 }
 
 ErrorCode BlobStore::ExistsDataset(const std::string& ds_name,
-                                   const std::string& branch, bool* exists) {
+                                   const std::string& branch,
+                                   bool* exists) const {
   auto rst = odb_.Exists(Slice(ds_name), Slice(branch));
   *exists = rst.value;
   return rst.stat;
@@ -104,7 +107,7 @@ ErrorCode BlobStore::CreateDataset(const std::string& ds_name,
 }
 
 ErrorCode BlobStore::ReadDataset(const Slice& ds_name, const Slice& branch,
-                                 Dataset* ds) {
+                                 Dataset* ds) const {
   auto rst = odb_.Get(ds_name, branch);
   auto& ec = rst.stat;
   if (ec == ErrorCode::kOK) {
@@ -116,13 +119,13 @@ ErrorCode BlobStore::ReadDataset(const Slice& ds_name, const Slice& branch,
 }
 
 ErrorCode BlobStore::GetDataset(const std::string& ds_name,
-                                const std::string& branch, Dataset* ds) {
+                                const std::string& branch, Dataset* ds) const {
   return ReadDataset(Slice(ds_name), Slice(branch), ds);
 }
 
 ErrorCode BlobStore::ExportDatasetBinary(const std::string& ds_name,
     const std::string& branch, const boost::filesystem::path& file_path,
-    size_t* n_entries, size_t* n_bytes) {
+    size_t* n_entries, size_t* n_bytes) const {
   *n_entries = 0;
   *n_bytes = 0;
   // open the output file
@@ -162,8 +165,9 @@ ErrorCode BlobStore::BranchDataset(const std::string& ds_name,
   return odb_.Branch(Slice(ds_name), Slice(old_branch), Slice(new_branch));
 }
 
-ErrorCode BlobStore::ListDatasetBranch(const std::string& ds_name,
-                                       std::vector<std::string>* branches) {
+ErrorCode BlobStore::ListDatasetBranch(
+  const std::string& ds_name,
+  std::vector<std::string>* branches) const {
   auto rst = odb_.ListBranches(Slice(ds_name));
   USTORE_GUARD(rst.stat);
   *branches = std::move(rst.value);
@@ -174,7 +178,7 @@ ErrorCode BlobStore::DiffDataset(const std::string& lhs_ds_name,
                                  const std::string& lhs_branch,
                                  const std::string& rhs_ds_name,
                                  const std::string& rhs_branch,
-                                 std::vector<std::string>* diff_keys) {
+                                 std::vector<std::string>* diff_keys) const {
   // retrieve datasets
   Dataset lhs_ds;
   USTORE_GUARD(
@@ -226,7 +230,7 @@ ErrorCode BlobStore::DeleteDataset(const std::string& ds_name,
 
 ErrorCode BlobStore::ExistsDataEntry(const std::string& ds_name,
                                      const std::string& entry_name,
-                                     bool* exists) {
+                                     bool* exists) const {
   // retrieve branch candidates
   std::vector<std::string> ds_branches;
   USTORE_GUARD(
@@ -244,7 +248,7 @@ ErrorCode BlobStore::ExistsDataEntry(const std::string& ds_name,
 ErrorCode BlobStore::ExistsDataEntry(const std::string& ds_name,
                                      const std::string& branch,
                                      const std::string& entry_name,
-                                     bool* exists) {
+                                     bool* exists) const {
   Dataset ds;
   USTORE_GUARD(
     GetDataset(ds_name, branch, &ds));
@@ -255,7 +259,7 @@ ErrorCode BlobStore::ExistsDataEntry(const std::string& ds_name,
 ErrorCode BlobStore::ReadDataEntryHash(const std::string& ds_name,
                                        const std::string& entry_name,
                                        const Hash& entry_ver,
-                                       Hash* entry_hash) {
+                                       Hash* entry_hash) const {
   const auto entry_key = GlobalKey(ds_name, entry_name);
   auto entry_rst = odb_.Get(Slice(entry_key), entry_ver);
   USTORE_GUARD(entry_rst.stat);
@@ -266,7 +270,7 @@ ErrorCode BlobStore::ReadDataEntryHash(const std::string& ds_name,
 ErrorCode BlobStore::ReadDataEntry(const std::string& ds_name,
                                    const std::string& entry_name,
                                    const Hash& entry_ver,
-                                   DataEntry* entry_val) {
+                                   DataEntry* entry_val) const {
   const auto entry_key = GlobalKey(ds_name, entry_name);
   auto entry_rst = odb_.Get(Slice(entry_key), entry_ver);
   USTORE_GUARD(entry_rst.stat);
@@ -277,7 +281,7 @@ ErrorCode BlobStore::ReadDataEntry(const std::string& ds_name,
 ErrorCode BlobStore::GetDataEntry(const std::string& ds_name,
                                   const std::string& branch,
                                   const std::string& entry_name,
-                                  DataEntry* entry) {
+                                  DataEntry* entry) const {
   // fetch version of data entry
   Dataset ds;
   USTORE_GUARD(
@@ -296,7 +300,8 @@ ErrorCode BlobStore::GetDataEntry(const std::string& ds_name,
 ErrorCode BlobStore::GetDataEntryBatch(const std::string& ds_name,
                                        const std::string& branch,
                                        const boost_fs::path& dir_path,
-                                       size_t* n_entries, size_t* n_bytes) {
+                                       size_t* n_entries,
+                                       size_t* n_bytes) const {
   *n_entries = 0;
   *n_bytes = 0;
   // retrieve the operating dataset
@@ -510,8 +515,10 @@ ErrorCode BlobStore::DeleteDataEntry(const std::string& ds_name,
   return odb_.Put(ds_name_slice, ds, branch_slice).stat;
 }
 
-ErrorCode BlobStore::ListDataEntryBranch(const std::string& ds_name,
-    const std::string& entry_name, std::vector<std::string>* branches) {
+ErrorCode BlobStore::ListDataEntryBranch(
+  const std::string& ds_name,
+  const std::string& entry_name,
+  std::vector<std::string>* branches) const {
   // retrieve branch candidates
   std::vector<std::string> ds_branches;
   USTORE_GUARD(

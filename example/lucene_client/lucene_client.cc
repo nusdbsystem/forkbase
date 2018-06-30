@@ -68,6 +68,7 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
               << "Index of Entry Name: " << idx_entry_name << ", "
+              << "Indexes for Keyword Search: {" << raw_idxs_search << "}, "
               << "File: \"" << file_path << "\"" << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
@@ -82,13 +83,14 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\""
               << "Index of Entry Name: " << idx_entry_name << ", "
+              << "Indexes for Keyword Search: {" << raw_idxs_search << "}, "
               << "File: \"" << file_path << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   // conditional execution
   if (ds_name.empty() || branch.empty() || file_path.empty()
-      || idx_entry_name < 0) {
+      || idx_entry_name < 0 || raw_idxs_search.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -105,10 +107,62 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
 }
 
 ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
-  // TODO(linqian): implement the command
-  std::cout << BOLD_CYAN("[TODO: GET_DATA_ENTRY_BY_INDEX_QUERY] ")
-            << "..." << std::endl;
-  return ErrorCode::kOK;
+  const auto& ds_name = args_.dataset;
+  const auto& branch = args_.branch;
+  const auto& raw_query_keywords = args_.query_keywords;
+  const auto& file_path = args_.file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATA_ENTRY_BY_INDEX_QUERY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Output: "
+              << (file_path.empty() ? "<stdout>" : file_path) << ", "
+              << "Query Keywords: {" << raw_query_keywords << "}"
+              << std::endl;
+  };
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_BY_INDEX_QUERY] ")
+              << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+              << " retrieved  "
+              << BLUE("[" << Utils::StorageSizeString(n_bytes) << "]")
+              << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_BY_INDEX_QUERY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Output: "
+              << (file_path.empty() ? "<stdout>" : file_path) << ", "
+              << "Query Keywords: {" << raw_query_keywords << "}"
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || raw_query_keywords.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (!file_path.empty()) {
+    try {
+      boost_fs::create_directories(boost_fs::path(file_path).parent_path());
+    } catch (const boost_fs::filesystem_error& e) {
+      f_rpt_fail(ErrorCode::kIOFault);
+      return ErrorCode::kIOFault;
+    }
+  }
+  std::ofstream ofs(file_path, std::ios::out | std::ios::trunc);
+  std::vector<std::string> query_keywords;
+  for (auto& kw : Utils::Split(raw_query_keywords, ',')) {
+    query_keywords.push_back(std::move(kw));
+  }
+  size_t n_entries, n_bytes;
+  auto ec = bs_.GetDataEntryByIndexQuery(
+              ds_name, branch, query_keywords,
+              (file_path.empty() ? std::cout : ofs), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
+  if (file_path.empty()) ofs.close();
+  return ec;
 }
 
 }  // namespace lucene_client
