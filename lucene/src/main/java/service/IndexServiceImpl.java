@@ -38,14 +38,16 @@ public class IndexServiceImpl implements IndexService {
       // Validate path
       final Path docDir = Paths.get(req.getDir());
       if (!Files.isReadable(docDir)) {
-        throw new IOException("Document directory does not exist or is not readable");
+        throw new Exception("Document directory does not exist or is not readable");
       }
 
       // Index file asynchronously
       service.asyncIndexFile(docDir, req.getDataset(), req.getBranch());
       return new IndexResponse(Const.SUCCESS, "");
     } catch (IOException e) {
-      return new IndexResponse(Const.FAIL, e.getMessage());
+      return new IndexResponse(Const.IO_EXCEPTION, e.getMessage());
+    } catch (Exception e) {
+      return new IndexResponse(Const.INVALID_PATH, e.getMessage());
     }
   }
 
@@ -90,8 +92,10 @@ public class IndexServiceImpl implements IndexService {
 
       reader.close();
       return res;
+    } catch (IOException e) {
+      return new SearchResponse(Const.IO_EXCEPTION, e.getMessage());
     } catch (Exception e) {
-      return new SearchResponse(Const.FAIL, e.getMessage());
+      return new SearchResponse(Const.PARSE_ERROR, e.getMessage());
     }
   }
 }

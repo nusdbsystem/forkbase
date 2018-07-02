@@ -2,7 +2,11 @@
 
 #include "lucene_blob_store.h"
 
+#include <boost/foreach.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <utility>
+
+#include "http/http_client.h"
 
 namespace ustore {
 namespace example {
@@ -25,9 +29,11 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
   // create file of lucene index input
-  // TODO(yuecong): configure the path of the lucene index input file
-  const boost_fs::path lucene_index_input_path(
-    "/tmp/ustore/lucene_client/lucene_index_input.csv");
+  time_t now;
+  time(&now);
+  std::string lucene_file_path = "../lucene/docs/lucene_index_input_"
+    + std::to_string(now) + ".csv";
+  const boost_fs::path lucene_index_input_path(lucene_file_path);
   try {
     boost_fs::create_directories(lucene_index_input_path.parent_path());
   } catch (const boost_fs::filesystem_error& e) {
@@ -103,16 +109,49 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
 }
 
 ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
-  const std::string& ds_name,
-  const std::string& branch,
-  const boost_fs::path& lucene_index_input_path) const {
-  // TODO(yuecong): implement the remote procedure call
-  std::cout << CYAN("[TODO: Lucene RPC] ")
-            << "Dataset: \"" << ds_name << "\", "
-            << "Branch: \"" << branch << "\", "
-            << "Index Input: " << lucene_index_input_path.native()
-            << std::endl;
-  return ErrorCode::kOK;
+    const std::string& ds_name,
+    const std::string& branch,
+    const boost_fs::path& lucene_index_input_path) const {
+  ustore::http::HttpClient hc;
+  ustore::http::Request request("/index", ustore::http::Verb::kPost);
+
+  // connect
+  hc.Connect("localhost", "8080");
+
+  // send
+  std::string body = "{\"dataset\":\"" + ds_name + "\","
+    + "\"branch\":\"" + branch + "\", "
+    + "\"dir\":\"" + lucene_index_input_path.native() + "\"}";
+  request.SetHeaderField("host", "localhost");
+  request.SetHeaderField("Content-Type", "application/json");
+  request.SetBody(body);
+  hc.Send(&request);
+
+  // read response
+  ustore::http::Response response;
+  hc.Receive(&response);
+
+  std::stringstream json_str(response.body());
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_json(json_str, pt);
+  int status = pt.get<int>("status");
+  string msg = pt.get<std::string>("msg");
+
+  // close client
+  hc.Shutdown();
+
+  if (status == 0) {
+    return ErrorCode::kOK;
+  } else if (status == 1) {
+    LOG(ERROR) << msg;
+    return ErrorCode::kInvalidPath;
+  } else if (status == 2) {
+    LOG(ERROR) << msg;
+    return ErrorCode::kIOFault;
+  } else {
+    LOG(ERROR) << msg;
+    return ErrorCode::kUnknownOp;
+  }
 }
 
 ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
@@ -154,16 +193,55 @@ ErrorCode LuceneBlobStore::LuceneQueryKeywords(
   const std::string& ds_name, const std::string& branch,
   const std::vector<std::string>& query_keywords,
   std::vector<std::string>* entry_names) const {
-  // TODO(yuecong): implement the remote procedure call
-  std::cout << CYAN("[TODO: Lucene RPC] ")
-            << "Dataset: \"" << ds_name << "\", "
-            << "Branch: \"" << branch << "\", "
-            << "Query Keywords: ";
-  Utils::Print(query_keywords, "{", "}");
-  std::cout << std::endl;
-  std::vector<std::string> ds_entry_names = {"K-3", "K-5", "K-6"};
-  *entry_names = std::move(ds_entry_names);
-  return ErrorCode::kOK;
+  // parse post data
+  int cnt = 0;
+  std::string query;
+  for (auto& keyword : query_keywords) {
+    query += (cnt++? " AND " : "") + keyword;
+  }
+  std::string body = "{\"dataset\":\"" + ds_name + "\",\"branch\":\"" +
+    branch + "\",\"query\":\"" + query + "\"}";
+
+  // connect
+  ustore::http::HttpClient hc;
+  ustore::http::Request request("/search", ustore::http::Verb::kPost);
+  hc.Connect("localhost", "8080");
+
+  // send
+  request.SetHeaderField("host", "localhost");
+  request.SetHeaderField("Content-Type", "application/json");
+  request.SetBody(body);
+  hc.Send(&request);
+
+  // receive
+  ustore::http::Response response;
+  hc.Receive(&response);
+
+  std::stringstream json_str(response.body());
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_json(json_str, pt);
+  int status = pt.get<int>("status");
+  string msg = pt.get<std::string>("msg");
+  BOOST_FOREACH(
+      boost::property_tree::ptree::value_type& entry, pt.get_child("docs")) {
+    entry_names->push_back(entry.second.get<std::string>("key"));
+  }
+
+  // close connection
+  hc.Shutdown();
+
+  if (status == 0) {
+    return ErrorCode::kOK;
+  } else if (status == 1) {
+    LOG(ERROR) << msg;
+    return ErrorCode::kInvalidPath;
+  } else if (status == 2) {
+    LOG(ERROR) << msg;
+    return ErrorCode::kIOFault;
+  } else {
+    LOG(ERROR) << msg;
+    return ErrorCode::kUnknownOp;
+  }
 }
 
 }  // namespace lucene_client

@@ -36,20 +36,18 @@ public class AsyncServiceImpl implements AsyncService {
   public void asyncIndexFile(Path docDir, String dataset, String branch) {
     try {
       // Do not create index folder/files for empty documents
-      if (Files.isRegularFile(docDir) && Files.size(docDir) == 0
-          || Files.isDirectory(docDir)
-              && Files.walk(docDir)
-                      .filter(Files::isRegularFile)
-                      .filter(
-                          f -> {
-                            try {
-                              return Files.size(f) > 0;
-                            } catch (IOException e) {
-                              return false;
-                            }
-                          })
-                      .count()
-                  <= 0) {
+      if (Files.walk(docDir)
+              .filter(Files::isRegularFile)
+              .filter(
+                  f -> {
+                    try {
+                      return Files.size(f) > 0;
+                    } catch (IOException e) {
+                      return false;
+                    }
+                  })
+              .count()
+          <= 0) {
         logger.warn("No document or documents are empty. Indexing is skipped");
         Files.walk(docDir)
             .sorted(Comparator.reverseOrder())
@@ -93,7 +91,7 @@ public class AsyncServiceImpl implements AsyncService {
       if (delim < 0) throw new Exception("File format is invalid.");
       Document doc = new Document();
       doc.add(new TextField(Const.FIELD_KEY, line.substring(0, delim), Field.Store.YES));
-      doc.add(new TextField(Const.FIELD_VALUE, line.substring(delim), Field.Store.NO));
+      doc.add(new TextField(Const.FIELD_VALUE, line.substring(delim + 1), Field.Store.NO));
       writer.updateDocument(new Term(Const.FIELD_KEY, doc.get(Const.FIELD_KEY)), doc);
     }
   }

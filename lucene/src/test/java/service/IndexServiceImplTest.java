@@ -54,7 +54,7 @@ public class IndexServiceImplTest {
       createFolder();
       ir.setDir("target/temp/NotExist");
       IndexResponse response3 = service.indexFile(ir);
-      assertEquals(Const.FAIL, response3.getStatus());
+      assertEquals(Const.INVALID_PATH, response3.getStatus());
       Thread.sleep(3000);
 
       // Search empty index
