@@ -1,10 +1,11 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include "lucene_client.h"
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <utility>
 #include <vector>
-
-#include "lucene_client.h"
 
 namespace ustore {
 namespace example {
