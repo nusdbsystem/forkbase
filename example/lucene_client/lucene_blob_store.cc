@@ -116,7 +116,7 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
   ustore::http::Request request("/index", ustore::http::Verb::kPost);
 
   // connect
-  hc.Connect("localhost", "8080");
+  hc.Connect("localhost", "61000");
 
   // send
   std::string body = "{\"dataset\":\"" + ds_name + "\","
@@ -205,7 +205,7 @@ ErrorCode LuceneBlobStore::LuceneQueryKeywords(
   // connect
   ustore::http::HttpClient hc;
   ustore::http::Request request("/search", ustore::http::Verb::kPost);
-  hc.Connect("localhost", "8080");
+  hc.Connect("localhost", "61000");
 
   // send
   request.SetHeaderField("host", "localhost");
