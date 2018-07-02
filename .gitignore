@@ -38,6 +38,7 @@ perfmon/tmp/
 
 # Lucene files
 lucene/index/
+lucene/docs/
 lucene/logs/
 lucene/target/
 

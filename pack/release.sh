@@ -55,6 +55,10 @@ echo "Pack docker ..."
 cp -r $USTORE_HOME/docker $release_root
 echo "Pack compilation info ..."
 cp $build_dir/CMakeCache.txt $release_root
+echo "Pack lucene ..."
+mkdir $release_root/lucene
+cp $USTORE_HOME/lucene/README.md $release_root/lucene
+cp $USTORE_HOME/lucene/target/LuceneJAR-0.0.1-SNAPSHOT.jar $release_root/lucene
 
 # add commit log info
 echo "Pack version info ..."
