@@ -1,7 +1,7 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_EXAMPLE_LUCENE_CLIENT_LUCENE_CLIENT_ARGUMENTS_H_
-#define USTORE_EXAMPLE_LUCENE_CLIENT_LUCENE_CLIENT_ARGUMENTS_H_
+#ifndef USTORE_EXAMPLE_LUCENE_CLI_LUCENE_CLI_ARGUMENTS_H_
+#define USTORE_EXAMPLE_LUCENE_CLI_LUCENE_CLI_ARGUMENTS_H_
 
 #include <string>
 #include <vector>
@@ -9,9 +9,9 @@
 
 namespace ustore {
 namespace example {
-namespace lucene_client {
+namespace lucene_cli {
 
-class LuceneClientArguments : public ::ustore::Arguments {
+class LuceneCLIArguments : public ::ustore::Arguments {
  public:
   std::string command;
   std::string file;
@@ -21,7 +21,7 @@ class LuceneClientArguments : public ::ustore::Arguments {
   std::string idxs_search;
   std::string query_keywords;
 
-  LuceneClientArguments() {
+  LuceneCLIArguments() {
     AddPositional(&command, "command",
                   "Lucene client command");
     AddPositional(&file, "file",
@@ -38,7 +38,7 @@ class LuceneClientArguments : public ::ustore::Arguments {
         "query given by keywords (indexed)");
   }
 
-  ~LuceneClientArguments() = default;
+  ~LuceneCLIArguments() = default;
 
   std::string MoreHelpMessage() override {
     const std::string cmd = "./ustore_lucene_client";
@@ -56,8 +56,8 @@ class LuceneClientArguments : public ::ustore::Arguments {
   }
 };
 
-}  // namespace lucene_client
+}  // namespace lucene_cli
 }  // namespace example
 }  // namespace ustore
 
-#endif  // USTORE_EXAMPLE_LUCENE_CLIENT_LUCENE_CLIENT_ARGUMENTS_H_
+#endif  // USTORE_EXAMPLE_LUCENE_CLI_LUCENE_CLI_ARGUMENTS_H_

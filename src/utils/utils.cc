@@ -483,4 +483,8 @@ ErrorCode Utils::ExtractElement(const std::string& str,
   //                extract element in the target position.
 }
 
+std::string Utils::FullPath(const std::string& rlt_path) {
+  return boost_fs::canonical(boost_fs::path(rlt_path)).native();
+}
+
 }  // namespace ustore

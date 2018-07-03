@@ -31,7 +31,7 @@ ADD_EXECUTABLE(ustore_example_table_op "table_op/table_op_main.cc" ${example_tab
 ADD_DEPENDENCIES(ustore_example_table_op ustore)
 TARGET_LINK_LIBRARIES(ustore_example_table_op ustore)
 
-AUX_SOURCE_DIRECTORY(lucene_client lucene_client_source)
-ADD_EXECUTABLE(ustore_lucene_client "lucene_client/lucene_client_main.cc" ${lucene_client_source})
-ADD_DEPENDENCIES(ustore_lucene_client ustore)
-TARGET_LINK_LIBRARIES(ustore_lucene_client ustore)
+AUX_SOURCE_DIRECTORY(lucene_cli lucene_cli_source)
+ADD_EXECUTABLE(ustore_lucene_cli "lucene_cli/lucene_cli_main.cc" ${lucene_cli_source})
+ADD_DEPENDENCIES(ustore_lucene_cli ustore)
+TARGET_LINK_LIBRARIES(ustore_lucene_cli ustore)

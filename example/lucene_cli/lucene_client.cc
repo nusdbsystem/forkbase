@@ -9,7 +9,7 @@
 
 namespace ustore {
 namespace example {
-namespace lucene_client {
+namespace lucene_cli {
 
 #define CMD_HANDLER(cmd, handler) do { \
   cmd_exec_[cmd] = [this] { return handler; }; \
@@ -21,7 +21,7 @@ namespace lucene_client {
 
 namespace boost_fs = boost::filesystem;
 
-LuceneClient::LuceneClient(LuceneClientArguments& args, DB* db) noexcept
+LuceneClient::LuceneClient(LuceneCLIArguments& args, DB* db) noexcept
   : bs_(db), args_(args) {
   boost::to_upper(args_.command);
   CMD_HANDLER("PUT_DATA_ENTRY_BY_CSV", ExecPutDataEntryByCSV());
@@ -166,7 +166,7 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
   return ec;
 }
 
-}  // namespace lucene_client
+}  // namespace lucene_cli
 }  // namespace example
 }  // namespace ustore
 

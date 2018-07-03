@@ -320,11 +320,13 @@ class Utils {
   static ErrorCode ExtractElement(const std::string& str, const size_t idx_elem,
                                   std::string* elem, const char delim = ',');
 
+  static std::string FullPath(const std::string& rlt_path);
+
  private:
-    template<typename T>
-    static inline void SleepFor(size_t units) {
-      std::this_thread::sleep_for(T(units));
-    }
+  template<typename T>
+  static inline void SleepFor(size_t units) {
+    std::this_thread::sleep_for(T(units));
+  }
 };
 
 template<typename T>

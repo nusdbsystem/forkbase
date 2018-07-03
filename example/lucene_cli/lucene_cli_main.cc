@@ -3,17 +3,17 @@
 #include "cluster/worker_client_service.h"
 #include "worker/worker.h"
 
+#include "lucene_cli_arguments.h"
 #include "lucene_client.h"
-#include "lucene_client_arguments.h"
 
 namespace ustore {
 namespace example {
-namespace lucene_client {
+namespace lucene_cli {
 
 int main(int argc, char* argv[]) {
   SetStderrLogging(ERROR);
   // parse command-line arguments
-  LuceneClientArguments args;
+  LuceneCLIArguments args;
   if (!args.ParseCmdArgs(argc, argv)) {
     std::cerr << BOLD_RED("[ERROR] ")
               << "Found invalid command-line option" << std::endl;
@@ -27,10 +27,10 @@ int main(int argc, char* argv[]) {
   return static_cast<int>(LuceneClient(args, &db).Run());
 }
 
-}  // namespace lucene_client
+}  // namespace lucene_cli
 }  // namespace example
 }  // namespace ustore
 
 int main(int argc, char* argv[]) {
-  return ustore::example::lucene_client::main(argc, argv);
+  return ustore::example::lucene_cli::main(argc, argv);
 }

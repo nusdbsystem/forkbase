@@ -5,14 +5,19 @@
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <utility>
+#include "utils/env.h"
 
 #include "http/http_client.h"
 
 namespace ustore {
 namespace example {
-namespace lucene_client {
+namespace lucene_cli {
 
 namespace boost_fs = boost::filesystem;
+
+LuceneBlobStore::LuceneBlobStore(DB* db) noexcept
+  : BlobStore(db),
+    lucene_file_dir_(Utils::FullPath(Env::Instance()->config().data_dir())) {}
 
 ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const std::string& ds_name,
@@ -31,8 +36,9 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   // create file of lucene index input
   time_t now;
   time(&now);
-  std::string lucene_file_path = "../lucene/docs/lucene_index_input_"
-    + std::to_string(now) + ".csv";
+  const std::string lucene_file_path(
+    lucene_file_dir_ + "/lucene/docs/lucene_index_input_" +
+    std::to_string(now) + ".csv");
   const boost_fs::path lucene_index_input_path(lucene_file_path);
   try {
     boost_fs::create_directories(lucene_index_input_path.parent_path());
@@ -69,7 +75,13 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     // add lucene index entry
     ofs_lucene_index << entry_name;
     for (size_t i = 0; i < idxs_search.size(); ++i) {
-      ofs_lucene_index << ',' << elements[idxs_search[i]];
+      try {
+        ofs_lucene_index << ',' << elements.at(idxs_search[i]);
+      } catch (const std::out_of_range& e) {
+        LOG(ERROR) << "No element " << idxs_search[i] << " in line "
+                   << line_cnt << ": \"" << line << "\"";
+        return ErrorCode::kIndexOutOfRange;
+      }
     }
     ofs_lucene_index << std::endl;
     return ErrorCode::kOK;
@@ -109,9 +121,9 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
 }
 
 ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
-    const std::string& ds_name,
-    const std::string& branch,
-    const boost_fs::path& lucene_index_input_path) const {
+  const std::string& ds_name,
+  const std::string& branch,
+  const boost_fs::path& lucene_index_input_path) const {
   ustore::http::HttpClient hc;
   ustore::http::Request request("/index", ustore::http::Verb::kPost);
 
@@ -120,8 +132,8 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
 
   // send
   std::string body = "{\"dataset\":\"" + ds_name + "\","
-    + "\"branch\":\"" + branch + "\", "
-    + "\"dir\":\"" + lucene_index_input_path.native() + "\"}";
+                     + "\"branch\":\"" + branch + "\", "
+                     + "\"dir\":\"" + lucene_index_input_path.native() + "\"}";
   request.SetHeaderField("host", "localhost");
   request.SetHeaderField("Content-Type", "application/json");
   request.SetBody(body);
@@ -139,19 +151,18 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
 
   // close client
   hc.Shutdown();
-
-  if (status == 0) {
-    return ErrorCode::kOK;
-  } else if (status == 1) {
+  if (status != 0) {
     LOG(ERROR) << msg;
-    return ErrorCode::kInvalidPath;
-  } else if (status == 2) {
-    LOG(ERROR) << msg;
-    return ErrorCode::kIOFault;
-  } else {
-    LOG(ERROR) << msg;
-    return ErrorCode::kUnknownOp;
+    switch (status) {
+      case 1:
+        return ErrorCode::kInvalidPath;
+      case 2:
+        return ErrorCode::kIOFault;
+      default:
+        return ErrorCode::kUnknownOp;
+    }
   }
+  return ErrorCode::kOK;
 }
 
 ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
@@ -197,10 +208,10 @@ ErrorCode LuceneBlobStore::LuceneQueryKeywords(
   int cnt = 0;
   std::string query;
   for (auto& keyword : query_keywords) {
-    query += (cnt++? " AND " : "") + keyword;
+    query += (cnt++ ? " AND " : "") + keyword;
   }
   std::string body = "{\"dataset\":\"" + ds_name + "\",\"branch\":\"" +
-    branch + "\",\"query\":\"" + query + "\"}";
+                     branch + "\",\"query\":\"" + query + "\"}";
 
   // connect
   ustore::http::HttpClient hc;
@@ -223,27 +234,26 @@ ErrorCode LuceneBlobStore::LuceneQueryKeywords(
   int status = pt.get<int>("status");
   string msg = pt.get<std::string>("msg");
   BOOST_FOREACH(
-      boost::property_tree::ptree::value_type& entry, pt.get_child("docs")) {
+    boost::property_tree::ptree::value_type & entry, pt.get_child("docs")) {
     entry_names->push_back(entry.second.get<std::string>("key"));
   }
 
   // close connection
   hc.Shutdown();
-
-  if (status == 0) {
-    return ErrorCode::kOK;
-  } else if (status == 1) {
+  if (status != 0) {
     LOG(ERROR) << msg;
-    return ErrorCode::kInvalidPath;
-  } else if (status == 2) {
-    LOG(ERROR) << msg;
-    return ErrorCode::kIOFault;
-  } else {
-    LOG(ERROR) << msg;
-    return ErrorCode::kUnknownOp;
+    switch (status) {
+      case 1:
+        return ErrorCode::kInvalidPath;
+      case 2:
+        return ErrorCode::kIOFault;
+      default:
+        return ErrorCode::kUnknownOp;
+    }
   }
+  return ErrorCode::kOK;
 }
 
-}  // namespace lucene_client
+}  // namespace lucene_cli
 }  // namespace example
 }  // namespace ustore
