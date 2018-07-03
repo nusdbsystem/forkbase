@@ -176,7 +176,7 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   USTORE_GUARD(
     GetDataset(ds_name, branch, &ds));
   // retrieve entry names associated with the query keywords
-  std::vector<std::string> ds_entry_names;
+  std::unordered_set<std::string> ds_entry_names;
   USTORE_GUARD(
     LuceneQueryKeywords(ds_name, branch, query_keywords, &ds_entry_names));
   // retrieve data entries
@@ -203,7 +203,8 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
 ErrorCode LuceneBlobStore::LuceneQueryKeywords(
   const std::string& ds_name, const std::string& branch,
   const std::vector<std::string>& query_keywords,
-  std::vector<std::string>* entry_names) const {
+  std::unordered_set<std::string>* entry_names) const {
+  entry_names->clear();
   // parse post data
   int cnt = 0;
   std::string query;
@@ -235,7 +236,7 @@ ErrorCode LuceneBlobStore::LuceneQueryKeywords(
   string msg = pt.get<std::string>("msg");
   BOOST_FOREACH(
     boost::property_tree::ptree::value_type & entry, pt.get_child("docs")) {
-    entry_names->push_back(entry.second.get<std::string>("key"));
+    entry_names->emplace(entry.second.get<std::string>("key"));
   }
 
   // close connection

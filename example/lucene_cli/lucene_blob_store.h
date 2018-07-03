@@ -4,6 +4,7 @@
 #define USTORE_EXAMPLE_LUCENE_CLI_LUCENE_BLOB_STORE_H_
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "spec/blob_store.h"
@@ -45,7 +46,7 @@ class LuceneBlobStore : public BlobStore {
   ErrorCode LuceneQueryKeywords(
     const std::string& ds_name, const std::string& branch,
     const std::vector<std::string>& query_keywords,
-    std::vector<std::string>* entry_names) const;
+    std::unordered_set<std::string>* entry_names) const;
 
   const std::string lucene_file_dir_;
 };
