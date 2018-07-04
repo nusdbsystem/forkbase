@@ -41,7 +41,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
   ~LuceneCLIArguments() = default;
 
   std::string MoreHelpMessage() override {
-    const std::string cmd = "./ustore_lucene_client";
+    const std::string cmd = "./ustore_lucene_cli";
     const std::vector<std::string> args = {
       "put-de-by-csv /path/to/input.csv -t ds_test -b master -i 0 -j \"1,3\"",
       "get-de-by-iq -t ds_test -b master -q \"K1,K2\" /path/to/output.csv"

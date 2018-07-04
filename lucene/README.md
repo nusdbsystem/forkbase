@@ -9,7 +9,7 @@
 
 1. Index
 ```
-URI         : host:70700/index
+URI         : host:61000/index
 HTTP Method : Post
 Request Body: JSON string
               {
@@ -24,7 +24,7 @@ Response    : JSON string with fields
 
 2. Search
 ```
-URI         : host:70700/search
+URI         : host:61000/search
 HTTP Method : Get
 Request Body: JSON string
               {
