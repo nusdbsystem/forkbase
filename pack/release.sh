@@ -4,16 +4,17 @@
 #
 
 # get environment variables
-. `dirname "${BASH_SOURCE-$0}"`/../bin/ustore_env.sh
+. `dirname "${BASH_SOURCE-$0}"`/../build/bin/ustore_env.sh
 [ $USTORE_HOME ] || exit 0
-cd $USTORE_HOME
+USTORE_ROOT=$USTORE_HOME/..
+cd $USTORE_ROOT
 
 # config file paths
-build_dir=$USTORE_HOME/build
-lib_archive=$USTORE_HOME/deps/deps-suse.tar.gz
-release_root=$USTORE_HOME/ustore_release
+build_dir=$USTORE_ROOT/build
+lib_archive=$USTORE_ROOT/deps/deps-suse.tar.gz
+release_root=$USTORE_ROOT/ustore_release
 release_build=$release_root/build
-release_tar=$USTORE_HOME/ustore_release.tar.gz
+release_tar=$USTORE_ROOT/ustore_release.tar.gz
 
 # print all commands
 # set -x #echo on
@@ -45,20 +46,20 @@ cp -r $build_dir/bin $release_build
 echo "Pack configs ..."
 cp -r $build_dir/conf $release_build
 # echo "Pack perfmon ..."
-# cp -r $USTORE_HOME/perfmon $release_root
+# cp -r $USTORE_ROOT/perfmon $release_root
 echo "Pack webui ..."
-cp -r $USTORE_HOME/webui $release_root
+cp -r $USTORE_ROOT/webui $release_root
 echo "Pack docs ..."
-cp -r $USTORE_HOME/docs $release_root
-cp -r $USTORE_HOME/pack/INSTALL.md $release_root
+cp -r $USTORE_ROOT/docs $release_root
+cp -r $USTORE_ROOT/pack/INSTALL.md $release_root
 echo "Pack docker ..."
-cp -r $USTORE_HOME/docker $release_root
+cp -r $USTORE_ROOT/docker $release_root
 echo "Pack compilation info ..."
 cp $build_dir/CMakeCache.txt $release_root
 echo "Pack lucene ..."
 mkdir $release_root/lucene
-cp $USTORE_HOME/lucene/README.md $release_root/lucene
-cp $USTORE_HOME/lucene/target/LuceneJAR-0.0.1-SNAPSHOT.jar $release_root/lucene
+cp $USTORE_ROOT/lucene/README.md $release_root/lucene
+cp $USTORE_ROOT/lucene/target/LuceneJAR-0.0.1-SNAPSHOT.jar $release_root/lucene
 
 # add commit log info
 echo "Pack version info ..."
@@ -73,5 +74,5 @@ fi
 
 # create tarball
 echo "Create tarball ..."
-tar zcf $release_tar -C $USTORE_HOME ustore_release
+tar zcf $release_tar -C $USTORE_ROOT ustore_release
 echo "Released: $release_tar"
