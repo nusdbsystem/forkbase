@@ -38,16 +38,16 @@ public class IndexServiceImpl implements IndexService {
       // Validate path
       final Path docDir = Paths.get(req.getDir());
       if (!Files.isReadable(docDir)) {
-        throw new Exception("Document directory does not exist or is not readable");
+        throw new Exception(req.getDir() + " does not exist or is not readable");
       }
 
       // Index file asynchronously
       service.asyncIndexFile(docDir, req.getDataset(), req.getBranch());
       return new IndexResponse(Const.SUCCESS, "");
     } catch (IOException e) {
-      return new IndexResponse(Const.IO_EXCEPTION, e.getMessage());
+      return new IndexResponse(Const.IO_EXCEPTION, "[Lucene] " + e.getMessage());
     } catch (Exception e) {
-      return new IndexResponse(Const.INVALID_PATH, e.getMessage());
+      return new IndexResponse(Const.INVALID_PATH, "[Lucene] " + e.getMessage());
     }
   }
 
@@ -69,11 +69,11 @@ public class IndexServiceImpl implements IndexService {
       // Check query string
       String queryString = req.getQuery();
       if (queryString == null || queryString.length() == -1) {
-        throw new Exception("Invalid query");
+        throw new Exception("Invalid query: " + req.getQuery());
       }
       queryString = queryString.trim();
       if (queryString.length() == 0) {
-        throw new Exception("Invalid query");
+        throw new Exception("Invalid query: " + req.getQuery());
       }
 
       // Perform search
@@ -93,9 +93,9 @@ public class IndexServiceImpl implements IndexService {
       reader.close();
       return res;
     } catch (IOException e) {
-      return new SearchResponse(Const.IO_EXCEPTION, e.getMessage());
+      return new SearchResponse(Const.IO_EXCEPTION, "[Lucene] " + e.getMessage());
     } catch (Exception e) {
-      return new SearchResponse(Const.PARSE_ERROR, e.getMessage());
+      return new SearchResponse(Const.PARSE_ERROR, "[Lucene] " + e.getMessage());
     }
   }
 }

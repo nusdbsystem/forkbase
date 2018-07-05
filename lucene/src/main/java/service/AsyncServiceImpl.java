@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -90,9 +91,12 @@ public class AsyncServiceImpl implements AsyncService {
       int delim = line.indexOf(",");
       if (delim < 0) throw new Exception("File format is invalid.");
       Document doc = new Document();
-      doc.add(new TextField(Const.FIELD_KEY, line.substring(0, delim), Field.Store.YES));
+      String key = line.substring(0, delim);
+      // Not analyzed (case sensitive)
+      doc.add(new StringField(Const.FIELD_KEY, key, Field.Store.YES));
+      // Analyzed (case insensitive)
       doc.add(new TextField(Const.FIELD_VALUE, line.substring(delim + 1), Field.Store.NO));
-      writer.updateDocument(new Term(Const.FIELD_KEY, doc.get(Const.FIELD_KEY)), doc);
+      writer.updateDocument(new Term(Const.FIELD_KEY, key), doc);
     }
   }
 }
