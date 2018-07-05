@@ -19,17 +19,17 @@ fi
 
 # set USTORE_BIN
 if [ -z $USTORE_BIN ]; then
-  USTORE_BIN=$USTORE_HOME/bin
+  USTORE_BIN="$USTORE_HOME/bin"
 fi
 
 # set USTORE_CONF
 if [ -z $USTORE_CONF ]; then
-  USTORE_CONF=$USTORE_HOME/conf
+  USTORE_CONF="$USTORE_HOME/conf"
 fi
 
 # set USTORE_CONF_FILE
 if [ -z $USTORE_CONF_FILE ]; then
-  USTORE_CONF_FILE=$USTORE_CONF/config.cfg
+  USTORE_CONF_FILE="$USTORE_CONF/config.cfg"
 fi
 
 # set USTORE_CONF_HOST_FILE
@@ -44,7 +44,7 @@ fi
 
 # set USTORE_LOG
 if [ -z $USTORE_LOG ]; then
-  USTORE_LOG=$USTORE_HOME/log
+  USTORE_LOG="$USTORE_HOME/log"
 fi
 
 # check command existence

@@ -6,21 +6,30 @@
 # set environment variables
 #   USTORE_ROOT: git repository dir
 #   USTORE_HOME: build dir
-#
-USTORE_ROOT=`dirname "${BASH_SOURCE-$0}"`
-USTORE_ROOT=`cd "$USTORE_ROOT/..">/dev/null; pwd`
+#   LUCENE_TARGET: lucene target dir
+
+RELEASE_NAME="ustore_release"
+RELEASE_DIR="`pwd`/$RELEASE_NAME"
+RELEASE_TAR="$RELEASE_DIR".tar.gz
+
+if [ -z $USTORE_ROOT ]; then
+  USTORE_ROOT=`dirname "${BASH_SOURCE-$0}"`
+  USTORE_ROOT=`cd "$USTORE_ROOT/..">/dev/null; pwd`
+fi
 if [ -z $USTORE_HOME ]; then
   . `dirname "${BASH_SOURCE-$0}"`/../build/bin/ustore_env.sh
 fi
-[ $USTORE_HOME ] && [ $USTORE_ROOT ] || exit 0
+if [ -z $LUCENE_TARGET ]; then
+  LUCENE_TARGET="$USTORE_ROOT/lucene/target"
+fi
+[ $USTORE_ROOT ] && [ $USTORE_HOME ] && [ $LUCENE_TARGET ] || exit 0
 cd $USTORE_ROOT
 
 # config file paths
 build_dir=$USTORE_HOME
-lib_archive=$USTORE_ROOT/deps/deps-suse.tar.gz
-release_root=$USTORE_ROOT/ustore_release
-release_build=$release_root/build
-release_tar=$USTORE_ROOT/ustore_release.tar.gz
+lib_archive="$USTORE_ROOT/deps/deps-suse.tar.gz"
+release_root=$RELEASE_DIR
+release_build="$release_root/build"
 
 # print all commands
 # set -x #echo on
@@ -65,7 +74,7 @@ cp $build_dir/CMakeCache.txt $release_root
 echo "Pack lucene ..."
 mkdir $release_root/lucene
 cp $USTORE_ROOT/lucene/README.md $release_root/lucene
-cp $USTORE_ROOT/lucene/target/LuceneJAR-0.0.1-SNAPSHOT.jar $release_root/lucene
+cp $LUCENE_TARGET/LuceneJAR-0.0.1-SNAPSHOT.jar $release_root/lucene
 
 # add commit log info
 echo "Pack version info ..."
@@ -80,5 +89,7 @@ fi
 
 # create tarball
 echo "Create tarball ..."
-tar zcf $release_tar -C $USTORE_ROOT ustore_release
-echo "Released: $release_tar"
+# tar zcf $RELEASE_TAR -C $USTORE_ROOT ustore_release
+cd $RELEASE_DIR/..
+tar zcf $RELEASE_TAR $RELEASE_NAME
+echo "Released: $RELEASE_TAR"
