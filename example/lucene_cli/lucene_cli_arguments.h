@@ -19,7 +19,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
   std::string branch;
   int64_t idx_entry_name;
   std::string idxs_search;
-  std::string query_keywords;
+  std::string query_predicate;
 
   LuceneCLIArguments() {
     AddPositional(&command, "command",
@@ -34,8 +34,8 @@ class LuceneCLIArguments : public ::ustore::Arguments {
         "index of entry name");
     Add(&idxs_search, "idxs-search", "j",
         "indices for search");
-    Add(&query_keywords, "query-keywords", "q",
-        "query given by keywords (indexed)");
+    Add(&query_predicate, "query-predicate", "q",
+        "Lucene query predicate");
   }
 
   ~LuceneCLIArguments() = default;
@@ -44,7 +44,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
     const std::string cmd = "./ustore_lucene_cli";
     const std::vector<std::string> args = {
       "put-de-by-csv /path/to/input.csv -t ds_test -b master -i 0 -j \"1,3\"",
-      "get-de-by-iq -t ds_test -b master -q \"K1,K2\" /path/to/output.csv"
+      "get-de-by-iq -t ds_test -b master -q \"w1 AND w2\" /path/to/output.csv"
     };
     std::stringstream ss;
     ss << "Example:" << std::endl;

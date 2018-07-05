@@ -27,15 +27,15 @@ class LuceneBlobStore : public BlobStore {
 
   ErrorCode GetDataEntryByIndexQuery(
     const std::string& ds_name, const std::string& branch,
-    const std::vector<std::string>& query_keywords,
-    std::ostream& os, size_t* n_entries, size_t* n_bytes) const;
+    const std::string& query_predicate, std::ostream& os,
+    size_t* n_entries, size_t* n_bytes) const;
 
   inline ErrorCode GetDataEntryByIndexQuery(
     const std::string& ds_name, const std::string& branch,
-    const std::vector<std::string>& query_keywords, std::ostream& os) const {
+    const std::string& query_predicate, std::ostream& os) const {
     size_t n_entries, n_bytes;
     return GetDataEntryByIndexQuery(
-             ds_name, branch, query_keywords, os, &n_entries, &n_bytes);
+             ds_name, branch, query_predicate, os, &n_entries, &n_bytes);
   }
 
  private:
@@ -43,9 +43,9 @@ class LuceneBlobStore : public BlobStore {
     const std::string& ds_name, const std::string& branch,
     const boost::filesystem::path& lucene_index_input_path) const;
 
-  ErrorCode LuceneQueryKeywords(
+  ErrorCode LuceneQuery(
     const std::string& ds_name, const std::string& branch,
-    const std::vector<std::string>& query_keywords,
+    const std::string& query_predicate,
     std::unordered_set<std::string>* entry_names) const;
 
   const std::string lucene_file_dir_;

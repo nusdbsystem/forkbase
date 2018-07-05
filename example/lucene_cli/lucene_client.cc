@@ -110,7 +110,7 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
 ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
   const auto& ds_name = args_.dataset;
   const auto& branch = args_.branch;
-  const auto& raw_query_keywords = args_.query_keywords;
+  const auto& query_predicate = args_.query_predicate;
   const auto& file_path = args_.file;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
@@ -119,7 +119,7 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
               << "Branch: \"" << branch << "\", "
               << "Output: "
               << (file_path.empty() ? "<stdout>" : file_path) << ", "
-              << "Query Keywords: {" << raw_query_keywords << "}"
+              << "Query: {" << query_predicate << "}"
               << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
@@ -135,12 +135,12 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
               << "Branch: \"" << branch << "\", "
               << "Output: "
               << (file_path.empty() ? "<stdout>" : file_path) << ", "
-              << "Query Keywords: {" << raw_query_keywords << "}"
+              << "Query: {" << query_predicate << "}"
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   // conditional execution
-  if (ds_name.empty() || branch.empty() || raw_query_keywords.empty()) {
+  if (ds_name.empty() || branch.empty() || query_predicate.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
@@ -152,13 +152,9 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
     }
   }
   std::ofstream ofs(file_path, std::ios::out | std::ios::trunc);
-  std::vector<std::string> query_keywords;
-  for (auto& kw : Utils::Split(raw_query_keywords, ',')) {
-    query_keywords.push_back(std::move(kw));
-  }
   size_t n_entries, n_bytes;
   auto ec = bs_.GetDataEntryByIndexQuery(
-              ds_name, branch, query_keywords,
+              ds_name, branch, query_predicate,
               (file_path.empty() ? std::cout : ofs), &n_entries, &n_bytes);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   if (!file_path.empty()) ofs.close();

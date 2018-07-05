@@ -131,10 +131,8 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
   const boost_fs::path& lucene_index_input_path) const {
   ustore::http::HttpClient hc;
   ustore::http::Request request("/index", ustore::http::Verb::kPost);
-
   // connect
   hc.Connect("localhost", "61000");
-
   // send
   std::string body = "{\"dataset\":\"" + ds_name + "\","
                      + "\"branch\":\"" + branch + "\", "
@@ -143,7 +141,6 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
   request.SetHeaderField("Content-Type", "application/json");
   request.SetBody(body);
   hc.Send(&request);
-
   // read response
   ustore::http::Response response;
   hc.Receive(&response);
@@ -172,8 +169,8 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
 
 ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   const std::string& ds_name, const std::string& branch,
-  const std::vector<std::string>& query_keywords,
-  std::ostream& os, size_t* n_entries, size_t* n_bytes) const {
+  const std::string& query_predicate, std::ostream& os,
+  size_t* n_entries, size_t* n_bytes) const {
   *n_entries = 0;
   *n_bytes = 0;
   // retrieve the operating dataset
@@ -183,7 +180,7 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   // retrieve entry names associated with the query keywords
   std::unordered_set<std::string> ds_entry_names;
   USTORE_GUARD(
-    LuceneQueryKeywords(ds_name, branch, query_keywords, &ds_entry_names));
+    LuceneQuery(ds_name, branch, query_predicate, &ds_entry_names));
   // retrieve data entries
   for (auto& entry_name : ds_entry_names) {
     auto entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
@@ -205,31 +202,23 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   return ErrorCode::kOK;
 }
 
-ErrorCode LuceneBlobStore::LuceneQueryKeywords(
+ErrorCode LuceneBlobStore::LuceneQuery(
   const std::string& ds_name, const std::string& branch,
-  const std::vector<std::string>& query_keywords,
+  const std::string& query_predicate,
   std::unordered_set<std::string>* entry_names) const {
   entry_names->clear();
   // parse post data
-  int cnt = 0;
-  std::string query;
-  for (auto& keyword : query_keywords) {
-    query += (cnt++ ? " AND " : "") + keyword;
-  }
   std::string body = "{\"dataset\":\"" + ds_name + "\",\"branch\":\"" +
-                     branch + "\",\"query\":\"" + query + "\"}";
-
+                     branch + "\",\"query\":\"" + query_predicate + "\"}";
   // connect
   ustore::http::HttpClient hc;
   ustore::http::Request request("/search", ustore::http::Verb::kPost);
   hc.Connect("localhost", "61000");
-
   // send
   request.SetHeaderField("host", "localhost");
   request.SetHeaderField("Content-Type", "application/json");
   request.SetBody(body);
   hc.Send(&request);
-
   // receive
   ustore::http::Response response;
   hc.Receive(&response);
