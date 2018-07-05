@@ -145,11 +145,10 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
     return ErrorCode::kInvalidCommandArgument;
   }
   if (!file_path.empty()) {
-    try {
-      boost_fs::create_directories(boost_fs::path(file_path).parent_path());
-    } catch (const boost_fs::filesystem_error& e) {
-      f_rpt_fail(ErrorCode::kIOFault);
-      return ErrorCode::kIOFault;
+    const auto ec = Utils::CreateParentDirectories(file_path);
+    if (ec != ErrorCode::kOK) {
+      f_rpt_fail(ec);
+      return ec;
     }
   }
   std::ofstream ofs(file_path, std::ios::out | std::ios::trunc);

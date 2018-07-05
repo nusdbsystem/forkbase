@@ -487,4 +487,18 @@ std::string Utils::FullPath(const std::string& rlt_path) {
   return boost_fs::canonical(boost_fs::path(rlt_path)).native();
 }
 
+ErrorCode Utils::CreateParentDirectories(const std::string& file_path) {
+  const auto dir = boost_fs::path(file_path).parent_path();
+  if (!dir.empty()) {
+    try {
+      boost_fs::create_directories(dir);
+    } catch (const boost_fs::filesystem_error& e) {
+      LOG(ERROR) << "Failed to create parent directories for file path: "
+                 << file_path;
+      return ErrorCode::kIOFault;
+    }
+  }
+  return ErrorCode::kOK;
+}
+
 }  // namespace ustore
