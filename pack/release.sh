@@ -3,14 +3,20 @@
 # pack a release binary
 #
 
-# get environment variables
-. `dirname "${BASH_SOURCE-$0}"`/../build/bin/ustore_env.sh
-[ $USTORE_HOME ] || exit 0
-USTORE_ROOT=$USTORE_HOME/..
+# set environment variables
+#   USTORE_ROOT: git repository dir
+#   USTORE_HOME: build dir
+#
+USTORE_ROOT=`dirname "${BASH_SOURCE-$0}"`
+USTORE_ROOT=`cd "$USTORE_ROOT/..">/dev/null; pwd`
+if [ -z $USTORE_HOME ]; then
+  . `dirname "${BASH_SOURCE-$0}"`/../build/bin/ustore_env.sh
+fi
+[ $USTORE_HOME ] && [ $USTORE_ROOT ] || exit 0
 cd $USTORE_ROOT
 
 # config file paths
-build_dir=$USTORE_ROOT/build
+build_dir=$USTORE_HOME
 lib_archive=$USTORE_ROOT/deps/deps-suse.tar.gz
 release_root=$USTORE_ROOT/ustore_release
 release_build=$release_root/build
