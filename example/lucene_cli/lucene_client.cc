@@ -161,7 +161,7 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
               ds_name, branch, query_keywords,
               (file_path.empty() ? std::cout : ofs), &n_entries, &n_bytes);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
-  if (file_path.empty()) ofs.close();
+  if (!file_path.empty()) ofs.close();
   return ec;
 }
 

@@ -86,9 +86,14 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     ofs_lucene_index << std::endl;
     return ErrorCode::kOK;
   };
-  USTORE_GUARD(
-    Utils::IterateFileByLine(file_path, f_put_line));
+  // iterate the input file by line
+  const auto ec = Utils::IterateFileByLine(file_path, f_put_line);
   ofs_lucene_index.close();
+  if (ec != ErrorCode::kOK) {
+    Utils::DeleteFile(lucene_file_path);
+    return ec;
+  }
+  // call lucene to index the data
   USTORE_GUARD(
     LuceneIndexDataEntries(ds_name, branch, lucene_index_input_path));
   // update dataset

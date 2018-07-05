@@ -2,6 +2,7 @@
 
 #include <boost/tokenizer.hpp>
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <iomanip>
 #include <limits>
@@ -497,6 +498,14 @@ ErrorCode Utils::CreateParentDirectories(const std::string& file_path) {
                  << file_path;
       return ErrorCode::kIOFault;
     }
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode Utils::DeleteFile(const std::string& file_path) {
+  if ( std::remove(file_path.c_str()) != 0 ) {
+    LOG(ERROR) << "Failed to delete file: " << file_path;
+    return ErrorCode::kIOFault;
   }
   return ErrorCode::kOK;
 }

@@ -324,6 +324,8 @@ class Utils {
 
   static ErrorCode CreateParentDirectories(const std::string& file_path);
 
+  static ErrorCode DeleteFile(const std::string& file_path);
+
  private:
   template<typename T>
   static inline void SleepFor(size_t units) {
