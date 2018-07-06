@@ -144,13 +144,12 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
   // read response
   ustore::http::Response response;
   hc.Receive(&response);
-
+  // extract data
   std::stringstream json_str(response.body());
   boost::property_tree::ptree pt;
   boost::property_tree::read_json(json_str, pt);
   int status = pt.get<int>("status");
   string msg = pt.get<std::string>("msg");
-
   // close client
   hc.Shutdown();
   if (status != 0) {
@@ -178,7 +177,11 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   USTORE_GUARD(
     GetDataset(ds_name, branch, &ds));
   // retrieve entry names associated with the query keywords
+#if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
   std::unordered_set<std::string> ds_entry_names;
+#else
+  std::vector<std::string> ds_entry_names;
+#endif
   USTORE_GUARD(
     LuceneQuery(ds_name, branch, query_predicate, &ds_entry_names));
   // retrieve data entries
@@ -202,10 +205,18 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   return ErrorCode::kOK;
 }
 
+#if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
 ErrorCode LuceneBlobStore::LuceneQuery(
   const std::string& ds_name, const std::string& branch,
   const std::string& query_predicate,
-  std::unordered_set<std::string>* entry_names) const {
+  std::unordered_set<std::string>* entry_names) const
+#else
+ErrorCode LuceneBlobStore::LuceneQuery(
+  const std::string& ds_name, const std::string& branch,
+  const std::string& query_predicate,
+  std::vector<std::string>* entry_names) const
+#endif
+{
   entry_names->clear();
   // parse post data
   std::string body = "{\"dataset\":\"" + ds_name + "\",\"branch\":\"" +
@@ -222,7 +233,7 @@ ErrorCode LuceneBlobStore::LuceneQuery(
   // receive
   ustore::http::Response response;
   hc.Receive(&response);
-
+  // extract data
   std::stringstream json_str(response.body());
   boost::property_tree::ptree pt;
   boost::property_tree::read_json(json_str, pt);
@@ -230,9 +241,12 @@ ErrorCode LuceneBlobStore::LuceneQuery(
   string msg = pt.get<std::string>("msg");
   BOOST_FOREACH(
     boost::property_tree::ptree::value_type & entry, pt.get_child("docs")) {
+#if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
     entry_names->emplace(entry.second.get<std::string>("key"));
+#else
+    entry_names->emplace_back(entry.second.get<std::string>("key"));
+#endif
   }
-
   // close connection
   hc.Shutdown();
   if (status != 0) {

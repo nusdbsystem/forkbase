@@ -3,9 +3,13 @@
 #ifndef USTORE_EXAMPLE_LUCENE_CLI_LUCENE_BLOB_STORE_H_
 #define USTORE_EXAMPLE_LUCENE_CLI_LUCENE_BLOB_STORE_H_
 
+// #define __LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__
+
 #include <string>
-#include <unordered_set>
 #include <vector>
+#if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
+#include <unordered_set>
+#endif
 
 #include "spec/blob_store.h"
 
@@ -43,10 +47,17 @@ class LuceneBlobStore : public BlobStore {
     const std::string& ds_name, const std::string& branch,
     const boost::filesystem::path& lucene_index_input_path) const;
 
+#if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
   ErrorCode LuceneQuery(
     const std::string& ds_name, const std::string& branch,
     const std::string& query_predicate,
     std::unordered_set<std::string>* entry_names) const;
+#else
+  ErrorCode LuceneQuery(
+    const std::string& ds_name, const std::string& branch,
+    const std::string& query_predicate,
+    std::vector<std::string>* entry_names) const;
+#endif
 
   const std::string lucene_file_dir_;
 };
