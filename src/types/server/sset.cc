@@ -52,7 +52,7 @@ Hash SSet::Set(const Slice& key) const {
                   << "(" << byte2str(orderedKey.data(),
                                      orderedKey.numBytes()) << ")"
                   << " From Set " << hash().ToBase32();
-    return hash();
+    return hash().Clone();
   }
 
   std::unique_ptr<const Segment> seg = SetNode::Encode({key});
