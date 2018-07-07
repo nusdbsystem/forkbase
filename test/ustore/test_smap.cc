@@ -330,6 +330,20 @@ TEST_F(SMapHugeEnv, Multiset) {
   ustore::SMap smap1 = factory.Load<ustore::SMap>(smap.Set(keys_, vals_));
   auto it1 = smap1.Scan();
   CheckIdenticalItems(keys_, vals_, &it1);
+
+  // Check for duplicated keys
+  std::vector<ustore::Slice> dup_keys{keys_[0], keys_[0]};
+  std::vector<ustore::Slice> dup_vals{vals_[1], vals_[0]};
+
+  ustore::SMap smap2 = factory.Create<ustore::SMap>(dup_keys, dup_vals);
+  auto it2 = smap.Scan();
+  CheckIdenticalItems({keys_[0]}, {vals_[0]}, &it2);
+
+  std::vector<ustore::Slice> dup_keys1{keys_[1], keys_[1]};
+  std::vector<ustore::Slice> dup_vals1{vals_[0], vals_[1]};
+  ustore::SMap smap3 = factory.Load<ustore::SMap>(smap.Set(dup_keys1, dup_vals1));
+  auto it3 = smap3.Scan();
+  CheckIdenticalItems({keys_[0], keys_[1]}, {vals_[0], vals_[1]}, &it3);
 }
 
 TEST_F(SMapHugeEnv, Compare) {

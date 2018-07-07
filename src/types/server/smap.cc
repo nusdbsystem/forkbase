@@ -29,9 +29,18 @@ SMap::SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
                    MetaChunker::Instance());
     std::vector<KVItem> kv_items;
 
-    for (size_t i : Utils::SortIndexes<Slice>(keys)) {
-      kv_items.push_back({keys[i], vals[i]});
-    }
+    auto sorted_idx = Utils::SortIndexes<Slice>(keys);
+    for (auto sorted_idx_it = sorted_idx.begin(); sorted_idx_it != sorted_idx.end();
+         ++sorted_idx_it) {
+      auto next_it = sorted_idx_it + 1;
+      if (next_it == sorted_idx.end() || keys[*sorted_idx_it] < keys[*next_it]) {
+        kv_items.push_back({keys[*sorted_idx_it], vals[*sorted_idx_it]});
+      } else if (keys[*sorted_idx_it] == keys[*next_it]) {
+        // do nothing, skip this duplicated key
+      } else {
+        LOG(FATAL) << "Error in sorting keys.";
+      } // end if
+    }  // end for
     std::unique_ptr<const Segment> seg = MapNode::Encode(kv_items);
     nb.SpliceElements(0, seg.get());
     SetNodeForHash(nb.Commit());
@@ -64,25 +73,33 @@ Hash SMap::Set(const std::vector<Slice>& keys,
 
   AdvancedNodeBuilder nb(hash(), chunk_loader_.get(), chunk_writer_);
 
-  // Created_segs ensures the created segments does not vanish until
-  //   the node builder commits.
+  auto sorted_idx = Utils::SortIndexes<Slice>(keys);
+  for (auto sorted_idx_it = sorted_idx.begin(); sorted_idx_it != sorted_idx.end();
+       ++sorted_idx_it) {
+    auto next_it = sorted_idx_it + 1;
+    if (next_it == sorted_idx.end() || keys[*sorted_idx_it] < keys[*next_it]) {
 
-  for (size_t i : Utils::SortIndexes<Slice>(keys)) {
-    OrderedKey orderKey = OrderedKey::FromSlice(keys[i]);
+      size_t idx = *sorted_idx_it;
+      OrderedKey orderKey = OrderedKey::FromSlice(keys[idx]);
+      NodeCursor cursor(hash(), orderKey, chunk_loader_.get());
+      bool foundKey = (!cursor.isEnd() && orderKey == cursor.currentKey());
+      size_t num_delete = foundKey? 1: 0;
 
-    NodeCursor cursor(hash(), orderKey, chunk_loader_.get());
-    bool foundKey = (!cursor.isEnd() && orderKey == cursor.currentKey());
-    size_t num_delete = foundKey? 1: 0;
+      uint64_t idxForKey =
+          root_node_->FindIndexForKey(orderKey, chunk_loader_.get());
 
-    uint64_t idxForKey =
-        root_node_->FindIndexForKey(orderKey, chunk_loader_.get());
+      KVItem kv_item = {keys[idx], vals[idx]};
+      std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
+      std::vector<std::unique_ptr<const Segment>> segs;
+      segs.push_back(std::move(seg));
+      nb.Splice(idxForKey, num_delete, std::move(segs));
 
-    KVItem kv_item = {keys[i], vals[i]};
-    std::unique_ptr<const Segment> seg = MapNode::Encode({kv_item});
-    std::vector<std::unique_ptr<const Segment>> segs;
-    segs.push_back(std::move(seg));
-    nb.Splice(idxForKey, num_delete, std::move(segs));
-  }
+    } else if (keys[*sorted_idx_it] == keys[*next_it]) {
+      // do nothing, skip this duplicated key
+    } else {
+      LOG(FATAL) << "Error in sorting keys.";
+    } // end if
+  }  // end for
 
   return nb.Commit(*MapChunker::Instance());
 }
