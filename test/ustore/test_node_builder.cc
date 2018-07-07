@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 
 #include "node/blob_node.h"
+#include "node/meta_node.h"
 #include "node/node_builder.h"
 #include "types/server/factory.h"
 

@@ -2,6 +2,7 @@
 
 #include "node/node_builder.h"
 
+#include <algorithm>  // for memcpy
 #include <cstring>  // for memcpy
 #include "hash/hash.h"
 #include "node/meta_node.h"
@@ -426,81 +427,81 @@ AdvancedNodeBuilder::AdvancedNodeBuilder(ChunkWriter* writer) :
 AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
     uint64_t start_idx, uint64_t num_delete,
     std::vector<std::unique_ptr<const Segment>> segs) {
+
   uint64_t total_num_elements = 0;
-  do {
-    if (root_.empty()) {
-      if (start_idx > 0 || num_delete > 0) {
-        LOG(WARNING) << " Can not splice on an empty tree "
-                     << " from index " << start_idx
-                     << " to remove " << num_delete << " elements."
-                     << "\n"
-                     << " Operation Failed. ";
-        break;
-      }
-    } else {
-      total_num_elements =
-          SeqNode::CreateFromChunk(loader_->Load(root_))->numElements();
-    }
+  if (!root_.empty()) {
+    total_num_elements =
+        SeqNode::CreateFromChunk(loader_->Load(root_))->numElements();
+  }
 
-    std::vector<const Segment*> operand_segs;
+  if (total_num_elements < start_idx) {
+    LOG(FATAL) << "The index of the first working element exceeds "
+               << " the total number of elements.";
+  } else if (total_num_elements < start_idx + num_delete) {
+    LOG(WARNING) << "The index of elements to remove exceeds "
+                 << " the total number of elements. "
+                 << " Number of removal will be shortened to (total_num - start_idx).";
+    num_delete = total_num_elements - start_idx;
+  }
 
-    for (auto seg_it = segs.begin(); seg_it != segs.end(); ++seg_it) {
-      if ((*seg_it)->empty()) continue;
-      operand_segs.push_back((*seg_it).get());
-      all_operand_segs_.push_back(std::move(*seg_it));
-    }  // end for
+  std::vector<const Segment*> operand_segs;  // will be passed as SpliceOperand member
+  for (auto seg_it = segs.begin(); seg_it != segs.end(); ++seg_it) {
+    if ((*seg_it)->empty()) continue;
+    operand_segs.push_back((*seg_it).get());
+    // Pass operand segments to all_operands_seg_ to manage the lifetime
+    all_operand_segs_.push_back(std::move(*seg_it));
+  }  // end for
 
-    bool inserted = false;
-    bool advanced = false;
-    uint64_t pre_start_idx = 0;
-    uint64_t pre_num_delete = 0;
+  /* Each SpliceOperand defines an closed-open working interval, e.g, [1, 3) [3, 5),
+     we need to find a slot between two sorted intervals in operands to insert this new operand.
+     And need to ensure that no intervals overlap. */
 
-    // Insert the created operand into operand list based on start_idx order
-    auto it = operands_.begin();
-    auto pre_it = operands_.begin();
-    for (; it != operands_.end(); ++it) {
-      if (it->start_idx <= start_idx) {
-        advanced = true;
-        pre_start_idx = it->start_idx;
-        pre_num_delete = it->num_delete;
-        pre_it = it;
-      } else if (pre_start_idx + pre_num_delete > start_idx) {
-        LOG(WARNING) << "Start_idx elements may already "
-                     << " be removed by previous splice operation. \n"
-                     << "Operation Failed.";
+  auto operand_after_tail_it = std::lower_bound(operands_.begin(), operands_.end(), start_idx + num_delete,
+                                   [](const SpliceOperand& operand, uint64_t pos) -> bool {
+                                   return operand.start_idx < pos; });
+#ifdef DEBUG
+  if (operand_after_tail_it != operands_.end()) {
+    DCHECK_LE(start_idx + num_delete, operand_after_tail_it->start_idx);
+  }
+#endif
 
-        // actually NOT inserted
-        // make inserted true to exit the do-while loop
-        inserted = true;
-        break;
-      } else if (advanced && pre_start_idx == start_idx) {
-        // Two operands both insert at the same place
-        //   Concat second operand segments to first one
-        CHECK_EQ(uint64_t(0), pre_num_delete);
-        inserted = true;
-        pre_it->appended_segs.insert(pre_it->appended_segs.end(),
-                                     operand_segs.begin(),
-                                     operand_segs.end());
-        break;
-      } else {
-        operands_.insert(it, {start_idx, num_delete,
-                              std::move(operand_segs)});
-        inserted = true;
-        break;
-      }  // end if
-    }  // end for
+  auto operand_after_head_it = std::upper_bound(operands_.begin(), operands_.end(), start_idx,
+                                   [](uint64_t pos, const SpliceOperand& operand) -> bool {
+                                   return pos < operand.start_idx + operand.num_delete; });
+#ifdef DEBUG
+  if (operand_after_head_it != operands_.end()) {
+    DCHECK_LT(start_idx,
+              operand_after_head_it->start_idx + operand_after_head_it->num_delete);
+  }
+#endif
 
-    // insert at the end
-    if (!inserted) {
-      CHECK(it == operands_.end());
-      if (start_idx + num_delete > total_num_elements) {
-         LOG(WARNING) << "The index of elements to remove exceeds "
-                      << " the total number of elements. \n";
-      }
-      operands_.insert(it, {start_idx, num_delete,
-                            std::move(operand_segs)});
-    }  // end if
-  } while (0);
+  if (operand_after_head_it == operand_after_tail_it) {
+    operands_.insert(operand_after_tail_it, {start_idx, num_delete, std::move(operand_segs)});
+  } else if (--operand_after_head_it == operand_after_tail_it){
+    /* Deal with an exceptional condition that this new operand INSERTs at a
+       position that is INSERTED by another operand.
+       Two inserted segments will be combined for insertion in order.
+    */
+    CHECK_EQ(0, num_delete);
+    CHECK_EQ(size_t(0), operand_after_tail_it->num_delete);
+    operand_after_tail_it->appended_segs.insert(
+      operand_after_tail_it->appended_segs.end(),
+      operand_segs.begin(), operand_segs.end());
+  } else {
+    LOG(FATAL) << "Start_idx elements may already "
+                 << " be removed by previous splice operation. \n"
+                 << "Operation Failed.";
+  }
+
+#ifdef DEBUG
+  // Check SpliceOperands are organized in consistent order.
+  uint64_t pre_end = 0;
+  for (const auto& operand : operands_) {
+    DCHECK_LE(pre_end, operand.start_idx);
+    pre_end = operand.start_idx + operand.num_delete;
+  }
+  DCHECK_LE(pre_end, total_num_elements);
+#endif
   return *this;
 }
 
