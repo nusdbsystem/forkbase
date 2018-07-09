@@ -3,8 +3,8 @@
 #ifndef USTORE_SPEC_BLOB_STORE_H_
 #define USTORE_SPEC_BLOB_STORE_H_
 
-#define __BLOB_STORE_USE_MAP_MULTI_SET_OP__
-// #define __BLOB_STORE_USE_SET_FOR_DS_LIST__
+// #define __BLOB_STORE_USE_MAP_MULTI_SET_OP__
+#define __BLOB_STORE_USE_SET_FOR_DS_LIST__
 
 #include <boost/filesystem.hpp>
 #include <string>
