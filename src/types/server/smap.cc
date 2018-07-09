@@ -30,16 +30,18 @@ SMap::SMap(std::shared_ptr<ChunkLoader> loader, ChunkWriter* writer,
     std::vector<KVItem> kv_items;
 
     auto sorted_idx = Utils::SortIndexes<Slice>(keys);
-    for (auto sorted_idx_it = sorted_idx.begin(); sorted_idx_it != sorted_idx.end();
+    for (auto sorted_idx_it = sorted_idx.begin();
+         sorted_idx_it != sorted_idx.end();
          ++sorted_idx_it) {
       auto next_it = sorted_idx_it + 1;
-      if (next_it == sorted_idx.end() || keys[*sorted_idx_it] < keys[*next_it]) {
+      if (next_it == sorted_idx.end()
+          || keys[*sorted_idx_it] < keys[*next_it]) {
         kv_items.push_back({keys[*sorted_idx_it], vals[*sorted_idx_it]});
       } else if (keys[*sorted_idx_it] == keys[*next_it]) {
         // do nothing, skip this duplicated key
       } else {
         LOG(FATAL) << "Error in sorting keys.";
-      } // end if
+      }  // end if
     }  // end for
     std::unique_ptr<const Segment> seg = MapNode::Encode(kv_items);
     nb.SpliceElements(0, seg.get());
@@ -70,15 +72,14 @@ Hash SMap::Set(const Slice& key, const Slice& val) const {
 Hash SMap::Set(const std::vector<Slice>& keys,
                const std::vector<Slice>& vals) const {
   CHECK(!empty());
-
   AdvancedNodeBuilder nb(hash(), chunk_loader_.get(), chunk_writer_);
 
   auto sorted_idx = Utils::SortIndexes<Slice>(keys);
-  for (auto sorted_idx_it = sorted_idx.begin(); sorted_idx_it != sorted_idx.end();
+  for (auto sorted_idx_it = sorted_idx.begin();
+       sorted_idx_it != sorted_idx.end();
        ++sorted_idx_it) {
     auto next_it = sorted_idx_it + 1;
     if (next_it == sorted_idx.end() || keys[*sorted_idx_it] < keys[*next_it]) {
-
       size_t idx = *sorted_idx_it;
       OrderedKey orderKey = OrderedKey::FromSlice(keys[idx]);
       NodeCursor cursor(hash(), orderKey, chunk_loader_.get());
@@ -98,9 +99,8 @@ Hash SMap::Set(const std::vector<Slice>& keys,
       // do nothing, skip this duplicated key
     } else {
       LOG(FATAL) << "Error in sorting keys.";
-    } // end if
+    }  // end if
   }  // end for
-
   return nb.Commit(*MapChunker::Instance());
 }
 

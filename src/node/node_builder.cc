@@ -439,12 +439,13 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
                << " the total number of elements.";
   } else if (total_num_elements < start_idx + num_delete) {
     LOG(WARNING) << "The index of elements to remove exceeds "
-                 << " the total number of elements. "
-                 << " Number of removal will be shortened to (total_num - start_idx).";
+      << " the total number of elements. "
+      << " Number of removal will be shortened to (total_num - start_idx).";
     num_delete = total_num_elements - start_idx;
   }
 
-  std::vector<const Segment*> operand_segs;  // will be passed as SpliceOperand member
+  // will be passed as SpliceOperand member
+  std::vector<const Segment*> operand_segs;
   for (auto seg_it = segs.begin(); seg_it != segs.end(); ++seg_it) {
     if ((*seg_it)->empty()) continue;
     operand_segs.push_back((*seg_it).get());
@@ -452,32 +453,37 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
     all_operand_segs_.push_back(std::move(*seg_it));
   }  // end for
 
-  /* Each SpliceOperand defines an closed-open working interval, e.g, [1, 3) [3, 5),
-     we need to find a slot between two sorted intervals in operands to insert this new operand.
-     And need to ensure that no intervals overlap. */
-
-  auto operand_after_tail_it = std::lower_bound(operands_.begin(), operands_.end(), start_idx + num_delete,
-                                   [](const SpliceOperand& operand, uint64_t pos) -> bool {
-                                   return operand.start_idx < pos; });
+  /* Each SpliceOperand defines an closed-open working interval,
+   * e.g, [1, 3) [3, 5),
+   * we need to find a slot between two sorted intervals in operands
+   * to insert this new operand.
+   * And need to ensure that no intervals overlap.
+   */
+  auto operand_after_tail_it =
+    std::lower_bound(operands_.begin(), operands_.end(), start_idx + num_delete,
+                     [](const SpliceOperand& operand, uint64_t pos) -> bool {
+                     return operand.start_idx < pos; });
 #ifdef DEBUG
   if (operand_after_tail_it != operands_.end()) {
     DCHECK_LE(start_idx + num_delete, operand_after_tail_it->start_idx);
   }
 #endif
 
-  auto operand_after_head_it = std::upper_bound(operands_.begin(), operands_.end(), start_idx,
-                                   [](uint64_t pos, const SpliceOperand& operand) -> bool {
-                                   return pos < operand.start_idx + operand.num_delete; });
+  auto operand_after_head_it =
+    std::upper_bound(operands_.begin(), operands_.end(), start_idx,
+                     [](uint64_t pos, const SpliceOperand& operand) -> bool {
+                     return pos < operand.start_idx + operand.num_delete; });
 #ifdef DEBUG
   if (operand_after_head_it != operands_.end()) {
     DCHECK_LT(start_idx,
-              operand_after_head_it->start_idx + operand_after_head_it->num_delete);
+      operand_after_head_it->start_idx + operand_after_head_it->num_delete);
   }
 #endif
 
   if (operand_after_head_it == operand_after_tail_it) {
-    operands_.insert(operand_after_tail_it, {start_idx, num_delete, std::move(operand_segs)});
-  } else if (--operand_after_head_it == operand_after_tail_it){
+    operands_.insert(operand_after_tail_it,
+                     {start_idx, num_delete, std::move(operand_segs)});
+  } else if (--operand_after_head_it == operand_after_tail_it) {
     /* Deal with an exceptional condition that this new operand INSERTs at a
        position that is INSERTED by another operand.
        Two inserted segments will be combined for insertion in order.
