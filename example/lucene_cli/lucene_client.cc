@@ -119,7 +119,7 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
               << "Branch: \"" << branch << "\", "
               << "Output: "
               << (file_path.empty() ? "<stdout>" : file_path) << ", "
-              << "Query: {" << query_predicate << "}"
+              << "Query: \"" << query_predicate << "\""
               << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
@@ -135,7 +135,7 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
               << "Branch: \"" << branch << "\", "
               << "Output: "
               << (file_path.empty() ? "<stdout>" : file_path) << ", "
-              << "Query: {" << query_predicate << "}"
+              << "Query: \"" << query_predicate << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };

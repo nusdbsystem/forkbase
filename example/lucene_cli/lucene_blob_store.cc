@@ -49,12 +49,18 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   std::ofstream ofs_lucene_index(
     lucene_index_input_path.native(), std::ios::out | std::ios::trunc);
   // procedure: put single line (i.e. a data entry) to storage
+  char delim(',');
+  std::vector<std::string> ds_fields;
   std::vector<std::string> ds_entry_names;
   std::vector<Hash> ds_entry_vers;
   size_t line_cnt(0);
   const auto f_put_line = [&](const std::string & line) {
-    ++line_cnt;
-    const auto elements = Utils::Split(line, ',');
+    if (++line_cnt == 1) {  // extract schema from the 1st line
+      ds_fields = Utils::Tokenize(line, ",");
+      delim = line.at(ds_fields.front().size());
+      return ErrorCode::kOK;
+    }
+    const auto elements = Utils::Split(line, delim);
     if (idx_entry_name >= static_cast<int64_t>(elements.size())) {
       LOG(ERROR) << "Failed to extract entry name in line " << line_cnt
                  << ": \"" << line << "\"";
@@ -76,7 +82,8 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     ofs_lucene_index << entry_name;
     for (size_t i = 0; i < idxs_search.size(); ++i) {
       try {
-        ofs_lucene_index << ',' << elements.at(idxs_search[i]);
+        ofs_lucene_index << delim << ds_fields.at(idxs_search[i])
+                         << "##" << elements.at(idxs_search[i]);
       } catch (const std::out_of_range& e) {
         LOG(ERROR) << "No element " << idxs_search[i] << " in line "
                    << line_cnt << ": \"" << line << "\"";
