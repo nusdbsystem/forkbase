@@ -139,7 +139,8 @@ public class IndexServiceImplTest {
   private void createTargetFile(String dir, String content) throws IOException {
     Path path = Paths.get(dir);
     Files.createFile(path);
-    Files.write(path, content.getBytes());
+    String body = "key,value\n" + content;
+    Files.write(path, body.getBytes());
   }
 
   @After

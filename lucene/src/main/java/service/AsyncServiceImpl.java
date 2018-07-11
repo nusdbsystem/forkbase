@@ -87,16 +87,33 @@ public class AsyncServiceImpl implements AsyncService {
     InputStream stream = Files.newInputStream(file);
     BufferedReader in = new BufferedReader(new InputStreamReader(stream));
     String line = null;
+
+    // Read header
+    String[] fields = Const.EMPTY_ARRAY;
+    if ((line = in.readLine()) != null) {
+      fields = line.split(",");
+      if (fields.length < 2) {
+        throw new Exception("The number of fields is too less!");
+      }
+    }
+
+    // Read body
+    String[] values = Const.EMPTY_ARRAY;
     while ((line = in.readLine()) != null) {
-      int delim = line.indexOf(",");
-      if (delim < 0) throw new Exception("File format is invalid.");
+      values = line.split(",");
+      if (values.length != fields.length) {
+        throw new Exception("The number of fields in header and content do not match!");
+      }
+
       Document doc = new Document();
-      String key = line.substring(0, delim);
       // Not analyzed (case sensitive)
-      doc.add(new StringField(Const.FIELD_KEY, key, Field.Store.YES));
+      doc.add(new StringField(Const.FIELD_PRIMARY_KEY, values[0], Field.Store.YES));
       // Analyzed (case insensitive)
-      doc.add(new TextField(Const.FIELD_VALUE, line.substring(delim + 1), Field.Store.NO));
-      writer.updateDocument(new Term(Const.FIELD_KEY, key), doc);
+      doc.add(new TextField(Const.FIELD_ALL_FIELDS, line, Field.Store.NO));
+      for (int i = 1; i < fields.length; i++) {
+        doc.add(new TextField(fields[i], values[i], Field.Store.NO));
+      }
+      writer.updateDocument(new Term(Const.FIELD_PRIMARY_KEY, values[0]), doc);
     }
   }
 }

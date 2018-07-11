@@ -64,7 +64,7 @@ public class IndexServiceImpl implements IndexService {
       // Dataset and branch is indexed, proceed search
       IndexReader reader = DirectoryReader.open(FSDirectory.open(indexPath));
       IndexSearcher searcher = new IndexSearcher(reader);
-      QueryParser parser = new QueryParser(Const.FIELD_VALUE, new StandardAnalyzer());
+      QueryParser parser = new QueryParser(Const.FIELD_ALL_FIELDS, new StandardAnalyzer());
 
       // Check query string
       String queryString = req.getQuery();
@@ -85,7 +85,7 @@ public class IndexServiceImpl implements IndexService {
       List<SearchResult> keys = new ArrayList<>();
       for (int i = 0; i < hits.length; i++) {
         Document doc = searcher.doc(hits[i].doc);
-        SearchResult result = new SearchResult(doc.get(Const.FIELD_KEY));
+        SearchResult result = new SearchResult(doc.get(Const.FIELD_PRIMARY_KEY));
         keys.add(result);
       }
       SearchResponse res = new SearchResponse(Const.SUCCESS, "", keys);
