@@ -2,6 +2,7 @@
 
 #include "lucene_blob_store.h"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <utility>
@@ -25,7 +26,8 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const boost_fs::path& file_path,
   const int64_t idx_entry_name,
   const std::vector<int64_t>& idxs_search,
-  size_t* n_entries, size_t* n_bytes) {
+  size_t* n_entries,
+  size_t* n_bytes) {
   *n_entries = 0;
   *n_bytes = 0;
   const Slice ds_name_slice(ds_name), branch_slice(branch);
@@ -50,40 +52,48 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     lucene_index_input_path.native(), std::ios::out | std::ios::trunc);
   // procedure: put single line (i.e. a data entry) to storage
   char delim(',');
-  std::vector<std::string> ds_fields;
   std::vector<std::string> ds_entry_names;
   std::vector<Hash> ds_entry_vers;
   size_t line_cnt(0);
   const auto f_put_line = [&](const std::string & line) {
-    if (++line_cnt == 1) {  // extract schema from the 1st line
-      ds_fields = Utils::Tokenize(line, ",");
-      delim = line.at(ds_fields.front().size());
-      return ErrorCode::kOK;
-    }
+    ++line_cnt;
     const auto elements = Utils::Split(line, delim);
     if (idx_entry_name >= static_cast<int64_t>(elements.size())) {
       LOG(ERROR) << "Failed to extract entry name in line " << line_cnt
                  << ": \"" << line << "\"";
       return ErrorCode::kIndexOutOfRange;
     }
-    auto& entry_name = elements[idx_entry_name];
-    // fetch existing version of the data entry
-    auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
-    if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
-    // write the data entry to storage
-    Hash entry_ver;
-    USTORE_GUARD(WriteDataEntry(
-                   ds_name, entry_name, line, prev_entry_ver, &entry_ver));
-    // archive updates
-    ds_entry_names.push_back(std::move(entry_name));
-    ds_entry_vers.push_back(std::move(entry_ver));
-    *n_bytes += line.size();
+    const auto& entry_name = elements[idx_entry_name];
+    if (line_cnt == 1) {  // process schema at the 1st line
+      std::string schema;
+      USTORE_GUARD(
+        GetMeta(ds_name, branch, "SCHEMA", &schema));
+      const auto line_trim = boost::trim_copy(line);
+      if (schema.empty()) {
+        USTORE_GUARD(
+          SetMeta(ds_name, branch, "SCHEMA", line_trim));
+        *n_bytes += line_trim.size();
+      } else if (line_trim != schema) {  // compare with the recorded schema
+        return ErrorCode::kDatasetSchemaMismatch;
+      }
+    } else {  // for 2nd line onwards
+      // fetch existing version of the data entry
+      auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+      if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
+      // write the data entry to storage
+      Hash entry_ver;
+      USTORE_GUARD(WriteDataEntry(
+                     ds_name, entry_name, line, prev_entry_ver, &entry_ver));
+      // archive updates
+      ds_entry_names.emplace_back(entry_name);
+      ds_entry_vers.push_back(std::move(entry_ver));
+      *n_bytes += line.size();
+    }
     // add lucene index entry
     ofs_lucene_index << entry_name;
     for (size_t i = 0; i < idxs_search.size(); ++i) {
       try {
-        ofs_lucene_index << delim << ds_fields.at(idxs_search[i])
-                         << "##" << elements.at(idxs_search[i]);
+        ofs_lucene_index << delim << elements.at(idxs_search[i]);
       } catch (const std::out_of_range& e) {
         LOG(ERROR) << "No element " << idxs_search[i] << " in line "
                    << line_cnt << ": \"" << line << "\"";
@@ -121,9 +131,9 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     Dataset ds_update;
     USTORE_GUARD(
       ReadDataset(ds_name_slice, branch_slice, &ds_update));
-    auto& entry_name = ds_entry_names_slice[i];
-    auto& entry_ver = ds_entry_vers_slice[i];
-    ds_update.Set(entry_name, entry_ver);
+    auto& en_name = ds_entry_names_slice[i];
+    auto& en_ver = ds_entry_vers_slice[i];
+    ds_update.Set(en_name, en_ver);
     USTORE_GUARD(
       odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
   }

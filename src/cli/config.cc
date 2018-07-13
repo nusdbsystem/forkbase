@@ -36,6 +36,7 @@ int64_t Config::position;
 int64_t Config::ref_position;
 size_t Config::num_elements;
 size_t Config::batch_size;
+bool Config::with_schema;
 
 std::list<std::string> Config::history_vers_;
 
@@ -66,6 +67,7 @@ void Config::Reset() {
   ref_position = -1;
   num_elements = 1;
   batch_size = 5000;
+  with_schema = false;
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -134,6 +136,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     auto arg_batch_size = vm["batch-size"].as<int32_t>();
     GUARD(CheckArgGT(arg_batch_size, 0, "Batch size"));
     batch_size = static_cast<size_t>(arg_batch_size);
+
+    with_schema = vm.count("with-schema") ? true : false;
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -186,7 +190,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "number of elements")
   ("distinct", "enforcing the distinct constraint")
   ("batch-size", po::value<int32_t>()->default_value(5000),
-   "batch size for data loading");
+   "batch size for data loading")
+  ("with-schema", "input data containing schema at the 1st line");
 
   po::options_description backend("Hidden Options");
   backend.add_options()

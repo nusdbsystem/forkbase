@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "spec/object_db.h"
+#include "spec/object_meta.h"
 #include "utils/utils.h"
 
 namespace ustore {
@@ -18,9 +19,9 @@ namespace ustore {
 using Dataset = VMap;
 using DataEntry = VBlob;
 
-class BlobStore {
+class BlobStore : protected ObjectMeta {
  public:
-  explicit BlobStore(DB* db) noexcept : odb_(db) {}
+  explicit BlobStore(DB* db) noexcept : ObjectMeta(db), odb_(db) {}
   virtual ~BlobStore() = default;
 
   virtual ErrorCode ListDataset(std::vector<std::string>* datasets);
@@ -124,14 +125,15 @@ class BlobStore {
                                       const std::string& branch,
                                       const boost::filesystem::path& file_path,
                                       const int64_t idx_entry_name,
-                                      size_t* n_entries, size_t* n_bytes);
+                                      size_t* n_entries, size_t* n_bytes,
+                                      bool with_schema = false);
 
   inline virtual ErrorCode PutDataEntryByCSV(const std::string& ds_name,
       const std::string& branch, const boost::filesystem::path& file_path,
-      const int64_t idx_entry_name) {
+      const int64_t idx_entry_name, bool with_schema = false) {
     size_t n_entries, n_bytes;
     return PutDataEntryByCSV(ds_name, branch, file_path, idx_entry_name,
-                             &n_entries, &n_bytes);
+                             &n_entries, &n_bytes, with_schema);
   }
 
   virtual ErrorCode DeleteDataEntry(const std::string& ds_name,

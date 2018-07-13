@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The UStore Authors.
 
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include "spec/blob_store.h"
 
@@ -101,6 +102,11 @@ ErrorCode BlobStore::CreateDataset(const std::string& ds_name,
     // create new dataset
     auto rst_ds_put = odb_.Put(ds_name_slice, Dataset(), branch_slice);
     USTORE_GUARD(rst_ds_put.stat);
+    // create meta table
+    USTORE_GUARD(
+      CreateMetaTable(ds_name, branch));
+    USTORE_GUARD(
+      SetMeta(ds_name, branch, "TYPE", "Dataset"));
     // record the new dataset
     return UpdateDatasetList(ds_name_slice);
   }
@@ -136,6 +142,14 @@ ErrorCode BlobStore::ExportDatasetBinary(const std::string& ds_name,
     return ErrorCode::kIOFault;
   }
   std::ofstream ofs(file_path.native(), std::ios::out | std::ios::trunc);
+  // write schema to the 1st line, if any
+  std::string schema;
+  USTORE_GUARD(
+    GetMeta(ds_name, branch, "SCHEMA", &schema));
+  if (!schema.empty()) {
+    ofs << schema << std::endl;
+    *n_bytes += schema.size() + 1;
+  }
   // retrieve the operating dataset
   Dataset ds;
   USTORE_GUARD(
@@ -162,7 +176,9 @@ ErrorCode BlobStore::ExportDatasetBinary(const std::string& ds_name,
 ErrorCode BlobStore::BranchDataset(const std::string& ds_name,
                                    const std::string& old_branch,
                                    const std::string& new_branch) {
-  return odb_.Branch(Slice(ds_name), Slice(old_branch), Slice(new_branch));
+  USTORE_GUARD(
+    odb_.Branch(Slice(ds_name), Slice(old_branch), Slice(new_branch)));
+  return BranchMetaTable(ds_name, old_branch, new_branch);
 }
 
 ErrorCode BlobStore::ListDatasetBranch(
@@ -221,6 +237,9 @@ ErrorCode BlobStore::DeleteDataset(const std::string& ds_name,
   // delete dataset from storage
   USTORE_GUARD(
     odb_.Delete(ds_name_slice, branch_slice));
+  // delete meta table
+  USTORE_GUARD(
+    DeleteMetaTable(ds_name, branch));
   // remove the record of the dataset if all its branches have been deleted
   bool exists;
   USTORE_GUARD(
@@ -443,7 +462,9 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
                                        const std::string& branch,
                                        const boost_fs::path& file_path,
                                        const int64_t idx_entry_name,
-                                       size_t* n_entries, size_t* n_bytes) {
+                                       size_t* n_entries,
+                                       size_t* n_bytes,
+                                       bool with_schema) {
   *n_entries = 0;
   *n_bytes = 0;
   const Slice ds_name_slice(ds_name), branch_slice(branch);
@@ -455,22 +476,40 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
   std::vector<std::string> ds_entry_names;
   std::vector<Hash> ds_entry_vers;
   const char delim(',');
+  size_t line_cnt(0);
   const auto f_put_line = [&](const std::string & line) {
-    std::string entry_name;
-    USTORE_GUARD(
-      Utils::ExtractElement(line, idx_entry_name, &entry_name, delim));
-    // fetch existing version of the data entry
-    auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
-    if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
-    // write the data entry to storage
-    Hash entry_ver;
-    USTORE_GUARD(WriteDataEntry(
-                   ds_name, entry_name, line, prev_entry_ver, &entry_ver));
-    // archive updates
-    ds_entry_names.push_back(std::move(entry_name));
-    ds_entry_vers.push_back(std::move(entry_ver));
-    *n_bytes += line.size();
-    return ErrorCode::kOK;
+    if (++line_cnt == 1 && with_schema) {
+      std::string schema;
+      USTORE_GUARD(
+        GetMeta(ds_name, branch, "SCHEMA", &schema));
+      const auto line_trim = boost::trim_copy(line);
+      if (schema.empty()) {
+        USTORE_GUARD(
+          SetMeta(ds_name, branch, "SCHEMA", line_trim));
+        *n_bytes += line_trim.size();
+        return ErrorCode::kOK;
+      } else {  // compare with the recorded schema
+        return (line_trim == schema)
+               ? ErrorCode::kOK
+               : ErrorCode::kDatasetSchemaMismatch;
+      }
+    } else {  // for 2nd line onwards
+      std::string entry_name;
+      USTORE_GUARD(
+        Utils::ExtractElement(line, idx_entry_name, &entry_name, delim));
+      // fetch existing version of the data entry
+      auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+      if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
+      // write the data entry to storage
+      Hash entry_ver;
+      USTORE_GUARD(WriteDataEntry(
+                     ds_name, entry_name, line, prev_entry_ver, &entry_ver));
+      // archive updates
+      ds_entry_names.push_back(std::move(entry_name));
+      ds_entry_vers.push_back(std::move(entry_ver));
+      *n_bytes += line.size();
+      return ErrorCode::kOK;
+    }
   };
   USTORE_GUARD(
     Utils::IterateFileByLine(file_path, f_put_line));
@@ -492,9 +531,9 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
     Dataset ds_update;
     USTORE_GUARD(
       ReadDataset(ds_name_slice, branch_slice, &ds_update));
-    auto& entry_name = ds_entry_names_slice[i];
-    auto& entry_ver = ds_entry_vers_slice[i];
-    ds_update.Set(entry_name, entry_ver);
+    auto& en_name = ds_entry_names_slice[i];
+    auto& en_ver = ds_entry_vers_slice[i];
+    ds_update.Set(en_name, en_ver);
     USTORE_GUARD(
       odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
   }

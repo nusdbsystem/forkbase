@@ -70,6 +70,7 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kFailedModifySMap, "failed to modify SMap"},
   {ErrorCode::kFailedModifySSet, "failed to modify SSet"},
   {ErrorCode::kIndexOutOfRange, "index out of range"},
+  {ErrorCode::kObjectMetaNotExists, "object meta does not exist"},
   {ErrorCode::kTypeMismatch, "data types mismatch"},
   {ErrorCode::kKeyNotExists, "key does not exist"},
   {ErrorCode::kKeyExists, "key already exists"},
@@ -90,7 +91,8 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kElementExists, "element already exists"},
   {ErrorCode::kUnexpectedSuccess, "unexpected success of command execution"},
   {ErrorCode::kDatasetNotExists, "dataset does not exist"},
-  {ErrorCode::kDataEntryNotExists, "data entry does not exist"}
+  {ErrorCode::kDataEntryNotExists, "data entry does not exist"},
+  {ErrorCode::kDatasetSchemaMismatch, "schema of dataset mismatch"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {

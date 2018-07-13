@@ -488,7 +488,7 @@ AdvancedNodeBuilder& AdvancedNodeBuilder::Splice(
        position that is INSERTED by another operand.
        Two inserted segments will be combined for insertion in order.
     */
-    CHECK_EQ(0, num_delete);
+    CHECK_EQ(size_t(0), num_delete);
     CHECK_EQ(size_t(0), operand_after_tail_it->num_delete);
     operand_after_tail_it->appended_segs.insert(
       operand_after_tail_it->appended_segs.end(),

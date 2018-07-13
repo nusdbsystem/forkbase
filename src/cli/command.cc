@@ -3361,18 +3361,21 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
   const auto& branch = Config::branch;
   const auto& idx_entry_name = Config::position;
   const auto& file_path = Config::file;
+  const auto& with_schema = Config::with_schema;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
               << "Index of Entry Name: " << idx_entry_name << ", "
-              << "File: \"" << file_path << "\"" << std::endl;
+              << "File: \"" << file_path << "\", "
+              << "With Schema: " << (with_schema ? "true" : "false")
+              << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
     std::cout << BOLD_GREEN("[SUCCESS: PUT_DATA_ENTRY_BY_CSV] ")
               << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
-              << " updated  "
+              << " updated " << (with_schema ? "" : "(no schema) ") << " "
               << BLUE("[" << Utils::StorageSizeString(n_bytes) << "]")
               << std::endl;
   };
@@ -3381,7 +3384,8 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\""
               << "Index of Entry Name: " << idx_entry_name << ", "
-              << "File: \"" << file_path << "\""
+              << "File: \"" << file_path << "\", "
+              << "With Schema: " << (with_schema ? "true" : "false")
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
@@ -3394,7 +3398,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
   size_t n_entries, n_bytes;
   auto ec = bs_.PutDataEntryByCSV(
               ds_name, branch, boost_fs::path(file_path), idx_entry_name,
-              &n_entries, &n_bytes);
+              &n_entries, &n_bytes, with_schema);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }

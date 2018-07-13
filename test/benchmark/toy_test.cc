@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
   auto  get1_rsp = db.Get(key, branch);
   CHECK_EQ(get1_rsp.stat, ErrorCode::kOK);
   VMap vmap1 = get1_rsp.value.Map();
-  CHECK_EQ(vmap1.numElements(), 0);
+  CHECK_EQ(vmap1.numElements(), 0UL);
 
   vmap1.Set({map_key1, map_val}, {map_key2, map_val});
   auto put2_rsp = db.Put(key, vmap1, branch);
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
   auto  get2_rsp = db.Get(key, branch);
   CHECK_EQ(get2_rsp.stat, ErrorCode::kOK);
   VMap vmap2 = get2_rsp.value.Map();
-  CHECK_EQ(vmap2.numElements(), 1);
+  CHECK_EQ(vmap2.numElements(), 1UL);
 
   // VMap vmap3({map_key1, map_val}, {map_key2, map_val});
   // auto put1_rsp = db.Put(key, vmap3, branch);

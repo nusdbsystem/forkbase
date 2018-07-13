@@ -99,6 +99,7 @@ enum class ErrorCode : byte_t {
   kFailedModifySMap = 31,
   kFailedModifySSet = 32,
   kIndexOutOfRange = 33,
+  kObjectMetaNotExists = 34,
   // chunk
   kChunkNotExists = 40,
   kFailedCreateChunk = 41,
@@ -125,7 +126,7 @@ enum class ErrorCode : byte_t {
   // blob store
   kDatasetNotExists = 70,
   kDataEntryNotExists = 71,
-  kDataEntryNameNotFound = 72
+  kDatasetSchemaMismatch = 72
 };
 
 }  // namespace ustore
