@@ -3,6 +3,8 @@
 #ifndef USTORE_SPEC_OBJECT_META_H_
 #define USTORE_SPEC_OBJECT_META_H_
 
+#include <string>
+
 #include "spec/object_db.h"
 
 namespace ustore {
@@ -17,7 +19,6 @@ class ObjectMeta {
   }
 
  protected:
-
   ErrorCode CreateMetaTable(const std::string& obj_name,
                             const std::string& branch);
 
