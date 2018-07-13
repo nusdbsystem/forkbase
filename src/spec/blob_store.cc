@@ -135,12 +135,8 @@ ErrorCode BlobStore::ExportDatasetBinary(const std::string& ds_name,
   *n_entries = 0;
   *n_bytes = 0;
   // open the output file
-  try {
-    boost_fs::create_directories(file_path.parent_path());
-  } catch (const boost_fs::filesystem_error& e) {
-    LOG(ERROR) << e.what();
-    return ErrorCode::kIOFault;
-  }
+  USTORE_GUARD(
+    Utils::CreateParentDirectories(file_path));
   std::ofstream ofs(file_path.native(), std::ios::out | std::ios::trunc);
   // write schema to the 1st line, if any
   std::string schema;

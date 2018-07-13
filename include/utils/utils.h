@@ -322,7 +322,13 @@ class Utils {
 
   static std::string FullPath(const std::string& rlt_path);
 
-  static ErrorCode CreateParentDirectories(const std::string& file_path);
+  static ErrorCode CreateParentDirectories(
+    const boost::filesystem::path& file_path);
+
+  static inline ErrorCode CreateParentDirectories(
+    const std::string& file_path) {
+    return CreateParentDirectories(boost::filesystem::path(file_path));
+  }
 
   static ErrorCode DeleteFile(const std::string& file_path);
 
