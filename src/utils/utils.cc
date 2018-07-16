@@ -92,7 +92,8 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kUnexpectedSuccess, "unexpected success of command execution"},
   {ErrorCode::kDatasetNotExists, "dataset does not exist"},
   {ErrorCode::kDataEntryNotExists, "data entry does not exist"},
-  {ErrorCode::kDatasetSchemaMismatch, "schema of dataset mismatch"}
+  {ErrorCode::kDatasetSchemaMismatch, "schema of dataset mismatch"},
+  {ErrorCode::kDatasetSchemaNotFound, "schema of dataset is missing"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {
@@ -505,7 +506,7 @@ ErrorCode Utils::CreateParentDirectories(const boost_fs::path& file_path) {
 }
 
 ErrorCode Utils::DeleteFile(const std::string& file_path) {
-  if ( std::remove(file_path.c_str()) != 0 ) {
+  if (std::remove(file_path.c_str()) != 0) {
     LOG(ERROR) << "Failed to delete file: " << file_path;
     return ErrorCode::kIOFault;
   }

@@ -123,11 +123,18 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
               << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
-    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_BY_INDEX_QUERY] ")
-              << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
-              << " retrieved  "
-              << BLUE("[" << Utils::StorageSizeString(n_bytes) << "]")
-              << std::endl;
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_BY_INDEX_QUERY] ");
+    if (n_entries == 0) {
+      std::cout << "no entry is found";
+    } else {
+      std::cout << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+                << " retrieved";
+      if (!file_path.empty()) {
+        std::cout << " --> " << Utils::FullPath(file_path);
+      }
+      std::cout << BLUE("  [" << Utils::StorageSizeString(n_bytes) << "]");
+    }
+    std::cout << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_BY_INDEX_QUERY] ")
@@ -157,7 +164,12 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
               ds_name, branch, query_predicate,
               (file_path.empty() ? std::cout : ofs), &n_entries, &n_bytes);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
-  if (!file_path.empty()) ofs.close();
+  if (!file_path.empty()) {
+    ofs.close();
+    if (n_entries == 0) {  // delete the trivial file since no factual output
+      Utils::DeleteFile(file_path);
+    }
+  }
   return ec;
 }
 

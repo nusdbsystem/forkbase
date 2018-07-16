@@ -11,12 +11,14 @@ namespace ustore {
 
 class ObjectMeta {
  public:
-  explicit ObjectMeta(DB* db) noexcept : odb_(db) {}
-  ~ObjectMeta() = default;
+  static const std::string kKeyPrefix;
 
   static inline std::string MetaTableKey(const std::string& obj_name) {
-    return "$" + obj_name;
+    return kKeyPrefix + obj_name;
   }
+
+  explicit ObjectMeta(DB* db) noexcept : odb_(db) {}
+  ~ObjectMeta() = default;
 
  protected:
   ErrorCode CreateMetaTable(const std::string& obj_name,

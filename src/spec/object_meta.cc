@@ -4,6 +4,8 @@
 
 namespace ustore {
 
+const std::string ObjectMeta::kKeyPrefix("$");
+
 ErrorCode ObjectMeta::CreateMetaTable(const std::string& obj_name,
                                       const std::string& branch) {
   const std::string meta_tab_key(MetaTableKey(obj_name));

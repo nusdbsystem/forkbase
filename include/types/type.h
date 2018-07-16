@@ -126,7 +126,8 @@ enum class ErrorCode : byte_t {
   // blob store
   kDatasetNotExists = 70,
   kDataEntryNotExists = 71,
-  kDatasetSchemaMismatch = 72
+  kDatasetSchemaMismatch = 72,
+  kDatasetSchemaNotFound = 73
 };
 
 }  // namespace ustore
