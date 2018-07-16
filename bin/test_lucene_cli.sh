@@ -14,12 +14,12 @@ $USTORE_START
 echo [Create CSV] ...
 echo "KEY,CA,CB,CC
 k1,aa,ab,ac
-k2,ba,bb,bc
+k2,ba,bb,aa
 k3,ca,cb,cc" > in1.csv
 echo "KEY,CA,CB,CC
 k4,aa,ab,ac
 k5,ba,bb,bc
-k6,ca,cb,cc" > in2.csv
+k6,ca,cb,ba" > in2.csv
 
 echo [Create Dataset] ...
 $USTORE_CLI create-ds -t ds_test -b master
@@ -35,3 +35,19 @@ $USTORE_LUCENE_CLI put-de-by-csv in2.csv -t ds_test -b master -i 0 -j "1,3"
 
 echo [Second Dump] ...
 $USTORE_CLI export-ds-bin -t ds_test -b master out2.csv
+
+echo [Query aa] ...
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "aa"
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "aa" q1.csv
+
+echo [Query aa AND ac] ...
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "aa AND ac"
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "aa AND ac" q2.csv
+
+echo [Query aa OR cc] ...
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "aa OR cc"
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "aa OR cc" q3.csv
+
+echo [Query CC : aa] ...
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "CC : aa"
+$USTORE_LUCENE_CLI get-de-by-iq -t ds_test -b master -q "CC : aa" q4.csv
