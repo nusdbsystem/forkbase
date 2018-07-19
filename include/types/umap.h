@@ -3,7 +3,9 @@
 #ifndef USTORE_TYPES_UMAP_H_
 #define USTORE_TYPES_UMAP_H_
 
+#include <map>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -51,6 +53,13 @@ class UMap : public ChunkableType {
   virtual Hash Set(const Slice& key, const Slice& val) const = 0;
   virtual Hash Set(const std::vector<Slice>& keys,
                    const std::vector<Slice>& vals) const = 0;
+  Hash Insert(const std::map<std::string, std::string>& kvs) const {
+    return SetFromPairs(kvs);
+  }
+  Hash Insert(const std::unordered_map<std::string, std::string>& kvs) const {
+    return SetFromPairs(kvs);
+  }
+
   virtual Hash Remove(const Slice& key) const = 0;
 
   // Return an iterator that scan from List Start
@@ -72,6 +81,17 @@ class UMap : public ChunkableType {
   ~UMap() = default;
 
   bool SetNodeForHash(const Hash& hash) override;
+
+ private:
+  template<typename T>
+  Hash SetFromPairs(const T& kvs) const {
+    std::vector<Slice> keys, vals;
+    for (auto& kv : kvs) {
+      keys.emplace_back(kv.first);
+      vals.emplace_back(kv.second);
+    }
+    return Set(keys, vals);
+  }
 };
 
 }  // namespace ustore

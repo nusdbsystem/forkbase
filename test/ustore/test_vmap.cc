@@ -236,6 +236,38 @@ TEST(VMap, MultiSetExistingVMap) {
   }
 }
 
+TEST(VMap, MultiSetExistingVMapFromStdMap) {
+  // Init Map with a single entry
+  ustore::ObjectDB db(&worker_vmap());
+  std::vector<Slice> slice_key, slice_val;
+  for (const auto& s : smap_key) slice_key.push_back(Slice(s));
+  for (const auto& s : smap_val) slice_val.push_back(Slice(s));
+
+  ustore::VMap map(slice_key, slice_val);
+  Hash hash = db.Put(Slice(key_vmap), map, Slice(branch_vmap)).value;
+
+  // get map
+  auto v = db.Get(Slice(key_vmap), Slice(branch_vmap)).value.Map();
+
+  // Multiset map
+  std::map<std::string, std::string> kvs;
+  for (size_t i = 0; i < smap_key.size(); ++i) kvs[smap_key[i]] = smap_val[i];
+  v.Insert(kvs);
+  auto update = db.Put(Slice(key_vmap), v, Slice(branch_vmap));
+  ASSERT_TRUE(ErrorCode::kOK == update.stat);
+
+  auto get = db.Get(Slice(key_vmap), Slice(branch_vmap));
+  ASSERT_TRUE(ErrorCode::kOK == get.stat);
+  v = get.value.Map();
+  // check data
+  auto it = v.Scan();
+  for (size_t i = 0; i < slice_key.size(); ++i) {
+    EXPECT_EQ(slice_key[i], it.key());
+    EXPECT_EQ(slice_val[i], it.value());
+    it.next();
+  }
+}
+
 TEST(VMap, DestructWorker) {
   delete &worker_vmap();
 }
