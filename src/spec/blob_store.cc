@@ -400,8 +400,7 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
   // procedure: put single file (i.e. a data entry) to storage
-  std::vector<std::string> ds_entry_names;
-  std::vector<Hash> ds_entry_vers;
+  std::unordered_map<std::string, Hash> updates;
   const auto f_put_file =
   [&](const boost_fs::path & path, const boost_fs::path & rlt_path) {
     // construct data entry name and value
@@ -417,8 +416,7 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
     USTORE_GUARD(WriteDataEntry(
                    ds_name, entry_name, entry_val, prev_entry_ver, &entry_ver));
     // archive updates
-    ds_entry_names.push_back(std::move(entry_name));
-    ds_entry_vers.push_back(std::move(entry_ver));
+    updates.emplace(std::move(entry_name), std::move(entry_ver));
     *n_bytes += entry_val.size();
     return ErrorCode::kOK;
   };
@@ -426,31 +424,23 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
   USTORE_GUARD(
     Utils::IterateDirectory(dir_path, f_put_file, ""));
   // update dataset
-  std::vector<Slice> ds_entry_names_slice;
-  for (auto& en : ds_entry_names) {
-    ds_entry_names_slice.emplace_back(Slice(en));
-  }
-  std::vector<Slice> ds_entry_vers_slice;
-  for (auto& ev : ds_entry_vers) {
-    ds_entry_vers_slice.emplace_back(Utils::ToSlice(ev));
-  }
 #if defined(__BLOB_STORE_USE_MAP_MULTI_SET_OP__)
-  ds.Set(ds_entry_names_slice, ds_entry_vers_slice);
+  ds.Insert(updates);
   USTORE_GUARD(
     odb_.Put(ds_name_slice, ds, branch_slice).stat);
 #else
-  for (size_t i = 0; i < ds_entry_names.size(); ++i) {
+  for (auto& kv : updates) {
     Dataset ds_update;
     USTORE_GUARD(
       ReadDataset(ds_name_slice, branch_slice, &ds_update));
-    auto& entry_name = ds_entry_names_slice[i];
-    auto& entry_ver = ds_entry_vers_slice[i];
-    ds_update.Set(entry_name, entry_ver);
+    const auto en_name = Slice(kv.first);
+    const auto en_ver = Utils::ToSlice(kv.second);
+    ds_update.Set(en_name, en_ver);
     USTORE_GUARD(
       odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
   }
 #endif
-  *n_entries = ds_entry_names.size();
+  *n_entries = updates.size();
   return ErrorCode::kOK;
 }
 
@@ -469,8 +459,7 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
   // procedure: put single line (i.e. a data entry) to storage
-  std::vector<std::string> ds_entry_names;
-  std::vector<Hash> ds_entry_vers;
+  std::unordered_map<std::string, Hash> updates;
   const char delim(',');
   size_t line_cnt(0);
   const auto f_put_line = [&](const std::string & line) {
@@ -501,8 +490,7 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
       USTORE_GUARD(WriteDataEntry(
                      ds_name, entry_name, line, prev_entry_ver, &entry_ver));
       // archive updates
-      ds_entry_names.push_back(std::move(entry_name));
-      ds_entry_vers.push_back(std::move(entry_ver));
+      updates.emplace(std::move(entry_name), std::move(entry_ver));
       *n_bytes += line.size();
       return ErrorCode::kOK;
     }
@@ -510,31 +498,23 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
   USTORE_GUARD(
     Utils::IterateFileByLine(file_path, f_put_line));
   // update dataset
-  std::vector<Slice> ds_entry_names_slice;
-  for (auto& en : ds_entry_names) {
-    ds_entry_names_slice.emplace_back(Slice(en));
-  }
-  std::vector<Slice> ds_entry_vers_slice;
-  for (auto& ev : ds_entry_vers) {
-    ds_entry_vers_slice.emplace_back(Utils::ToSlice(ev));
-  }
 #if defined(__BLOB_STORE_USE_MAP_MULTI_SET_OP__)
-  ds.Set(ds_entry_names_slice, ds_entry_vers_slice);
+  ds.Insert(updates);
   USTORE_GUARD(
     odb_.Put(ds_name_slice, ds, branch_slice).stat);
 #else
-  for (size_t i = 0; i < ds_entry_names.size(); ++i) {
+  for (auto& kv : updates) {
     Dataset ds_update;
     USTORE_GUARD(
       ReadDataset(ds_name_slice, branch_slice, &ds_update));
-    auto& en_name = ds_entry_names_slice[i];
-    auto& en_ver = ds_entry_vers_slice[i];
+    const auto en_name = Slice(kv.first);
+    const auto en_ver = Utils::ToSlice(kv.second);
     ds_update.Set(en_name, en_ver);
     USTORE_GUARD(
       odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
   }
 #endif
-  *n_entries = ds_entry_names.size();
+  *n_entries = updates.size();
   return ErrorCode::kOK;
 }
 

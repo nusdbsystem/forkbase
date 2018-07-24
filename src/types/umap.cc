@@ -4,8 +4,8 @@
 #include "node/orderedkey.h"
 #include "node/node_merger.h"
 #include "types/umap.h"
-#include "utils/logging.h"
 #include "utils/debug.h"
+#include "utils/logging.h"
 
 namespace ustore {
 
@@ -54,7 +54,7 @@ UMap::Iterator UMap::Diff(const UMap& rhs) const {
   } else {
     KeyDiffer differ(rhs.hash(), rhs.chunk_loader_.get());
     std::vector<IndexRange> ranges = differ.Compare(hash(),
-                                                    chunk_loader_.get());
+                                     chunk_loader_.get());
     return UMap::Iterator(hash(), ranges, chunk_loader_.get());
   }
 }
@@ -66,7 +66,7 @@ UMap::Iterator UMap::Intersect(const UMap& rhs) const {
   } else {
     KeyIntersector intersector(rhs.hash(), rhs.chunk_loader_.get());
     std::vector<IndexRange> ranges = intersector.Compare(hash(),
-                                                         chunk_loader_.get());
+                                     chunk_loader_.get());
     return UMap::Iterator(hash(), ranges, chunk_loader_.get());
   }
 }

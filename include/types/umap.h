@@ -41,7 +41,7 @@ class UMap : public ChunkableType {
     inline Slice RealValue() const override {
       size_t value_num_bytes = 0;
       const char* value = reinterpret_cast<const char*>(
-                              MapNode::value(data(), &value_num_bytes));
+                            MapNode::value(data(), &value_num_bytes));
       return Slice(value, value_num_bytes);
     }
   };
@@ -54,10 +54,16 @@ class UMap : public ChunkableType {
   virtual Hash Set(const std::vector<Slice>& keys,
                    const std::vector<Slice>& vals) const = 0;
   Hash Insert(const std::map<std::string, std::string>& kvs) const {
-    return SetFromPairs(kvs);
+    return SetFromStringStringPairs(kvs);
   }
   Hash Insert(const std::unordered_map<std::string, std::string>& kvs) const {
-    return SetFromPairs(kvs);
+    return SetFromStringStringPairs(kvs);
+  }
+  Hash Insert(const std::map<std::string, Hash>& kvs) const {
+    return SetFromStringHashPairs(kvs);
+  }
+  Hash Insert(const std::unordered_map<std::string, Hash>& kvs) const {
+    return SetFromStringHashPairs(kvs);
   }
 
   virtual Hash Remove(const Slice& key) const = 0;
@@ -76,19 +82,28 @@ class UMap : public ChunkableType {
   UMap() = default;
   UMap(UMap&&) = default;
   UMap& operator=(UMap&&) = default;
-  explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept :
-      ChunkableType(loader) {}
+  explicit UMap(std::shared_ptr<ChunkLoader> loader) noexcept
+    : ChunkableType(loader) {}
   ~UMap() = default;
 
   bool SetNodeForHash(const Hash& hash) override;
 
  private:
   template<typename T>
-  Hash SetFromPairs(const T& kvs) const {
+  Hash SetFromStringStringPairs(const T& kvs) const {
     std::vector<Slice> keys, vals;
     for (auto& kv : kvs) {
       keys.emplace_back(kv.first);
       vals.emplace_back(kv.second);
+    }
+    return Set(keys, vals);
+  }
+  template<typename T>
+  Hash SetFromStringHashPairs(const T& kvs) const {
+    std::vector<Slice> keys, vals;
+    for (auto& kv : kvs) {
+      keys.emplace_back(kv.first);
+      vals.emplace_back(kv.second.value(), Hash::kByteLength);
     }
     return Set(keys, vals);
   }

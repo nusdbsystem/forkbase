@@ -52,8 +52,7 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     lucene_index_input_path.native(), std::ios::out | std::ios::trunc);
   // procedure: put single line (i.e. a data entry) to storage
   char delim(',');
-  std::vector<std::string> ds_entry_names;
-  std::vector<Hash> ds_entry_vers;
+  std::unordered_map<std::string, Hash> updates;
   size_t line_cnt(0);
   const auto f_put_line = [&](const std::string & line) {
     ++line_cnt;
@@ -85,8 +84,7 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
       USTORE_GUARD(WriteDataEntry(
                      ds_name, entry_name, line, prev_entry_ver, &entry_ver));
       // archive updates
-      ds_entry_names.emplace_back(entry_name);
-      ds_entry_vers.push_back(std::move(entry_ver));
+      updates.emplace(entry_name, std::move(entry_ver));
       *n_bytes += line.size();
     }
     // add lucene index entry
@@ -114,31 +112,23 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   USTORE_GUARD(
     LuceneIndexDataEntries(ds_name, branch, lucene_index_input_path));
   // update dataset
-  std::vector<Slice> ds_entry_names_slice;
-  for (auto& en : ds_entry_names) {
-    ds_entry_names_slice.emplace_back(Slice(en));
-  }
-  std::vector<Slice> ds_entry_vers_slice;
-  for (auto& ev : ds_entry_vers) {
-    ds_entry_vers_slice.emplace_back(Utils::ToSlice(ev));
-  }
 #if defined(__BLOB_STORE_USE_MAP_MULTI_SET_OP__)
-  ds.Set(ds_entry_names_slice, ds_entry_vers_slice);
+  ds.Insert(updates);
   USTORE_GUARD(
     odb_.Put(ds_name_slice, ds, branch_slice).stat);
 #else
-  for (size_t i = 0; i < ds_entry_names.size(); ++i) {
+  for (auto& kv : updates) {
     Dataset ds_update;
     USTORE_GUARD(
       ReadDataset(ds_name_slice, branch_slice, &ds_update));
-    auto& en_name = ds_entry_names_slice[i];
-    auto& en_ver = ds_entry_vers_slice[i];
+    const auto en_name = Slice(kv.first);
+    const auto en_ver = Utils::ToSlice(kv.second);
     ds_update.Set(en_name, en_ver);
     USTORE_GUARD(
       odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
   }
 #endif
-  *n_entries = ds_entry_names.size();
+  *n_entries = updates.size();
   return ErrorCode::kOK;
 }
 
