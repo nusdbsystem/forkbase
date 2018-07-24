@@ -320,7 +320,14 @@ class Utils {
   static ErrorCode ExtractElement(const std::string& str, const size_t idx_elem,
                                   std::string* elem, const char delim = ',');
 
-  static std::string FullPath(const std::string& rlt_path);
+  static inline boost::filesystem::path FullPath(
+    const boost::filesystem::path& rlt_path) {
+    return boost::filesystem::canonical(rlt_path);
+  }
+
+  static inline std::string FullPath(const std::string& rlt_path) {
+    return FullPath(boost::filesystem::path(rlt_path)).native();
+  }
 
   static ErrorCode CreateParentDirectories(
     const boost::filesystem::path& file_path);
@@ -332,11 +339,37 @@ class Utils {
 
   static ErrorCode DeleteFile(const std::string& file_path);
 
+  static inline ErrorCode CopyFile(const boost::filesystem::path& from,
+                                   const boost::filesystem::path& to) {
+    return CopyFile(from, to, boost::filesystem::copy_option::fail_if_exists);
+  }
+
+  static inline ErrorCode CopyFile(const std::string& from,
+                                   const std::string& to) {
+    return CopyFile(boost::filesystem::path(from), boost::filesystem::path(to));
+  }
+
+  static inline ErrorCode CopyFileOverwrite(
+    const boost::filesystem::path& from, const boost::filesystem::path& to) {
+    return CopyFile(
+             from, to, boost::filesystem::copy_option::overwrite_if_exists);
+  }
+
+  static inline ErrorCode CopyFileOverwrite(
+    const std::string& from, const std::string& to) {
+    return CopyFileOverwrite(
+             boost::filesystem::path(from), boost::filesystem::path(to));
+  }
+
  private:
   template<typename T>
   static inline void SleepFor(size_t units) {
     std::this_thread::sleep_for(T(units));
   }
+
+  static ErrorCode CopyFile(const boost::filesystem::path& from,
+                            const boost::filesystem::path& to,
+                            boost::filesystem::copy_option opt);
 };
 
 template<typename T>

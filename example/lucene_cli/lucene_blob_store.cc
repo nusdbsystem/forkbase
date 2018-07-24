@@ -25,6 +25,23 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const std::string& branch,
   const boost_fs::path& file_path,
   const int64_t idx_entry_name,
+  size_t* n_entries,
+  size_t* n_bytes) {
+  USTORE_GUARD(
+    BlobStore::PutDataEntryByCSV(ds_name, branch, file_path, idx_entry_name,
+                                 n_entries, n_bytes, true));
+  // copy the whole file for indexing
+  const std::string lucene_file_path(GenerateLuceneFilePath());
+  const boost_fs::path lucene_index_input_path(lucene_file_path);
+  Utils::CreateParentDirectories(lucene_index_input_path);
+  return Utils::CopyFile(file_path, lucene_index_input_path);
+}
+
+ErrorCode LuceneBlobStore::PutDataEntryByCSV(
+  const std::string& ds_name,
+  const std::string& branch,
+  const boost_fs::path& file_path,
+  const int64_t idx_entry_name,
   const std::vector<int64_t>& idxs_search,
   size_t* n_entries,
   size_t* n_bytes) {
@@ -36,11 +53,7 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
   // create file of lucene index input
-  time_t now;
-  time(&now);
-  const std::string lucene_file_path(
-    lucene_file_dir_ + "/lucene/docs/lucene_index_input_" +
-    std::to_string(now) + ".csv");
+  const std::string lucene_file_path(GenerateLuceneFilePath());
   const boost_fs::path lucene_index_input_path(lucene_file_path);
   try {
     boost_fs::create_directories(lucene_index_input_path.parent_path());

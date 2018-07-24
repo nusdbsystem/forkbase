@@ -11,6 +11,7 @@
 namespace ustore {
 
 namespace boost_fs = boost::filesystem;
+namespace boost_sys = boost::system;
 
 const size_t Utils::max_size_t(std::numeric_limits<size_t>::max());
 
@@ -487,10 +488,6 @@ ErrorCode Utils::ExtractElement(const std::string& str,
   //                extract element in the target position.
 }
 
-std::string Utils::FullPath(const std::string& rlt_path) {
-  return boost_fs::canonical(boost_fs::path(rlt_path)).native();
-}
-
 ErrorCode Utils::CreateParentDirectories(const boost_fs::path& file_path) {
   const auto dir = file_path.parent_path();
   if (!dir.empty()) {
@@ -508,6 +505,18 @@ ErrorCode Utils::CreateParentDirectories(const boost_fs::path& file_path) {
 ErrorCode Utils::DeleteFile(const std::string& file_path) {
   if (std::remove(file_path.c_str()) != 0) {
     LOG(ERROR) << "Failed to delete file: " << file_path;
+    return ErrorCode::kIOFault;
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode Utils::CopyFile(const boost::filesystem::path& from,
+                          const boost::filesystem::path& to,
+                          boost_fs::copy_option opt) {
+  boost_sys::error_code ec;
+  boost_fs::copy_file(from, to, opt, ec);
+  if (ec.value() != boost_sys::errc::success) {
+    LOG(ERROR) << ec.message();
     return ErrorCode::kIOFault;
   }
   return ErrorCode::kOK;

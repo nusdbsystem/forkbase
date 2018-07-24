@@ -69,7 +69,8 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
               << "Index of Entry Name: " << idx_entry_name << ", "
-              << "Indexes for Keyword Search: {" << raw_idxs_search << "}, "
+              << "Indexes for Keyword Search: {"
+              << (raw_idxs_search.empty() ? "ALL" : raw_idxs_search) << "}, "
               << "File: \"" << file_path << "\"" << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
@@ -82,27 +83,34 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
-              << "Branch: \"" << branch << "\""
+              << "Branch: \"" << branch << "\", "
               << "Index of Entry Name: " << idx_entry_name << ", "
-              << "Indexes for Keyword Search: {" << raw_idxs_search << "}, "
+              << "Indexes for Keyword Search: {"
+              << (raw_idxs_search.empty() ? "ALL" : raw_idxs_search) << "}, "
               << "File: \"" << file_path << "\""
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   // conditional execution
   if (ds_name.empty() || branch.empty() || file_path.empty()
-      || idx_entry_name < 0 || raw_idxs_search.empty()) {
+      || idx_entry_name < 0) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  std::vector<int64_t> idxs_search;
-  for (auto& idx_str : Utils::Tokenize(raw_idxs_search, "{}[]()|,;: ")) {
-    idxs_search.emplace_back(std::stoi(idx_str));
-  }
   size_t n_entries, n_bytes;
-  auto ec = bs_.PutDataEntryByCSV(
-              ds_name, branch, boost_fs::path(file_path), idx_entry_name,
-              idxs_search, &n_entries, &n_bytes);
+  auto ec = ErrorCode::kUnknownOp;
+  if (raw_idxs_search.empty()) {
+    ec = bs_.PutDataEntryByCSV(ds_name, branch, boost_fs::path(file_path),
+                               idx_entry_name, &n_entries, &n_bytes);
+  } else {
+    std::vector<int64_t> idxs_search;
+    for (auto& idx_str : Utils::Tokenize(raw_idxs_search, "{}[]()|,;: ")) {
+      idxs_search.emplace_back(std::stoi(idx_str));
+    }
+    ec = bs_.PutDataEntryByCSV(
+           ds_name, branch, boost_fs::path(file_path), idx_entry_name,
+           idxs_search, &n_entries, &n_bytes);
+  }
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }

@@ -24,27 +24,27 @@ class BlobStore : protected ObjectMeta {
   explicit BlobStore(DB* db) noexcept : ObjectMeta(db), odb_(db) {}
   virtual ~BlobStore() = default;
 
-  virtual ErrorCode ListDataset(std::vector<std::string>* datasets);
+  ErrorCode ListDataset(std::vector<std::string>* datasets);
 
-  virtual ErrorCode ExistsDataset(const std::string& ds_name,
-                                  bool* exists) const;
+  ErrorCode ExistsDataset(const std::string& ds_name,
+                          bool* exists) const;
 
-  virtual ErrorCode ExistsDataset(const std::string& ds_name,
-                                  const std::string& branch,
-                                  bool* exists) const;
+  ErrorCode ExistsDataset(const std::string& ds_name,
+                          const std::string& branch,
+                          bool* exists) const;
 
-  virtual ErrorCode CreateDataset(const std::string& ds_name,
-                                  const std::string& branch);
+  ErrorCode CreateDataset(const std::string& ds_name,
+                          const std::string& branch);
 
-  virtual ErrorCode GetDataset(const std::string& ds_name,
-                               const std::string& branch, Dataset* ds) const;
+  ErrorCode GetDataset(const std::string& ds_name,
+                       const std::string& branch, Dataset* ds) const;
 
-  virtual ErrorCode ExportDatasetBinary(
+  ErrorCode ExportDatasetBinary(
     const std::string& ds_name, const std::string& branch,
     const boost::filesystem::path& file_path,
     size_t* n_entries, size_t* n_bytes) const;
 
-  inline virtual ErrorCode ExportDatasetBinary(
+  inline ErrorCode ExportDatasetBinary(
     const std::string& ds_name, const std::string& branch,
     const boost::filesystem::path& file_path) const {
     size_t n_entries, n_bytes;
@@ -52,95 +52,97 @@ class BlobStore : protected ObjectMeta {
              ds_name, branch, file_path, &n_entries, &n_bytes);
   }
 
-  virtual ErrorCode BranchDataset(const std::string& ds_name,
-                                  const std::string& old_branch,
-                                  const std::string& new_branch);
+  ErrorCode BranchDataset(const std::string& ds_name,
+                          const std::string& old_branch,
+                          const std::string& new_branch);
 
-  virtual ErrorCode ListDatasetBranch(const std::string& ds_name,
-                                      std::vector<std::string>* branches) const;
+  ErrorCode ListDatasetBranch(const std::string& ds_name,
+                              std::vector<std::string>* branches) const;
 
-  virtual ErrorCode DiffDataset(const std::string& lhs_ds_name,
-                                const std::string& lhs_branch,
-                                const std::string& rhs_ds_name,
-                                const std::string& rhs_branch,
-                                std::vector<std::string>* diff_keys) const;
+  ErrorCode DiffDataset(const std::string& lhs_ds_name,
+                        const std::string& lhs_branch,
+                        const std::string& rhs_ds_name,
+                        const std::string& rhs_branch,
+                        std::vector<std::string>* diff_keys) const;
 
-  virtual ErrorCode DeleteDataset(const std::string& ds_name,
-                                  const std::string& branch);
+  ErrorCode DeleteDataset(const std::string& ds_name,
+                          const std::string& branch);
 
-  virtual ErrorCode ExistsDataEntry(const std::string& ds_name,
-                                    const std::string& entry_name,
-                                    bool* exists) const;
+  ErrorCode ExistsDataEntry(const std::string& ds_name,
+                            const std::string& entry_name,
+                            bool* exists) const;
 
-  virtual ErrorCode ExistsDataEntry(const std::string& ds_name,
-                                    const std::string& branch,
-                                    const std::string& entry_name,
-                                    bool* exists) const;
+  ErrorCode ExistsDataEntry(const std::string& ds_name,
+                            const std::string& branch,
+                            const std::string& entry_name,
+                            bool* exists) const;
 
-  virtual ErrorCode GetDataEntry(const std::string& ds_name,
-                                 const std::string& branch,
-                                 const std::string& entry_name,
-                                 DataEntry* entry) const;
+  ErrorCode GetDataEntry(const std::string& ds_name,
+                         const std::string& branch,
+                         const std::string& entry_name,
+                         DataEntry* entry) const;
 
-  virtual ErrorCode GetDataEntryBatch(const std::string& ds_name,
-                                      const std::string& branch,
-                                      const boost::filesystem::path& dir_path,
-                                      size_t* n_entries,
-                                      size_t* n_bytes) const;
+  ErrorCode GetDataEntryBatch(const std::string& ds_name,
+                              const std::string& branch,
+                              const boost::filesystem::path& dir_path,
+                              size_t* n_entries,
+                              size_t* n_bytes) const;
 
-  inline virtual ErrorCode GetDataEntryBatch(const std::string& ds_name,
-      const std::string& branch,
-      const boost::filesystem::path& dir_path) const {
+  inline ErrorCode GetDataEntryBatch(const std::string& ds_name,
+                                     const std::string& branch,
+                                     const boost::filesystem::path& dir_path) const {
     size_t n_entries, n_bytes;
     return GetDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
 
-  virtual ErrorCode PutDataEntry(const std::string& ds_name,
-                                 const std::string& branch,
-                                 const std::string& entry_name,
-                                 const std::string& entry_val,
-                                 Hash* entry_ver);
+  ErrorCode PutDataEntry(const std::string& ds_name,
+                         const std::string& branch,
+                         const std::string& entry_name,
+                         const std::string& entry_val,
+                         Hash* entry_ver);
 
-  inline virtual ErrorCode PutDataEntry(const std::string& ds_name,
-                                        const std::string& branch,
-                                        const std::string& entry_name,
-                                        const std::string& entry_val) {
+  inline ErrorCode PutDataEntry(const std::string& ds_name,
+                                const std::string& branch,
+                                const std::string& entry_name,
+                                const std::string& entry_val) {
     Hash entry_ver;
     return PutDataEntry(ds_name, branch, entry_name, entry_val, &entry_ver);
   }
 
-  virtual ErrorCode PutDataEntryBatch(const std::string& ds_name,
-                                      const std::string& branch,
-                                      const boost::filesystem::path& dir_path,
-                                      size_t* n_entries, size_t* n_bytes);
+  ErrorCode PutDataEntryBatch(const std::string& ds_name,
+                              const std::string& branch,
+                              const boost::filesystem::path& dir_path,
+                              size_t* n_entries, size_t* n_bytes);
 
-  inline virtual ErrorCode PutDataEntryBatch(const std::string& ds_name,
-      const std::string& branch,
-      const boost::filesystem::path& dir_path) {
+  inline ErrorCode PutDataEntryBatch(const std::string& ds_name,
+                                     const std::string& branch,
+                                     const boost::filesystem::path& dir_path) {
     size_t n_entries, n_bytes;
     return PutDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
 
-  virtual ErrorCode PutDataEntryByCSV(const std::string& ds_name,
-                                      const std::string& branch,
-                                      const boost::filesystem::path& file_path,
-                                      const int64_t idx_entry_name,
-                                      size_t* n_entries, size_t* n_bytes,
-                                      bool with_schema = false);
+  ErrorCode PutDataEntryByCSV(const std::string& ds_name,
+                              const std::string& branch,
+                              const boost::filesystem::path& file_path,
+                              const int64_t idx_entry_name,
+                              size_t* n_entries, size_t* n_bytes,
+                              bool with_schema = false);
 
-  inline virtual ErrorCode PutDataEntryByCSV(const std::string& ds_name,
-      const std::string& branch, const boost::filesystem::path& file_path,
-      const int64_t idx_entry_name, bool with_schema = false) {
+  inline ErrorCode PutDataEntryByCSV(const std::string& ds_name,
+                                     const std::string& branch,
+                                     const boost::filesystem::path& file_path,
+                                     const int64_t idx_entry_name,
+                                     bool with_schema = false) {
     size_t n_entries, n_bytes;
     return PutDataEntryByCSV(ds_name, branch, file_path, idx_entry_name,
                              &n_entries, &n_bytes, with_schema);
   }
 
-  virtual ErrorCode DeleteDataEntry(const std::string& ds_name,
-                                    const std::string& branch,
-                                    const std::string& entry_name);
+  ErrorCode DeleteDataEntry(const std::string& ds_name,
+                            const std::string& branch,
+                            const std::string& entry_name);
 
-  virtual ErrorCode ListDataEntryBranch(
+  ErrorCode ListDataEntryBranch(
     const std::string& ds_name, const std::string& entry_name,
     std::vector<std::string>* branches) const;
 
@@ -152,32 +154,32 @@ class BlobStore : protected ObjectMeta {
 
  protected:
 #if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
-  virtual ErrorCode GetDatasetList(VSet* ds_list);
+  ErrorCode GetDatasetList(VSet* ds_list);
 #else
-  virtual ErrorCode GetDatasetList(VMap* ds_list);
+  ErrorCode GetDatasetList(VMap* ds_list);
 #endif
 
-  virtual ErrorCode UpdateDatasetList(const Slice& ds_name,
-                                      bool to_delete = false);
+  ErrorCode UpdateDatasetList(const Slice& ds_name,
+                              bool to_delete = false);
 
-  virtual ErrorCode ReadDataset(const Slice& ds_name, const Slice& branch,
-                                Dataset* ds) const;
+  ErrorCode ReadDataset(const Slice& ds_name, const Slice& branch,
+                        Dataset* ds) const;
 
-  virtual ErrorCode ReadDataEntryHash(const std::string& ds_name,
-                                      const std::string& entry_name,
-                                      const Hash& entry_ver,
-                                      Hash* entry_hash) const;
+  ErrorCode ReadDataEntryHash(const std::string& ds_name,
+                              const std::string& entry_name,
+                              const Hash& entry_ver,
+                              Hash* entry_hash) const;
 
-  virtual ErrorCode ReadDataEntry(const std::string& ds_name,
-                                  const std::string& entry_name,
-                                  const Hash& entry_ver,
-                                  DataEntry* entry_val) const;
+  ErrorCode ReadDataEntry(const std::string& ds_name,
+                          const std::string& entry_name,
+                          const Hash& entry_ver,
+                          DataEntry* entry_val) const;
 
-  virtual ErrorCode WriteDataEntry(const std::string& ds_name,
-                                   const std::string& entry_name,
-                                   const std::string& entry_val,
-                                   const Hash& prev_entry_ver,
-                                   Hash* entry_ver);
+  ErrorCode WriteDataEntry(const std::string& ds_name,
+                           const std::string& entry_name,
+                           const std::string& entry_val,
+                           const Hash& prev_entry_ver,
+                           Hash* entry_ver);
 
   ObjectDB odb_;
 };
