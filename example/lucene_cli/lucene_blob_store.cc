@@ -25,23 +25,6 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const std::string& branch,
   const boost_fs::path& file_path,
   const int64_t idx_entry_name,
-  size_t* n_entries,
-  size_t* n_bytes) {
-  USTORE_GUARD(
-    BlobStore::PutDataEntryByCSV(ds_name, branch, file_path, idx_entry_name,
-                                 n_entries, n_bytes, true));
-  // copy the whole file for indexing
-  const std::string lucene_file_path(GenerateLuceneFilePath());
-  const boost_fs::path lucene_index_input_path(lucene_file_path);
-  Utils::CreateParentDirectories(lucene_index_input_path);
-  return Utils::CopyFile(file_path, lucene_index_input_path);
-}
-
-ErrorCode LuceneBlobStore::PutDataEntryByCSV(
-  const std::string& ds_name,
-  const std::string& branch,
-  const boost_fs::path& file_path,
-  const int64_t idx_entry_name,
   const std::vector<int64_t>& idxs_search,
   size_t* n_entries,
   size_t* n_bytes) {
@@ -102,13 +85,17 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     }
     // add lucene index entry
     ofs_lucene_index << entry_name;
-    for (size_t i = 0; i < idxs_search.size(); ++i) {
-      try {
-        ofs_lucene_index << delim << elements.at(idxs_search[i]);
-      } catch (const std::out_of_range& e) {
-        LOG(ERROR) << "No element " << idxs_search[i] << " in line "
-                   << line_cnt << ": \"" << line << "\"";
-        return ErrorCode::kIndexOutOfRange;
+    if (idxs_search.empty()) {
+      ofs_lucene_index << delim << line;
+    } else {
+      for (size_t i = 0; i < idxs_search.size(); ++i) {
+        try {
+          ofs_lucene_index << delim << elements.at(idxs_search[i]);
+        } catch (const std::out_of_range& e) {
+          LOG(ERROR) << "No element " << idxs_search[i] << " in line "
+                     << line_cnt << ": \"" << line << "\"";
+          return ErrorCode::kIndexOutOfRange;
+        }
       }
     }
     ofs_lucene_index << std::endl;

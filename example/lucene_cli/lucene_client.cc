@@ -98,19 +98,15 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
     return ErrorCode::kInvalidCommandArgument;
   }
   size_t n_entries, n_bytes;
-  auto ec = ErrorCode::kUnknownOp;
-  if (raw_idxs_search.empty()) {
-    ec = bs_.PutDataEntryByCSV(ds_name, branch, boost_fs::path(file_path),
-                               idx_entry_name, &n_entries, &n_bytes);
-  } else {
-    std::vector<int64_t> idxs_search;
+  std::vector<int64_t> idxs_search;
+  if (!raw_idxs_search.empty()) {
     for (auto& idx_str : Utils::Tokenize(raw_idxs_search, "{}[]()|,;: ")) {
       idxs_search.emplace_back(std::stoi(idx_str));
     }
-    ec = bs_.PutDataEntryByCSV(
-           ds_name, branch, boost_fs::path(file_path), idx_entry_name,
-           idxs_search, &n_entries, &n_bytes);
   }
+  auto ec = bs_.PutDataEntryByCSV(
+              ds_name, branch, boost_fs::path(file_path), idx_entry_name,
+              idxs_search, &n_entries, &n_bytes);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }
