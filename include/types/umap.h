@@ -53,16 +53,19 @@ class UMap : public ChunkableType {
   virtual Hash Set(const Slice& key, const Slice& val) const = 0;
   virtual Hash Set(const std::vector<Slice>& keys,
                    const std::vector<Slice>& vals) const = 0;
-  Hash Insert(const std::map<std::string, std::string>& kvs) const {
+
+  // Utilities for batch insertion
+  inline Hash Insert(const std::map<std::string, std::string>& kvs) const {
     return SetFromStringStringPairs(kvs);
   }
-  Hash Insert(const std::unordered_map<std::string, std::string>& kvs) const {
+  inline Hash Insert(const std::unordered_map<std::string, std::string>& kvs)
+      const {
     return SetFromStringStringPairs(kvs);
   }
-  Hash Insert(const std::map<std::string, Hash>& kvs) const {
+  inline Hash Insert(const std::map<std::string, Hash>& kvs) const {
     return SetFromStringHashPairs(kvs);
   }
-  Hash Insert(const std::unordered_map<std::string, Hash>& kvs) const {
+  inline Hash Insert(const std::unordered_map<std::string, Hash>& kvs) const {
     return SetFromStringHashPairs(kvs);
   }
 
@@ -89,25 +92,36 @@ class UMap : public ChunkableType {
   bool SetNodeForHash(const Hash& hash) override;
 
  private:
+  // TODO(wangsh): Following template methods cannot contain constexpr value in
+  // some g++ versions, as it may cause undefined references during linking.
+  // We fixed it by creating a local const buffer.
+  // Need to figure out a better solution later.
+  static const size_t kHashByteLength;
   template<typename T>
-  Hash SetFromStringStringPairs(const T& kvs) const {
-    std::vector<Slice> keys, vals;
-    for (auto& kv : kvs) {
-      keys.emplace_back(kv.first);
-      vals.emplace_back(kv.second);
-    }
-    return Set(keys, vals);
-  }
+  Hash SetFromStringStringPairs(const T& kvs) const;
   template<typename T>
-  Hash SetFromStringHashPairs(const T& kvs) const {
-    std::vector<Slice> keys, vals;
-    for (auto& kv : kvs) {
-      keys.emplace_back(kv.first);
-      vals.emplace_back(kv.second.value(), Hash::kByteLength);
-    }
-    return Set(keys, vals);
-  }
+  Hash SetFromStringHashPairs(const T& kvs) const;
 };
+
+template<typename T>
+Hash UMap::SetFromStringStringPairs(const T& kvs) const {
+  std::vector<Slice> keys, vals;
+  for (auto& kv : kvs) {
+    keys.emplace_back(kv.first);
+    vals.emplace_back(kv.second);
+  }
+  return Set(keys, vals);
+}
+
+template<typename T>
+Hash UMap::SetFromStringHashPairs(const T& kvs) const {
+  std::vector<Slice> keys, vals;
+  for (auto& kv : kvs) {
+    keys.emplace_back(kv.first);
+    vals.emplace_back(kv.second.value(), kHashByteLength);
+  }
+  return Set(keys, vals);
+}
 
 }  // namespace ustore
 

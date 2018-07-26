@@ -90,7 +90,8 @@ class BlobStore : protected ObjectMeta {
 
   inline ErrorCode GetDataEntryBatch(const std::string& ds_name,
                                      const std::string& branch,
-                                     const boost::filesystem::path& dir_path) const {
+                                     const boost::filesystem::path& dir_path)
+      const {
     size_t n_entries, n_bytes;
     return GetDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }

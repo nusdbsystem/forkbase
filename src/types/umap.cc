@@ -9,6 +9,8 @@
 
 namespace ustore {
 
+const size_t UMap::kHashByteLength = Hash::kByteLength;
+
 DuallyDiffKeyIterator UMap::DuallyDiff(
   const UMap& lhs, const UMap& rhs) {
   std::unique_ptr<CursorIterator> lhs_diff_it(

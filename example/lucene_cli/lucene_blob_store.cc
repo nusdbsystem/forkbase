@@ -5,10 +5,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <unordered_map>
 #include <utility>
-#include "utils/env.h"
 
 #include "http/http_client.h"
+#include "utils/env.h"
 
 namespace ustore {
 namespace example {
