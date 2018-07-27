@@ -249,6 +249,10 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("EXISTS_DATASET", "EXIST-DATASET");
   CMD_ALIAS("EXISTS_DATASET", "EXIST_DS");
   CMD_ALIAS("EXISTS_DATASET", "EXIST-DS");
+  CMD_HANDLER("GET_DATASET_SCHEMA", ExecGetDatasetSchema());
+  CMD_ALIAS("GET_DATASET_SCHEMA", "GET-DATASET-SCHEMA");
+  CMD_ALIAS("GET_DATASET_SCHEMA", "GET_DS_SCH");
+  CMD_ALIAS("GET_DATASET_SCHEMA", "GET-DS-SCH");
   CMD_HANDLER("GET_DATASET", ExecGetDataset());
   CMD_ALIAS("GET_DATASET", "GET-DATASET");
   CMD_ALIAS("GET_DATASET", "GET_DS");
@@ -452,6 +456,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "-t <dataset> -b <branch>" << std::endl
      << FORMAT_BLOB_STORE_CMD("EXISTS_DATASET")
      << "-t <dataset> {-b <branch>}" << std::endl
+     << FORMAT_BLOB_STORE_CMD("GET_DATASET_SCHEMA")
+     << "-t <dataset> -b <branch>" << std::endl
      << FORMAT_BLOB_STORE_CMD("GET_DATASET{_ALL}")
      << "-t <dataset> -b <branch>" << std::endl
      << FORMAT_BLOB_STORE_CMD("EXPORT_DATASET_BINARY")
@@ -3400,6 +3406,37 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
               ds_name, branch, boost_fs::path(file_path), idx_entry_name,
               &n_entries, &n_bytes, with_schema);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
+  return ec;
+}
+
+ErrorCode Command::ExecGetDatasetSchema() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATASET_SCHEMA] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  const auto f_rpt_success = [](const std::string & schema) {
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET_SCHEMA] ")
+              << "Schema: \"" << schema << "\"" << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATASET_SCHEMA] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::string schema;
+  auto ec = bs_.GetDatasetSchema(ds_name, branch, &schema);
+  ec == ErrorCode::kOK ? f_rpt_success(schema) : f_rpt_fail(ec);
   return ec;
 }
 

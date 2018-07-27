@@ -140,6 +140,7 @@ class Command {
   ErrorCode ExecCreateDataset();
   ErrorCode ExecExistsDataset();
   ErrorCode ExecDeleteDataset();
+  ErrorCode ExecGetDatasetSchema();
   ErrorCode ExecGetDataset();
   ErrorCode ExecExportDatasetBinary();
   ErrorCode ExecBranchDataset();
@@ -155,7 +156,6 @@ class Command {
   ErrorCode ExecListDataEntryBranch();
 
   ErrorCode PrepareDataEntryName(const std::string& cmd);
-
 
   ErrorCode ExecGetAll();
   ErrorCode ExecListKeyAll();

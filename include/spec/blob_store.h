@@ -88,10 +88,10 @@ class BlobStore : protected ObjectMeta {
                               size_t* n_entries,
                               size_t* n_bytes) const;
 
-  inline ErrorCode GetDataEntryBatch(const std::string& ds_name,
-                                     const std::string& branch,
-                                     const boost::filesystem::path& dir_path)
-      const {
+  inline ErrorCode GetDataEntryBatch(
+    const std::string& ds_name,
+    const std::string& branch,
+    const boost::filesystem::path& dir_path) const {
     size_t n_entries, n_bytes;
     return GetDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
@@ -151,6 +151,12 @@ class BlobStore : protected ObjectMeta {
   static inline std::string GlobalKey(const T1& ds_name,
                                       const T2& entry_name) {
     return Utils::ToString(ds_name) + "::" + Utils::ToString(entry_name);
+  }
+
+  inline ErrorCode GetDatasetSchema(const std::string& ds_name,
+                                    const std::string& branch,
+                                    std::string* schema) const {
+    return GetMeta(ds_name, branch, "SCHEMA", schema);
   }
 
  protected:
