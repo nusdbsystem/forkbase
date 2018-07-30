@@ -259,6 +259,13 @@ class Utils {
                         size_t limit = max_size_t,
                         std::ostream& os = std::cout);
 
+  static void PrintKeysTransform(
+    const UMap& map, const std::function<std::string(const Slice&)>& f_trans,
+    const std::string& lsymbol = "[", const std::string& rsymbol = "]",
+    const std::string& sep = ", ", bool elem_in_quote = false,
+    size_t limit = max_size_t, std::ostream& os = std::cout);
+
+
   static void PrintKeys(const USet& set, const std::string& lsymbol = "[",
                         const std::string& rsymbol = "]",
                         const std::string& sep = ", ",
@@ -317,8 +324,21 @@ class Utils {
     const boost::filesystem::path& file_path,
     const std::function<ErrorCode(const std::string& line)>& f_manip_line);
 
-  static ErrorCode ExtractElement(const std::string& str, const size_t idx_elem,
-                                  std::string* elem, const char delim = ',');
+  static ErrorCode ExtractElements(const std::string& str,
+                                   const std::vector<size_t> idxs_elem,
+                                   std::vector<std::string>* elems,
+                                   const char delim = ',');
+
+  static inline ErrorCode ExtractElement(const std::string& str,
+                                         const size_t idx_elem,
+                                         std::string* elem,
+                                         const char delim = ',') {
+    std::vector<std::string> elems;
+    USTORE_GUARD(
+      ExtractElements(str, {idx_elem}, &elems, delim));
+    *elem = std::move(elems.front());
+    return ErrorCode::kOK;
+  }
 
   static inline boost::filesystem::path FullPath(
     const boost::filesystem::path& rlt_path) {
@@ -360,6 +380,9 @@ class Utils {
     return CopyFileOverwrite(
              boost::filesystem::path(from), boost::filesystem::path(to));
   }
+
+  static ErrorCode ToIndices(const std::string& str,
+                             std::vector<size_t>* indices);
 
  private:
   template<typename T>

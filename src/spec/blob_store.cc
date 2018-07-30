@@ -6,10 +6,74 @@
 
 namespace ustore {
 
+const std::string BlobStore::kEntryNameSepForDisplay("^");
+const std::string BlobStore::kEntryNameSepForStore("^");
+
 static const std::string DATASET_LIST_NAME = "__DATASET_LIST__";
 static const std::string DATASET_LIST_BRANCH = "master";
 
 namespace boost_fs = boost::filesystem;
+
+const std::string BlobStore::EntryNameForDisplay(
+  const std::string& entry_name_store) {
+  static bool diff_sep = kEntryNameSepForStore != kEntryNameSepForDisplay;
+  return diff_sep
+         ? boost::replace_all_copy(
+           entry_name_store, kEntryNameSepForStore, kEntryNameSepForDisplay)
+         : entry_name_store;
+}
+
+const std::string BlobStore::EntryNameForDisplay(
+  const Slice& entry_name_store) {
+  auto entry_name = entry_name_store.ToString();
+  static bool diff_sep = kEntryNameSepForStore != kEntryNameSepForDisplay;
+  if (diff_sep) {
+    boost::replace_all(
+      entry_name, kEntryNameSepForStore, kEntryNameSepForDisplay);
+  }
+  return entry_name;
+}
+
+const std::string BlobStore::EntryNameForStore(
+  const std::vector<std::string>& attrs) {
+  return Utils::ToStringSeq(
+           attrs.cbegin(), attrs.cend(), "", "", kEntryNameSepForStore);
+}
+
+const std::string BlobStore::EntryNameForStore(const std::string& entry_name) {
+  static bool diff_sep = kEntryNameSepForStore != kEntryNameSepForDisplay;
+  return diff_sep
+         ? boost::replace_all_copy(
+           entry_name, kEntryNameSepForDisplay, kEntryNameSepForStore)
+         : entry_name;
+}
+
+ErrorCode BlobStore::ValidateEntryName(const std::string& entry_name) {
+  if (boost::contains(entry_name, kEntryNameSepForStore)) {
+    LOG(ERROR) << "Illegal data entry name: \"" << entry_name << "\"";
+    return ErrorCode::kIllegalDataEntryNameAttr;
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode BlobStore::ValidateEntryName(
+  const std::vector<std::string>& entry_name) {
+  for (auto& attr : entry_name) {
+    USTORE_GUARD(ValidateEntryNameAttr(attr));
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode BlobStore::ValidateEntryNameAttr(const std::string& attr) {
+  static const bool check_display_sep =
+    !boost::contains(kEntryNameSepForDisplay, kEntryNameSepForStore);
+  if (boost::contains(attr, kEntryNameSepForDisplay) ||
+      (check_display_sep && boost::contains(attr, kEntryNameSepForStore))) {
+    LOG(ERROR) << "Illegal data entry name attribute: \"" << attr << "\"";
+    return ErrorCode::kIllegalDataEntryNameAttr;
+  }
+  return ErrorCode::kOK;
+}
 
 #if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
 ErrorCode BlobStore::GetDatasetList(VSet* ds_list)
@@ -243,9 +307,10 @@ ErrorCode BlobStore::DeleteDataset(const std::string& ds_name,
   return (exists ? ErrorCode::kOK : UpdateDatasetList(ds_name_slice, true));
 }
 
-ErrorCode BlobStore::ExistsDataEntry(const std::string& ds_name,
-                                     const std::string& entry_name,
-                                     bool* exists) const {
+ErrorCode BlobStore::ImplExistsDataEntry(
+  const std::string& ds_name,
+  const std::string& entry_name,
+  bool* exists) const {
   // retrieve branch candidates
   std::vector<std::string> ds_branches;
   USTORE_GUARD(
@@ -254,16 +319,17 @@ ErrorCode BlobStore::ExistsDataEntry(const std::string& ds_name,
   *exists = false;
   for (auto& b : ds_branches) {
     USTORE_GUARD(
-      ExistsDataEntry(ds_name, b, entry_name, exists));
+      ImplExistsDataEntry(ds_name, b, entry_name, exists));
     if (*exists) break;
   }
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::ExistsDataEntry(const std::string& ds_name,
-                                     const std::string& branch,
-                                     const std::string& entry_name,
-                                     bool* exists) const {
+ErrorCode BlobStore::ImplExistsDataEntry(
+  const std::string& ds_name,
+  const std::string& branch,
+  const std::string& entry_name,
+  bool* exists) const {
   Dataset ds;
   USTORE_GUARD(
     GetDataset(ds_name, branch, &ds));
@@ -293,10 +359,10 @@ ErrorCode BlobStore::ReadDataEntry(const std::string& ds_name,
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::GetDataEntry(const std::string& ds_name,
-                                  const std::string& branch,
-                                  const std::string& entry_name,
-                                  DataEntry* entry) const {
+ErrorCode BlobStore::ImplGetDataEntry(const std::string& ds_name,
+                                      const std::string& branch,
+                                      const std::string& entry_name,
+                                      DataEntry* entry) const {
   // fetch version of data entry
   Dataset ds;
   USTORE_GUARD(
@@ -367,11 +433,11 @@ ErrorCode BlobStore::WriteDataEntry(const std::string& ds_name,
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::PutDataEntry(const std::string& ds_name,
-                                  const std::string& branch,
-                                  const std::string& entry_name,
-                                  const std::string& entry_val,
-                                  Hash* entry_ver) {
+ErrorCode BlobStore::ImplPutDataEntry(const std::string& ds_name,
+                                      const std::string& branch,
+                                      const std::string& entry_name,
+                                      const std::string& entry_val,
+                                      Hash* entry_ver) {
   Slice ds_name_slice(ds_name), entry_name_slice(entry_name),
         branch_slice(branch);
   Dataset ds;
@@ -444,13 +510,14 @@ ErrorCode BlobStore::PutDataEntryBatch(const std::string& ds_name,
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
-                                       const std::string& branch,
-                                       const boost_fs::path& file_path,
-                                       const int64_t idx_entry_name,
-                                       size_t* n_entries,
-                                       size_t* n_bytes,
-                                       bool with_schema) {
+ErrorCode BlobStore::PutDataEntryByCSV(
+  const std::string& ds_name,
+  const std::string& branch,
+  const boost_fs::path& file_path,
+  const std::vector<size_t>& idxs_entry_name,
+  size_t* n_entries,
+  size_t* n_bytes,
+  bool with_schema) {
   *n_entries = 0;
   *n_bytes = 0;
   const Slice ds_name_slice(ds_name), branch_slice(branch);
@@ -479,19 +546,21 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
                : ErrorCode::kDatasetSchemaMismatch;
       }
     } else {  // for 2nd line onwards
-      std::string entry_name;
+      std::vector<std::string> entry_name;
       USTORE_GUARD(
-        Utils::ExtractElement(line, idx_entry_name, &entry_name, delim));
+        Utils::ExtractElements(line, idxs_entry_name, &entry_name, delim));
+      USTORE_GUARD(ValidateEntryName(entry_name));
+      const auto entry_name_store = EntryNameForStore(entry_name);
       // fetch existing version of the data entry
-      auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+      auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name_store)));
       if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
       // write the data entry to storage
       Hash entry_ver;
-      USTORE_GUARD(WriteDataEntry(
-                     ds_name, entry_name, line, prev_entry_ver, &entry_ver));
+      USTORE_GUARD(WriteDataEntry(ds_name, entry_name_store, line,
+                                  prev_entry_ver, &entry_ver));
       // archive updates
-      updates.emplace(std::move(entry_name), std::move(entry_ver));
-      *n_bytes += line.size();
+      updates.emplace(std::move(entry_name_store), std::move(entry_ver));
+      *n_bytes += entry_name_store.size() + line.size();
       return ErrorCode::kOK;
     }
   };
@@ -518,9 +587,10 @@ ErrorCode BlobStore::PutDataEntryByCSV(const std::string& ds_name,
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::DeleteDataEntry(const std::string& ds_name,
-                                     const std::string& branch,
-                                     const std::string& entry_name) {
+ErrorCode BlobStore::ImplDeleteDataEntry(
+  const std::string& ds_name,
+  const std::string& branch,
+  const std::string& entry_name) {
   // delete the data entry in the dataset
   Slice ds_name_slice(ds_name), branch_slice(branch);
   Dataset ds;
@@ -530,7 +600,7 @@ ErrorCode BlobStore::DeleteDataEntry(const std::string& ds_name,
   return odb_.Put(ds_name_slice, ds, branch_slice).stat;
 }
 
-ErrorCode BlobStore::ListDataEntryBranch(
+ErrorCode BlobStore::ImplListDataEntryBranch(
   const std::string& ds_name,
   const std::string& entry_name,
   std::vector<std::string>* branches) const {
@@ -543,7 +613,7 @@ ErrorCode BlobStore::ListDataEntryBranch(
   for (auto& b : ds_branches) {
     bool exists;
     USTORE_GUARD(
-      ExistsDataEntry(ds_name, b, entry_name, &exists));
+      ImplExistsDataEntry(ds_name, b, entry_name, &exists));
     if (exists) branches->emplace_back(b);
   }
   return ErrorCode::kOK;

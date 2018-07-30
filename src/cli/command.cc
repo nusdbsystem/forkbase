@@ -485,7 +485,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY_BATCH")
      << "-t <dataset> -b <branch> <dir>" << std::endl
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY_BY_CSV")
-     << "<file> -t <dataset> -b <branch> -i <entry_name_index>" << std::endl
+     << "<file> -t <dataset> -b <branch> -m <entry_name_indices>" << std::endl
      << FORMAT_BLOB_STORE_CMD("LIST_DATA_ENTRY_BRANCH")
      << "-t <dataset> -m <entry>" << std::endl
      << FORMAT_BLOB_STORE_CMD("DELETE_DATA_ENTRY")
@@ -2880,11 +2880,13 @@ ErrorCode Command::ExecGetDataset() {
     if (Config::is_vert_list) {
       for (auto it = ds.Scan(); !it.end(); it.next()) {
         std::cout << "[" << Utils::ToHash(it.value()) << "]  "
-                  << it.key() << std::endl;
+                  << BlobStore::EntryNameForDisplay(it.key()) << std::endl;
       }
     } else {
       std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET] ") << "Entries: ";
-      Utils::PrintKeys(ds, "[", "]", ", ", true, limit_print_elems);
+      Utils::PrintKeysTransform(ds, [](const Slice & key) {
+        return BlobStore::EntryNameForDisplay(key);
+      }, "[", "]", ", ", true, limit_print_elems);
       std::cout << std::endl;
     }
   };
@@ -3365,7 +3367,7 @@ ErrorCode Command::ExecPutDataEntryBatch() {
 ErrorCode Command::ExecPutDataEntryByCSV() {
   const auto& ds_name = Config::table;
   const auto& branch = Config::branch;
-  const auto& idx_entry_name = Config::position;
+  const auto& raw_idxs_entry_name = Config::column;
   const auto& file_path = Config::file;
   const auto& with_schema = Config::with_schema;
   // screen printing
@@ -3373,7 +3375,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
-              << "Index of Entry Name: " << idx_entry_name << ", "
+              << "Indices for Entry Name: {" << raw_idxs_entry_name << "}, "
               << "File: \"" << file_path << "\", "
               << "With Schema: " << (with_schema ? "true" : "false")
               << std::endl;
@@ -3389,22 +3391,28 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\""
-              << "Index of Entry Name: " << idx_entry_name << ", "
+              << "Indices for Entry Name: " << raw_idxs_entry_name << "}, "
               << "File: \"" << file_path << "\", "
               << "With Schema: " << (with_schema ? "true" : "false")
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   // conditional execution
-  if (ds_name.empty() || branch.empty() || file_path.empty()
-      || idx_entry_name < 0) {
+  if (ds_name.empty() || branch.empty() || file_path.empty() ||
+      raw_idxs_entry_name.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
+  std::vector<size_t> idxs_entry_name;
+  auto ec = Utils::ToIndices(raw_idxs_entry_name, &idxs_entry_name);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
   size_t n_entries, n_bytes;
-  auto ec = bs_.PutDataEntryByCSV(
-              ds_name, branch, boost_fs::path(file_path), idx_entry_name,
-              &n_entries, &n_bytes, with_schema);
+  ec = bs_.PutDataEntryByCSV(
+         ds_name, branch, boost_fs::path(file_path), idxs_entry_name,
+         &n_entries, &n_bytes, with_schema);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }

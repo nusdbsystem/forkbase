@@ -25,8 +25,8 @@ class LuceneBlobStore : public BlobStore {
   ErrorCode PutDataEntryByCSV(const std::string& ds_name,
                               const std::string& branch,
                               const boost::filesystem::path& file_path,
-                              const int64_t idx_entry_name,
-                              const std::vector<int64_t>& idxs_search,
+                              const std::vector<size_t>& idxs_entry_name,
+                              const std::vector<size_t>& idxs_search,
                               size_t* n_entries, size_t* n_bytes);
 
   ErrorCode GetDataEntryByIndexQuery(

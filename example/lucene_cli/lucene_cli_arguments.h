@@ -17,7 +17,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
   std::string file;
   std::string dataset;
   std::string branch;
-  int64_t idx_entry_name;
+  std::string idxs_entry_name;
   std::string idxs_search;
   std::string query_predicate;
 
@@ -30,9 +30,9 @@ class LuceneCLIArguments : public ::ustore::Arguments {
         "the operating dataset");
     Add(&branch, "branch", "b",
         "the operating branch");
-    Add(&idx_entry_name, "entry-name-index", "i",
+    Add(&idxs_entry_name, "idxs-entry-name", "m",
         "index of entry name");
-    Add(&idxs_search, "idxs-search", "j",
+    Add(&idxs_search, "idxs-search", "n",
         "indices for search");
     Add(&query_predicate, "query-predicate", "q",
         "Lucene query predicate");
@@ -43,7 +43,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
   std::string MoreHelpMessage() override {
     const std::string cmd = "./ustore_lucene_cli";
     const std::vector<std::string> args = {
-      "put-de-by-csv /path/to/input.csv -t ds_test -b master -i 0 -j \"1,3\"",
+      "put-de-by-csv /path/to/input.csv -t ds_test -b master -m 0 -j \"1,3\"",
       "get-de-by-iq -t ds_test -b master -q \"w1 AND w2\" /path/to/output.csv"
     };
     std::stringstream ss;

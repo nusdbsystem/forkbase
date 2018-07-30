@@ -94,7 +94,8 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kDatasetNotExists, "dataset does not exist"},
   {ErrorCode::kDataEntryNotExists, "data entry does not exist"},
   {ErrorCode::kDatasetSchemaMismatch, "schema of dataset mismatch"},
-  {ErrorCode::kDatasetSchemaNotFound, "schema of dataset is missing"}
+  {ErrorCode::kDatasetSchemaNotFound, "schema of dataset is missing"},
+  {ErrorCode::kIllegalDataEntryNameAttr, "illegal data entry name attribute"}
 };
 
 std::string Utils::ToString(const ErrorCode& ec) {
@@ -261,6 +262,29 @@ void Utils::PrintKeys(const UMap& map, const std::string& lsymbol,
     size_t cnt(1);
     for (it.next(); !it.end() && cnt++ < limit; it.next()) {
       os << sep << quote << it.key() << quote;
+    }
+    size_t n_elems = map.numElements();
+    if (n_elems > limit) {
+      os << sep << "...(and " << (n_elems - limit) << " more)";
+    }
+  }
+  os << rsymbol;
+}
+
+void Utils::PrintKeysTransform(
+  const UMap& map,
+  const std::function<std::string(const Slice&)>& f_trans,
+  const std::string& lsymbol,
+  const std::string& rsymbol, const std::string& sep,
+  bool elem_in_quote, size_t limit, std::ostream& os) {
+  const auto quote = elem_in_quote ? "\"" : "";
+  auto it = map.Scan();
+  os << lsymbol;
+  if (!it.end()) {
+    os << quote << f_trans(it.key()) << quote;
+    size_t cnt(1);
+    for (it.next(); !it.end() && cnt++ < limit; it.next()) {
+      os << sep << quote << f_trans(it.key()) << quote;
     }
     size_t n_elems = map.numElements();
     if (n_elems > limit) {
@@ -472,20 +496,23 @@ ErrorCode Utils::IterateFileByLine(
   }
 }
 
-ErrorCode Utils::ExtractElement(const std::string& str,
-                                const size_t idx_elem,
-                                std::string* elem,
-                                const char delim) {
-  auto elements = Split(str, delim);
-  if (idx_elem < elements.size()) {
-    *elem = std::move(elements[idx_elem]);
-    return ErrorCode::kOK;
-  } else {
-    LOG(ERROR) << "Failed to extract element in string : \"" << str << "\"";
-    return ErrorCode::kIndexOutOfRange;
+ErrorCode Utils::ExtractElements(const std::string& str,
+                                 const std::vector<size_t> idxs_elem,
+                                 std::vector<std::string>* elems,
+                                 const char delim) {
+  elems->clear();
+  auto tokens = Split(str, delim);
+  for (auto& i : idxs_elem) {
+    if (i < tokens.size()) {
+      elems->push_back(std::move(tokens[i]));
+    } else {
+      LOG(ERROR) << "Failed to extract element in string : \"" << str << "\"";
+      return ErrorCode::kIndexOutOfRange;
+    }
   }
+  return ErrorCode::kOK;
   // TODO(linqian): Replace the above approach by scanning the string and
-  //                extract element in the target position.
+  //                extract elements in the target positions.
 }
 
 ErrorCode Utils::CreateParentDirectories(const boost_fs::path& file_path) {
@@ -518,6 +545,20 @@ ErrorCode Utils::CopyFile(const boost::filesystem::path& from,
   if (ec.value() != boost_sys::errc::success) {
     LOG(ERROR) << ec.message();
     return ErrorCode::kIOFault;
+  }
+  return ErrorCode::kOK;
+}
+
+ErrorCode Utils::ToIndices(const std::string& str,
+                           std::vector<size_t>* indices) {
+  indices->clear();
+  for (auto& idx_str : Tokenize(str, "{}[]()|,;: ")) {
+    auto i = std::stoi(idx_str);
+    if (i < 0) {
+      LOG(ERROR) << "Invalid index: " << i;
+      return ErrorCode::kIndexOutOfRange;
+    }
+    indices->emplace_back(i);
   }
   return ErrorCode::kOK;
 }

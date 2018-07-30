@@ -25,15 +25,15 @@ echo [Create Dataset] ...
 $USTORE_CLI create-ds -t ds_test -b master
 
 echo [First Commit] ...
-# $USTORE_LUCENE_CLI put-de-by-csv in1.csv -t ds_test -b master -i 0 -j "1,3"
-$USTORE_LUCENE_CLI put-de-by-csv in1.csv -t ds_test -b master -i 0
+# $USTORE_LUCENE_CLI put-de-by-csv in1.csv -t ds_test -b master -m 0 -n "1,3"
+$USTORE_LUCENE_CLI put-de-by-csv in1.csv -t ds_test -b master -m 0
 
 echo [First Dump] ...
 $USTORE_CLI export-ds-bin -t ds_test -b master out1.csv
 
 echo [Second Commit] ...
-# $USTORE_LUCENE_CLI put-de-by-csv in2.csv -t ds_test -b master -i 0 -j "1,3"
-$USTORE_LUCENE_CLI put-de-by-csv in2.csv -t ds_test -b master -i 0
+# $USTORE_LUCENE_CLI put-de-by-csv in2.csv -t ds_test -b master -m 0 -n "1,3"
+$USTORE_LUCENE_CLI put-de-by-csv in2.csv -t ds_test -b master -m 0
 
 echo [Second Dump] ...
 $USTORE_CLI export-ds-bin -t ds_test -b master out2.csv

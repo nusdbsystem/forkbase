@@ -25,8 +25,8 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const std::string& ds_name,
   const std::string& branch,
   const boost_fs::path& file_path,
-  const int64_t idx_entry_name,
-  const std::vector<int64_t>& idxs_search,
+  const std::vector<size_t>& idxs_entry_name,
+  const std::vector<size_t>& idxs_search,
   size_t* n_entries,
   size_t* n_bytes) {
   *n_entries = 0;
@@ -54,12 +54,18 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const auto f_put_line = [&](const std::string & line) {
     ++line_cnt;
     const auto elements = Utils::Split(line, delim);
-    if (idx_entry_name >= static_cast<int64_t>(elements.size())) {
-      LOG(ERROR) << "Failed to extract entry name in line " << line_cnt
-                 << ": \"" << line << "\"";
-      return ErrorCode::kIndexOutOfRange;
+    std::vector<std::string> entry_name;
+    for (auto& i : idxs_entry_name) {
+      if (i >= elements.size()) {
+        LOG(ERROR) << "Failed to extract entry name (line " << line_cnt
+                   << "): \"" << line << "\"";
+        return ErrorCode::kIndexOutOfRange;
+      }
+      auto attr = elements[i];
+      USTORE_GUARD(ValidateEntryNameAttr(attr));
+      entry_name.push_back(std::move(attr));
     }
-    const auto& entry_name = elements[idx_entry_name];
+    const auto entry_name_store = EntryNameForStore(entry_name);
     if (line_cnt == 1) {  // process schema at the 1st line
       std::string schema;
       USTORE_GUARD(
@@ -74,18 +80,19 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
       }
     } else {  // for 2nd line onwards
       // fetch existing version of the data entry
-      auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+      auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name_store)));
       if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
       // write the data entry to storage
       Hash entry_ver;
-      USTORE_GUARD(WriteDataEntry(
-                     ds_name, entry_name, line, prev_entry_ver, &entry_ver));
+      USTORE_GUARD(
+        WriteDataEntry(ds_name, entry_name_store, line, prev_entry_ver,
+                       &entry_ver));
       // archive updates
-      updates.emplace(entry_name, std::move(entry_ver));
+      updates.emplace(entry_name_store, std::move(entry_ver));
       *n_bytes += line.size();
     }
     // add lucene index entry
-    ofs_lucene_index << entry_name;
+    ofs_lucene_index << entry_name_store;
     if (idxs_search.empty()) {
       ofs_lucene_index << delim << line;
     } else {
@@ -175,9 +182,12 @@ ErrorCode LuceneBlobStore::LuceneIndexDataEntries(
 }
 
 ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
-  const std::string& ds_name, const std::string& branch,
-  const std::string& query_predicate, std::ostream& os,
-  size_t* n_entries, size_t* n_bytes) const {
+  const std::string& ds_name,
+  const std::string& branch,
+  const std::string& query_predicate,
+  std::ostream& os,
+  size_t* n_entries,
+  size_t* n_bytes) const {
   *n_entries = 0;
   *n_bytes = 0;
   // retrieve entry names associated with the query keywords
