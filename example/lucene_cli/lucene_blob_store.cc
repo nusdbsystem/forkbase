@@ -5,6 +5,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <regex>
 #include <unordered_map>
 #include <utility>
 
@@ -20,6 +21,13 @@ namespace boost_fs = boost::filesystem;
 LuceneBlobStore::LuceneBlobStore(DB* db) noexcept
   : BlobStore(db),
     lucene_file_dir_(Utils::FullPath(Env::Instance()->config().data_dir())) {}
+
+std::string LuceneBlobStore::RegularizeSchema(
+  const std::string& origin) const {
+  static const std::regex match_space("(\\s+)([^,\\s]+)");
+  return std::regex_replace(
+           BlobStore::RegularizeSchema(origin), match_space, "#$2");
+}
 
 ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const std::string& ds_name,
@@ -70,12 +78,12 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
       std::string schema;
       USTORE_GUARD(
         GetMeta(ds_name, branch, "SCHEMA", &schema));
-      const auto line_trim = boost::trim_copy(line);
+      auto reg_line = RegularizeSchema(line);
       if (schema.empty()) {
         USTORE_GUARD(
-          SetMeta(ds_name, branch, "SCHEMA", line_trim));
-        *n_bytes += line_trim.size();
-      } else if (line_trim != schema) {  // compare with the recorded schema
+          SetMeta(ds_name, branch, "SCHEMA", reg_line));
+        *n_bytes += reg_line.size();
+      } else if (reg_line != schema) {  // compare with the recorded schema
         return ErrorCode::kDatasetSchemaMismatch;
       }
     } else {  // for 2nd line onwards

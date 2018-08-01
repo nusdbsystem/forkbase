@@ -241,23 +241,27 @@ class BlobStore : protected ObjectMeta {
     return Utils::ToString(ds_name) + "::" + Utils::ToString(entry_name_store);
   }
 
-  static const std::string EntryNameForDisplay(
-    const std::string& entry_name_store);
+  virtual const std::string EntryNameForDisplay(
+    const std::string& entry_name_store) const;
 
-  static const std::string EntryNameForDisplay(const Slice& entry_name_store);
+  virtual const std::string EntryNameForDisplay(
+    const Slice& entry_name_store) const;
 
  protected:
-  static const std::string EntryNameForStore(
-    const std::vector<std::string>& attrs);
+  virtual const std::string EntryNameForStore(
+    const std::vector<std::string>& attrs) const;
 
-  static const std::string EntryNameForStore(const std::string& entry_name);
+  virtual const std::string EntryNameForStore(
+    const std::string& entry_name) const;
 
-  static ErrorCode ValidateEntryName(const std::string& entry_name);
+  virtual ErrorCode ValidateEntryName(const std::string& entry_name) const;
 
-  static ErrorCode ValidateEntryName(
-    const std::vector<std::string>& entry_name);
+  ErrorCode ValidateEntryName(
+    const std::vector<std::string>& entry_name) const;
 
-  static ErrorCode ValidateEntryNameAttr(const std::string& attr);
+  virtual ErrorCode ValidateEntryNameAttr(const std::string& attr) const;
+
+  virtual std::string RegularizeSchema(const std::string& origin) const;
 
 #if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
   ErrorCode GetDatasetList(VSet* ds_list);

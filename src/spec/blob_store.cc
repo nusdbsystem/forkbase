@@ -2,11 +2,12 @@
 
 #include <boost/algorithm/string.hpp>
 #include <fstream>
+#include <regex>
 #include "spec/blob_store.h"
 
 namespace ustore {
 
-static constexpr char kEntryNameSepForDisplay[] = "##";
+static constexpr char kEntryNameSepForDisplay[] = "^";
 static constexpr char kEntryNameSepForStore[] = "^";
 
 static const std::string DATASET_LIST_NAME = "__DATASET_LIST__";
@@ -21,7 +22,7 @@ static const bool ENTRY_NAME_DISP_SEP_NOT_CONTAIN_STORE_SEP =
   !boost::contains(kEntryNameSepForDisplay, kEntryNameSepForStore);
 
 const std::string BlobStore::EntryNameForDisplay(
-  const std::string& entry_name_store) {
+  const std::string& entry_name_store) const {
   return ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP
          ? boost::replace_all_copy(
            entry_name_store, kEntryNameSepForStore, kEntryNameSepForDisplay)
@@ -29,7 +30,7 @@ const std::string BlobStore::EntryNameForDisplay(
 }
 
 const std::string BlobStore::EntryNameForDisplay(
-  const Slice& entry_name_store) {
+  const Slice& entry_name_store) const {
   auto entry_name = entry_name_store.ToString();
   if (ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP) {
     boost::replace_all(
@@ -39,19 +40,20 @@ const std::string BlobStore::EntryNameForDisplay(
 }
 
 const std::string BlobStore::EntryNameForStore(
-  const std::vector<std::string>& attrs) {
+  const std::vector<std::string>& attrs) const {
   return Utils::ToStringSeq(
            attrs.cbegin(), attrs.cend(), "", "", kEntryNameSepForStore);
 }
 
-const std::string BlobStore::EntryNameForStore(const std::string& entry_name) {
+const std::string BlobStore::EntryNameForStore(
+  const std::string& entry_name) const {
   return ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP
          ? boost::replace_all_copy(
            entry_name, kEntryNameSepForDisplay, kEntryNameSepForStore)
          : entry_name;
 }
 
-ErrorCode BlobStore::ValidateEntryName(const std::string& entry_name) {
+ErrorCode BlobStore::ValidateEntryName(const std::string& entry_name) const {
   if (!ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP) {
     return ErrorCode::kOK;
   }
@@ -75,20 +77,25 @@ ErrorCode BlobStore::ValidateEntryName(const std::string& entry_name) {
 }
 
 ErrorCode BlobStore::ValidateEntryName(
-  const std::vector<std::string>& entry_name) {
+  const std::vector<std::string>& entry_name) const {
   for (auto& attr : entry_name) {
     USTORE_GUARD(ValidateEntryNameAttr(attr));
   }
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::ValidateEntryNameAttr(const std::string& attr) {
+ErrorCode BlobStore::ValidateEntryNameAttr(const std::string& attr) const {
   if (boost::contains(attr, kEntryNameSepForStore) ||
       boost::contains(attr, kEntryNameSepForDisplay)) {
     LOG(ERROR) << "Illegal data entry name attribute: \"" << attr << "\"";
     return ErrorCode::kIllegalDataEntryNameAttr;
   }
   return ErrorCode::kOK;
+}
+
+std::string BlobStore::RegularizeSchema(const std::string& origin) const {
+  static const std::regex match_comma("(\\s*)(,)(\\s*)([^,\\s]*)");
+  return std::regex_replace(boost::trim_copy(origin), match_comma, "$2$4");
 }
 
 #if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
@@ -550,14 +557,14 @@ ErrorCode BlobStore::PutDataEntryByCSV(
       std::string schema;
       USTORE_GUARD(
         GetMeta(ds_name, branch, "SCHEMA", &schema));
-      const auto line_trim = boost::trim_copy(line);
+      auto reg_line = RegularizeSchema(line);
       if (schema.empty()) {
         USTORE_GUARD(
-          SetMeta(ds_name, branch, "SCHEMA", line_trim));
-        *n_bytes += line_trim.size();
+          SetMeta(ds_name, branch, "SCHEMA", reg_line));
+        *n_bytes += reg_line.size();
         return ErrorCode::kOK;
       } else {  // compare with the recorded schema
-        return (line_trim == schema)
+        return (reg_line == schema)
                ? ErrorCode::kOK
                : ErrorCode::kDatasetSchemaMismatch;
       }

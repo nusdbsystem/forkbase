@@ -2876,16 +2876,16 @@ ErrorCode Command::ExecGetDataset() {
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
-  const auto f_rpt_success = [](const Dataset & ds) {
+  const auto f_rpt_success = [this](const Dataset & ds) {
     if (Config::is_vert_list) {
       for (auto it = ds.Scan(); !it.end(); it.next()) {
         std::cout << "[" << Utils::ToHash(it.value()) << "]  "
-                  << BlobStore::EntryNameForDisplay(it.key()) << std::endl;
+                  << bs_.EntryNameForDisplay(it.key()) << std::endl;
       }
     } else {
       std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET] ") << "Entries: ";
-      Utils::PrintKeysTransform(ds, [](const Slice & key) {
-        return BlobStore::EntryNameForDisplay(key);
+      Utils::PrintKeysTransform(ds, [this](const Slice & key) {
+        return bs_.EntryNameForDisplay(key);
       }, "[", "]", ", ", true, limit_print_elems);
       std::cout << std::endl;
     }

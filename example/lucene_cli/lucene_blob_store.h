@@ -41,6 +41,9 @@ class LuceneBlobStore : public BlobStore {
     return GetDataEntryByIndexQuery(
              ds_name, branch, query_predicate, os, &n_entries, &n_bytes);
   }
+ 
+ protected:
+  std::string RegularizeSchema(const std::string& origin) const override;
 
  private:
   inline std::string GenerateLuceneFilePath() {
