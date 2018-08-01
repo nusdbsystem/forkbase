@@ -6,18 +6,23 @@
 
 namespace ustore {
 
-const std::string BlobStore::kEntryNameSepForDisplay("^");
-const std::string BlobStore::kEntryNameSepForStore("^");
+static constexpr char kEntryNameSepForDisplay[] = "##";
+static constexpr char kEntryNameSepForStore[] = "^";
 
 static const std::string DATASET_LIST_NAME = "__DATASET_LIST__";
 static const std::string DATASET_LIST_BRANCH = "master";
 
 namespace boost_fs = boost::filesystem;
 
+static const bool ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP =
+  !boost::equals(kEntryNameSepForStore, kEntryNameSepForDisplay);
+
+static const bool ENTRY_NAME_DISP_SEP_NOT_CONTAIN_STORE_SEP =
+  !boost::contains(kEntryNameSepForDisplay, kEntryNameSepForStore);
+
 const std::string BlobStore::EntryNameForDisplay(
   const std::string& entry_name_store) {
-  static bool diff_sep = kEntryNameSepForStore != kEntryNameSepForDisplay;
-  return diff_sep
+  return ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP
          ? boost::replace_all_copy(
            entry_name_store, kEntryNameSepForStore, kEntryNameSepForDisplay)
          : entry_name_store;
@@ -26,8 +31,7 @@ const std::string BlobStore::EntryNameForDisplay(
 const std::string BlobStore::EntryNameForDisplay(
   const Slice& entry_name_store) {
   auto entry_name = entry_name_store.ToString();
-  static bool diff_sep = kEntryNameSepForStore != kEntryNameSepForDisplay;
-  if (diff_sep) {
+  if (ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP) {
     boost::replace_all(
       entry_name, kEntryNameSepForStore, kEntryNameSepForDisplay);
   }
@@ -41,19 +45,33 @@ const std::string BlobStore::EntryNameForStore(
 }
 
 const std::string BlobStore::EntryNameForStore(const std::string& entry_name) {
-  static bool diff_sep = kEntryNameSepForStore != kEntryNameSepForDisplay;
-  return diff_sep
+  return ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP
          ? boost::replace_all_copy(
            entry_name, kEntryNameSepForDisplay, kEntryNameSepForStore)
          : entry_name;
 }
 
 ErrorCode BlobStore::ValidateEntryName(const std::string& entry_name) {
-  if (boost::contains(entry_name, kEntryNameSepForStore)) {
-    LOG(ERROR) << "Illegal data entry name: \"" << entry_name << "\"";
-    return ErrorCode::kIllegalDataEntryNameAttr;
+  if (!ENTRY_NAME_DISP_SEP_NOT_EQUAL_STORE_SEP) {
+    return ErrorCode::kOK;
   }
-  return ErrorCode::kOK;
+  if (!ENTRY_NAME_DISP_SEP_NOT_CONTAIN_STORE_SEP) {
+    if (boost::contains(
+          boost::erase_all_copy(entry_name, kEntryNameSepForDisplay),
+          kEntryNameSepForStore)) {
+      LOG(ERROR) << "Illegal data entry name: \"" << entry_name << "\"";
+      return ErrorCode::kIllegalDataEntryNameAttr;
+    }
+    return ErrorCode::kOK;
+  }
+  {
+    // display sep is irrelevant to store sep
+    if (boost::contains(entry_name, kEntryNameSepForStore)) {
+      LOG(ERROR) << "Illegal data entry name: \"" << entry_name << "\"";
+      return ErrorCode::kIllegalDataEntryNameAttr;
+    }
+    return ErrorCode::kOK;
+  }
 }
 
 ErrorCode BlobStore::ValidateEntryName(
@@ -65,10 +83,8 @@ ErrorCode BlobStore::ValidateEntryName(
 }
 
 ErrorCode BlobStore::ValidateEntryNameAttr(const std::string& attr) {
-  static const bool check_display_sep =
-    !boost::contains(kEntryNameSepForDisplay, kEntryNameSepForStore);
-  if (boost::contains(attr, kEntryNameSepForDisplay) ||
-      (check_display_sep && boost::contains(attr, kEntryNameSepForStore))) {
+  if (boost::contains(attr, kEntryNameSepForStore) ||
+      boost::contains(attr, kEntryNameSepForDisplay)) {
     LOG(ERROR) << "Illegal data entry name attribute: \"" << attr << "\"";
     return ErrorCode::kIllegalDataEntryNameAttr;
   }

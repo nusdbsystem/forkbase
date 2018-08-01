@@ -373,8 +373,6 @@ class BlobStore : protected ObjectMeta {
   }
 
   ObjectDB odb_;
-  static const std::string kEntryNameSepForDisplay;
-  static const std::string kEntryNameSepForStore;
 };
 
 }  // namespace ustore
