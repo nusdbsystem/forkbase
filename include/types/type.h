@@ -127,7 +127,7 @@ enum class ErrorCode : byte_t {
   kDatasetNotExists = 70,
   kDataEntryNotExists = 71,
   kDatasetSchemaMismatch = 72,
-  kDatasetSchemaNotFound = 73, 
+  kDatasetSchemaNotFound = 73,
   kIllegalDataEntryNameAttr = 74
 };
 
