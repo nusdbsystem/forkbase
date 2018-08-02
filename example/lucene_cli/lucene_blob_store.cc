@@ -5,7 +5,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <regex>
 #include <unordered_map>
 #include <utility>
 
@@ -22,11 +21,8 @@ LuceneBlobStore::LuceneBlobStore(DB* db) noexcept
   : BlobStore(db),
     lucene_file_dir_(Utils::FullPath(Env::Instance()->config().data_dir())) {}
 
-std::string LuceneBlobStore::RegularizeSchema(
-  const std::string& origin) const {
-  static const std::regex match_space("(\\s+)([^,\\s]+)");
-  return std::regex_replace(
-           BlobStore::RegularizeSchema(origin), match_space, "#$2");
+std::string LuceneBlobStore::RegularizeSchema(const std::string& origin) const {
+  return Utils::ReplaceSpace(BlobStore::RegularizeSchema(origin), "_");
 }
 
 ErrorCode LuceneBlobStore::PutDataEntryByCSV(

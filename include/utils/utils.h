@@ -384,6 +384,15 @@ class Utils {
   static ErrorCode ToIndices(const std::string& str,
                              std::vector<size_t>* indices);
 
+  static std::string RegularizeCSVLine(const std::string& line);
+
+  static std::string ReplaceSpace(const std::string& str,
+                                  const std::string& to_replace_space);
+
+  static std::string RegularizeIntegers(const std::string& str);
+
+  static std::string RegularizeFloatNumbers(const std::string& str);
+
  private:
   template<typename T>
   static inline void SleepFor(size_t units) {

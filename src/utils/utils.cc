@@ -1,11 +1,13 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <regex>
 #include "utils/utils.h"
 
 namespace ustore {
@@ -561,6 +563,31 @@ ErrorCode Utils::ToIndices(const std::string& str,
     indices->emplace_back(i);
   }
   return ErrorCode::kOK;
+}
+
+std::string Utils::RegularizeCSVLine(const std::string& line) {
+  static const std::regex comma("\\s*(,)\\s*([^\\s]?)");
+  return std::regex_replace(boost::trim_copy(line), comma, "$1$2");
+}
+
+std::string Utils::ReplaceSpace(const std::string& str,
+                         const std::string& to_replace_space) {
+  static const std::regex space("\\s+([^\\s]?|$)");
+  return std::regex_replace(str, space, to_replace_space + "$1");
+}
+
+std::string Utils::RegularizeIntegers(const std::string& str) {
+  static const std::regex trivial_int_zero("\\b[0]+([1-9]\\d*|0)\\b");
+  return std::regex_replace(str, trivial_int_zero, "$1");
+}
+
+std::string Utils::RegularizeFloatNumbers(const std::string& str) {
+  static const std::regex trivial_frac("\\b(\\d+)\\.[0]+\\b");
+  static const std::regex trivial_frac_zero(
+    "(\\b\\d+\\.|\\B\\.)(\\d*[1-9])[0]+\\b");
+  return std::regex_replace(
+           std::regex_replace(RegularizeIntegers(str), trivial_frac, "$1"),
+           trivial_frac_zero, "$1$2");
 }
 
 }  // namespace ustore

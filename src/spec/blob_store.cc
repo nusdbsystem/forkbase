@@ -2,7 +2,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <fstream>
-#include <regex>
 #include "spec/blob_store.h"
 
 namespace ustore {
@@ -94,8 +93,7 @@ ErrorCode BlobStore::ValidateEntryNameAttr(const std::string& attr) const {
 }
 
 std::string BlobStore::RegularizeSchema(const std::string& origin) const {
-  static const std::regex match_comma("(\\s*)(,)(\\s*)([^,\\s]*)");
-  return std::regex_replace(boost::trim_copy(origin), match_comma, "$2$4");
+  return Utils::RegularizeCSVLine(origin);
 }
 
 #if defined(__BLOB_STORE_USE_SET_FOR_DS_LIST__)
