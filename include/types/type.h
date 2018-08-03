@@ -128,7 +128,9 @@ enum class ErrorCode : byte_t {
   kDataEntryNotExists = 71,
   kDatasetSchemaMismatch = 72,
   kDatasetSchemaNotFound = 73,
-  kIllegalDataEntryNameAttr = 74
+  kIllegalDataEntryNameAttr = 74,
+  kDataEntryNameIndicesUnknown = 75,
+  kDataEntryNameIndicesMismatch = 76
 };
 
 }  // namespace ustore

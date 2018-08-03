@@ -9,6 +9,7 @@
 #include <list>
 #include <numeric>
 #include <queue>
+#include <regex>
 #include <set>
 #include <string>
 #include <sstream>
@@ -180,9 +181,9 @@ class Utils {
     return ToStringSeq(set.cbegin(), set.cend(), "{", "}");
   }
 
-  static std::string ToString(const UType& type);
+  static const std::string& ToString(const UType& type);
 
-  static std::string ToString(const ErrorCode& ec);
+  static const std::string& ToString(const ErrorCode& ec);
 
   static std::vector<std::string> Tokenize(
     const std::string& str, const char* sep_chars = " \t[],",
@@ -322,12 +323,50 @@ class Utils {
 
   static ErrorCode IterateFileByLine(
     const boost::filesystem::path& file_path,
-    const std::function<ErrorCode(const std::string& line)>& f_manip_line);
+    const std::function<ErrorCode(std::string& line)>& f_manip_line);
 
-  static ErrorCode ExtractElements(const std::string& str,
-                                   const std::vector<size_t> idxs_elem,
-                                   std::vector<std::string>* elems,
-                                   const char delim = ',');
+  template<typename T>
+  static ErrorCode ExtractElementsWithCheck(
+    const std::vector<T>& tokens,
+    const std::vector<size_t>& idxs_elem,
+    const std::function<ErrorCode(const T&)>& f_check,
+    std::vector<T>* elems);
+
+  template<typename T>
+  static inline ErrorCode ExtractElements(const std::vector<T>& tokens,
+                                          const std::vector<size_t>& idxs_elem,
+                                          std::vector<T>* elems) {
+    static const std::function<ErrorCode(const T&)> f_check =
+    [](const T & e) { return ErrorCode::kOK; };
+    return ExtractElementsWithCheck(tokens, idxs_elem, f_check, elems);
+  }
+
+  template<typename T>
+  static inline ErrorCode ExtractElement(const std::vector<T>& tokens,
+                                         const size_t idx_elem,
+                                         T* elem) {
+    std::vector<T> elems;
+    USTORE_GUARD(
+      ExtractElements(tokens, {idx_elem}, &elems));
+    *elem = std::move(elems.front());
+    return ErrorCode::kOK;
+  }
+
+  static ErrorCode ExtractElementsWithCheck(
+    const std::string& str,
+    const std::vector<size_t>& idxs_elem,
+    const std::function<ErrorCode(const std::string&)>& f_check,
+    std::vector<std::string>* elems,
+    const char delim = ',');
+
+  static inline ErrorCode ExtractElements(const std::string& str,
+                                          const std::vector<size_t>& idxs_elem,
+                                          std::vector<std::string>* elems,
+                                          const char delim = ',') {
+    static const std::function<ErrorCode(const std::string&)> f_check =
+    [](const std::string & e) { return ErrorCode::kOK; };
+    return ExtractElementsWithCheck(str, idxs_elem, f_check, elems);
+  }
 
   static inline ErrorCode ExtractElement(const std::string& str,
                                          const size_t idx_elem,
@@ -392,6 +431,9 @@ class Utils {
   static std::string RegularizeIntegers(const std::string& str);
 
   static std::string RegularizeFloatNumbers(const std::string& str);
+
+  static const std::string& ErrorMessage(
+    const std::regex_constants::error_type& ec);
 
  private:
   template<typename T>
@@ -568,6 +610,28 @@ void Utils::Split(const std::string& s, char delim, T result) {
   ss.str(s);
   std::string item;
   while (std::getline(ss, item, delim)) *(result++) = item;
+}
+
+template<typename T>
+ErrorCode Utils::ExtractElementsWithCheck(
+  const std::vector<T>& tokens,
+  const std::vector<size_t>& idxs_elem,
+  const std::function<ErrorCode(const T&)>& f_check,
+  std::vector<T>* elems) {
+  elems->clear();
+  for (auto& i : idxs_elem) {
+    if (i >= tokens.size()) {
+      LOG(ERROR) << "Failed to extract element from vector: "
+                 << Utils::ToString(tokens);
+      return ErrorCode::kIndexOutOfRange;
+    }
+    const auto& e = tokens[i];
+    USTORE_GUARD(f_check(e));
+    elems->emplace_back(e);
+  }
+  return ErrorCode::kOK;
+  // TODO(linqian): Replace the above approach by scanning the string and
+  //                extract elements in the target positions.
 }
 
 inline std::ostream& operator<<(std::ostream& os, const UType& obj) {

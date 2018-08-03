@@ -3367,7 +3367,7 @@ ErrorCode Command::ExecPutDataEntryBatch() {
 ErrorCode Command::ExecPutDataEntryByCSV() {
   const auto& ds_name = Config::table;
   const auto& branch = Config::branch;
-  const auto& raw_idxs_entry_name = Config::column;
+  const auto& raw_idxs_en = Config::column;
   const auto& file_path = Config::file;
   const auto& with_schema = Config::with_schema;
   // screen printing
@@ -3375,7 +3375,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
-              << "Indices for Entry Name: {" << raw_idxs_entry_name << "}, "
+              << "Indices Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "File: \"" << file_path << "\", "
               << "With Schema: " << (with_schema ? "true" : "false")
               << std::endl;
@@ -3391,20 +3391,19 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\""
-              << "Indices for Entry Name: " << raw_idxs_entry_name << "}, "
+              << "Indices Entry Name Attributes: " << raw_idxs_en << "}, "
               << "File: \"" << file_path << "\", "
               << "With Schema: " << (with_schema ? "true" : "false")
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
   // conditional execution
-  if (ds_name.empty() || branch.empty() || file_path.empty() ||
-      raw_idxs_entry_name.empty()) {
+  if (ds_name.empty() || branch.empty() || file_path.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
   std::vector<size_t> idxs_entry_name;
-  auto ec = Utils::ToIndices(raw_idxs_entry_name, &idxs_entry_name);
+  auto ec = Utils::ToIndices(raw_idxs_en, &idxs_entry_name);
   if (ec != ErrorCode::kOK) {
     f_rpt_fail(ec);
     return ec;
@@ -3426,9 +3425,12 @@ ErrorCode Command::ExecGetDatasetSchema() {
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\"" << std::endl;
   };
-  const auto f_rpt_success = [](const std::string & schema) {
+  const auto f_rpt_success =
+  [](const std::string & schema, const std::string& idxs_entry_name) {
     std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET_SCHEMA] ")
-              << "Schema: \"" << schema << "\"" << std::endl;
+              << "Schema: \"" << schema << "\", "
+              << "Indices of Entry Name Attributes: " << idxs_entry_name
+              << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: GET_DATASET_SCHEMA] ")
@@ -3444,7 +3446,17 @@ ErrorCode Command::ExecGetDatasetSchema() {
   }
   std::string schema;
   auto ec = bs_.GetDatasetSchema(ds_name, branch, &schema);
-  ec == ErrorCode::kOK ? f_rpt_success(schema) : f_rpt_fail(ec);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  std::string idxs_entry_name;
+  ec = bs_.GetDataEntryNameIndices(ds_name, branch, &idxs_entry_name);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  f_rpt_success(schema, idxs_entry_name);
   return ec;
 }
 

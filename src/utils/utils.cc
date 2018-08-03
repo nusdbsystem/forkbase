@@ -17,7 +17,7 @@ namespace boost_sys = boost::system;
 
 const size_t Utils::max_size_t(std::numeric_limits<size_t>::max());
 
-static std::unordered_map<std::string, UType> str2type = {
+static const std::unordered_map<std::string, UType> str2type = {
   {"bool", UType::kBool},
   {"num", UType::kNum},
   {"string", UType::kString},
@@ -32,7 +32,7 @@ UType Utils::ToUType(const std::string& str) {
   return it == str2type.end() ? UType::kUnknown : it->second;
 }
 
-static std::unordered_map<UType, std::string> type2str = {
+static const std::unordered_map<UType, std::string> type2str = {
   {UType::kBool, "Bool"},
   {UType::kNum, "Num"},
   {UType::kString, "String"},
@@ -42,12 +42,13 @@ static std::unordered_map<UType, std::string> type2str = {
   {UType::kMap, "Map"}
 };
 
-std::string Utils::ToString(const UType& type) {
+const std::string& Utils::ToString(const UType& type) {
   auto it = type2str.find(type);
-  return it == type2str.end() ? "<Unknown>" : it->second;
+  static const std::string unknown("<Unknown>");
+  return it == type2str.end() ? unknown : it->second;
 }
 
-static std::unordered_map<ErrorCode, std::string> ec2str = {
+static const std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kOK, "success"},
   {ErrorCode::kUnknownOp, "unknown operation"},
   {ErrorCode::kIOFault, "I/O fault"},
@@ -97,12 +98,15 @@ static std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kDataEntryNotExists, "data entry does not exist"},
   {ErrorCode::kDatasetSchemaMismatch, "schema of dataset mismatch"},
   {ErrorCode::kDatasetSchemaNotFound, "schema of dataset is missing"},
-  {ErrorCode::kIllegalDataEntryNameAttr, "illegal data entry name attribute"}
+  {ErrorCode::kIllegalDataEntryNameAttr, "illegal data entry name attribute"},
+  {ErrorCode::kDataEntryNameIndicesUnknown, "indices of data entry name attributes are missing"}, // NOLINT
+  {ErrorCode::kDataEntryNameIndicesMismatch, "indices of data entry name attributes mismatch"} // NOLINT
 };
 
-std::string Utils::ToString(const ErrorCode& ec) {
+const std::string& Utils::ToString(const ErrorCode& ec) {
   auto it = ec2str.find(ec);
-  return it == ec2str.end() ? "<Unknown>" : it->second;
+  static std::string unknown("<Unknown>");
+  return it == ec2str.end() ? unknown : it->second;
 }
 
 std::vector<std::string> Utils::Tokenize(
@@ -476,7 +480,7 @@ ErrorCode Utils::IterateDirectory(
 
 ErrorCode Utils::IterateFileByLine(
   const boost_fs::path& file_path,
-  const std::function<ErrorCode(const std::string& line)>& f_manip_line) {
+  const std::function<ErrorCode(std::string& line)>& f_manip_line) {
   try {
     if (boost_fs::exists(file_path) && boost_fs::is_regular_file(file_path)) {
       std::ifstream ifs(file_path.native());
@@ -498,19 +502,22 @@ ErrorCode Utils::IterateFileByLine(
   }
 }
 
-ErrorCode Utils::ExtractElements(const std::string& str,
-                                 const std::vector<size_t> idxs_elem,
-                                 std::vector<std::string>* elems,
-                                 const char delim) {
+ErrorCode Utils::ExtractElementsWithCheck(
+  const std::string& str,
+  const std::vector<size_t>& idxs_elem,
+  const std::function<ErrorCode(const std::string&)>& f_check,
+  std::vector<std::string>* elems,
+  const char delim) {
   elems->clear();
   auto tokens = Split(str, delim);
   for (auto& i : idxs_elem) {
-    if (i < tokens.size()) {
-      elems->push_back(std::move(tokens[i]));
-    } else {
-      LOG(ERROR) << "Failed to extract element in string : \"" << str << "\"";
+    if (i >= tokens.size()) {
+      LOG(ERROR) << "Failed to extract element from string: \"" << str << "\"";
       return ErrorCode::kIndexOutOfRange;
     }
+    auto& e = tokens[i];
+    USTORE_GUARD(f_check(e));
+    elems->push_back(std::move(e));
   }
   return ErrorCode::kOK;
   // TODO(linqian): Replace the above approach by scanning the string and
@@ -571,7 +578,7 @@ std::string Utils::RegularizeCSVLine(const std::string& line) {
 }
 
 std::string Utils::ReplaceSpace(const std::string& str,
-                         const std::string& to_replace_space) {
+                                const std::string& to_replace_space) {
   static const std::regex space("\\s+([^\\s]?|$)");
   return std::regex_replace(str, space, to_replace_space + "$1");
 }
@@ -588,6 +595,41 @@ std::string Utils::RegularizeFloatNumbers(const std::string& str) {
   return std::regex_replace(
            std::regex_replace(RegularizeIntegers(str), trivial_frac, "$1"),
            trivial_frac_zero, "$1$2");
+}
+
+const std::string& Utils::ErrorMessage(
+  const std::regex_constants::error_type& ec) {
+  static const std::string msg_error_collate("invalid collating element name");
+  static const std::string msg_error_ctype("invalid character class name");
+  static const std::string msg_error_escape("invalid escaped character or trailing escape"); // NOLINT
+  static const std::string msg_error_backref("invalid back reference");
+  static const std::string msg_error_brack("mismatched brackets ([ and ])");
+  static const std::string msg_error_paren("mismatched parentheses (( and ))");
+  static const std::string msg_error_brace("mismatched braces ({ and })");
+  static const std::string msg_error_badbrace("invalid range between braces ({ and })"); // NOLINT
+  static const std::string msg_error_range("invalid character range");
+  static const std::string msg_error_space("insufficient memory to convert the expression info a finite state machine"); // NOLINT
+  static const std::string msg_error_badrepeat("repeat specifier (one of *?+{) that was not preceded by a valid regular expression"); // NOLINT
+  static const std::string msg_error_complexity("The complexity of an attempted match against a regular expression exceeded a pre-set level"); // NOLINT
+  static const std::string msg_error_stack("insufficient memory to determine whether the regular expression could match the specified character sequence"); // NOLINT
+  static const std::string unknown("<Unknown>");
+
+  switch (ec) {
+    case std::regex_constants::error_collate: return msg_error_collate;
+    case std::regex_constants::error_ctype: return msg_error_ctype;
+    case std::regex_constants::error_escape: return msg_error_escape;
+    case std::regex_constants::error_backref: return msg_error_backref;
+    case std::regex_constants::error_brack: return msg_error_brack;
+    case std::regex_constants::error_paren: return msg_error_paren;
+    case std::regex_constants::error_brace: return msg_error_brace;
+    case std::regex_constants::error_badbrace: return msg_error_badbrace;
+    case std::regex_constants::error_range: return msg_error_range;
+    case std::regex_constants::error_space: return msg_error_space;
+    case std::regex_constants::error_badrepeat: return msg_error_badrepeat;
+    case std::regex_constants::error_complexity: return msg_error_complexity;
+    case std::regex_constants::error_stack: return msg_error_stack;
+    default: return unknown;
+  }
 }
 
 }  // namespace ustore

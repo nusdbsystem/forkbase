@@ -92,8 +92,7 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
               << std::endl;
   };
   // conditional execution
-  if (ds_name.empty() || branch.empty() || file_path.empty()
-      || raw_idxs_entry_name.empty()) {
+  if (ds_name.empty() || branch.empty() || file_path.empty()) {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }

@@ -535,14 +535,40 @@ ErrorCode BlobStore::PutDataEntryByCSV(
   const std::string& ds_name,
   const std::string& branch,
   const boost_fs::path& file_path,
-  const std::vector<size_t>& idxs_entry_name,
+  const std::vector<size_t>& input_idxs_entry_name,
   size_t* n_entries,
   size_t* n_bytes,
   bool with_schema) {
   *n_entries = 0;
   *n_bytes = 0;
-  const Slice ds_name_slice(ds_name), branch_slice(branch);
+  // Validate indices of entry name attributes
+  std::string meta_str_idxs_entry_name;
+  std::vector<size_t> meta_idxs_entry_name;
+  std::vector<size_t>* idxs_entry_name(&meta_idxs_entry_name);
+  USTORE_GUARD(
+    GetMeta(ds_name, branch, "ENTRY NAME INDICES", &meta_str_idxs_entry_name));
+  if (meta_str_idxs_entry_name.empty()) {
+    if (input_idxs_entry_name.empty()) {
+      return ErrorCode::kDataEntryNameIndicesUnknown;
+    }
+    // create meta
+    meta_str_idxs_entry_name =
+      Utils::ToStringSeq(input_idxs_entry_name.cbegin(),
+                         input_idxs_entry_name.cend(), "", "", ",", false);
+    USTORE_GUARD(
+      SetMeta(ds_name, branch, "ENTRY NAME INDICES", meta_str_idxs_entry_name));
+    *n_bytes += meta_str_idxs_entry_name.size();
+    idxs_entry_name = const_cast<std::vector<size_t>*>(&input_idxs_entry_name);
+  } else {  // meta of indices of entry name attributes exists
+    USTORE_GUARD(
+      Utils::ToIndices(meta_str_idxs_entry_name, idxs_entry_name));
+    if (!input_idxs_entry_name.empty() &&
+        (*idxs_entry_name != input_idxs_entry_name)) {
+      return ErrorCode::kDataEntryNameIndicesMismatch;
+    }
+  }
   // retrieve the operating dataset
+  const Slice ds_name_slice(ds_name), branch_slice(branch);
   Dataset ds;
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
@@ -567,10 +593,12 @@ ErrorCode BlobStore::PutDataEntryByCSV(
                : ErrorCode::kDatasetSchemaMismatch;
       }
     } else {  // for 2nd line onwards
+      // extract entry name
+      static const std::function<ErrorCode(const std::string& attr)> f_check =
+      [this](const std::string & attr) { return ValidateEntryNameAttr(attr); };
       std::vector<std::string> entry_name;
-      USTORE_GUARD(
-        Utils::ExtractElements(line, idxs_entry_name, &entry_name, delim));
-      USTORE_GUARD(ValidateEntryName(entry_name));
+      USTORE_GUARD(Utils::ExtractElementsWithCheck(
+                     line, *idxs_entry_name, f_check, &entry_name, delim));
       const auto entry_name_store = EntryNameForStore(entry_name);
       // fetch existing version of the data entry
       auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name_store)));

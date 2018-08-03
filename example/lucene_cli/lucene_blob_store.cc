@@ -29,14 +29,40 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const std::string& ds_name,
   const std::string& branch,
   const boost_fs::path& file_path,
-  const std::vector<size_t>& idxs_entry_name,
+  const std::vector<size_t>& input_idxs_entry_name,
   const std::vector<size_t>& idxs_search,
   size_t* n_entries,
   size_t* n_bytes) {
   *n_entries = 0;
   *n_bytes = 0;
-  const Slice ds_name_slice(ds_name), branch_slice(branch);
+  // Validate indices of entry name attributes
+  std::string meta_str_idxs_entry_name;
+  std::vector<size_t> meta_idxs_entry_name;
+  std::vector<size_t>* idxs_entry_name(&meta_idxs_entry_name);
+  USTORE_GUARD(
+    GetMeta(ds_name, branch, "ENTRY NAME INDICES", &meta_str_idxs_entry_name));
+  if (meta_str_idxs_entry_name.empty()) {
+    if (input_idxs_entry_name.empty()) {
+      return ErrorCode::kDataEntryNameIndicesUnknown;
+    }
+    // create meta
+    meta_str_idxs_entry_name =
+      Utils::ToStringSeq(input_idxs_entry_name.cbegin(),
+                         input_idxs_entry_name.cend(), "", "", ",", false);
+    USTORE_GUARD(
+      SetMeta(ds_name, branch, "ENTRY NAME INDICES", meta_str_idxs_entry_name));
+    *n_bytes += meta_str_idxs_entry_name.size();
+    idxs_entry_name = const_cast<std::vector<size_t>*>(&input_idxs_entry_name);
+  } else {  // meta of indices of entry name attributes exists
+    USTORE_GUARD(
+      Utils::ToIndices(meta_str_idxs_entry_name, idxs_entry_name));
+    if (!input_idxs_entry_name.empty() &&
+        (*idxs_entry_name != input_idxs_entry_name)) {
+      return ErrorCode::kDataEntryNameIndicesMismatch;
+    }
+  }
   // retrieve the operating dataset
+  const Slice ds_name_slice(ds_name), branch_slice(branch);
   Dataset ds;
   USTORE_GUARD(
     ReadDataset(ds_name_slice, branch_slice, &ds));
@@ -55,34 +81,30 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   char delim(',');
   std::unordered_map<std::string, Hash> updates;
   size_t line_cnt(0);
-  const auto f_put_line = [&](const std::string & line) {
-    ++line_cnt;
-    const auto elements = Utils::Split(line, delim);
-    std::vector<std::string> entry_name;
-    for (auto& i : idxs_entry_name) {
-      if (i >= elements.size()) {
-        LOG(ERROR) << "Failed to extract entry name (line " << line_cnt
-                   << "): \"" << line << "\"";
-        return ErrorCode::kIndexOutOfRange;
-      }
-      auto attr = elements[i];
-      USTORE_GUARD(ValidateEntryNameAttr(attr));
-      entry_name.push_back(std::move(attr));
-    }
-    const auto entry_name_store = EntryNameForStore(entry_name);
-    if (line_cnt == 1) {  // process schema at the 1st line
+  const auto f_put_line = [&](std::string & line) {
+    // ++line_cnt;
+    if (++line_cnt == 1) {  // process schema at the 1st line
       std::string schema;
       USTORE_GUARD(
         GetMeta(ds_name, branch, "SCHEMA", &schema));
-      auto reg_line = RegularizeSchema(line);
+      line = RegularizeSchema(line);
       if (schema.empty()) {
         USTORE_GUARD(
-          SetMeta(ds_name, branch, "SCHEMA", reg_line));
-        *n_bytes += reg_line.size();
-      } else if (reg_line != schema) {  // compare with the recorded schema
+          SetMeta(ds_name, branch, "SCHEMA", line));
+        *n_bytes += line.size();
+      } else if (line != schema) {  // compare with the recorded schema
         return ErrorCode::kDatasetSchemaMismatch;
       }
-    } else {  // for 2nd line onwards
+    }
+    const auto elements = Utils::Split(line, delim);
+    // extract entry name
+    static const std::function<ErrorCode(const std::string& attr)> f_check =
+    [this](const std::string & attr) { return ValidateEntryNameAttr(attr); };
+    std::vector<std::string> entry_name;
+    USTORE_GUARD(Utils::ExtractElementsWithCheck(
+                   elements, *idxs_entry_name, f_check, &entry_name));
+    const auto entry_name_store = EntryNameForStore(entry_name);
+    if (line_cnt > 1) {  // for 2nd line onwards
       // fetch existing version of the data entry
       auto prev_entry_ver = Utils::ToHash(ds.Get(Slice(entry_name_store)));
       if (prev_entry_ver.empty()) prev_entry_ver = Hash::kNull;
@@ -97,9 +119,17 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     }
     // add lucene index entry
     ofs_lucene_index << entry_name_store;
-    if (idxs_search.empty()) {
-      ofs_lucene_index << delim << line;
-    } else {
+    if (idxs_search.empty()) {  // index the entire record
+      ofs_lucene_index << delim;
+      if (line_cnt == 1) {  // attach the regularized schema
+        static const std::string delim_lucene_index(1, delim);
+        ofs_lucene_index << Utils::ToStringSeq(elements.cbegin(),
+                                               elements.cend(), "", "",
+                                               delim_lucene_index);
+      } else {
+        ofs_lucene_index << line;
+      }
+    } else {  // index the specified attributes
       for (size_t i = 0; i < idxs_search.size(); ++i) {
         try {
           ofs_lucene_index << delim << elements.at(idxs_search[i]);

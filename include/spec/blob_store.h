@@ -231,8 +231,15 @@ class BlobStore : protected ObjectMeta {
 
   inline ErrorCode GetDatasetSchema(const std::string& ds_name,
                                     const std::string& branch,
-                                    std::string* schema) const {
-    return GetMeta(ds_name, branch, "SCHEMA", schema);
+                                    std::string* str_schema) const {
+    return GetMeta(ds_name, branch, "SCHEMA", str_schema);
+  }
+
+  inline ErrorCode GetDataEntryNameIndices(
+    const std::string& ds_name,
+    const std::string& branch,
+    std::string* str_idxs_entry_name) const {
+    return GetMeta(ds_name, branch, "ENTRY NAME INDICES", str_idxs_entry_name);
   }
 
   template<class T1, class T2>
