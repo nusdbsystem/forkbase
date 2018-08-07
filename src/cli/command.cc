@@ -3375,7 +3375,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
-              << "Indices Entry Name Attributes: {" << raw_idxs_en << "}, "
+              << "Indices of Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "File: \"" << file_path << "\", "
               << "With Schema: " << (with_schema ? "true" : "false")
               << std::endl;
@@ -3391,7 +3391,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\""
-              << "Indices Entry Name Attributes: " << raw_idxs_en << "}, "
+              << "Indices of Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "File: \"" << file_path << "\", "
               << "With Schema: " << (with_schema ? "true" : "false")
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
@@ -3426,10 +3426,10 @@ ErrorCode Command::ExecGetDatasetSchema() {
               << "Branch: \"" << branch << "\"" << std::endl;
   };
   const auto f_rpt_success =
-  [](const std::string & schema, const std::string& idxs_entry_name) {
+  [](const std::string & schema, const std::string & idxs_entry_name) {
     std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET_SCHEMA] ")
               << "Schema: \"" << schema << "\", "
-              << "Indices of Entry Name Attributes: " << idxs_entry_name
+              << "Indices of Entry Name Attributes: {" << idxs_entry_name << "}"
               << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {

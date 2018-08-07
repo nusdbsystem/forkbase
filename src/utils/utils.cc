@@ -74,7 +74,9 @@ static const std::unordered_map<ErrorCode, std::string> ec2str = {
   {ErrorCode::kFailedModifySMap, "failed to modify SMap"},
   {ErrorCode::kFailedModifySSet, "failed to modify SSet"},
   {ErrorCode::kIndexOutOfRange, "index out of range"},
+  {ErrorCode::kObjectMetaError, "object meta error"},
   {ErrorCode::kObjectMetaNotExists, "object meta does not exist"},
+  {ErrorCode::kObjectMetaIndicesMismatch, "indices mismatch against object meta"}, // NOLINT
   {ErrorCode::kTypeMismatch, "data types mismatch"},
   {ErrorCode::kKeyNotExists, "key does not exist"},
   {ErrorCode::kKeyExists, "key already exists"},

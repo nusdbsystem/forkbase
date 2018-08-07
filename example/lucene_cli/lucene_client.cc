@@ -32,6 +32,10 @@ LuceneClient::LuceneClient(LuceneCLIArguments& args, DB* db) noexcept
   CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY", "GET-DATA-ENTRY-BY-INDEX-QUERY");
   CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY", "GET_DE_BY_IQ");
   CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY", "GET-DE-BY-IQ");
+  CMD_HANDLER("GET_DATASET_SCHEMA", ExecGetDatasetSchema());
+  CMD_ALIAS("GET_DATASET_SCHEMA", "GET-DATASET-SCHEMA");
+  CMD_ALIAS("GET_DATASET_SCHEMA", "GET_DS_SCH");
+  CMD_ALIAS("GET_DATASET_SCHEMA", "GET-DS-SCH");
 }
 
 ErrorCode LuceneClient::Run() {
@@ -60,7 +64,7 @@ ErrorCode LuceneClient::ExecCommand(const std::string& cmd) {
 ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
   const auto& ds_name = args_.dataset;
   const auto& branch = args_.branch;
-  const auto& raw_idxs_entry_name = args_.idxs_entry_name;
+  const auto& raw_idxs_en = args_.idxs_entry_name;
   const auto& raw_idxs_search = args_.idxs_search;
   const auto& file_path = args_.file;
   // screen printing
@@ -68,7 +72,7 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
-              << "Indices for Entry Name: " << raw_idxs_entry_name << ", "
+              << "Indices of Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "Indices for Keyword Search: {"
               << (raw_idxs_search.empty() ? "ALL" : raw_idxs_search) << "}, "
               << "File: \"" << file_path << "\"" << std::endl;
@@ -84,7 +88,7 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
     std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
-              << "Indices for Entry Name: " << raw_idxs_entry_name << ", "
+              << "Indices of Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "Indices for Keyword Search: {"
               << (raw_idxs_search.empty() ? "ALL" : raw_idxs_search) << "}, "
               << "File: \"" << file_path << "\""
@@ -97,7 +101,7 @@ ErrorCode LuceneClient::ExecPutDataEntryByCSV() {
     return ErrorCode::kInvalidCommandArgument;
   }
   std::vector<size_t> idxs_entry_name;
-  auto ec = Utils::ToIndices(raw_idxs_entry_name, &idxs_entry_name);
+  auto ec = Utils::ToIndices(raw_idxs_en, &idxs_entry_name);
   if (ec != ErrorCode::kOK) {
     f_rpt_fail(ec);
     return ec;
@@ -179,6 +183,59 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
       Utils::DeleteFile(file_path);
     }
   }
+  return ec;
+}
+
+ErrorCode LuceneClient::ExecGetDatasetSchema() {
+  const auto& ds_name = args_.dataset;
+  const auto& branch = args_.branch;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATASET_SCHEMA] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\"" << std::endl;
+  };
+  using ConStr = const std::string;
+  const auto f_rpt_success =
+  [](ConStr & schema, ConStr & idxs_en, ConStr & idxs_search) {
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATASET_SCHEMA] ")
+              << "Schema: \"" << schema << "\", "
+              << "Indices of Entry Name Attributes: {" << idxs_en << "}, "
+              << "Indices of Attributes for Lucene Search: {"
+              << (idxs_search.empty() ? "ALL" : idxs_search) << "}"
+              << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATASET_SCHEMA] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  std::string schema;
+  auto ec = bs_.GetDatasetSchema(ds_name, branch, &schema);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  std::string idxs_en;
+  ec = bs_.GetDataEntryNameIndices(ds_name, branch, &idxs_en);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  std::string idxs_search;
+  ec = bs_.GetLuceneSearchIndices(ds_name, branch, &idxs_search);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  f_rpt_success(schema, idxs_en, idxs_search);
   return ec;
 }
 

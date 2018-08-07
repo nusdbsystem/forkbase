@@ -42,6 +42,13 @@ class LuceneBlobStore : public BlobStore {
              ds_name, branch, query_predicate, os, &n_entries, &n_bytes);
   }
 
+  inline ErrorCode GetLuceneSearchIndices(
+    const std::string& ds_name,
+    const std::string& branch,
+    std::string* str_idxs_search) const {
+    return GetMeta(ds_name, branch, "SEARCH INDICES", str_idxs_search);
+  }
+
  protected:
   std::string RegularizeSchema(const std::string& origin) const override;
 

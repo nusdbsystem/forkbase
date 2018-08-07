@@ -25,6 +25,7 @@ class LuceneClient {
 
   ErrorCode ExecPutDataEntryByCSV();
   ErrorCode ExecGetDataEntryByIndexQuery();
+  ErrorCode ExecGetDatasetSchema();
 
   LuceneBlobStore bs_;
   LuceneCLIArguments& args_;

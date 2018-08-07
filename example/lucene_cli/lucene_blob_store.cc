@@ -30,7 +30,7 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
   const std::string& branch,
   const boost_fs::path& file_path,
   const std::vector<size_t>& input_idxs_entry_name,
-  const std::vector<size_t>& idxs_search,
+  const std::vector<size_t>& input_idxs_search,
   size_t* n_entries,
   size_t* n_bytes) {
   *n_entries = 0;
@@ -59,6 +59,32 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     if (!input_idxs_entry_name.empty() &&
         (*idxs_entry_name != input_idxs_entry_name)) {
       return ErrorCode::kDataEntryNameIndicesMismatch;
+    }
+  }
+  // Validate indices of attributes for Lucene search
+  std::string meta_str_idxs_search;
+  std::vector<size_t> meta_idxs_search;
+  std::vector<size_t>* idxs_search(&meta_idxs_search);
+  USTORE_GUARD(
+    GetMeta(ds_name, branch, "SEARCH INDICES", &meta_str_idxs_search));
+  if (meta_str_idxs_search.empty()) {
+    // create meta
+    meta_str_idxs_search =
+      input_idxs_search.empty()
+      ? "ALL"
+      : Utils::ToStringSeq(input_idxs_search.cbegin(),
+                           input_idxs_search.cend(), "", "", ",", false);
+    USTORE_GUARD(
+      SetMeta(ds_name, branch, "SEARCH INDICES", meta_str_idxs_search));
+    *n_bytes += meta_str_idxs_search.size();
+    idxs_search = const_cast<std::vector<size_t>*>(&input_idxs_search);
+  } else {  // meta of indices of entry name attributes exists
+    if (meta_str_idxs_search != "ALL") {
+      USTORE_GUARD(
+        Utils::ToIndices(meta_str_idxs_search, idxs_search));
+    }
+    if (!input_idxs_search.empty() && (*idxs_search != input_idxs_search)) {
+      return ErrorCode::kObjectMetaIndicesMismatch;
     }
   }
   // retrieve the operating dataset
@@ -119,7 +145,7 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     }
     // add lucene index entry
     ofs_lucene_index << entry_name_store;
-    if (idxs_search.empty()) {  // index the entire record
+    if (idxs_search->empty()) {  // index the entire record
       ofs_lucene_index << delim;
       if (line_cnt == 1) {  // attach the regularized schema
         static const std::string delim_lucene_index(1, delim);
@@ -130,11 +156,11 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
         ofs_lucene_index << line;
       }
     } else {  // index the specified attributes
-      for (size_t i = 0; i < idxs_search.size(); ++i) {
+      for (size_t i = 0; i < idxs_search->size(); ++i) {
         try {
-          ofs_lucene_index << delim << elements.at(idxs_search[i]);
+          ofs_lucene_index << delim << elements.at(idxs_search->at(i));
         } catch (const std::out_of_range& e) {
-          LOG(ERROR) << "No element " << idxs_search[i] << " in line "
+          LOG(ERROR) << "No element " << idxs_search->at(i) << " in line "
                      << line_cnt << ": \"" << line << "\"";
           return ErrorCode::kIndexOutOfRange;
         }

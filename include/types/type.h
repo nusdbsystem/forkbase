@@ -99,7 +99,9 @@ enum class ErrorCode : byte_t {
   kFailedModifySMap = 31,
   kFailedModifySSet = 32,
   kIndexOutOfRange = 33,
-  kObjectMetaNotExists = 34,
+  kObjectMetaError = 34,
+  kObjectMetaNotExists = 35,
+  kObjectMetaIndicesMismatch = 36,
   // chunk
   kChunkNotExists = 40,
   kFailedCreateChunk = 41,
