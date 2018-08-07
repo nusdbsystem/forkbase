@@ -29,7 +29,7 @@ $USTORE_CLI create-ds -t composed_key -b master
 
 echo [First Commit] ...
 $USTORE_LUCENE_CLI put-de-by-csv init.csv -t simple_key -b master -m 0
-$USTORE_LUCENE_CLI put-de-by-csv init.csv -t composed_key -b master -m "0,1"
+$USTORE_LUCENE_CLI put-de-by-csv init.csv -t composed_key -b master -m 0,1
 
 echo [First Dump] ...
 $USTORE_CLI export-ds-bin -t simple_key -b master out-init-s.csv
@@ -37,13 +37,17 @@ $USTORE_CLI export-ds-bin -t composed_key -b master out-init-c.csv
 diff out-init-s.csv out-init-c.csv
 
 echo [Second Commit] ...
-$USTORE_LUCENE_CLI put-de-by-csv delta.csv -t simple_key -b master -m 0 -n "0,1,2,3"
-$USTORE_LUCENE_CLI put-de-by-csv delta.csv -t composed_key -b master -m "0,1" -n "0,1,2,3"
+$USTORE_LUCENE_CLI put-de-by-csv delta.csv -t simple_key -b master -m 0
+$USTORE_LUCENE_CLI put-de-by-csv delta.csv -t composed_key -b master -m 0,1
 
 echo [Second Dump] ...
 $USTORE_CLI export-ds-bin -t simple_key -b master out-delta-s.csv
 $USTORE_CLI export-ds-bin -t composed_key -b master out-delta-c.csv
 diff out-delta-s.csv out-delta-c.csv
+
+echo [Check Schema] ...
+$USTORE_LUCENE_CLI get-ds-sch -t simple_key -b master
+$USTORE_LUCENE_CLI get-ds-sch -t composed_key -b master
 
 echo [Query aa] expected result size is 3 ...
 #$USTORE_LUCENE_CLI get-de-by-iq -t simple_key -b master -q "aa"
