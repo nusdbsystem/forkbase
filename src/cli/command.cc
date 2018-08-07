@@ -311,6 +311,10 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET-DE-BATCH");
   CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET_DE_BAT");
   CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET-DE-BAT");
+  CMD_HANDLER("GET_DATA_ENTRY_BY_RETRIEVAL", ExecGetDataEntryByRetrieval());
+  CMD_ALIAS("GET_DATA_ENTRY_BY_RETRIEVAL", "GET-DATA-ENTRY-BY-RETRIEVAL");
+  CMD_ALIAS("GET_DATA_ENTRY_BY_RETRIEVAL", "GET_DE_BY_RET");
+  CMD_ALIAS("GET_DATA_ENTRY_BY_RETRIEVAL", "GET-DE-BY-RET");
   CMD_HANDLER("DELETE_DATA_ENTRY", ExecDeleteDataEntry());
   CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE-DATA-ENTRY");
   CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE_DE");
@@ -338,7 +342,7 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
 
 const int kPrintBasicCmdWidth = 15;
 const int kPrintRelationalCmdWidth = 19;
-const int kPrintBlobStoreCmdWidth = 23;
+const int kPrintBlobStoreCmdWidth = 28;
 const int kPrintUtilCmdWidth = 12;
 
 #define FORMAT_BASIC_CMD(cmd)       FORMAT_CMD(cmd, kPrintBasicCmdWidth)
@@ -478,6 +482,8 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "[-m <entry> | <file> | -m <entry> <file>]" << std::endl
      << FORMAT_BLOB_STORE_CMD("GET_DATA_ENTRY_BATCH")
      << "-t <dataset> -b <branch> <dir>" << std::endl
+     << FORMAT_BLOB_STORE_CMD("GET_DATA_ENTRY_BY_RETRIEVAL")
+     << "-t <dataset> -b <branch> -m <entry_name_file> {<file>}" << std::endl
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY")
      << "-t <dataset> -b <branch>"
      << std::endl << std::setw(kPrintBlobStoreCmdWidth + 3) << ""
@@ -3457,6 +3463,69 @@ ErrorCode Command::ExecGetDatasetSchema() {
     return ec;
   }
   f_rpt_success(schema, idxs_entry_name);
+  return ec;
+}
+
+ErrorCode Command::ExecGetDataEntryByRetrieval() {
+  const auto& ds_name = Config::table;
+  const auto& branch = Config::branch;
+  const auto& path_entry_names = Config::column;
+  const auto& path_output = Config::file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATA_ENTRY_BY_RETRIEVAL] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Output: "
+              << (path_output.empty() ? "<stdout>" : path_output) << std::endl;
+  };
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_BY_RETRIEVAL] ");
+    if (n_entries == 0) {
+      std::cout << "no entry is found";
+    } else {
+      std::cout << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+                << " retrieved";
+      if (!path_output.empty()) {
+        std::cout << " --> " << Utils::FullPath(path_output);
+      }
+      std::cout << BLUE("  [" << Utils::StorageSizeString(n_bytes) << "]");
+    }
+    std::cout << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_BY_RETRIEVAL] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Output: "
+              << (path_output.empty() ? "<stdout>" : path_output)
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || path_entry_names.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (!path_output.empty()) {
+    const auto ec = Utils::CreateParentDirectories(path_output);
+    if (ec != ErrorCode::kOK) {
+      f_rpt_fail(ec);
+      return ec;
+    }
+  }
+  std::ofstream ofs(path_output, std::ios::out | std::ios::trunc);
+  size_t n_entries, n_bytes;
+  auto ec = bs_.GetDataEntryByRetrieval(
+              ds_name, branch, boost_fs::path(path_entry_names),
+              (path_output.empty() ? std::cout : ofs), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
+  if (!path_output.empty()) {
+    ofs.close();
+    if (n_entries == 0) {  // delete the trivial file since no factual output
+      Utils::DeleteFile(path_output);
+    }
+  }
   return ec;
 }
 

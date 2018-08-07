@@ -668,4 +668,40 @@ ErrorCode BlobStore::ImplListDataEntryBranch(
   return ErrorCode::kOK;
 }
 
+ErrorCode BlobStore::GetDataEntryByRetrieval(
+  const std::string& ds_name,
+  const std::string& branch,
+  const boost_fs::path& path_entry_names,
+  std::ostream& os,
+  size_t* n_entries,
+  size_t* n_bytes) const {
+  *n_entries = 0;
+  *n_bytes = 0;
+  // retrieve the operating dataset
+  Dataset ds;
+  USTORE_GUARD(
+    GetDataset(ds_name, branch, &ds));
+  // procedure: retrieve data entry from storage
+  const auto f_retrieve = [&](const std::string & entry_name) {
+    auto entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
+    if (entry_ver.empty()) {
+      LOG(WARNING) << "Data Entry \"" << entry_name
+                   << "\" does not exist in Dataset \""
+                   << ds_name << "\" of Branch \"" << branch << "\"";
+      return ErrorCode::kDataEntryNotExists;
+    }
+    // read data entry
+    DataEntry entry;
+    USTORE_GUARD(
+      ReadDataEntry(ds_name, entry_name, entry_ver, &entry));
+    os << entry << std::endl;
+    ++(*n_entries);
+    *n_bytes += entry.size() + 1;  // including std::endl
+    return ErrorCode::kOK;
+  };
+  USTORE_GUARD(
+    Utils::IterateFileByLine(path_entry_names, f_retrieve));
+  return ErrorCode::kOK;
+}
+
 }  // namespace ustore

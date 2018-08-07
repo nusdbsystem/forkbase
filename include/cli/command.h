@@ -152,6 +152,7 @@ class Command {
   ErrorCode ExecExistsDataEntry();
   ErrorCode ExecGetDataEntry();
   ErrorCode ExecGetDataEntryBatch();
+  ErrorCode ExecGetDataEntryByRetrieval();
   ErrorCode ExecDeleteDataEntry();
   ErrorCode ExecListDataEntryBranch();
 
