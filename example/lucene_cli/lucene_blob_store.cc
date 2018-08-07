@@ -300,6 +300,39 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   return ErrorCode::kOK;
 }
 
+ErrorCode LuceneBlobStore::GetDataEntryNameByIndexQuery(
+  const std::string& ds_name,
+  const std::string& branch,
+  const std::string& query_predicate,
+  std::ostream& os,
+  size_t* n_entries,
+  size_t* n_bytes) const {
+  *n_entries = 0;
+  *n_bytes = 0;
+  // retrieve entry names associated with the query keywords
+#if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
+  std::unordered_set<std::string> ds_entry_names;
+#else
+  std::vector<std::string> ds_entry_names;
+#endif
+  USTORE_GUARD(
+    LuceneQuery(ds_name, branch, query_predicate, &ds_entry_names));
+  if (ds_entry_names.empty()) {
+    LOG(INFO) << "No result is found for query \"" << query_predicate
+              << "\" on dataset \"" << ds_name << "\" of branch \"" << branch
+              << "\"";
+    return ErrorCode::kOK;
+  }
+  // output data entry names
+  for (auto& entry_name : ds_entry_names) {
+    os << entry_name << std::endl;
+    ++(*n_entries);
+    *n_bytes += entry_name.size();
+  }
+  *n_bytes += *n_entries;  // count for std::endl
+  return ErrorCode::kOK;
+}
+
 #if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
 ErrorCode LuceneBlobStore::LuceneQuery(
   const std::string& ds_name, const std::string& branch,

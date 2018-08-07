@@ -696,11 +696,12 @@ ErrorCode BlobStore::GetDataEntryByRetrieval(
       ReadDataEntry(ds_name, entry_name, entry_ver, &entry));
     os << entry << std::endl;
     ++(*n_entries);
-    *n_bytes += entry.size() + 1;  // including std::endl
+    *n_bytes += entry.size();
     return ErrorCode::kOK;
   };
   USTORE_GUARD(
     Utils::IterateFileByLine(path_entry_names, f_retrieve));
+  *n_bytes += *n_entries;  // count for std::endl
   return ErrorCode::kOK;
 }
 

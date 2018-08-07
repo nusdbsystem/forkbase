@@ -34,6 +34,11 @@ class LuceneBlobStore : public BlobStore {
     const std::string& query_predicate, std::ostream& os,
     size_t* n_entries, size_t* n_bytes) const;
 
+  ErrorCode GetDataEntryNameByIndexQuery(
+    const std::string& ds_name, const std::string& branch,
+    const std::string& query_predicate, std::ostream& os,
+    size_t* n_entries, size_t* n_bytes) const;
+
   inline ErrorCode GetDataEntryByIndexQuery(
     const std::string& ds_name, const std::string& branch,
     const std::string& query_predicate, std::ostream& os) const {

@@ -32,6 +32,10 @@ LuceneClient::LuceneClient(LuceneCLIArguments& args, DB* db) noexcept
   CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY", "GET-DATA-ENTRY-BY-INDEX-QUERY");
   CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY", "GET_DE_BY_IQ");
   CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY", "GET-DE-BY-IQ");
+  CMD_HANDLER("GET_DATA_ENTRY_NAME_BY_INDEX_QUERY", ExecGetDataEntryNameByIndexQuery()); // NOLINT
+  CMD_ALIAS("GET_DATA_ENTRY_NAME_BY_INDEX_QUERY", "GET-DATA-ENTRY-NAME-BY-INDEX-QUERY"); // NOLINT
+  CMD_ALIAS("GET_DATA_ENTRY_NAME_BY_INDEX_QUERY", "GET_DEN_BY_IQ");
+  CMD_ALIAS("GET_DATA_ENTRY_NAME_BY_INDEX_QUERY", "GET-DEN-BY-IQ");
   CMD_HANDLER("GET_DATASET_SCHEMA", ExecGetDatasetSchema());
   CMD_ALIAS("GET_DATASET_SCHEMA", "GET-DATASET-SCHEMA");
   CMD_ALIAS("GET_DATASET_SCHEMA", "GET_DS_SCH");
@@ -174,6 +178,72 @@ ErrorCode LuceneClient::ExecGetDataEntryByIndexQuery() {
   std::ofstream ofs(file_path, std::ios::out | std::ios::trunc);
   size_t n_entries, n_bytes;
   auto ec = bs_.GetDataEntryByIndexQuery(
+              ds_name, branch, query_predicate,
+              (file_path.empty() ? std::cout : ofs), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
+  if (!file_path.empty()) {
+    ofs.close();
+    if (n_entries == 0) {  // delete the trivial file since no factual output
+      Utils::DeleteFile(file_path);
+    }
+  }
+  return ec;
+}
+
+ErrorCode LuceneClient::ExecGetDataEntryNameByIndexQuery() {
+  const auto& ds_name = args_.dataset;
+  const auto& branch = args_.branch;
+  const auto& query_predicate = args_.query_predicate;
+  const auto& file_path = args_.file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED("[INVALID ARGS: GET_DATA_ENTRY_NAME_BY_INDEX_QUERY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Output: "
+              << (file_path.empty() ? "<stdout>" : file_path) << ", "
+              << "Query: \"" << query_predicate << "\""
+              << std::endl;
+  };
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
+    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_NAME_BY_INDEX_QUERY] ");
+    if (n_entries == 0) {
+      std::cout << "no entry is found";
+    } else {
+      std::cout << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+                << " retrieved";
+      if (!file_path.empty()) {
+        std::cout << " --> " << Utils::FullPath(file_path);
+      }
+      std::cout << BLUE("  [" << Utils::StorageSizeString(n_bytes) << "]");
+    }
+    std::cout << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_NAME_BY_INDEX_QUERY] ")
+              << "Dataset: \"" << ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Output: "
+              << (file_path.empty() ? "<stdout>" : file_path) << ", "
+              << "Query: \"" << query_predicate << "\""
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (ds_name.empty() || branch.empty() || query_predicate.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  if (!file_path.empty()) {
+    const auto ec = Utils::CreateParentDirectories(file_path);
+    if (ec != ErrorCode::kOK) {
+      f_rpt_fail(ec);
+      return ec;
+    }
+  }
+  std::ofstream ofs(file_path, std::ios::out | std::ios::trunc);
+  size_t n_entries, n_bytes;
+  auto ec = bs_.GetDataEntryNameByIndexQuery(
               ds_name, branch, query_predicate,
               (file_path.empty() ? std::cout : ofs), &n_entries, &n_bytes);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
