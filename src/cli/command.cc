@@ -311,10 +311,10 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
   CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET-DE-BATCH");
   CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET_DE_BAT");
   CMD_ALIAS("GET_DATA_ENTRY_BATCH", "GET-DE-BAT");
-  CMD_HANDLER("GET_DATA_ENTRY_BY_RETRIEVAL", ExecGetDataEntryByRetrieval());
-  CMD_ALIAS("GET_DATA_ENTRY_BY_RETRIEVAL", "GET-DATA-ENTRY-BY-RETRIEVAL");
-  CMD_ALIAS("GET_DATA_ENTRY_BY_RETRIEVAL", "GET_DE_BY_RET");
-  CMD_ALIAS("GET_DATA_ENTRY_BY_RETRIEVAL", "GET-DE-BY-RET");
+  CMD_HANDLER("SELECT_DATA_ENTRY", ExecSelectDataEntry());
+  CMD_ALIAS("SELECT_DATA_ENTRY", "SELECT-DATA-ENTRY");
+  CMD_ALIAS("SELECT_DATA_ENTRY", "SEL_DE");
+  CMD_ALIAS("SELECT_DATA_ENTRY", "SEL-DE");
   CMD_HANDLER("DELETE_DATA_ENTRY", ExecDeleteDataEntry());
   CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE-DATA-ENTRY");
   CMD_ALIAS("DELETE_DATA_ENTRY", "DELETE_DE");
@@ -342,7 +342,7 @@ Command::Command(DB* db) noexcept : odb_(db), cs_(db), bs_(db) {
 
 const int kPrintBasicCmdWidth = 15;
 const int kPrintRelationalCmdWidth = 19;
-const int kPrintBlobStoreCmdWidth = 28;
+const int kPrintBlobStoreCmdWidth = 23;
 const int kPrintUtilCmdWidth = 12;
 
 #define FORMAT_BASIC_CMD(cmd)       FORMAT_CMD(cmd, kPrintBasicCmdWidth)
@@ -482,7 +482,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << "[-m <entry> | <file> | -m <entry> <file>]" << std::endl
      << FORMAT_BLOB_STORE_CMD("GET_DATA_ENTRY_BATCH")
      << "-t <dataset> -b <branch> <dir>" << std::endl
-     << FORMAT_BLOB_STORE_CMD("GET_DATA_ENTRY_BY_RETRIEVAL")
+     << FORMAT_BLOB_STORE_CMD("SELECT_DATA_ENTRY")
      << "-t <dataset> -b <branch> -m <entry_name_file> {<file>}" << std::endl
      << FORMAT_BLOB_STORE_CMD("PUT_DATA_ENTRY")
      << "-t <dataset> -b <branch>"
@@ -3466,21 +3466,21 @@ ErrorCode Command::ExecGetDatasetSchema() {
   return ec;
 }
 
-ErrorCode Command::ExecGetDataEntryByRetrieval() {
+ErrorCode Command::ExecSelectDataEntry() {
   const auto& ds_name = Config::table;
   const auto& branch = Config::branch;
   const auto& path_entry_names = Config::column;
   const auto& path_output = Config::file;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
-    std::cout << BOLD_RED("[INVALID ARGS: GET_DATA_ENTRY_BY_RETRIEVAL] ")
+    std::cout << BOLD_RED("[INVALID ARGS: SELECT_DATA_ENTRY] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
               << "Output: "
               << (path_output.empty() ? "<stdout>" : path_output) << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
-    std::cout << BOLD_GREEN("[SUCCESS: GET_DATA_ENTRY_BY_RETRIEVAL] ");
+    std::cout << BOLD_GREEN("[SUCCESS: SELECT_DATA_ENTRY] ");
     if (n_entries == 0) {
       std::cout << "no entry is found";
     } else {
@@ -3494,7 +3494,7 @@ ErrorCode Command::ExecGetDataEntryByRetrieval() {
     std::cout << std::endl;
   };
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
-    std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_BY_RETRIEVAL] ")
+    std::cout << BOLD_RED("[FAILED: SELECT_DATA_ENTRY] ")
               << "Dataset: \"" << ds_name << "\", "
               << "Branch: \"" << branch << "\", "
               << "Output: "
@@ -3516,7 +3516,7 @@ ErrorCode Command::ExecGetDataEntryByRetrieval() {
   }
   std::ofstream ofs(path_output, std::ios::out | std::ios::trunc);
   size_t n_entries, n_bytes;
-  auto ec = bs_.GetDataEntryByRetrieval(
+  auto ec = bs_.SelectDataEntry(
               ds_name, branch, boost_fs::path(path_entry_names),
               (path_output.empty() ? std::cout : ofs), &n_entries, &n_bytes);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);

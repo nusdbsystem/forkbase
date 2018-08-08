@@ -122,7 +122,7 @@ class BlobStore : protected ObjectMeta {
     return GetDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
 
-  ErrorCode GetDataEntryByRetrieval(
+  ErrorCode SelectDataEntry(
     const std::string& ds_name,
     const std::string& branch,
     const boost::filesystem::path& path_entry_names,
@@ -130,14 +130,14 @@ class BlobStore : protected ObjectMeta {
     size_t* n_entries,
     size_t* n_bytes) const;
 
-  inline ErrorCode GetDataEntryByRetrieval(
+  inline ErrorCode SelectDataEntry(
     const std::string& ds_name,
     const std::string& branch,
     const boost::filesystem::path& path_entry_names,
     std::ostream& os) const {
     size_t n_entries, n_bytes;
-    return GetDataEntryByRetrieval(ds_name, branch, path_entry_names, os,
-                                   &n_entries, &n_bytes);
+    return SelectDataEntry(ds_name, branch, path_entry_names, os,
+                           &n_entries, &n_bytes);
   }
 
   inline ErrorCode PutDataEntry(const std::string& ds_name,

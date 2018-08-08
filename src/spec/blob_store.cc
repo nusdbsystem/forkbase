@@ -668,7 +668,7 @@ ErrorCode BlobStore::ImplListDataEntryBranch(
   return ErrorCode::kOK;
 }
 
-ErrorCode BlobStore::GetDataEntryByRetrieval(
+ErrorCode BlobStore::SelectDataEntry(
   const std::string& ds_name,
   const std::string& branch,
   const boost_fs::path& path_entry_names,
@@ -677,6 +677,17 @@ ErrorCode BlobStore::GetDataEntryByRetrieval(
   size_t* n_bytes) const {
   *n_entries = 0;
   *n_bytes = 0;
+  // write schema to the 1st line
+  std::string schema;
+  USTORE_GUARD(
+    GetMeta(ds_name, branch, "SCHEMA", &schema));
+  if (schema.empty()) {  // schema constraint
+    LOG(ERROR) << "Schema is not found for dataset \"" << ds_name
+               << "\" of branch \"" << branch << "\"";
+    return ErrorCode::kDatasetSchemaNotFound;
+  }
+  os << schema << std::endl;
+  *n_bytes += schema.size() + 1;
   // retrieve the operating dataset
   Dataset ds;
   USTORE_GUARD(
