@@ -122,13 +122,27 @@ class BlobStore : protected ObjectMeta {
     return GetDataEntryBatch(ds_name, branch, dir_path, &n_entries, &n_bytes);
   }
 
-  ErrorCode SelectDataEntry(
-    const std::string& ds_name,
-    const std::string& branch,
-    const boost::filesystem::path& path_entry_names,
-    std::ostream& os,
-    size_t* n_entries,
-    size_t* n_bytes) const;
+  ErrorCode SelectDataEntry(const std::string& ds_name,
+                            const std::string& branch,
+                            std::istream& is,
+                            std::ostream& os,
+                            size_t* n_entries,
+                            size_t* n_bytes) const;
+
+  inline ErrorCode SelectDataEntry(const std::string& ds_name,
+                                   const std::string& branch,
+                                   std::istream& is,
+                                   std::ostream& os) const {
+    size_t n_entries, n_bytes;
+    return SelectDataEntry(ds_name, branch, is, os, &n_entries, &n_bytes);
+  }
+
+  ErrorCode SelectDataEntry(const std::string& ds_name,
+                            const std::string& branch,
+                            const boost::filesystem::path& path_entry_names,
+                            std::ostream& os,
+                            size_t* n_entries,
+                            size_t* n_bytes) const;
 
   inline ErrorCode SelectDataEntry(
     const std::string& ds_name,

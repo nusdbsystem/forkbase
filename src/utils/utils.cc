@@ -483,17 +483,18 @@ ErrorCode Utils::IterateDirectory(
 ErrorCode Utils::IterateFileByLine(
   const boost_fs::path& file_path,
   const std::function<ErrorCode(std::string& line)>& f_manip_line) {
+  USTORE_GUARD(ValidateFilePath(file_path));
+  std::ifstream ifs(file_path.native());
+  USTORE_GUARD(ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
+  USTORE_GUARD(IterateInputStreamByLine(ifs, f_manip_line));
+  ifs.close();
+  return ErrorCode::kOK;
+}
+
+ErrorCode Utils::ValidateFilePath(const boost_fs::path& file_path) {
   try {
     if (boost_fs::exists(file_path) && boost_fs::is_regular_file(file_path)) {
-      std::ifstream ifs(file_path.native());
-      auto ec = ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile;
-      USTORE_GUARD(ec);
-      std::string line;
-      while (std::getline(ifs, line) && ec == ErrorCode::kOK) {
-        ec = f_manip_line(line);
-      }
-      ifs.close();
-      return ec;
+      return ErrorCode::kOK;
     } else {
       LOG(ERROR) << "Invalid file: " << file_path;
       return ErrorCode::kInvalidPath;
@@ -502,6 +503,17 @@ ErrorCode Utils::IterateFileByLine(
     LOG(ERROR) << e.what();
     return ErrorCode::kIOFault;
   }
+}
+
+ErrorCode Utils::IterateInputStreamByLine(
+  std::istream& is,
+  const std::function<ErrorCode(std::string& line)>& f_manip_line) {
+  std::string line;
+  while (std::getline(is, line)) {
+    USTORE_GUARD(
+      f_manip_line(line));
+  }
+  return ErrorCode::kOK;
 }
 
 ErrorCode Utils::ExtractElementsWithCheck(

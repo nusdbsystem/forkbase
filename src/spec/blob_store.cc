@@ -675,6 +675,22 @@ ErrorCode BlobStore::SelectDataEntry(
   std::ostream& os,
   size_t* n_entries,
   size_t* n_bytes) const {
+  USTORE_GUARD(Utils::ValidateFilePath(path_entry_names));
+  std::ifstream ifs(path_entry_names.native());
+  USTORE_GUARD(ifs ? ErrorCode::kOK : ErrorCode::kFailedOpenFile);
+  USTORE_GUARD(
+    SelectDataEntry(ds_name, branch, ifs, os, n_entries, n_bytes));
+  ifs.close();
+  return ErrorCode::kOK;
+}
+
+ErrorCode BlobStore::SelectDataEntry(
+  const std::string& ds_name,
+  const std::string& branch,
+  std::istream& is,
+  std::ostream& os,
+  size_t* n_entries,
+  size_t* n_bytes) const {
   *n_entries = 0;
   *n_bytes = 0;
   // write schema to the 1st line
@@ -711,7 +727,7 @@ ErrorCode BlobStore::SelectDataEntry(
     return ErrorCode::kOK;
   };
   USTORE_GUARD(
-    Utils::IterateFileByLine(path_entry_names, f_retrieve));
+    Utils::IterateInputStreamByLine(is, f_retrieve));
   *n_bytes += *n_entries;  // count for std::endl
   return ErrorCode::kOK;
 }

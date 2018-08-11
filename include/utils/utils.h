@@ -314,6 +314,8 @@ class Utils {
   static ErrorCode GetFileContents(const std::string& file_path,
                                    std::string* container);
 
+  static ErrorCode ValidateFilePath(const boost::filesystem::path& file_path);
+
   static ErrorCode IterateDirectory(
     const boost::filesystem::path& dir_path,
     const std::function<ErrorCode(
@@ -323,6 +325,10 @@ class Utils {
 
   static ErrorCode IterateFileByLine(
     const boost::filesystem::path& file_path,
+    const std::function<ErrorCode(std::string& line)>& f_manip_line);
+
+  static ErrorCode IterateInputStreamByLine(
+    std::istream& is,
     const std::function<ErrorCode(std::string& line)>& f_manip_line);
 
   template<typename T>

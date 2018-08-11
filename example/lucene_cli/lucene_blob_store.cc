@@ -250,54 +250,10 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   size_t* n_bytes) const {
   *n_entries = 0;
   *n_bytes = 0;
-  // write schema to the 1st line
-  std::string schema;
+  std::stringstream ss;
   USTORE_GUARD(
-    GetMeta(ds_name, branch, "SCHEMA", &schema));
-  if (schema.empty()) {  // schema constraint
-    LOG(ERROR) << "Schema is not found for dataset \"" << ds_name
-               << "\" of branch \"" << branch << "\"";
-    return ErrorCode::kDatasetSchemaNotFound;
-  }
-  os << schema << std::endl;
-  *n_bytes += schema.size() + 1;
-  // retrieve entry names associated with the query keywords
-#if defined(__LUCENE_BLOB_STORE_DEDUP_QUERY_RESULTS__)
-  std::unordered_set<std::string> ds_entry_names;
-#else
-  std::vector<std::string> ds_entry_names;
-#endif
-  USTORE_GUARD(
-    LuceneQuery(ds_name, branch, query_predicate, &ds_entry_names));
-  if (ds_entry_names.empty()) {
-    LOG(INFO) << "No result is found for query \"" << query_predicate
-              << "\" on dataset \"" << ds_name << "\" of branch \"" << branch
-              << "\"";
-    return ErrorCode::kOK;
-  }
-  // retrieve the operating dataset
-  Dataset ds;
-  USTORE_GUARD(
-    GetDataset(ds_name, branch, &ds));
-  // retrieve data entries
-  for (auto& entry_name : ds_entry_names) {
-    auto entry_ver = Utils::ToHash(ds.Get(Slice(entry_name)));
-    if (entry_ver.empty()) {
-      LOG(WARNING) << "Data Entry \"" << entry_name
-                   << "\" does not exist in Dataset \""
-                   << ds_name << "\" of Branch \"" << branch << "\"";
-      return ErrorCode::kDataEntryNotExists;
-    }
-    // read data entry
-    DataEntry entry;
-    USTORE_GUARD(
-      ReadDataEntry(ds_name, entry_name, entry_ver, &entry));
-    os << entry << std::endl;
-    ++(*n_entries);
-    *n_bytes += entry.size();
-  }
-  *n_bytes += *n_entries;  // count for std::endl
-  return ErrorCode::kOK;
+    GetDataEntryNameByIndexQuery(ds_name, branch, query_predicate, ss));
+  return SelectDataEntry(ds_name, branch, ss, os, n_entries, n_bytes);
 }
 
 ErrorCode LuceneBlobStore::GetDataEntryNameByIndexQuery(
