@@ -282,7 +282,8 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQueryAndJoin(
   for (auto& ds_name : join_ds_names) {
     std::stringstream en_names(entry_names);
     size_t sub_n_entries, sub_n_bytes;
-    std::ofstream ofs((output_dir / ds_name).native(), std::ios::out);
+    std::ofstream ofs(
+        (output_dir / (ds_name + ".csv")).native(), std::ios::out);
     USTORE_GUARD(SelectDataEntry(ds_name, branch, en_names, ofs,
                                  &sub_n_entries, &sub_n_bytes));
     ofs.close();
