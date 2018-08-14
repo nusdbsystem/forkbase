@@ -36,6 +36,10 @@ LuceneClient::LuceneClient(LuceneCLIArguments& args, DB* db) noexcept
   CMD_ALIAS("GET_DATA_ENTRY_NAME_BY_INDEX_QUERY", "GET-DATA-ENTRY-NAME-BY-INDEX-QUERY"); // NOLINT
   CMD_ALIAS("GET_DATA_ENTRY_NAME_BY_INDEX_QUERY", "GET_DEN_BY_IQ");
   CMD_ALIAS("GET_DATA_ENTRY_NAME_BY_INDEX_QUERY", "GET-DEN-BY-IQ");
+  CMD_HANDLER("GET_DATA_ENTRY_BY_INDEX_QUERY_AND_JOIN", ExecGetDataEntryByIndexQueryAndJoin()); // NOLINT
+  CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY_AND_JOIN", "GET-DATA-ENTRY-BY-INDEX-QUERY-AND-JOIN"); // NOLINT
+  CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY_AND_JOIN", "GET_DE_BY_IQJ");
+  CMD_ALIAS("GET_DATA_ENTRY_BY_INDEX_QUERY_AND_JOIN", "GET-DE-BY-IQJ");
   CMD_HANDLER("GET_DATASET_SCHEMA", ExecGetDatasetSchema());
   CMD_ALIAS("GET_DATASET_SCHEMA", "GET-DATASET-SCHEMA");
   CMD_ALIAS("GET_DATASET_SCHEMA", "GET_DS_SCH");
@@ -306,6 +310,61 @@ ErrorCode LuceneClient::ExecGetDatasetSchema() {
     return ec;
   }
   f_rpt_success(schema, idxs_en, idxs_search);
+  return ec;
+}
+
+ErrorCode LuceneClient::ExecGetDataEntryByIndexQueryAndJoin() {
+  const auto& query_ds_name = args_.dataset;
+  const auto& branch = args_.branch;
+  const auto& query_predicate = args_.query_predicate;
+  const auto& raw_join_ds_names = args_.ref_dataset;
+  const auto& output_dir = args_.file;
+  // screen printing
+  const auto f_rpt_invalid_args = [&]() {
+    std::cout << BOLD_RED(
+                "[INVALID ARGS: GET_DATA_ENTRY_BY_INDEX_QUERY_AND_JOIN] ")
+              << "Query Dataset: \"" << query_ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Query: \"" << query_predicate << "\", "
+              << "Joining Dataset(s): {" << raw_join_ds_names << "}, "
+              << "Output Directory: " << output_dir
+              << std::endl;
+  };
+  const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
+    std::cout << BOLD_GREEN(
+                "[SUCCESS: GET_DATA_ENTRY_BY_INDEX_QUERY_AND_JOIN] ");
+    if (n_entries == 0) {
+      std::cout << "no entry is found";
+    } else {
+      std::cout << n_entries << " entr" << (n_entries > 1 ? "ies are" : "y is")
+                << " retrieved --> " << Utils::FullPath(output_dir)
+                << BLUE("  [" << Utils::StorageSizeString(n_bytes) << "]");
+    }
+    std::cout << std::endl;
+  };
+  const auto f_rpt_fail = [&](const ErrorCode & ec) {
+    std::cout << BOLD_RED("[FAILED: GET_DATA_ENTRY_BY_INDEX_QUERY_AND_JOIN] ")
+              << "Query Dataset: \"" << query_ds_name << "\", "
+              << "Branch: \"" << branch << "\", "
+              << "Query: \"" << query_predicate << "\", "
+              << "Joining Dataset(s): {" << raw_join_ds_names << "}, "
+              << "Output Directory: " << output_dir
+              << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
+              << std::endl;
+  };
+  // conditional execution
+  if (query_ds_name.empty() || branch.empty() || query_predicate.empty() ||
+      raw_join_ds_names.empty() || output_dir.empty()) {
+    f_rpt_invalid_args();
+    return ErrorCode::kInvalidCommandArgument;
+  }
+  auto join_ds_names =
+    Utils::TokenizeDistinct(Utils::RegularizeCSVLine(raw_join_ds_names), ",{}");
+  size_t n_entries, n_bytes;
+  auto ec = bs_.GetDataEntryByIndexQueryAndJoin(
+              query_ds_name, branch, query_predicate, join_ds_names,
+              boost_fs::path(output_dir), &n_entries, &n_bytes);
+  ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }
 

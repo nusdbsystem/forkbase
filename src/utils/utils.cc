@@ -538,14 +538,13 @@ ErrorCode Utils::ExtractElementsWithCheck(
   //                extract elements in the target positions.
 }
 
-ErrorCode Utils::CreateParentDirectories(const boost_fs::path& file_path) {
-  const auto dir = file_path.parent_path();
-  if (!dir.empty()) {
+ErrorCode Utils::CreateDirectories(const boost_fs::path& dir_path) {
+  if (!dir_path.empty()) {
     try {
-      boost_fs::create_directories(dir);
+      boost_fs::create_directories(dir_path);
     } catch (const boost_fs::filesystem_error& e) {
-      LOG(ERROR) << "Failed to create parent directories for file path: "
-                 << file_path.native();
+      LOG(ERROR) << "Failed to create directories for path: "
+                 << dir_path.native();
       return ErrorCode::kIOFault;
     }
   }

@@ -3396,7 +3396,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
   const auto f_rpt_fail = [&](const ErrorCode & ec) {
     std::cout << BOLD_RED("[FAILED: PUT_DATA_ENTRY_BY_CSV] ")
               << "Dataset: \"" << ds_name << "\", "
-              << "Branch: \"" << branch << "\""
+              << "Branch: \"" << branch << "\", "
               << "Indices of Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "File: \"" << file_path << "\", "
               << "With Schema: " << (with_schema ? "true" : "false")

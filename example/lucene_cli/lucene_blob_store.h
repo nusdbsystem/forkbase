@@ -62,6 +62,24 @@ class LuceneBlobStore : public BlobStore {
     return GetMeta(ds_name, branch, "SEARCH INDICES", str_idxs_search);
   }
 
+  ErrorCode GetDataEntryByIndexQueryAndJoin(
+    const std::string& query_ds_name, const std::string& branch,
+    const std::string& query_predicate,
+    const std::vector<std::string>& join_ds_names,
+    const boost::filesystem::path& output_dir,
+    size_t* n_entries, size_t* n_bytes) const;
+
+  inline ErrorCode GetDataEntryByIndexQueryAndJoin(
+    const std::string& query_ds_name, const std::string& branch,
+    const std::string& query_predicate,
+    const std::vector<std::string>& join_ds_names,
+    const boost::filesystem::path& output_dir) const {
+    size_t n_entries, n_bytes;
+    return GetDataEntryByIndexQueryAndJoin(
+             query_ds_name, branch, query_predicate, join_ds_names, output_dir,
+             &n_entries, &n_bytes);
+  }
+
  protected:
   std::string RegularizeSchema(const std::string& origin) const override;
 

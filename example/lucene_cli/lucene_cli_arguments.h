@@ -16,6 +16,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
   std::string command;
   std::string file;
   std::string dataset;
+  std::string ref_dataset;
   std::string branch;
   std::string idxs_entry_name;
   std::string idxs_search;
@@ -28,6 +29,8 @@ class LuceneCLIArguments : public ::ustore::Arguments {
                   "path of input file");
     Add(&dataset, "dataset", "t",
         "the operating dataset");
+    Add(&ref_dataset, "ref-dataset", "s",
+        "the referring dataset(s)");
     Add(&branch, "branch", "b",
         "the operating branch");
     Add(&idxs_entry_name, "idxs-entry-name", "m",
@@ -46,6 +49,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
       "put-de-by-csv /path/to/input.csv -t ds_test -b master -m 0 -n \"1,3\"",
       "get-de-by-iq -t ds_test -b master -q \"w1 AND w2\" /path/to/output.csv",
       "get-den-by-iq -t ds_test -b master -q \"w1 AND w2\" /path/to/output.csv",
+      "get-de-by-iqj -t ds_test -b master -q \"w1 AND w2\" -s \"ds1,ds2\" /path/to/output/dir", // NOLINT
       "get-ds-sch -t ds_test -b master"
     };
     std::stringstream ss;

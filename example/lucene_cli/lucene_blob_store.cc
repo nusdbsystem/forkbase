@@ -256,6 +256,42 @@ ErrorCode LuceneBlobStore::GetDataEntryByIndexQuery(
   return SelectDataEntry(ds_name, branch, ss, os, n_entries, n_bytes);
 }
 
+ErrorCode LuceneBlobStore::GetDataEntryByIndexQueryAndJoin(
+  const std::string& query_ds_name,
+  const std::string& branch,
+  const std::string& query_predicate,
+  const std::vector<std::string>& join_ds_names,
+  const boost_fs::path& output_dir,
+  size_t* n_entries,
+  size_t* n_bytes) const {
+  *n_entries = 0;
+  *n_bytes = 0;
+  if (boost_fs::exists(output_dir)) {
+    LOG(ERROR) << "Directory already exists (not overwriting): "
+               << output_dir.native();
+    return ErrorCode::kInvalidPath;
+  }
+  USTORE_GUARD(
+    Utils::CreateDirectories(output_dir));
+  // query for the entry names
+  std::stringstream ss;
+  USTORE_GUARD(GetDataEntryNameByIndexQuery(
+                 query_ds_name, branch, query_predicate, ss));
+  const auto entry_names = ss.str();
+  // join with the stated datasets according to the retrieved entry names
+  for (auto& ds_name : join_ds_names) {
+    std::stringstream en_names(entry_names);
+    size_t sub_n_entries, sub_n_bytes;
+    std::ofstream ofs((output_dir / ds_name).native(), std::ios::out);
+    USTORE_GUARD(SelectDataEntry(ds_name, branch, en_names, ofs,
+                                 &sub_n_entries, &sub_n_bytes));
+    ofs.close();
+    *n_entries += sub_n_entries;
+    *n_bytes += sub_n_bytes;
+  }
+  return ErrorCode::kOK;
+}
+
 ErrorCode LuceneBlobStore::GetDataEntryNameByIndexQuery(
   const std::string& ds_name,
   const std::string& branch,

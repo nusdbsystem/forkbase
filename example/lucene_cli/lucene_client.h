@@ -26,7 +26,7 @@ class LuceneClient {
   ErrorCode ExecPutDataEntryByCSV();
   ErrorCode ExecGetDataEntryByIndexQuery();
   ErrorCode ExecGetDataEntryNameByIndexQuery();
-  // ErrorCode ExecGetDataEntryByIndexQueryAndJoin();
+  ErrorCode ExecGetDataEntryByIndexQueryAndJoin();
   ErrorCode ExecGetDatasetSchema();
 
   LuceneBlobStore bs_;

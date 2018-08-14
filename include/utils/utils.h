@@ -190,6 +190,19 @@ class Utils {
     size_t hint_size = 8);
 
   template<typename T>
+  static inline std::vector<T> Deduplicate(const std::vector<T>& origin) {
+    const std::unordered_set<T> dedup(origin.cbegin(), origin.cend());
+    return std::vector<T>(dedup.cbegin(), dedup.cend());
+  }
+
+  static inline std::vector<std::string> TokenizeDistinct(
+    const std::string& str, const char* sep_chars = " \t[],",
+    size_t hint_size = 8) {
+    const auto tokens = Tokenize(str, sep_chars, hint_size);
+    return Deduplicate(tokens);
+  }
+
+  template<typename T>
   static void Split(const std::string& s, char delim, T result);
 
   static std::vector<std::string> Split(const std::string& str, char delim,
@@ -394,8 +407,16 @@ class Utils {
     return FullPath(boost::filesystem::path(rlt_path)).native();
   }
 
-  static ErrorCode CreateParentDirectories(
-    const boost::filesystem::path& file_path);
+  static ErrorCode CreateDirectories(const boost::filesystem::path& dir_path);
+
+  static inline ErrorCode CreateDirectories(const std::string& dir_path) {
+    return CreateDirectories(boost::filesystem::path(dir_path));
+  }
+
+  static inline ErrorCode CreateParentDirectories(
+    const boost::filesystem::path& file_path) {
+    return CreateDirectories(file_path.parent_path());
+  }
 
   static inline ErrorCode CreateParentDirectories(
     const std::string& file_path) {
