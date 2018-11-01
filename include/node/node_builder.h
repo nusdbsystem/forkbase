@@ -30,7 +30,7 @@ class NodeBuilder : private Noncopyable {
               ChunkLoader* chunk_loader, ChunkWriter* chunk_writer,
               const Chunker* chunker, const Chunker* parent_chunker) noexcept;
 
-  // Construct a node builder to construct a fresh new Prolly Tree
+  // Construct a node builder to construct a fresh new POS Tree
   NodeBuilder(ChunkWriter* chunk_writer, const Chunker* chunker,
               const Chunker* parent_chunker) noexcept;
 
@@ -124,20 +124,20 @@ class AdvancedNodeBuilder : Noncopyable  {
 
 AdvancedNodeBuilder applies NodeBuilder for multiple rounds for edition. However,
 it buffers the created chunks in the middle and provides access to these intermidiate chunks.
-At last, it dumps all the created chunks that only occur in the final prolly tree
+At last, it dumps all the created chunks that only occur in the final pos tree
 to Chunk Storage. Useless intermediate chunks will be discarded.
 
 NOTE: AdvancedNodeBuilder utilizes the NodeBuilder property that any chunks read by
-a NodeBuilder during commit will NOT be included in the built prolly tree from this NodeBuilder.
+a NodeBuilder during commit will NOT be included in the built pos tree from this NodeBuilder.
 
 In this way, any intermediate created chunks that are read by NodeBuilder
 in later around will NOT be dumped to final storage.
 
-To construct a new prolly tree:
+To construct a new pos tree:
   AdvancedNodeBuilder nb(writer);
   const Hash hash = nb.Insert(0, segment).Commit();
 
-To work on an existing prolly tree:
+To work on an existing pos tree:
   AdvancedNodeBuilder nb(root, loader, writer);
   const Hash hash = nb.Insert(0, segment)
                       .Splice(1, 4, segment)
@@ -148,7 +148,7 @@ To work on an existing prolly tree:
   AdvancedNodeBuilder(const Hash& root, ChunkLoader* loader_,
                       ChunkWriter* writer);
 
-  // ctor to create a prolly tree from start
+  // ctor to create a pos tree from start
   explicit AdvancedNodeBuilder(ChunkWriter* writer);
 
   inline AdvancedNodeBuilder& Insert(uint64_t start_idx,

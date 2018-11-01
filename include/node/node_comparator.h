@@ -64,7 +64,7 @@ struct OrderedKeyTrait {
 };
 
 // THe following traits specify
-//   two procedures during two prolly tree comparing and traversing.
+//   two procedures during two pos tree comparing and traversing.
 //   The first procedure is performed when encountering the same hashes
 //   The second procedure is performed either side reaches the leaf node
 template <class KeyTrait>
@@ -382,7 +382,7 @@ Mapper is used to map the index range of identical lhs elements to rhs elements
 template <class KeyTrait, template<class> class Traverser>
 class NodeComparator : private Noncopyable {
 /*
-NodeComparator compares two prolly trees using the following procedure:
+NodeComparator compares two pos trees using the following procedure:
 
 For each lhs node in pre-order tranversal:
   Find the deepest rhs node which must contain all the lhs node element;
@@ -397,7 +397,7 @@ For each lhs node in pre-order tranversal:
   Recursive perform the above steps for each lhs child node
 
 
-KeyTrait specifies the key for traversing, either can be prolly index or orderedkey
+KeyTrait specifies the key for traversing, either can be pos index or orderedkey
 */
  public:
   using ReturnType = typename Traverser<KeyTrait>::ResultType;
@@ -596,7 +596,7 @@ using KeyMapper = NodeComparator<OrderedKeyTrait, Mapper>;
 
 class LevenshteinMapper : private Noncopyable {
 /*
- LevenshteinMapper maps the elements bewtween two prolly trees based on the minimum
+ LevenshteinMapper maps the elements bewtween two pos trees based on the minimum
  edit distance.
 
 */

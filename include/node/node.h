@@ -23,7 +23,7 @@ class UNode {
 };
 
 class SeqNode : public UNode {
-  /* SeqNode represents a general node in Prolly Tree.
+  /* SeqNode represents a general node in POS Tree.
 
      Its subclass is either be a internal node containing meta-data
      Or it can be a leaf node containing blob chunk data
@@ -63,7 +63,7 @@ class SeqNode : public UNode {
 };
 
 class LeafNode : public SeqNode {
-  /* LeafNode is a leaf node in prolly tree.
+  /* LeafNode is a leaf node in pos tree.
    * It is a abstract leaf node for Blob/List/Set/etc...
   */
  public:

@@ -45,7 +45,7 @@ class NodeBuilderEnv : public ::testing::Test {
     } while (leaf_cursor.Advance(true));
   }
 
-  // Testing created prolly tree satisfiying desired property
+  // Testing created pos tree satisfiying desired property
   void Test_Tree_Integrity(const ustore::Hash& root_hash,
                            ustore::ChunkLoader* loader) {
     ustore::NodeCursor* leaf_cursor = new
@@ -146,7 +146,7 @@ class NodeBuilderEnv : public ::testing::Test {
   bool verbose = false;
 };
 
-// a prolly tree with single root node
+// a pos tree with single root node
 class NodeBuilderSimple : public NodeBuilderEnv {
  protected:
   virtual void SetUp() {
@@ -264,7 +264,7 @@ class NodeBuilderComplex : public NodeBuilderEnv {
     SetUpSpecialTree();
   }
 
-  /* Setup a normal Prolley tree as followed:
+  /* Setup a normal pos tree as followed:
                       2                       (# of Entry in MetaChunk)
   |---------------------------------------|
     2                   8                     (# of Entry in MetaChunk)
@@ -440,7 +440,7 @@ TEST_F(NodeBuilderComplex, Special) {
   Test_Splice(special_root_->hash(), special_num_bytes_);
 }
 
-// a prolly tree with single root node
+// a pos tree with single root node
 class AdvancedNodeBuilderEmpty : public NodeBuilderEnv {
  protected:
   virtual void SetUp() {
@@ -521,7 +521,7 @@ TEST_F(AdvancedNodeBuilderEmpty, InsertSpliceDelete) {
   ASSERT_EQ(size_t(0), node->numEntries());
 }
 
-// a prolly tree with single root node
+// a pos tree with single root node
 class AdvancedNodeBuilderSimple : public NodeBuilderEnv {
  protected:
   virtual void SetUp() {
@@ -976,7 +976,7 @@ TEST_F(AdvancedNodeBuilderComplex, Init) {
   Test_Same_Content(root_hash_, loader_, original_content_);
 }
 
-/* Setup a normal Prolley tree as followed:
+/* Setup a normal pos tree as followed:
                     2                       (# of Entry in MetaChunk)
 |---------------------------------------|
   2                   8                     (# of Entry in MetaChunk)

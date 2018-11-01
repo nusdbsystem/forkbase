@@ -25,7 +25,7 @@ class BlobChunker : public Singleton<BlobChunker>, public Chunker {
 
 class BlobNode : public LeafNode {
   /*
-  BlobNode is a leaf node in Prolly tree that contains
+  BlobNode is a leaf node in pos tree that contains
   actual blob data
 
   Encoding Scheme:

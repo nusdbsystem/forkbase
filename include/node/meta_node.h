@@ -25,7 +25,7 @@ class MetaChunker : public Singleton<MetaChunker>, public Chunker {
 };
 
 class MetaNode : public SeqNode {
-  /* MetaNode is a non-leaf node in prolly tree.
+  /* MetaNode is a non-leaf node in pos tree.
 
     It consists of multiple MetaEntries.
 

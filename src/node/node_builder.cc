@@ -385,12 +385,12 @@ Hash NodeBuilder::RecursiveCommit() {
   // commited_ = true;
   // CHECK(!last_created_chunk.empty());
   if (last_created_chunk.empty()) {
-    // This occurs when the resulting prolly tree does not contain
+    // This occurs when the resulting pos tree does not contain
     //   any elements, create an empty chunk
     last_created_chunk = HandleBoundary({});
   }
   // upper node builder would build a tree node with a single metaentry
-  //   This node will be excluded from final prolley tree
+  //   This node will be excluded from final pos tree
   // DLOG(INFO) << "Finish one level commiting.\n";
   Hash root_hash(last_created_chunk.hash().Clone());
   if (parent_builder()->cursor_ != nullptr ||
