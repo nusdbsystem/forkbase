@@ -102,6 +102,7 @@ enum class ErrorCode : byte_t {
   kObjectMetaError = 34,
   kObjectMetaNotExists = 35,
   kObjectMetaIndicesMismatch = 36,
+  kInvalidBase32String = 37,
   // chunk
   kChunkNotExists = 40,
   kFailedCreateChunk = 41,

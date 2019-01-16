@@ -3,6 +3,7 @@
 #include "hash/hash.h"
 
 #include <cstring>
+#include <exception>
 #include <iostream>
 #include <unordered_map>
 #include <utility>
@@ -25,38 +26,40 @@ const byte_t Hash::kEmptyBytes[] = {};
 const Hash Hash::kNull(kEmptyBytes);
 
 constexpr char base32alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const std::unordered_map<char, byte_t> base32dict = {{'A', 0},
-                                                     {'B', 1},
-                                                     {'C', 2},
-                                                     {'D', 3},
-                                                     {'E', 4},
-                                                     {'F', 5},
-                                                     {'G', 6},
-                                                     {'H', 7},
-                                                     {'I', 8},
-                                                     {'J', 9},
-                                                     {'K', 10},
-                                                     {'L', 11},
-                                                     {'M', 12},
-                                                     {'N', 13},
-                                                     {'O', 14},
-                                                     {'P', 15},
-                                                     {'Q', 16},
-                                                     {'R', 17},
-                                                     {'S', 18},
-                                                     {'T', 19},
-                                                     {'U', 20},
-                                                     {'V', 21},
-                                                     {'W', 22},
-                                                     {'X', 23},
-                                                     {'Y', 24},
-                                                     {'Z', 25},
-                                                     {'2', 26},
-                                                     {'3', 27},
-                                                     {'4', 28},
-                                                     {'5', 29},
-                                                     {'6', 30},
-                                                     {'7', 31}};
+const std::unordered_map<char, byte_t> base32dict = {
+  {'A', 0},
+  {'B', 1},
+  {'C', 2},
+  {'D', 3},
+  {'E', 4},
+  {'F', 5},
+  {'G', 6},
+  {'H', 7},
+  {'I', 8},
+  {'J', 9},
+  {'K', 10},
+  {'L', 11},
+  {'M', 12},
+  {'N', 13},
+  {'O', 14},
+  {'P', 15},
+  {'Q', 16},
+  {'R', 17},
+  {'S', 18},
+  {'T', 19},
+  {'U', 20},
+  {'V', 21},
+  {'W', 22},
+  {'X', 23},
+  {'Y', 24},
+  {'Z', 25},
+  {'2', 26},
+  {'3', 27},
+  {'4', 28},
+  {'5', 29},
+  {'6', 30},
+  {'7', 31}
+};
 
 // caution: this base32 implementation can only used in UStore case,
 // it does not process the padding, since UStore's hash value have 20 bytes
@@ -81,6 +84,15 @@ Hash Hash::FromBase32(const std::string& base32) {
     dest += 5;
   }
   return h;
+}
+
+ErrorCode Hash::FromBase32(const std::string& base32, Hash* hash) {
+  try {
+    *hash = FromBase32(base32);
+    return ErrorCode::kOK;
+  } catch (std::exception& e) {
+    return ErrorCode::kInvalidBase32String;
+  }
 }
 
 std::string Hash::ToBase32() const {

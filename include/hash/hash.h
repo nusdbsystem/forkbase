@@ -26,6 +26,7 @@ class Hash {
   // decode hash from base32 format
   // if do so, must allocate own value
   static Hash FromBase32(const std::string& base32);
+  static ErrorCode FromBase32(const std::string& base32, Hash* hash);
   // compute hash from data
   // if do so, must allocate own value
   static Hash ComputeFrom(const byte_t* data, size_t len);

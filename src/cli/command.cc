@@ -655,14 +655,29 @@ ErrorCode Command::ExecManipMeta(
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  auto rst = !branch.empty() && ver.empty()
-             ? odb_.Get(Slice(key), Slice(branch))
-             : odb_.Get(Slice(key), Hash::FromBase32(ver));
-  auto& ec = rst.stat;
-  if (ec == ErrorCode::kOK) {
-    ec = f_manip_meta(rst.value);
+  ErrorCode ec(ErrorCode::kUnknownOp);
+  if (!branch.empty() && ver.empty()) {
+    auto rst = odb_.Get(Slice(key), Slice(branch));
+    if (rst.stat == ErrorCode::kOK) {
+      ec = f_manip_meta(rst.value);
+    } else {
+      ec = rst.stat;
+      f_rpt_fail_by_branch(ec);
+    }
   } else {
-    branch.empty() ? f_rpt_fail_by_ver(ec) : f_rpt_fail_by_branch(ec);
+    Hash version;
+    ec = Hash::FromBase32(boost::to_upper_copy(ver), &version);
+    if (ec == ErrorCode::kOK) {
+      auto rst = odb_.Get(Slice(key), version);
+      if (rst.stat == ErrorCode::kOK) {
+        ec = f_manip_meta(rst.value);
+      } else {
+        ec = rst.stat;
+        f_rpt_fail_by_ver(ec);
+      }
+    } else {
+      f_rpt_fail_by_ver(ec);
+    }
   }
   return ec;
 }
@@ -814,10 +829,16 @@ ErrorCode Command::ExecPut(const std::string& cmd, const VObject& obj) {
     return ec;
   } else if (branch.empty() && !ref_ver.empty()) {
     DCHECK(!ref_ver.empty());
-    auto rst = odb_.Put(Slice(key), obj, Hash::FromBase32(ref_ver));
-    auto& ec = rst.stat;
-    auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+    Hash ref_version;
+    auto ec = Hash::FromBase32(boost::to_upper_copy(ref_ver), &ref_version);
+    if (ec == ErrorCode::kOK) {
+      auto rst = odb_.Put(Slice(key), obj, ref_version);
+      ec = rst.stat;
+      auto& ver = rst.value;
+      (ec == ErrorCode::kOK) ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+    } else {
+      f_rpt_fail_by_ver(ec);
+    }
     return ec;
   } else {  // branch.empty() && ref_ver.empty()
     auto rst = odb_.Put(Slice(key), obj, Hash::kNull);
@@ -1430,20 +1451,37 @@ ErrorCode Command::ExecMerge() {
     return ec;
   }
   if (!tgt_branch.empty() && ref_branch.empty() && !ref_ver.empty()) {
-    auto rst = odb_.Merge(Slice(key), VString(Slice(val)), Slice(tgt_branch),
-                          Hash::FromBase32(ref_ver));
-    auto& ec = rst.stat;
-    auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch_ver(ec);
+    Hash ref_version;
+    auto ec = Hash::FromBase32(boost::to_upper_copy(ref_ver), &ref_version);
+    if (ec == ErrorCode::kOK) {
+      auto rst = odb_.Merge(Slice(key), VString(Slice(val)), Slice(tgt_branch),
+                            ref_version);
+      ec = rst.stat;
+      auto& ver = rst.value;
+      ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_branch_ver(ec);
+    } else {
+      f_rpt_fail_by_branch_ver(ec);
+    }
     return ec;
   }
   if (tgt_branch.empty() && !ref_ver.empty() && !ref_ver2.empty()) {
-    auto rst = odb_.Merge(Slice(key), VString(Slice(val)),
-                          Hash::FromBase32(ref_ver),
-                          Hash::FromBase32(ref_ver2));
-    auto& ec = rst.stat;
+    Hash ref_version;
+    auto ec = Hash::FromBase32(boost::to_upper_copy(ref_ver), &ref_version);
+    if (ec != ErrorCode::kOK) {
+      f_rpt_fail_by_ver(ec);
+      return ec;
+    }
+    Hash ref_version2;
+    ec = Hash::FromBase32(boost::to_upper_copy(ref_ver2), &ref_version2);
+    if (ec != ErrorCode::kOK) {
+      f_rpt_fail_by_ver(ec);
+      return ec;
+    }
+    auto rst = odb_.Merge(Slice(key), VString(Slice(val)), ref_version,
+                          ref_version2);
+    ec = rst.stat;
     auto& ver = rst.value;
-    ec == ErrorCode::kOK ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
+    (ec == ErrorCode::kOK) ? f_rpt_success(ver) : f_rpt_fail_by_ver(ec);
     return ec;
   }
   // illegal settings of arguments
@@ -1502,9 +1540,14 @@ ErrorCode Command::ExecBranch() {
     ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_branch(ec);
     return ec;
   } else {  // ref_branch.empty() && !ref_ver.empty()
-    auto ec =
-      odb_.Branch(Slice(key), Hash::FromBase32(ref_ver), Slice(tgt_branch));
-    ec == ErrorCode::kOK ? f_rpt_success() : f_rpt_fail_by_ver(ec);
+    Hash ref_version;
+    auto ec = Hash::FromBase32(boost::to_upper_copy(ref_ver), &ref_version);
+    if (ec != ErrorCode::kOK) {
+      f_rpt_fail_by_ver(ec);
+      return ec;
+    }
+    ec = odb_.Branch(Slice(key), ref_version, Slice(tgt_branch));
+    (ec == ErrorCode::kOK) ? f_rpt_success() : f_rpt_fail_by_ver(ec);
     return ec;
   }
 }
@@ -1789,11 +1832,16 @@ ErrorCode Command::ExecIsHead() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  auto rst =
-    odb_.IsBranchHead(Slice(key), Slice(branch), Hash::FromBase32(ver));
-  auto& ec = rst.stat;
+  Hash version;
+  auto ec = Hash::FromBase32(boost::to_upper_copy(ver), &version);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  auto rst = odb_.IsBranchHead(Slice(key), Slice(branch), version);
+  ec = rst.stat;
   auto& is_head = rst.value;
-  ec == ErrorCode::kOK ? f_rpt_success(is_head) : f_rpt_fail(ec);
+  (ec == ErrorCode::kOK) ? f_rpt_success(is_head) : f_rpt_fail(ec);
   return ec;
 }
 
@@ -1822,10 +1870,16 @@ ErrorCode Command::ExecIsLatest() {
     f_rpt_invalid_args();
     return ErrorCode::kInvalidCommandArgument;
   }
-  auto rst = odb_.IsLatestVersion(Slice(key), Hash::FromBase32(ver));
-  auto& ec = rst.stat;
+  Hash version;
+  auto ec = Hash::FromBase32(boost::to_upper_copy(ver), &version);
+  if (ec != ErrorCode::kOK) {
+    f_rpt_fail(ec);
+    return ec;
+  }
+  auto rst = odb_.IsLatestVersion(Slice(key), version);
+  ec = rst.stat;
   auto& is_latest = rst.value;
-  ec == ErrorCode::kOK ? f_rpt_success(is_latest) : f_rpt_fail(ec);
+  (ec == ErrorCode::kOK) ? f_rpt_success(is_latest) : f_rpt_fail(ec);
   return ec;
 }
 
