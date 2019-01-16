@@ -1,5 +1,6 @@
 // Copyright (c) 2017 The Ustore Authors.
 
+#include <boost/algorithm/string.hpp>
 #include <forward_list>
 #include <utility>
 #include <vector>
@@ -147,7 +148,7 @@ TEST(Worker, NamedBranch_Merge) {
   Hash version;
 
   Value val3{UType::kString, {}, 0, 0, {vals[3]}, {}};
-  worker().Merge(key[0], val3, branch[3], branch[1], &version);
+  ec = worker().Merge(key[0], val3, branch[3], branch[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[3]
   worker().IsBranchHead(key[0], branch[3], ver[3], &is_head);
@@ -160,7 +161,7 @@ TEST(Worker, NamedBranch_Merge) {
   EXPECT_EQ(size_t(1), latest.size());
 
   Value val4{UType::kString, {}, 0, 0, {vals[4]}, {}};
-  worker().Merge(key[0], val4, branch[1], ver[1], &version);
+  ec = worker().Merge(key[0], val4, branch[1], ver[1], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[4]
   worker().GetLatestVersions(key[0], &latest);
@@ -183,14 +184,14 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
   Hash version;
 
   Value val5{UType::kBlob, {}, 0, 0, {vals[5]}, {}};
-  worker().Put(key[1], val5, Hash::kNull, &version);
+  ec = worker().Put(key[1], val5, Hash::kNull, &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[5]
   worker().GetLatestVersions(key[1], &latest);
   EXPECT_EQ(size_t(1), latest.size());
 
   Value val6{UType::kBlob, {}, 0, 0, {vals[6]}, {}};
-  worker().Put(key[1], val6, ver[5], &version);
+  ec = worker().Put(key[1], val6, ver[5], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[6]
   worker().GetLatestVersions(key[1], &latest);
@@ -201,14 +202,14 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
   EXPECT_TRUE(is_latest);
 
   Value val7{UType::kBlob, {}, 0, 0, {vals[7]}, {}};
-  worker().Put(key[1], val7, ver[5], &version);
+  ec = worker().Put(key[1], val7, ver[5], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[7]
   worker().GetLatestVersions(key[1], &latest);
   EXPECT_EQ(size_t(2), latest.size());
 
   Value val8{UType::kBlob, {}, 0, 0, {vals[8]}, {}};
-  worker().Put(key[1], val8, ver[7], &version);
+  ec = worker().Put(key[1], val8, ver[7], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[8]
   worker().GetLatestVersions(key[1], &latest);
@@ -218,28 +219,28 @@ TEST(Worker, UnnamedBranch_GetPutBlob) {
   SBlob blob = factory.Create<SBlob>(Slice());
   std::unique_ptr<byte_t[]> buf;
 
-  worker().Get(key[1], ver[5], &value);
+  ec = worker().Get(key[1], ver[5], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[5], Slice(buf.get(), blob.size()));
 
-  worker().Get(key[1], ver[6], &value);
+  ec = worker().Get(key[1], ver[6], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[6], Slice(buf.get(), blob.size()));
 
-  worker().Get(key[1], ver[7], &value);
+  ec = worker().Get(key[1], ver[7], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[7], Slice(buf.get(), blob.size()));
 
-  worker().Get(key[1], ver[8], &value);
+  ec = worker().Get(key[1], ver[8], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
@@ -253,14 +254,14 @@ TEST(Worker, UnnamedBranch_Merge) {
   Hash version;
 
   Value val9{UType::kBlob, {}, 0, 0, {vals[9]}, {}};
-  worker().Merge(key[1], val9, ver[6], ver[7], &version);
+  ec = worker().Merge(key[1], val9, ver[6], ver[7], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[9]
   worker().GetLatestVersions(key[1], &latest);
   EXPECT_EQ(size_t(2), latest.size());
 
   Value val10{UType::kBlob, {}, 0, 0, {vals[10]}, {}};
-  worker().Merge(key[1], val10, ver[8], ver[9], &version);
+  ec = worker().Merge(key[1], val10, ver[8], ver[9], &version);
   EXPECT_EQ(ErrorCode::kOK, ec);
   ver.push_back(std::move(version));  // ver[10]
   worker().GetLatestVersions(key[1], &latest);
@@ -270,14 +271,14 @@ TEST(Worker, UnnamedBranch_Merge) {
   SBlob blob = factory.Create<SBlob>(Slice());
   std::unique_ptr<byte_t[]> buf;
 
-  worker().Get(key[1], ver[9], &value);
+  ec = worker().Get(key[1], ver[9], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);
   blob.Read(0, blob.size(), buf.get());
   EXPECT_EQ(vals[9], Slice(buf.get(), blob.size()));
 
-  worker().Get(key[1], ver[10], &value);
+  ec = worker().Get(key[1], ver[10], &value);
   EXPECT_EQ(ErrorCode::kOK, ec);
   blob = factory.Load<SBlob>(value.dataHash());
   buf.reset(new byte_t[blob.size()]);

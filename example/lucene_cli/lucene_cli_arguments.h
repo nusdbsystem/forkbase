@@ -34,7 +34,7 @@ class LuceneCLIArguments : public ::ustore::Arguments {
     Add(&branch, "branch", "b",
         "the operating branch");
     Add(&idxs_entry_name, "idxs-entry-name", "m",
-        "index of entry name");
+        "indices of entry name");
     Add(&idxs_search, "idxs-search", "n",
         "indices for search");
     Add(&query_predicate, "query-predicate", "q",

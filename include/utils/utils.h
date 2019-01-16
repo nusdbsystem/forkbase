@@ -146,7 +146,7 @@ class Utils {
   }
 
   template<typename T>
-  static inline std::string ToStringPair(
+  static std::string ToStringPair(
     const T& a, const T& b, const std::string& lsymbol = "(",
     const std::string& rsymbol = ")", const std::string& sep = ", ");
 
@@ -470,7 +470,7 @@ class Utils {
 
   static ErrorCode CopyFile(const boost::filesystem::path& from,
                             const boost::filesystem::path& to,
-                            boost::filesystem::copy_option opt);
+                            const boost::filesystem::copy_option& opt);
 };
 
 template<typename T>

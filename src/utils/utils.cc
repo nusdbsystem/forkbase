@@ -561,7 +561,7 @@ ErrorCode Utils::DeleteFile(const std::string& file_path) {
 
 ErrorCode Utils::CopyFile(const boost::filesystem::path& from,
                           const boost::filesystem::path& to,
-                          boost_fs::copy_option opt) {
+                          const boost_fs::copy_option& opt) {
   boost_sys::error_code ec;
   boost_fs::copy_file(from, to, opt, ec);
   if (ec.value() != boost_sys::errc::success) {

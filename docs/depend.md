@@ -5,9 +5,9 @@
 ### Core
 
 * cmake >= 2.8
-* g++ >= 4.8 (At least support c11 standard)
+* g++ >= 4.9
 * protobuf >= 2.6.1
-* boost >= 1.5.4 (file system, program options)
+* boost >= 1.66.0
 * czmq >= 4.0.2
 * libzmq >= 4.2.1
 * gflags >= 2.1.0
