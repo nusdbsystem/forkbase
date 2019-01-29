@@ -158,7 +158,10 @@ bool Utils::TokenizeArgs(const std::string& line,
       ss << *it;
     }
   }
-  args->emplace_back(ss.str());
+  auto last_elem = ss.str();
+  if (!last_elem.empty()) {
+    args->push_back(std::move(last_elem));
+  }
   return !in_quote;
 }
 
