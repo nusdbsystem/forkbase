@@ -5,8 +5,8 @@
 
 #include <string>
 #include <vector>
-#include "benchmark/bench_utils.h"
 #include "table_op_arguments.h"
+#include "utils/uniform_random.h"
 
 namespace ustore {
 namespace example {
@@ -25,7 +25,7 @@ class TableGen {
   ErrorCode GenQueries(const std::vector<std::string>& vals);
 
   TableOpArguments& args_;
-  RandomGenerator rand_;
+  uio::UniformRandom rand_;
 };
 
 }  // namespace table_op
