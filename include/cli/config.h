@@ -47,6 +47,7 @@ class Config {
   static size_t num_elements;
   static size_t batch_size;
   static bool with_schema;
+  static bool show_meta_value;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 

@@ -404,7 +404,7 @@ void Command::PrintCommandHelp(std::ostream& os) {
      << FORMAT_BASIC_CMD("LIST_KEY{_ALL}")
      << std::endl
      << FORMAT_BASIC_CMD("META")
-     << "-k <key> [-b <branch> | -v <version>]" << std::endl
+     << "-k <key> [-b <branch> | -v <version>] {--meta-value}" << std::endl
      << std::endl
      << BLUE("UStore Relational (Columnar) Commands") << ":"
      << std::endl
@@ -2776,7 +2776,7 @@ ErrorCode Command::ExecMeta() {
     os << (is_vert_list ? "" : BOLD_GREEN_STR("[SUCCESS: META] "));
     {
       f_next_item("", "Type") << ucell.type();
-    } {
+    } if (Config::show_meta_value) {
       f_next_item(", ", "Value");
       f_print_value();
     } {

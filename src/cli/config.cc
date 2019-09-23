@@ -37,6 +37,7 @@ int64_t Config::ref_position;
 size_t Config::num_elements;
 size_t Config::batch_size;
 bool Config::with_schema;
+bool Config::show_meta_value;
 
 std::list<std::string> Config::history_vers_;
 
@@ -68,6 +69,7 @@ void Config::Reset() {
   num_elements = 1;
   batch_size = 5000;
   with_schema = false;
+  show_meta_value = false;
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -138,6 +140,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     batch_size = static_cast<size_t>(arg_batch_size);
 
     with_schema = vm.count("with-schema") ? true : false;
+
+    show_meta_value = vm.count("meta-value") ? true : false;
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -199,7 +203,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
    "UStore command")
   ("file", po::value<std::string>()->default_value(""),
    "path of input/output file")
-  ("ignore-fail", "ignore command failure in script execution");
+  ("ignore-fail", "ignore command failure in script execution")
+  ("meta-value", "show meta value");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);
