@@ -1,8 +1,9 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include <boost/algorithm/string.hpp>
 #include <iterator>
 #include <utility>
+
+#include <boost/algorithm/string.hpp>
 
 #include "cli/config.h"
 

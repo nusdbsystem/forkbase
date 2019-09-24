@@ -1,9 +1,10 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
 #include <fstream>
 #include <limits>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include "cli/console.h"
 #include "cli/command.h"
 
@@ -953,7 +954,6 @@ ErrorCode Command::ExecPutMap() {
                 << "Data value for map entry with Key \"" << *(it - 1)
                 << "\" is not provided" << std::endl;
       return ErrorCode::kInvalidCommandArgument;
-      break;
     }
     vals.emplace_back(*it++);
   }
@@ -2774,17 +2774,18 @@ ErrorCode Command::ExecMeta() {
       }
     };
     os << (is_vert_list ? "" : BOLD_GREEN_STR("[SUCCESS: META] "));
-    {
-      f_next_item("", "Type") << ucell.type();
-    } if (Config::show_meta_value) {
+
+    f_next_item("", "Type") << ucell.type();
+
+    if (Config::show_meta_value) {
       f_next_item(", ", "Value");
       f_print_value();
-    } {
-      f_next_item(", ", "Version") << ucell.hash();
-    } {
-      f_next_item(", ", "Parents");
-      Utils::Print(prev_vers, "[", "]", ", ", false);
     }
+
+    f_next_item(", ", "Version") << ucell.hash();
+
+    f_next_item(", ", "Parents");
+    Utils::Print(prev_vers, "[", "]", ", ", false);
     os << std::endl;
     return ErrorCode::kOK;
   };

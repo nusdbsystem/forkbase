@@ -1,13 +1,14 @@
 // Copyright (c) 2017 The Ustore Authors.
 
-#ifndef USTORE_CLI_CONFIG_H_
-#define USTORE_CLI_CONFIG_H_
+#ifndef CLI_CONFIG_H_
+#define CLI_CONFIG_H_
 
-#include <boost/program_options.hpp>
 #include <iostream>
 #include <list>
 #include <string>
 #include <vector>
+
+#include <boost/program_options.hpp>
 #include "types/type.h"
 #include "utils/logging.h"
 #include "utils/utils.h"
@@ -137,8 +138,6 @@ class Config {
   static inline bool CheckArgInOpenRange(
     const T1& var, const T2& lbound, const T2& ubound,
     const std::string& title) {
-    const std::string expect = "range of (" + Utils::ToString(lbound) +
-                               "," + Utils::ToString(ubound) + ")";
     return CheckArg(var, lbound < var && var < ubound, title, "range of" +
                     Utils::ToStringPair(lbound, ubound, "(", ")", ","));
   }
@@ -161,4 +160,4 @@ bool Config::CheckArg(const T& var, const bool expr,
 }  // namespace cli
 }  // namespace ustore
 
-#endif  // USTORE_CLI_CONFIG_H_
+#endif  // CLI_CONFIG_H_
