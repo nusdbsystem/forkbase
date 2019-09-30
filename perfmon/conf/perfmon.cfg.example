@@ -1,7 +1,0 @@
-sock_host=localhost
-sock_port=22345
-http_port=8888
-hostname=localhost
-webserver_port=8181
-#make sure pid_dir is set to a in-mem fs (e.g. tmpfs)
-pid_dir=tmp/

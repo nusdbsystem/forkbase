@@ -20,10 +20,8 @@ if [ $# -ge 1 ]; then
     echo "Using preload $libs"
     shift
     ustore_run="bin/run_preload.sh $libs bin/ustored $@"
-    # http_run="bin/run_preload.sh $libs bin/ustore_http $@"
 else
     ustore_run="bin/ustored $@"
-    # http_run="bin/ustore_http $@"
 fi
 
 # ssh and start ustore processes
@@ -47,12 +45,5 @@ for i in `cat $USTORE_CONF_HOST_FILE` ; do
     sleep 1
   fi
 done
-
-# # start the http client
-# sleep 2
-# echo Starting http client service @ `hostname`: $http_run
-# cd $USTORE_HOME
-# $http_run >> $USTORE_LOG/ustore_http.log 2>&1 &
-# sleep 1
 
 echo "----------- All processes started ------------"
