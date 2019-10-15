@@ -3433,6 +3433,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
   const auto& raw_idxs_en = Config::column;
   const auto& file_path = Config::file;
   const auto& with_schema = Config::with_schema;
+  const auto& overwrite_schema = Config::overwrite_schema;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
@@ -3440,7 +3441,8 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
               << "Branch: \"" << branch << "\", "
               << "Indices of Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "File: \"" << file_path << "\", "
-              << "With Schema: " << (with_schema ? "true" : "false")
+              << "With Schema: " << (with_schema ? "true" : "false") << ", "
+              << "Overwrite Schema: " << (overwrite_schema ? "true" : "false")
               << std::endl;
   };
   const auto f_rpt_success = [&](size_t n_entries, size_t n_bytes) {
@@ -3456,7 +3458,8 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
               << "Branch: \"" << branch << "\", "
               << "Indices of Entry Name Attributes: {" << raw_idxs_en << "}, "
               << "File: \"" << file_path << "\", "
-              << "With Schema: " << (with_schema ? "true" : "false")
+              << "With Schema: " << (with_schema ? "true" : "false") << ", "
+              << "Overwrite Schema: " << (overwrite_schema ? "true" : "false")
               << RED(" --> Error(" << ec << "): " << Utils::ToString(ec))
               << std::endl;
   };
@@ -3474,7 +3477,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
   size_t n_entries, n_bytes;
   ec = bs_.PutDataEntryByCSV(
          ds_name, branch, boost_fs::path(file_path), idxs_entry_name,
-         &n_entries, &n_bytes, with_schema);
+         &n_entries, &n_bytes, with_schema, overwrite_schema);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }

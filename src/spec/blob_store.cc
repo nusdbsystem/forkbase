@@ -538,7 +538,8 @@ ErrorCode BlobStore::PutDataEntryByCSV(
   const std::vector<size_t>& input_idxs_entry_name,
   size_t* n_entries,
   size_t* n_bytes,
-  bool with_schema) {
+  bool with_schema,
+  bool overwrite_schema) {
   *n_entries = 0;
   *n_bytes = 0;
   // Validate indices of entry name attributes
@@ -582,7 +583,7 @@ ErrorCode BlobStore::PutDataEntryByCSV(
       USTORE_GUARD(
         GetMeta(ds_name, branch, "SCHEMA", &schema));
       auto reg_line = RegularizeSchema(line);
-      if (schema.empty()) {
+      if (schema.empty() || overwrite_schema) {
         USTORE_GUARD(
           SetMeta(ds_name, branch, "SCHEMA", reg_line));
         *n_bytes += reg_line.size();

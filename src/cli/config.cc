@@ -38,6 +38,7 @@ int64_t Config::ref_position;
 size_t Config::num_elements;
 size_t Config::batch_size;
 bool Config::with_schema;
+bool Config::overwrite_schema;
 bool Config::show_meta_value;
 
 std::list<std::string> Config::history_vers_;
@@ -70,6 +71,7 @@ void Config::Reset() {
   num_elements = 1;
   batch_size = 5000;
   with_schema = false;
+  overwrite_schema = false;
   show_meta_value = false;
 }
 
@@ -140,7 +142,10 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     GUARD(CheckArgGT(arg_batch_size, 0, "Batch size"));
     batch_size = static_cast<size_t>(arg_batch_size);
 
-    with_schema = vm.count("with-schema") ? true : false;
+    if (vm.count("with-schema")) {
+      with_schema = true;
+      overwrite_schema = vm.count("overwrite-schema") ? true: false;
+    }
 
     show_meta_value = vm.count("meta-value") ? true : false;
   } catch (std::exception& e) {
@@ -196,7 +201,8 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("distinct", "enforcing the distinct constraint")
   ("batch-size", po::value<int32_t>()->default_value(5000),
    "batch size for data loading")
-  ("with-schema", "input data containing schema at the 1st line");
+  ("with-schema", "input data containing schema at the 1st line")
+  ("overwrite-schema", "overwrite schema");
 
   po::options_description backend("Hidden Options");
   backend.add_options()
