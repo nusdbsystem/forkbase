@@ -203,18 +203,19 @@ class BlobStore : protected ObjectMeta {
                               const boost::filesystem::path& file_path,
                               const std::vector<size_t>& idxs_entry_name,
                               size_t* n_entries, size_t* n_bytes,
-                              bool with_schema = false,
+                              size_t batch_size, bool with_schema = false,
                               bool overwrite_schema = false);
 
   inline ErrorCode PutDataEntryByCSV(const std::string& ds_name,
                                      const std::string& branch,
                                      const boost::filesystem::path& file_path,
                                      const std::vector<size_t> idxs_entry_name,
+                                     size_t batch_size,
                                      bool with_schema = false,
                                      bool overwrite_schema = false) {
     size_t n_entries, n_bytes;
     return PutDataEntryByCSV(ds_name, branch, file_path, idxs_entry_name,
-                             &n_entries, &n_bytes, with_schema,
+                             &n_entries, &n_bytes, batch_size, with_schema,
                              overwrite_schema);
   }
 
@@ -223,20 +224,23 @@ class BlobStore : protected ObjectMeta {
                                      const boost::filesystem::path& file_path,
                                      const size_t idx_entry_name,
                                      size_t* n_entries, size_t* n_bytes,
+                                     size_t batch_size,
                                      bool with_schema = false,
                                      bool overwrite_schema = false) {
     return PutDataEntryByCSV(ds_name, branch, file_path, {idx_entry_name},
-                             n_entries, n_bytes, with_schema, overwrite_schema);
+                             n_entries, n_bytes, batch_size, with_schema,
+                             overwrite_schema);
   }
 
   inline ErrorCode PutDataEntryByCSV(const std::string& ds_name,
                                      const std::string& branch,
                                      const boost::filesystem::path& file_path,
                                      const size_t idx_entry_name,
+                                     size_t batch_size,
                                      bool with_schema = false) {
     size_t n_entries, n_bytes;
     return PutDataEntryByCSV(ds_name, branch, file_path, idx_entry_name,
-                             &n_entries, &n_bytes, with_schema);
+                             &n_entries, &n_bytes, batch_size, with_schema);
   }
 
   inline ErrorCode DeleteDataEntry(const std::string& ds_name,

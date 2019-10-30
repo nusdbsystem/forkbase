@@ -3434,6 +3434,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
   const auto& file_path = Config::file;
   const auto& with_schema = Config::with_schema;
   const auto& overwrite_schema = Config::overwrite_schema;
+  const auto& batch_size = Config::bs_batch_size;
   // screen printing
   const auto f_rpt_invalid_args = [&]() {
     std::cout << BOLD_RED("[INVALID ARGS: PUT_DATA_ENTRY_BY_CSV] ")
@@ -3477,7 +3478,7 @@ ErrorCode Command::ExecPutDataEntryByCSV() {
   size_t n_entries, n_bytes;
   ec = bs_.PutDataEntryByCSV(
          ds_name, branch, boost_fs::path(file_path), idxs_entry_name,
-         &n_entries, &n_bytes, with_schema, overwrite_schema);
+         &n_entries, &n_bytes, batch_size, with_schema, overwrite_schema);
   ec == ErrorCode::kOK ? f_rpt_success(n_entries, n_bytes) : f_rpt_fail(ec);
   return ec;
 }

@@ -40,6 +40,7 @@ size_t Config::batch_size;
 bool Config::with_schema;
 bool Config::overwrite_schema;
 bool Config::show_meta_value;
+size_t Config::bs_batch_size;
 
 std::list<std::string> Config::history_vers_;
 
@@ -73,6 +74,7 @@ void Config::Reset() {
   with_schema = false;
   overwrite_schema = false;
   show_meta_value = false;
+  bs_batch_size = 800;
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -148,6 +150,10 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     }
 
     show_meta_value = vm.count("meta-value") ? true : false;
+
+    auto arg_bs_batch_size = vm["blobstore-batch-size"].as<int32_t>();
+    GUARD(CheckArgGT(arg_bs_batch_size, 0, "BlobStore Batch size"));
+    bs_batch_size = static_cast<size_t>(arg_bs_batch_size);
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -211,7 +217,9 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("file", po::value<std::string>()->default_value(""),
    "path of input/output file")
   ("ignore-fail", "ignore command failure in script execution")
-  ("meta-value", "show meta value");
+  ("meta-value", "show meta value")
+  ("blobstore-batch-size", po::value<int32_t>()->default_value(800),
+   "batch size for csv loading in blobstore");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);

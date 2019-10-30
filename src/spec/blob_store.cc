@@ -538,6 +538,7 @@ ErrorCode BlobStore::PutDataEntryByCSV(
   const std::vector<size_t>& input_idxs_entry_name,
   size_t* n_entries,
   size_t* n_bytes,
+  size_t batch_size,
   bool with_schema,
   bool overwrite_schema) {
   *n_entries = 0;
@@ -577,6 +578,9 @@ ErrorCode BlobStore::PutDataEntryByCSV(
   std::unordered_map<std::string, Hash> updates;
   const char delim(',');
   size_t line_cnt(0);
+  size_t accumulated_size = 0;
+  // convert from KB to Bytes
+  batch_size = batch_size * 1024;
   const auto f_put_line = [&](const std::string & line) {
     if (++line_cnt == 1 && with_schema) {
       std::string schema;
@@ -609,31 +613,29 @@ ErrorCode BlobStore::PutDataEntryByCSV(
       USTORE_GUARD(WriteDataEntry(ds_name, entry_name_store, line,
                                   prev_entry_ver, &entry_ver));
       // archive updates
+      accumulated_size += entry_name_store.size() + sizeof(entry_ver);
       updates.emplace(std::move(entry_name_store), std::move(entry_ver));
+      ++(*n_entries);
+      if (accumulated_size >= batch_size) {
+        Dataset ds_update;
+        USTORE_GUARD(ReadDataset(ds_name_slice, branch_slice, &ds_update));
+        ds_update.Insert(updates);
+        USTORE_GUARD(odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
+        updates.clear();
+        accumulated_size = 0;
+      }
       *n_bytes += entry_name_store.size() + line.size();
       return ErrorCode::kOK;
     }
   };
   USTORE_GUARD(
     Utils::IterateFileByLine(file_path, f_put_line));
-  // update dataset
-#if defined(__BLOB_STORE_USE_MAP_MULTI_SET_OP__)
-  ds.Insert(updates);
-  USTORE_GUARD(
-    odb_.Put(ds_name_slice, ds, branch_slice).stat);
-#else
-  for (auto& kv : updates) {
-    Dataset ds_update;
-    USTORE_GUARD(
-      ReadDataset(ds_name_slice, branch_slice, &ds_update));
-    const auto en_name = Slice(kv.first);
-    const auto en_ver = Utils::ToSlice(kv.second);
-    ds_update.Set(en_name, en_ver);
-    USTORE_GUARD(
-      odb_.Put(ds_name_slice, ds_update, branch_slice).stat);
+  // update remaining dataset
+  if (accumulated_size > 0) {
+    USTORE_GUARD(ReadDataset(ds_name_slice, branch_slice, &ds));
+    ds.Insert(updates);
+    USTORE_GUARD(odb_.Put(ds_name_slice, ds, branch_slice).stat);
   }
-#endif
-  *n_entries = updates.size();
   return ErrorCode::kOK;
 }
 
