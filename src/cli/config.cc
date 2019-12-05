@@ -41,6 +41,7 @@ bool Config::with_schema;
 bool Config::overwrite_schema;
 bool Config::show_meta_value;
 size_t Config::bs_batch_size;
+size_t Config::msg_timeout;
 
 std::list<std::string> Config::history_vers_;
 
@@ -75,6 +76,7 @@ void Config::Reset() {
   overwrite_schema = false;
   show_meta_value = false;
   bs_batch_size = 800;
+  msg_timeout = 3000;
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -154,6 +156,10 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
     auto arg_bs_batch_size = vm["blobstore-batch-size"].as<int32_t>();
     GUARD(CheckArgGT(arg_bs_batch_size, 0, "BlobStore Batch size"));
     bs_batch_size = static_cast<size_t>(arg_bs_batch_size);
+
+    auto arg_msg_timeout = vm["msg-timeout"].as<int32_t>();
+    GUARD(CheckArgGT(arg_msg_timeout, 0, "Message Timeout"));
+    msg_timeout = static_cast<size_t>(arg_msg_timeout);
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;
@@ -219,7 +225,9 @@ bool Config::ParseCmdArgs(int argc, char* argv[], po::variables_map* vm) {
   ("ignore-fail", "ignore command failure in script execution")
   ("meta-value", "show meta value")
   ("blobstore-batch-size", po::value<int32_t>()->default_value(800),
-   "batch size for csv loading in blobstore");
+   "batch size for csv loading in blobstore")
+  ("msg-timeout", po::value<int32_t>()->default_value(3000),
+   "message timeout");
 
   po::positional_options_description pos_opts;
   pos_opts.add("command", 1);

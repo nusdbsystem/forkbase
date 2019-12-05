@@ -51,6 +51,7 @@ class Config {
   static bool overwrite_schema;
   static bool show_meta_value;
   static size_t bs_batch_size;
+  static size_t msg_timeout;
 
   static bool ParseCmdArgs(int argc, char* argv[]);
 
