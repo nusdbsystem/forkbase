@@ -41,7 +41,6 @@ bool Config::with_schema;
 bool Config::overwrite_schema;
 bool Config::show_meta_value;
 size_t Config::bs_batch_size;
-size_t Config::msg_timeout;
 
 std::list<std::string> Config::history_vers_;
 
@@ -76,7 +75,6 @@ void Config::Reset() {
   overwrite_schema = false;
   show_meta_value = false;
   bs_batch_size = 800;
-  msg_timeout = 3000;
 }
 
 bool Config::ParseCmdArgs(int argc, char* argv[]) {
@@ -159,7 +157,7 @@ bool Config::ParseCmdArgs(int argc, char* argv[]) {
 
     auto arg_msg_timeout = vm["msg-timeout"].as<int32_t>();
     GUARD(CheckArgGT(arg_msg_timeout, 0, "Message Timeout"));
-    msg_timeout = static_cast<size_t>(arg_msg_timeout);
+    ustore::ClientZmqNet::msg_timeout = static_cast<size_t>(arg_msg_timeout);
   } catch (std::exception& e) {
     std::cerr << BOLD_RED("[ERROR] ") << e.what() << std::endl;
     return false;

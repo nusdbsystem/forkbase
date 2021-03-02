@@ -12,7 +12,6 @@
 #include <set>
 #include <thread>
 #include "utils/logging.h"
-#include "cli/config.h"
 
 namespace ustore {
 
@@ -23,7 +22,8 @@ namespace ustore {
 // total wait time for socket: kWaitInterval*kPollRetries
 constexpr int kWaitInterval = 10;
 constexpr int kSocketBindTimeout = 1;
-constexpr int kSocketTrials = 5;
+constexpr int kSocketTrials = 20;
+size_t ClientZmqNet::msg_timeout = 20000;
 
 using std::string;
 using std::vector;
@@ -121,7 +121,7 @@ ClientZmqNet::ClientZmqNet(int nthreads) : ZmqNet("", nthreads) {
   CHECK_EQ(status, 0);
 
   is_running_ = true;
-  timeout_counter_ = cli::Config::msg_timeout;
+  timeout_counter_ = ClientZmqNet::msg_timeout;
   request_counter_ = 0;
 }
 
@@ -175,7 +175,7 @@ void ClientZmqNet::Start() {
       char *dest_id = zmsg_popstr(msg);
       zmsg_send(&msg, out_socks[dest_id]);
       request_counter_++;
-      timeout_counter_ = cli::Config::msg_timeout;
+      timeout_counter_ = ClientZmqNet::msg_timeout;
     }
     for (int i = 1; i < pollsize; i++) {
       if (items[i].revents & ZMQ_POLLIN) {
@@ -183,7 +183,7 @@ void ClientZmqNet::Start() {
         if (!msg) break;
         zmsg_send(&msg, backend_sock_);
         request_counter_--;
-        timeout_counter_ = cli::Config::msg_timeout;
+        timeout_counter_ = ClientZmqNet::msg_timeout;
       }
     }
   }

@@ -41,6 +41,8 @@ class ZmqNet : public Net {
  */
 class ClientZmqNet : public ZmqNet {
  public:
+  static size_t msg_timeout;
+  
   explicit ClientZmqNet(int nthreads = 1);
   ~ClientZmqNet() = default;
 

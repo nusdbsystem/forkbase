@@ -18,7 +18,7 @@ ChunkInfo MetaChunker::Make(const std::vector<const Segment*>& segments)
   std::memcpy(chunk.m_data(), &num_entries, sizeof(uint32_t));
 
   uint32_t total_num_leaves = 0;
-  uint32_t total_num_elements = 0;
+  uint64_t total_num_elements = 0;
 
   const MetaEntry* pre_me = nullptr;
   size_t seg_offset = sizeof(uint32_t);
