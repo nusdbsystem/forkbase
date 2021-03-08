@@ -27,8 +27,8 @@ Env::Env() {
     return;
   }
   LOG(INFO) << "Load config \"" << config_path << "\"";
-  google::protobuf::TextFormat::Parse(
-      new google::protobuf::io::FileInputStream(fd), &config_);
+  google::protobuf::io::FileInputStream input{fd};
+  google::protobuf::TextFormat::Parse(&input, &config_);
   LOG(INFO) << "Loaded config:" << std::endl << config_.DebugString();
   // handle relative paths for data_dir and worker_file
   if (home_path && config_.data_dir()[0] != '/')

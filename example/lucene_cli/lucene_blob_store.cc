@@ -124,7 +124,7 @@ ErrorCode LuceneBlobStore::PutDataEntryByCSV(
     }
     const auto elements = Utils::Split(line, delim);
     // extract entry name
-    static const std::function<ErrorCode(const std::string& attr)> f_check =
+    const std::function<ErrorCode(const std::string& attr)> f_check =
     [this](const std::string & attr) { return ValidateEntryNameAttr(attr); };
     std::vector<std::string> entry_name;
     USTORE_GUARD(Utils::ExtractElementsWithCheck(

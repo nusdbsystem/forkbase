@@ -599,7 +599,7 @@ ErrorCode BlobStore::PutDataEntryByCSV(
       }
     } else {  // for 2nd line onwards
       // extract entry name
-      static const std::function<ErrorCode(const std::string& attr)> f_check =
+      const std::function<ErrorCode(const std::string& attr)> f_check =
       [this](const std::string & attr) { return ValidateEntryNameAttr(attr); };
       std::vector<std::string> entry_name;
       USTORE_GUARD(Utils::ExtractElementsWithCheck(
