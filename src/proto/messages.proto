@@ -59,7 +59,7 @@ message RequestPayload {
 message ValuePayload {
   optional int32 type = 1;
   optional bytes base = 2;
-  optional int32 pos = 3;
+  optional int64 pos = 3;
   optional int32 dels = 4;
   repeated bytes values = 5;  // vector<Slice> vals
   repeated bytes keys = 6;  // vector<Slice> keys

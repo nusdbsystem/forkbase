@@ -112,6 +112,14 @@ class WorkerClient : public Client, public DB {
 
   const Partitioner* const ptt_;  // partitioner to route destination worker
   std::vector<ChunkClient> ck_cli_;
+
+  private:
+  // Max blob size for single transport, due to protobuf's limitation
+  const size_t max_blob_size_ = 1 << 30;
+
+  ErrorCode splitAndPut(const Slice& key, const Value& value,
+                        const Slice& branch, const Hash& pre_version,
+                        Hash* version);
 };
 
 }  // namespace ustore

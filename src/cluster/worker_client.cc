@@ -36,6 +36,15 @@ void WorkerClient::CreatePutMessage(const Slice &key, const Value &value,
 
 ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
                             const Hash& pre_version, Hash* version) {
+  if (value.type == UType::kBlob) {
+    // NOTE: vBlob's vals size shouldn't greater than 1
+    if (value.vals.size() > 1) {
+      return ErrorCode::kInvalidValue;
+    }
+    if (value.vals[0].len() > max_blob_size_) { // Need to split the blob
+      return splitAndPut(key, value, Slice(), pre_version, version);
+    }
+  }
   UMessage msg;
   CreatePutMessage(key, value, &msg);
   // request
@@ -48,6 +57,15 @@ ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
 
 ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
                             const Slice& branch, Hash* version) {
+  if (value.type == UType::kBlob) {
+    // NOTE: vBlob's vals size shouldn't greater than 1
+    if (value.vals.size() > 1) {
+      return ErrorCode::kInvalidValue;
+    }
+    if (value.vals[0].len() > max_blob_size_) { // Need to split the blob
+      return splitAndPut(key, value, branch, Hash(), version);
+    }
+  }
   UMessage msg;
   CreatePutMessage(key, value, &msg);
   // request
@@ -56,6 +74,76 @@ ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
   // send
   Send(&msg, ptt_->GetDestAddr(key));
   return GetVersionResponse(version);
+}
+
+ErrorCode WorkerClient::splitAndPut(const Slice& key, const Value& value,
+                                    const Slice& branch, const Hash& pre_version,
+                                    Hash* version) {
+  ErrorCode code;
+  Value value_part {
+    value.type, value.base.Clone(), value.pos, value.dels,
+    {}, value.keys, value.ctx
+  };
+  std::size_t data_len = value.vals[0].len();
+  // Flag to record the global offset of blob
+  std::size_t done = 0;
+  // Flag to mark the method for the first part
+  Hash origin_ver;
+  while (done < data_len) {
+    // Set base not empty to imply update operation
+    UCell meta;
+    // Find the original verion of the branch
+    if (done == 0 && !branch.empty()) {
+      auto get_code = Get(key, branch, &meta);
+      if (get_code == ErrorCode::kOK) origin_ver = meta.hash().Clone();
+      else if (!(get_code == ErrorCode::kKeyNotExists ||
+               get_code == ErrorCode::kBranchNotExists)) {
+        return get_code;
+      }
+    } else if (done > 0) {
+      // Get base of last modified blob
+      auto get_code = Get(key, *version, &meta);
+      if (get_code != ErrorCode::kOK) {
+        return get_code;
+      }
+      value_part.base = meta.dataHash().Clone();
+    }
+    value_part.pos = value.pos+done;
+    value_part.vals.clear();
+    // Calculate the blob length to transport this time
+    auto transport_len = data_len-done;
+    if (transport_len > max_blob_size_) {
+      transport_len = max_blob_size_;
+    }
+    // Get blob part from original blob
+    value_part.vals.push_back(Slice(value.vals[0].data()+done, transport_len));
+    // Generate and send the request
+    UMessage msg;
+    CreatePutMessage(key, value_part, &msg);
+    auto request = msg.mutable_request_payload();
+    if (done == 0) {
+      // Use original parameters for the first part
+      if (branch.empty()) request->set_version(pre_version.value(), Hash::kByteLength);
+      else {
+        if (origin_ver.empty()) request->set_branch(branch.data(), branch.len());
+        else request->set_version(origin_ver.value(), Hash::kByteLength);
+      }
+    } else if (done+transport_len == data_len && !branch.empty()) {
+      // Last part of branch needs to use the branch parameter
+      request->set_branch(branch.data(), branch.len());
+    } else {
+      request->set_version(version->value(), Hash::kByteLength);
+    }
+    // Send request
+    Send(&msg, ptt_->GetDestAddr(key));
+    code = GetVersionResponse(version);
+    if (code != ErrorCode::kOK) {
+      return code;
+    }
+    // Update copied length
+    done += transport_len;
+  }
+  return code;
 }
 
 void WorkerClient::CreateGetMessage(const Slice &key, UMessage* msg) const {
