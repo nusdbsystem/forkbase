@@ -57,6 +57,10 @@ class WorkerClient : public Client, public DB {
                 const Slice& branch, Hash* version) override;
   ErrorCode Put(const Slice& key, const Value& value,
                 const Hash& pre_version, Hash* version) override;
+  ErrorCode Put(const Slice& key, const Value& value, std::istream* is,
+                const Slice& branch, Hash* version) override;
+  ErrorCode Put(const Slice& key, const Value& value, std::istream* is,
+                const Hash& pre_version, Hash* version) override;
 
   ErrorCode Merge(const Slice& key, const Value& value,
                   const Slice& tgt_branch, const Slice& ref_branch,
@@ -115,11 +119,11 @@ class WorkerClient : public Client, public DB {
 
  private:
   // Max blob size for single transport, due to protobuf's limitation
-  const size_t max_blob_size_ = 1 << 30;
+  const size_t max_blob_size_ = 1 << 22;
 
   ErrorCode SplitAndPut(const Slice& key, const Value& value,
-                        const Slice& branch, const Hash& pre_version,
-                        Hash* version);
+                        std::istream* is, const Slice& branch,
+                        const Hash& pre_version, Hash* version);
 };
 
 }  // namespace ustore

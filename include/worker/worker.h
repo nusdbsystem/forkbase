@@ -110,6 +110,12 @@ class Worker : public DB, private StoreInitializer, private Noncopyable {
     return Put(key, val, prev_ver, &ver);
   }
 
+  // Only for client side
+  ErrorCode Put(const Slice& key, const Value& value, std::istream* is,
+      const Slice& branch, Hash* version) { return ErrorCode::kOK; }
+  ErrorCode Put(const Slice& key, const Value& value, std::istream* is,
+      const Hash& pre_version, Hash* version) { return ErrorCode::kOK; }
+
   /**
    * @brief Create a new branch for the data.
    *

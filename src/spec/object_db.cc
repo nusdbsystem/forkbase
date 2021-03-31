@@ -21,14 +21,25 @@ Result<VMeta> ObjectDB::Get(const Slice& key, const Hash& version) const {
 Result<Hash> ObjectDB::Put(const Slice& key, const VObject& object,
                            const Slice& branch) {
   Hash hash;
-  ErrorCode code = db_->Put(key, object.value(), branch, &hash);
+  ErrorCode code;
+  if (object.useStream()) {
+    code = db_->Put(key, object.value(), object.dataStream(), branch, &hash);
+  } else {
+    code = db_->Put(key, object.value(), branch, &hash);
+  }
   return {std::move(hash), code};
 }
 
 Result<Hash> ObjectDB::Put(const Slice& key, const VObject& object,
                            const Hash& pre_version) {
   Hash hash;
-  ErrorCode code = db_->Put(key, object.value(), pre_version, &hash);
+  ErrorCode code;
+  if (object.useStream()) {
+    code = db_->Put(key, object.value(), object.dataStream(),
+        pre_version, &hash);
+  } else {
+    code = db_->Put(key, object.value(), pre_version, &hash);
+  }
   return {std::move(hash), code};
 }
 

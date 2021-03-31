@@ -18,10 +18,14 @@ class VBlob : public UBlob, public VObject {
   VBlob& operator=(VBlob&&) = default;
   // Create new VBlob
   explicit VBlob(const Slice& slice) noexcept;
+  explicit VBlob(std::istream* is) noexcept;
   ~VBlob() = default;
 
   Hash Splice(size_t pos, size_t num_delete, const byte_t* data,
               size_t num_insert) const override;
+
+  Hash Splice(size_t pos, size_t num_delete, std::istream* is,
+              size_t num_insert) const;
 
  protected:
   // Load exsiting VBlob

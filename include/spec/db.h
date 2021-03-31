@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <istream>
 #include "hash/hash.h"
 #include "spec/slice.h"
 #include "spec/value.h"
@@ -58,6 +59,32 @@ class DB {
    */
   virtual ErrorCode Put(const Slice& key, const Value& value,
                         const Hash& pre_version, Hash* version) = 0;
+
+  /**
+   * @brief Write a new value as the head of a branch.
+   *
+   * @param key     Target key.
+   * @param branch  Branch to update.
+   * @param value   Value to write.
+   * @param is      Data input stream
+   * @param version Returned version.
+   * @return        Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode Put(const Slice& key, const Value& value, std::istream* is,
+                        const Slice& branch, Hash* version) = 0;
+  /**
+   * @brief Write a new value as the successor of a version.
+   *
+   * @param key         Target key.
+   * @param pre_version Previous version refered to.
+   * @param value       Value to write.
+   * @param is          Data input stream
+   * @param version     Returned version.
+   * @return            Error code. (ErrorCode::kOK for success)
+   */
+  virtual ErrorCode Put(const Slice& key, const Value& value, std::istream* is,
+                        const Hash& pre_version, Hash* version) = 0;
+
   /**
    * @brief Merge target branch to a referring branch.
    *

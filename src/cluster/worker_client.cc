@@ -36,15 +36,6 @@ void WorkerClient::CreatePutMessage(const Slice &key, const Value &value,
 
 ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
                             const Hash& pre_version, Hash* version) {
-  if (value.type == UType::kBlob) {
-    // NOTE: vBlob's vals size shouldn't greater than 1
-    if (value.vals.size() > 1) {
-      return ErrorCode::kInvalidValue;
-    }
-    if (value.vals[0].len() > max_blob_size_) {  // Need to split the blob
-      return SplitAndPut(key, value, Slice(), pre_version, version);
-    }
-  }
   UMessage msg;
   CreatePutMessage(key, value, &msg);
   // request
@@ -57,15 +48,6 @@ ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
 
 ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
                             const Slice& branch, Hash* version) {
-  if (value.type == UType::kBlob) {
-    // NOTE: vBlob's vals size shouldn't greater than 1
-    if (value.vals.size() > 1) {
-      return ErrorCode::kInvalidValue;
-    }
-    if (value.vals[0].len() > max_blob_size_) {  // Need to split the blob
-      return SplitAndPut(key, value, branch, Hash(), version);
-    }
-  }
   UMessage msg;
   CreatePutMessage(key, value, &msg);
   // request
@@ -76,17 +58,29 @@ ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
   return GetVersionResponse(version);
 }
 
+//TODO
+ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
+    std::istream* is, const Hash& pre_version, Hash* version) {
+  return SplitAndPut(key, value, is, Slice(), pre_version, version);
+}
+
+ErrorCode WorkerClient::Put(const Slice& key, const Value& value,
+    std::istream* is, const Slice& branch, Hash* version) {
+  return SplitAndPut(key, value, is, branch, Hash(), version);
+}
+
 ErrorCode WorkerClient::SplitAndPut(const Slice& key, const Value& value,
-    const Slice& branch, const Hash& pre_version, Hash* version) {
+                                    std::istream* is, const Slice& branch,
+                                    const Hash& pre_version, Hash* version) {
   ErrorCode code;
   Value value_part {
     value.type, value.base.Clone(), value.pos, value.dels,
     {}, value.keys, value.ctx
   };
-  std::size_t data_len = value.vals[0].len();
+
   // Flag to record the global offset of blob
-  std::size_t done = 0;
-  while (done < data_len) {
+  size_t done = 0;
+  while (!is->eof()) {
     // Set base not empty to imply update operation
     UCell meta;
     // Find the original verion of the branch
@@ -108,21 +102,18 @@ ErrorCode WorkerClient::SplitAndPut(const Slice& key, const Value& value,
     }
     value_part.pos = value.pos + done;
     value_part.vals.clear();
-    // Calculate the blob length to transport this time
-    auto transport_len = data_len - done;
-    if (transport_len > max_blob_size_) {
-      transport_len = max_blob_size_;
-    }
+    char buf[max_blob_size_];
+    is->read(buf, max_blob_size_);
+    size_t transport_len = static_cast<size_t>(is->gcount());
+
     // Get blob part from original blob
     value_part.vals.push_back(
-        Slice(value.vals[0].data() + done, transport_len));
+        Slice(buf, transport_len));
     // Generate and send the request
     UMessage msg;
     CreatePutMessage(key, value_part, &msg);
     auto request = msg.mutable_request_payload();
-    if (!branch.empty() &&
-        ((done == 0 && version->empty()) ||
-         done + transport_len == data_len)) {
+    if (!branch.empty() && ((done == 0 && version->empty()) || is->eof())) {
       request->set_branch(branch.data(), branch.len());
     } else {
       request->set_version(version->value(), Hash::kByteLength);
@@ -136,25 +127,6 @@ ErrorCode WorkerClient::SplitAndPut(const Slice& key, const Value& value,
     }
     // Update copied length
     done += transport_len;
-    auto percentage = static_cast<double>(done) / data_len;
-    auto bar_len = static_cast<int>(percentage * 50);
-    std::string bar = "";
-    for (int i = 0; i <= 50; ++i) {
-      if (i < bar_len) {
-        bar = bar + "=";
-      } else if (i == bar_len) {
-        bar = bar + ">";
-      } else {
-        bar = bar + " ";
-      }
-    }
-    std::cout << (percentage*100) << "%" << " [" << bar << "]";
-    if (done < data_len) {
-      std::cout << "\r";
-    } else {
-      std::cout << "\n";
-    }
-    std::cout.flush();
   }
   return code;
 }
