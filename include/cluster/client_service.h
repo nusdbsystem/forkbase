@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <vector>
+#include "boost/thread.hpp"
 #include "cluster/partitioner.h"
 #include "cluster/response_blob.h"
 #include "cluster/service.h"
@@ -33,6 +34,7 @@ class ClientService : public Service {
   int nclients_;  // how many RequestHandler thread it uses
   const Partitioner* const ptt_;
   std::vector<std::unique_ptr<ResponseBlob>> responses_;  // the response queue
+  boost::shared_mutex lock_;
 };
 }  // namespace ustore
 
