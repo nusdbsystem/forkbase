@@ -48,4 +48,22 @@ Install from https://github.com/google/snappy
 Export `$SNAPPY_ROOT_DIR` variable to point to the installed directory.
 ```
 
+* RocksDB >= 5.8 ([download](https://github.com/facebook/rocksdb/releases))
+
+Install RocksDB
+```
+$ make shared_lib -j "${NCORES}" USE_RTTI=1 DISABLE_WARNING_AS_ERROR=ON && make install-shared INSTALL_PATH="${LIB_HOME}/rocksdb"
+```
+Set RocksDB environment variables
+```
+# RocksDB
+export ROCKSDB_ROOT="${LIB_HOME}/rocksdb"
+export CPATH="${ROCKSDB_ROOT}/include:${CPATH}"
+export LD_LIBRARY_PATH="${ROCKSDB_ROOT}/lib:${LD_LIBRARY_PATH}"
+export LIBRARY_PATH="${ROCKSDB_ROOT}/lib:${LIBRARY_PATH}"
+export CMAKE_INCLUDE_PATH="${ROCKSDB_ROOT}/include:${CMAKE_INCLUDE_PATH}"
+export CMAKE_LIBRARY_PATH="${ROCKSDB_ROOT}/lib:${CMAKE_LIBRARY_PATH}"
+```
+
+
 

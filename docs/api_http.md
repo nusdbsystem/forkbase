@@ -1,4 +1,4 @@
-# UStore Http Service RESTful API
+# ForkBase HTTP Service RESTful API
 
 ## NOTE
 

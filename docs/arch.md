@@ -1,6 +1,6 @@
 # System Architecture
 
-![UStore Architecture](arch.jpg)
+![ForkBase Architecture](arch.jpg)
 
 ## Remote Client Service
 ``Remote Client Service`` receives all requests from application,
@@ -8,7 +8,7 @@ and forwards the requests to the corresponding workers to process.
 The requests are dispatched based on the hash value of the request key.
 
 ## Worker
-``Worker``s process requests from disjoint subsets of keys.
+``Workers`` process requests from disjoint subsets of keys.
 
 ## Worker Service
 ``Worker Service`` receives requests from the client service and translates the request messages
